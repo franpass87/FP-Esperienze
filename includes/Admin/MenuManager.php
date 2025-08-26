@@ -7,6 +7,8 @@
 
 namespace FP\Esperienze\Admin;
 
+use FP\Esperienze\Admin\BookingsAdmin;
+
 defined('ABSPATH') || exit;
 
 /**
@@ -15,9 +17,17 @@ defined('ABSPATH') || exit;
 class MenuManager {
 
     /**
+     * Bookings admin instance
+     * 
+     * @var BookingsAdmin
+     */
+    private $bookings_admin;
+
+    /**
      * Constructor
      */
     public function __construct() {
+        $this->bookings_admin = new BookingsAdmin();
         add_action('admin_menu', [$this, 'addAdminMenu']);
     }
 
@@ -53,7 +63,7 @@ class MenuManager {
             __('Bookings', 'fp-esperienze'),
             'manage_woocommerce',
             'fp-esperienze-bookings',
-            [$this, 'bookingsPage']
+            [$this->bookings_admin, 'renderBookingsPage']
         );
 
         // Meeting Points submenu
@@ -139,18 +149,6 @@ class MenuManager {
                     </div>
                 </div>
             </div>
-        </div>
-        <?php
-    }
-
-    /**
-     * Bookings page
-     */
-    public function bookingsPage(): void {
-        ?>
-        <div class="wrap">
-            <h1><?php _e('Bookings Management', 'fp-esperienze'); ?></h1>
-            <p><?php _e('Booking management functionality will be implemented in future updates.', 'fp-esperienze'); ?></p>
         </div>
         <?php
     }

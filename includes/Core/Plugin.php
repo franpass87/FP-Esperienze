@@ -12,6 +12,7 @@ use FP\Esperienze\Admin\MenuManager;
 use FP\Esperienze\Frontend\Shortcodes;
 use FP\Esperienze\Frontend\Templates;
 use FP\Esperienze\REST\AvailabilityAPI;
+use FP\Esperienze\Booking\BookingManager;
 
 defined('ABSPATH') || exit;
 
@@ -77,6 +78,9 @@ class Plugin {
     public function initComponents(): void {
         // Initialize experience product type
         new Experience();
+        
+        // Initialize booking manager
+        new BookingManager();
     }
 
     /**
