@@ -7,6 +7,9 @@
 
 namespace FP\Esperienze\ProductType;
 
+use FP\Esperienze\Data\ScheduleManager;
+use FP\Esperienze\Data\OverrideManager;
+
 defined('ABSPATH') || exit;
 
 /**
@@ -148,6 +151,165 @@ class Experience {
             ]);
 
             ?>
+            
+            <div class="options_group">
+                <h4><?php _e('Schedules', 'fp-esperienze'); ?></h4>
+                <div id="fp-schedules-container">
+                    <?php $this->renderSchedulesSection($post->ID); ?>
+                </div>
+                <button type="button" class="button" id="fp-add-schedule">
+                    <?php _e('Add Schedule', 'fp-esperienze'); ?>
+                </button>
+            </div>
+            
+            <div class="options_group">
+                <h4><?php _e('Date Overrides', 'fp-esperienze'); ?></h4>
+                <div id="fp-overrides-container">
+                    <?php $this->renderOverridesSection($post->ID); ?>
+                </div>
+                <button type="button" class="button" id="fp-add-override">
+                    <?php _e('Add Override', 'fp-esperienze'); ?>
+                </button>
+            </div>
+
+            ?>
+        </div>
+        <?php
+    }
+    
+    /**
+     * Render schedules section
+     *
+     * @param int $product_id Product ID
+     */
+    private function renderSchedulesSection(int $product_id): void {
+        $schedules = ScheduleManager::getSchedules($product_id);
+        $meeting_points = $this->getMeetingPoints();
+        
+        foreach ($schedules as $index => $schedule) {
+            $this->renderScheduleRow($schedule, $index, $meeting_points);
+        }
+    }
+    
+    /**
+     * Render a single schedule row
+     *
+     * @param object $schedule Schedule object
+     * @param int $index Row index
+     * @param array $meeting_points Meeting points options
+     */
+    private function renderScheduleRow($schedule, int $index, array $meeting_points): void {
+        $days = [
+            0 => __('Sunday', 'fp-esperienze'),
+            1 => __('Monday', 'fp-esperienze'),
+            2 => __('Tuesday', 'fp-esperienze'),
+            3 => __('Wednesday', 'fp-esperienze'),
+            4 => __('Thursday', 'fp-esperienze'),
+            5 => __('Friday', 'fp-esperienze'),
+            6 => __('Saturday', 'fp-esperienze'),
+        ];
+        
+        ?>
+        <div class="fp-schedule-row" data-index="<?php echo esc_attr($index); ?>">
+            <input type="hidden" name="schedules[<?php echo esc_attr($index); ?>][id]" value="<?php echo esc_attr($schedule->id ?? ''); ?>">
+            
+            <select name="schedules[<?php echo esc_attr($index); ?>][day_of_week]" required>
+                <option value=""><?php _e('Select Day', 'fp-esperienze'); ?></option>
+                <?php foreach ($days as $value => $label): ?>
+                    <option value="<?php echo esc_attr($value); ?>" <?php selected($schedule->day_of_week ?? '', $value); ?>>
+                        <?php echo esc_html($label); ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+            
+            <input type="time" name="schedules[<?php echo esc_attr($index); ?>][start_time]" 
+                   value="<?php echo esc_attr($schedule->start_time ?? ''); ?>" required>
+            
+            <input type="number" name="schedules[<?php echo esc_attr($index); ?>][duration_min]" 
+                   value="<?php echo esc_attr($schedule->duration_min ?? 60); ?>" 
+                   placeholder="60" min="1" step="1" required>
+            
+            <input type="number" name="schedules[<?php echo esc_attr($index); ?>][capacity]" 
+                   value="<?php echo esc_attr($schedule->capacity ?? 10); ?>" 
+                   placeholder="10" min="1" step="1" required>
+            
+            <input type="text" name="schedules[<?php echo esc_attr($index); ?>][lang]" 
+                   value="<?php echo esc_attr($schedule->lang ?? 'en'); ?>" 
+                   placeholder="en" maxlength="10">
+            
+            <select name="schedules[<?php echo esc_attr($index); ?>][meeting_point_id]">
+                <?php foreach ($meeting_points as $value => $label): ?>
+                    <option value="<?php echo esc_attr($value); ?>" <?php selected($schedule->meeting_point_id ?? '', $value); ?>>
+                        <?php echo esc_html($label); ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+            
+            <input type="number" name="schedules[<?php echo esc_attr($index); ?>][price_adult]" 
+                   value="<?php echo esc_attr($schedule->price_adult ?? ''); ?>" 
+                   placeholder="0.00" min="0" step="0.01">
+            
+            <input type="number" name="schedules[<?php echo esc_attr($index); ?>][price_child]" 
+                   value="<?php echo esc_attr($schedule->price_child ?? ''); ?>" 
+                   placeholder="0.00" min="0" step="0.01">
+            
+            <button type="button" class="button fp-remove-schedule"><?php _e('Remove', 'fp-esperienze'); ?></button>
+        </div>
+        <?php
+    }
+    
+    /**
+     * Render overrides section
+     *
+     * @param int $product_id Product ID
+     */
+    private function renderOverridesSection(int $product_id): void {
+        $overrides = OverrideManager::getOverrides($product_id);
+        
+        foreach ($overrides as $index => $override) {
+            $this->renderOverrideRow($override, $index);
+        }
+    }
+    
+    /**
+     * Render a single override row
+     *
+     * @param object $override Override object
+     * @param int $index Row index
+     */
+    private function renderOverrideRow($override, int $index): void {
+        $price_override = $override->price_override_json ? json_decode($override->price_override_json, true) : [];
+        
+        ?>
+        <div class="fp-override-row" data-index="<?php echo esc_attr($index); ?>">
+            <input type="hidden" name="overrides[<?php echo esc_attr($index); ?>][id]" value="<?php echo esc_attr($override->id ?? ''); ?>">
+            
+            <input type="date" name="overrides[<?php echo esc_attr($index); ?>][date]" 
+                   value="<?php echo esc_attr($override->date ?? ''); ?>" required>
+            
+            <label>
+                <input type="checkbox" name="overrides[<?php echo esc_attr($index); ?>][is_closed]" 
+                       value="1" <?php checked($override->is_closed ?? 0, 1); ?>>
+                <?php _e('Closed', 'fp-esperienze'); ?>
+            </label>
+            
+            <input type="number" name="overrides[<?php echo esc_attr($index); ?>][capacity_override]" 
+                   value="<?php echo esc_attr($override->capacity_override ?? ''); ?>" 
+                   placeholder="<?php _e('Capacity Override', 'fp-esperienze'); ?>" min="0" step="1">
+            
+            <input type="number" name="overrides[<?php echo esc_attr($index); ?>][price_adult]" 
+                   value="<?php echo esc_attr($price_override['adult'] ?? ''); ?>" 
+                   placeholder="<?php _e('Adult Price', 'fp-esperienze'); ?>" min="0" step="0.01">
+            
+            <input type="number" name="overrides[<?php echo esc_attr($index); ?>][price_child]" 
+                   value="<?php echo esc_attr($price_override['child'] ?? ''); ?>" 
+                   placeholder="<?php _e('Child Price', 'fp-esperienze'); ?>" min="0" step="0.01">
+            
+            <input type="text" name="overrides[<?php echo esc_attr($index); ?>][reason]" 
+                   value="<?php echo esc_attr($override->reason ?? ''); ?>" 
+                   placeholder="<?php _e('Reason', 'fp-esperienze'); ?>">
+            
+            <button type="button" class="button fp-remove-override"><?php _e('Remove', 'fp-esperienze'); ?></button>
         </div>
         <?php
     }
@@ -158,6 +320,12 @@ class Experience {
      * @param int $post_id Post ID
      */
     public function saveProductData(int $post_id): void {
+        // Check nonce
+        if (!isset($_POST['woocommerce_meta_nonce']) || !wp_verify_nonce($_POST['woocommerce_meta_nonce'], 'woocommerce_save_data')) {
+            return;
+        }
+        
+        // Save basic experience fields
         $fields = [
             '_experience_duration',
             '_experience_capacity',
@@ -171,6 +339,103 @@ class Experience {
             if (isset($_POST[$field])) {
                 update_post_meta($post_id, $field, sanitize_text_field($_POST[$field]));
             }
+        }
+        
+        // Save schedules
+        $this->saveSchedules($post_id);
+        
+        // Save overrides
+        $this->saveOverrides($post_id);
+    }
+    
+    /**
+     * Save schedules data
+     *
+     * @param int $product_id Product ID
+     */
+    private function saveSchedules(int $product_id): void {
+        if (!isset($_POST['schedules']) || !is_array($_POST['schedules'])) {
+            return;
+        }
+        
+        // Get existing schedules
+        $existing_schedules = ScheduleManager::getSchedules($product_id);
+        $existing_ids = array_column($existing_schedules, 'id');
+        $processed_ids = [];
+        
+        foreach ($_POST['schedules'] as $schedule_data) {
+            if (empty($schedule_data['day_of_week']) || empty($schedule_data['start_time'])) {
+                continue;
+            }
+            
+            $schedule_id = !empty($schedule_data['id']) ? (int) $schedule_data['id'] : 0;
+            
+            $data = [
+                'product_id' => $product_id,
+                'day_of_week' => (int) $schedule_data['day_of_week'],
+                'start_time' => sanitize_text_field($schedule_data['start_time']),
+                'duration_min' => (int) ($schedule_data['duration_min'] ?: 60),
+                'capacity' => (int) ($schedule_data['capacity'] ?: 10),
+                'lang' => sanitize_text_field($schedule_data['lang'] ?: 'en'),
+                'meeting_point_id' => !empty($schedule_data['meeting_point_id']) ? (int) $schedule_data['meeting_point_id'] : null,
+                'price_adult' => (float) ($schedule_data['price_adult'] ?: 0),
+                'price_child' => (float) ($schedule_data['price_child'] ?: 0),
+                'is_active' => 1
+            ];
+            
+            if ($schedule_id > 0) {
+                // Update existing schedule
+                ScheduleManager::updateSchedule($schedule_id, $data);
+                $processed_ids[] = $schedule_id;
+            } else {
+                // Create new schedule
+                $new_id = ScheduleManager::createSchedule($data);
+                if ($new_id) {
+                    $processed_ids[] = $new_id;
+                }
+            }
+        }
+        
+        // Delete schedules that were removed
+        $ids_to_delete = array_diff($existing_ids, $processed_ids);
+        foreach ($ids_to_delete as $id) {
+            ScheduleManager::deleteSchedule($id);
+        }
+    }
+    
+    /**
+     * Save overrides data
+     *
+     * @param int $product_id Product ID
+     */
+    private function saveOverrides(int $product_id): void {
+        if (!isset($_POST['overrides']) || !is_array($_POST['overrides'])) {
+            return;
+        }
+        
+        foreach ($_POST['overrides'] as $override_data) {
+            if (empty($override_data['date'])) {
+                continue;
+            }
+            
+            $price_override = [];
+            if (!empty($override_data['price_adult'])) {
+                $price_override['adult'] = (float) $override_data['price_adult'];
+            }
+            if (!empty($override_data['price_child'])) {
+                $price_override['child'] = (float) $override_data['price_child'];
+            }
+            
+            $data = [
+                'product_id' => $product_id,
+                'date' => sanitize_text_field($override_data['date']),
+                'is_closed' => !empty($override_data['is_closed']) ? 1 : 0,
+                'capacity_override' => !empty($override_data['capacity_override']) ? (int) $override_data['capacity_override'] : null,
+                'price_override_json' => !empty($price_override) ? $price_override : null,
+                'reason' => sanitize_text_field($override_data['reason'] ?? '')
+            ];
+            
+            OverrideManager::saveOverride($data);
         }
     }
 

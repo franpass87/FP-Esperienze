@@ -7,6 +7,7 @@
 
 namespace FP\Esperienze\REST;
 
+use FP\Esperienze\Data\Availability;
 use WP_REST_Server;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -74,7 +75,8 @@ class AvailabilityAPI {
         }
 
         // Validate date
-        $date_obj = \DateTime::createFromFormat('Y-m-d', $date);
+        $wp_timezone = wp_timezone();
+        $date_obj = \DateTime::createFromFormat('Y-m-d', $date, $wp_timezone);
         if (!$date_obj || $date_obj->format('Y-m-d') !== $date) {
             return new WP_Error(
                 'invalid_date',
@@ -84,7 +86,9 @@ class AvailabilityAPI {
         }
 
         // Check if date is in the future
-        $today = new \DateTime();
+        $today = new \DateTime('now', wp_timezone());
+        $today->setTime(0, 0, 0); // Set to start of day
+        
         if ($date_obj < $today) {
             return new WP_Error(
                 'past_date',
@@ -93,8 +97,8 @@ class AvailabilityAPI {
             );
         }
 
-        // Generate dummy availability slots
-        $slots = $this->generateDummySlots($product, $date);
+        // Get real availability slots from database
+        $slots = Availability::forDay($product_id, $date);
 
         $response_data = [
             'product_id' => $product_id,
@@ -104,46 +108,5 @@ class AvailabilityAPI {
         ];
 
         return new WP_REST_Response($response_data, 200);
-    }
-
-    /**
-     * Generate dummy availability slots
-     *
-     * @param \WC_Product $product Product object
-     * @param string $date Date string
-     * @return array
-     */
-    private function generateDummySlots($product, string $date): array {
-        $slots = [];
-        $capacity = $product->get_capacity() ?: 10;
-        $duration = $product->get_duration() ?: 60;
-
-        // Generate slots from 9 AM to 6 PM every 2 hours
-        $start_times = ['09:00', '11:00', '13:00', '15:00', '17:00'];
-
-        foreach ($start_times as $start_time) {
-            $start_datetime = new \DateTime($date . ' ' . $start_time);
-            $end_datetime = clone $start_datetime;
-            $end_datetime->add(new \DateInterval('PT' . $duration . 'M'));
-
-            // Random availability (70% chance of being available)
-            $is_available = rand(1, 10) <= 7;
-            $booked_spots = $is_available ? rand(0, $capacity - 1) : $capacity;
-            $available_spots = $capacity - $booked_spots;
-
-            $slots[] = [
-                'start_time'      => $start_datetime->format('H:i'),
-                'end_time'        => $end_datetime->format('H:i'),
-                'capacity'        => $capacity,
-                'booked'          => $booked_spots,
-                'available'       => $available_spots,
-                'is_available'    => $is_available && $available_spots > 0,
-                'adult_price'     => $product->get_adult_price() ?: 0,
-                'child_price'     => $product->get_child_price() ?: 0,
-                'languages'       => $product->get_languages() ?: 'English',
-            ];
-        }
-
-        return $slots;
     }
 }
