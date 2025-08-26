@@ -1,0 +1,45 @@
+# FP Esperienze Language Template
+
+# Main plugin
+FP Esperienze
+Experience booking management plugin for WordPress and WooCommerce
+
+# Product type
+Experience
+Duration (minutes)
+Max Capacity
+Adult Price
+Child Price
+Languages
+Default Meeting Point
+
+# Frontend
+Why Choose This Experience
+Description
+What's Included
+What's Not Included
+Customer Reviews
+Book This Experience
+From
+per person
+Coming Soon
+
+# Admin menu
+Dashboard
+Bookings
+Meeting Points
+Extras
+Vouchers
+Closures
+Settings
+
+# Messages
+No experiences found.
+Booking widget will be implemented in future updates.
+Dashboard functionality will be implemented in future updates.
+
+# Errors
+FP Esperienze requires WordPress 6.5 or higher.
+FP Esperienze requires PHP 8.1 or higher.
+FP Esperienze requires WooCommerce to be installed and active.
+FP Esperienze requires WooCommerce 8.0 or higher.

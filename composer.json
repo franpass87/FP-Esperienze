@@ -1,0 +1,23 @@
+{
+    "name": "franpass87/fp-esperienze",
+    "description": "WordPress plugin for experience booking management",
+    "type": "wordpress-plugin",
+    "license": "GPL-2.0-or-later",
+    "authors": [
+        {
+            "name": "Francesco Passeri",
+            "email": "francesco@example.com"
+        }
+    ],
+    "require": {
+        "php": ">=8.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "FP\\Esperienze\\": "includes/"
+        }
+    },
+    "config": {
+        "optimize-autoloader": true
+    }
+}
