@@ -11,6 +11,7 @@ use FP\Esperienze\ProductType\Experience;
 use FP\Esperienze\Admin\MenuManager;
 use FP\Esperienze\Frontend\Shortcodes;
 use FP\Esperienze\Frontend\Templates;
+use FP\Esperienze\Frontend\ExtrasIntegration;
 use FP\Esperienze\REST\AvailabilityAPI;
 
 defined('ABSPATH') || exit;
@@ -92,6 +93,7 @@ class Plugin {
     public function initFrontend(): void {
         new Shortcodes();
         new Templates();
+        new ExtrasIntegration();
     }
 
     /**

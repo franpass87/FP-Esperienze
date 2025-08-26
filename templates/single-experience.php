@@ -7,6 +7,8 @@
 
 defined('ABSPATH') || exit;
 
+use FP\Esperienze\Data\ExtraManager;
+
 get_header();
 
 global $post;
@@ -25,6 +27,7 @@ $capacity = get_post_meta($product->get_id(), '_experience_capacity', true);
 $languages = get_post_meta($product->get_id(), '_experience_languages', true);
 $adult_price = get_post_meta($product->get_id(), '_experience_adult_price', true);
 $child_price = get_post_meta($product->get_id(), '_experience_child_price', true);
+$extras = ExtraManager::getProductExtras($product->get_id());
 ?>
 
 <div class="fp-experience-single">
@@ -144,6 +147,56 @@ $child_price = get_post_meta($product->get_id(), '_experience_child_price', true
                         <p class="fp-booking-placeholder">
                             <?php _e('Booking widget will be implemented in future updates.', 'fp-esperienze'); ?>
                         </p>
+                        
+                        <!-- Extras Selection -->
+                        <?php if (!empty($extras)) : ?>
+                            <div class="fp-extras-section">
+                                <h4><?php _e('Extras', 'fp-esperienze'); ?></h4>
+                                <div class="fp-extras-list">
+                                    <?php foreach ($extras as $extra) : ?>
+                                        <div class="fp-extra-item" data-extra-id="<?php echo esc_attr($extra['id']); ?>" data-extra-price="<?php echo esc_attr($extra['price']); ?>" data-pricing-type="<?php echo esc_attr($extra['pricing_type']); ?>">
+                                            <div class="fp-extra-header">
+                                                <label class="fp-extra-label">
+                                                    <input type="checkbox" 
+                                                           name="experience_extras[]" 
+                                                           value="<?php echo esc_attr($extra['id']); ?>"
+                                                           class="fp-extra-checkbox"
+                                                           <?php echo $extra['is_required'] ? 'checked disabled' : ''; ?>>
+                                                    <span class="fp-extra-name"><?php echo esc_html($extra['name']); ?></span>
+                                                    <span class="fp-extra-price"><?php echo wc_price($extra['price']); ?></span>
+                                                    <?php if ($extra['pricing_type'] === 'per_person') : ?>
+                                                        <span class="fp-extra-type"><?php _e('per person', 'fp-esperienze'); ?></span>
+                                                    <?php else : ?>
+                                                        <span class="fp-extra-type"><?php _e('per booking', 'fp-esperienze'); ?></span>
+                                                    <?php endif; ?>
+                                                </label>
+                                            </div>
+                                            
+                                            <?php if (!empty($extra['description'])) : ?>
+                                                <div class="fp-extra-description">
+                                                    <small><?php echo esc_html($extra['description']); ?></small>
+                                                </div>
+                                            <?php endif; ?>
+                                            
+                                            <?php if ($extra['max_quantity'] > 1) : ?>
+                                                <div class="fp-extra-quantity" style="display: none;">
+                                                    <label>
+                                                        <?php _e('Quantity:', 'fp-esperienze'); ?>
+                                                        <input type="number" 
+                                                               name="extra_qty_<?php echo esc_attr($extra['id']); ?>" 
+                                                               class="fp-extra-quantity-input"
+                                                               min="1" 
+                                                               max="<?php echo esc_attr($extra['max_quantity']); ?>" 
+                                                               value="1">
+                                                    </label>
+                                                </div>
+                                            <?php endif; ?>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+                        
                         <div class="fp-price-info">
                             <?php if ($adult_price) : ?>
                                 <div class="fp-price-row">
@@ -158,6 +211,26 @@ $child_price = get_post_meta($product->get_id(), '_experience_child_price', true
                                     <span><?php echo wc_price($child_price); ?></span>
                                 </div>
                             <?php endif; ?>
+                            
+                            <!-- Dynamic extras total will be added here -->
+                            <div id="fp-extras-total" style="display: none;">
+                                <div class="fp-price-row">
+                                    <span><?php _e('Extras', 'fp-esperienze'); ?></span>
+                                    <span id="fp-extras-total-amount">-</span>
+                                </div>
+                            </div>
+                            
+                            <div class="fp-price-row fp-total-price">
+                                <strong>
+                                    <span><?php _e('Total', 'fp-esperienze'); ?></span>
+                                    <span id="fp-total-amount">
+                                        <?php 
+                                        $base_total = floatval($adult_price) + floatval($child_price);
+                                        echo wc_price($base_total); 
+                                        ?>
+                                    </span>
+                                </strong>
+                            </div>
                         </div>
                         <button class="fp-btn fp-btn-primary fp-btn-large" disabled>
                             <?php _e('Coming Soon', 'fp-esperienze'); ?>
