@@ -79,14 +79,19 @@ class Installer {
             product_id bigint(20) unsigned NOT NULL,
             day_of_week tinyint(1) NOT NULL COMMENT '0=Sunday, 1=Monday, etc.',
             start_time time NOT NULL,
-            end_time time NOT NULL,
-            max_participants int(11) NOT NULL DEFAULT 1,
+            duration_min int(11) NOT NULL DEFAULT 60,
+            capacity int(11) NOT NULL DEFAULT 1,
+            lang varchar(10) DEFAULT 'en',
+            meeting_point_id bigint(20) unsigned DEFAULT NULL,
+            price_adult decimal(10,2) NOT NULL DEFAULT 0.00,
+            price_child decimal(10,2) NOT NULL DEFAULT 0.00,
             is_active tinyint(1) NOT NULL DEFAULT 1,
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
             KEY product_id (product_id),
-            KEY day_of_week (day_of_week)
+            KEY day_of_week (day_of_week),
+            KEY meeting_point_id (meeting_point_id)
         ) $charset_collate;";
 
         // Overrides table
@@ -95,10 +100,9 @@ class Installer {
             id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
             product_id bigint(20) unsigned NOT NULL,
             date date NOT NULL,
-            start_time time DEFAULT NULL,
-            end_time time DEFAULT NULL,
-            max_participants int(11) DEFAULT NULL,
             is_closed tinyint(1) NOT NULL DEFAULT 0,
+            capacity_override int(11) DEFAULT NULL,
+            price_override_json text DEFAULT NULL,
             reason varchar(255) DEFAULT NULL,
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

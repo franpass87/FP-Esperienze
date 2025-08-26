@@ -10,7 +10,7 @@ namespace FP\Esperienze\Data;
 defined('ABSPATH') || exit;
 
 /**
- * Data manager class - placeholder for future implementation
+ * Data manager class - central coordinator for data operations
  */
 class DataManager {
     
@@ -18,6 +18,41 @@ class DataManager {
      * Constructor
      */
     public function __construct() {
-        // Future implementation
+        // Initialize data management components
+        $this->init();
+    }
+    
+    /**
+     * Initialize data management
+     */
+    private function init(): void {
+        // Register any data-related hooks here if needed
+    }
+    
+    /**
+     * Get schedule manager instance
+     *
+     * @return ScheduleManager
+     */
+    public static function schedules(): string {
+        return ScheduleManager::class;
+    }
+    
+    /**
+     * Get override manager instance
+     *
+     * @return OverrideManager
+     */
+    public static function overrides(): string {
+        return OverrideManager::class;
+    }
+    
+    /**
+     * Get availability instance
+     *
+     * @return Availability
+     */
+    public static function availability(): string {
+        return Availability::class;
     }
 }

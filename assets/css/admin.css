@@ -81,3 +81,111 @@
 .fp-admin-notice.success {
     border-left-color: #00a32a;
 }
+
+/* Schedule management */
+.fp-schedule-row,
+.fp-override-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: #f9f9f9;
+}
+
+.fp-schedule-row input,
+.fp-schedule-row select,
+.fp-override-row input,
+.fp-override-row select {
+    flex: 1;
+    min-width: 100px;
+}
+
+.fp-schedule-row .fp-remove-schedule,
+.fp-override-row .fp-remove-override {
+    flex: 0 0 auto;
+    background: #dc3232;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.fp-schedule-row .fp-remove-schedule:hover,
+.fp-override-row .fp-remove-override:hover {
+    background: #c62d2d;
+}
+
+#fp-schedules-container,
+#fp-overrides-container {
+    margin-bottom: 15px;
+}
+
+#fp-add-schedule,
+#fp-add-override {
+    background: #0073aa;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+#fp-add-schedule:hover,
+#fp-add-override:hover {
+    background: #005a87;
+}
+
+/* Closures page */
+.fp-closures-form {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 20px;
+    margin-bottom: 30px;
+}
+
+.fp-closures-list {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 20px;
+}
+
+.fp-closures-form h2,
+.fp-closures-list h2 {
+    margin-top: 0;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+}
+
+/* Experience product type specific styles */
+.product-type-experience .show_if_simple,
+.product-type-experience .show_if_variable,
+.product-type-experience .show_if_grouped,
+.product-type-experience .show_if_external {
+    display: none !important;
+}
+
+.product-type-experience .show_if_experience {
+    display: block !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .fp-schedule-row,
+    .fp-override-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .fp-schedule-row input,
+    .fp-schedule-row select,
+    .fp-override-row input,
+    .fp-override-row select {
+        margin-bottom: 5px;
+    }
+}
