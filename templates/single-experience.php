@@ -25,6 +25,13 @@ $capacity = get_post_meta($product->get_id(), '_experience_capacity', true);
 $languages = get_post_meta($product->get_id(), '_experience_languages', true);
 $adult_price = get_post_meta($product->get_id(), '_experience_adult_price', true);
 $child_price = get_post_meta($product->get_id(), '_experience_child_price', true);
+
+// Get meeting point information
+$meeting_point_id = get_post_meta($product->get_id(), '_fp_exp_meeting_point_id', true);
+$meeting_point = null;
+if ($meeting_point_id) {
+    $meeting_point = \FP\Esperienze\Data\MeetingPointManager::getMeetingPoint((int) $meeting_point_id);
+}
 ?>
 
 <div class="fp-experience-single">
@@ -112,6 +119,65 @@ $child_price = get_post_meta($product->get_id(), '_experience_child_price', true
                         <li><?php _e('Gratuities', 'fp-esperienze'); ?></li>
                     </ul>
                 </section>
+
+                <!-- Meeting Point -->
+                <?php if ($meeting_point) : ?>
+                <section class="fp-experience-meeting-point">
+                    <h2><?php _e('Meeting Point', 'fp-esperienze'); ?></h2>
+                    <div class="fp-meeting-point-info">
+                        <div class="fp-meeting-point-details">
+                            <h3><?php echo esc_html($meeting_point->name); ?></h3>
+                            <p class="fp-meeting-address">
+                                <strong><?php _e('Address:', 'fp-esperienze'); ?></strong><br>
+                                <?php echo esc_html($meeting_point->address); ?>
+                            </p>
+                            
+                            <?php if ($meeting_point->note) : ?>
+                                <div class="fp-meeting-point-note">
+                                    <strong><?php _e('Instructions:', 'fp-esperienze'); ?></strong><br>
+                                    <?php echo wp_kses_post(nl2br(esc_html($meeting_point->note))); ?>
+                                </div>
+                            <?php endif; ?>
+                            
+                            <?php if ($meeting_point->lat && $meeting_point->lng) : ?>
+                                <div class="fp-meeting-point-actions">
+                                    <a href="https://www.google.com/maps?q=<?php echo esc_attr($meeting_point->lat . ',' . $meeting_point->lng); ?>" 
+                                       target="_blank" class="fp-maps-link button">
+                                        <?php _e('Open in Google Maps', 'fp-esperienze'); ?>
+                                    </a>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                        
+                        <div class="fp-meeting-point-map">
+                            <!-- Map placeholder -->
+                            <div class="fp-map-placeholder">
+                                <?php if ($meeting_point->lat && $meeting_point->lng) : ?>
+                                    <div class="fp-map-coordinates">
+                                        <span class="fp-coordinates-text">
+                                            <?php printf(__('Coordinates: %s, %s', 'fp-esperienze'), 
+                                                        esc_html($meeting_point->lat), 
+                                                        esc_html($meeting_point->lng)); ?>
+                                        </span>
+                                    </div>
+                                    <!-- Placeholder for future map integration -->
+                                    <div class="fp-map-container" style="background: #f0f0f0; border: 1px solid #ddd; height: 200px; display: flex; align-items: center; justify-content: center;">
+                                        <span style="color: #666; font-style: italic;">
+                                            <?php _e('Map will be displayed here', 'fp-esperienze'); ?>
+                                        </span>
+                                    </div>
+                                <?php else : ?>
+                                    <div class="fp-map-container" style="background: #f9f9f9; border: 1px solid #ddd; height: 200px; display: flex; align-items: center; justify-content: center;">
+                                        <span style="color: #999; font-style: italic;">
+                                            <?php _e('Coordinates not available for this meeting point', 'fp-esperienze'); ?>
+                                        </span>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                <?php endif; ?>
 
                 <!-- Reviews Placeholder -->
                 <section class="fp-experience-reviews">

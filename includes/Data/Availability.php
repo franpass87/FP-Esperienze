@@ -167,14 +167,6 @@ class Availability {
      * @return object|null
      */
     public static function getMeetingPoint(int $meeting_point_id): ?object {
-        global $wpdb;
-        
-        $table_name = $wpdb->prefix . 'fp_meeting_points';
-        $result = $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM $table_name WHERE id = %d",
-            $meeting_point_id
-        ));
-        
-        return $result ?: null;
+        return MeetingPointManager::getMeetingPoint($meeting_point_id);
     }
 }

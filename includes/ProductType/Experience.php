@@ -9,6 +9,7 @@ namespace FP\Esperienze\ProductType;
 
 use FP\Esperienze\Data\ScheduleManager;
 use FP\Esperienze\Data\OverrideManager;
+use FP\Esperienze\Data\MeetingPointManager;
 
 defined('ABSPATH') || exit;
 
@@ -143,7 +144,7 @@ class Experience {
             // Default meeting point
             $meeting_points = $this->getMeetingPoints();
             woocommerce_wp_select([
-                'id'          => '_experience_default_meeting_point',
+                'id'          => '_fp_exp_meeting_point_id',
                 'label'       => __('Default Meeting Point', 'fp-esperienze'),
                 'options'     => $meeting_points,
                 'desc_tip'    => true,
@@ -332,7 +333,7 @@ class Experience {
             '_experience_adult_price',
             '_experience_child_price',
             '_experience_languages',
-            '_experience_default_meeting_point'
+            '_fp_exp_meeting_point_id'
         ];
 
         foreach ($fields as $field) {
@@ -445,19 +446,6 @@ class Experience {
      * @return array
      */
     private function getMeetingPoints(): array {
-        global $wpdb;
-        
-        $options = ['' => __('Select a meeting point', 'fp-esperienze')];
-        
-        $table_name = $wpdb->prefix . 'fp_meeting_points';
-        $results = $wpdb->get_results("SELECT id, name FROM $table_name ORDER BY name ASC");
-        
-        if ($results) {
-            foreach ($results as $row) {
-                $options[$row->id] = $row->name;
-            }
-        }
-        
-        return $options;
+        return MeetingPointManager::getMeetingPointsForSelect();
     }
 }

@@ -8,6 +8,7 @@
 namespace FP\Esperienze\Admin;
 
 use FP\Esperienze\Data\OverrideManager;
+use FP\Esperienze\Data\MeetingPointManager;
 
 defined('ABSPATH') || exit;
 
@@ -161,12 +162,364 @@ class MenuManager {
      * Meeting Points page
      */
     public function meetingPointsPage(): void {
+        // Handle form submissions
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && wp_verify_nonce($_POST['_wpnonce'] ?? '', 'fp_meeting_points_action')) {
+            $this->handleMeetingPointAction();
+        }
+        
+        // Get action and ID for editing/deleting
+        $action = sanitize_text_field($_GET['action'] ?? '');
+        $meeting_point_id = (int) ($_GET['id'] ?? 0);
+        $meeting_point = null;
+        
+        if ($action === 'edit' && $meeting_point_id) {
+            $meeting_point = MeetingPointManager::getMeetingPoint($meeting_point_id);
+            if (!$meeting_point) {
+                $action = ''; // Reset if meeting point not found
+            }
+        }
+        
         ?>
         <div class="wrap">
-            <h1><?php _e('Meeting Points', 'fp-esperienze'); ?></h1>
-            <p><?php _e('Meeting points management will be implemented in future updates.', 'fp-esperienze'); ?></p>
+            <h1 class="wp-heading-inline"><?php _e('Meeting Points', 'fp-esperienze'); ?></h1>
+            
+            <?php if ($action === 'edit') : ?>
+                <a href="<?php echo admin_url('admin.php?page=fp-esperienze-meeting-points'); ?>" class="page-title-action">
+                    <?php _e('Add New', 'fp-esperienze'); ?>
+                </a>
+            <?php else : ?>
+                <a href="<?php echo admin_url('admin.php?page=fp-esperienze-meeting-points&action=edit'); ?>" class="page-title-action">
+                    <?php _e('Add New', 'fp-esperienze'); ?>
+                </a>
+            <?php endif; ?>
+            
+            <hr class="wp-header-end">
+            
+            <?php if ($action === 'edit' || $action === '') : ?>
+                <!-- Add/Edit Form -->
+                <div class="fp-meeting-point-form">
+                    <h2><?php echo $meeting_point ? __('Edit Meeting Point', 'fp-esperienze') : __('Add New Meeting Point', 'fp-esperienze'); ?></h2>
+                    
+                    <form method="post" action="">
+                        <?php wp_nonce_field('fp_meeting_points_action'); ?>
+                        
+                        <input type="hidden" name="action" value="<?php echo $meeting_point ? 'update' : 'create'; ?>">
+                        <?php if ($meeting_point) : ?>
+                            <input type="hidden" name="meeting_point_id" value="<?php echo esc_attr($meeting_point->id); ?>">
+                        <?php endif; ?>
+                        
+                        <table class="form-table">
+                            <tr>
+                                <th scope="row">
+                                    <label for="meeting_point_name"><?php _e('Name', 'fp-esperienze'); ?> <span class="description">(required)</span></label>
+                                </th>
+                                <td>
+                                    <input name="meeting_point_name" type="text" id="meeting_point_name" 
+                                           value="<?php echo $meeting_point ? esc_attr($meeting_point->name) : ''; ?>" 
+                                           class="regular-text" required />
+                                </td>
+                            </tr>
+                            
+                            <tr>
+                                <th scope="row">
+                                    <label for="meeting_point_address"><?php _e('Address', 'fp-esperienze'); ?> <span class="description">(required)</span></label>
+                                </th>
+                                <td>
+                                    <textarea name="meeting_point_address" id="meeting_point_address" 
+                                              rows="3" cols="50" class="large-text" required><?php echo $meeting_point ? esc_textarea($meeting_point->address) : ''; ?></textarea>
+                                </td>
+                            </tr>
+                            
+                            <tr>
+                                <th scope="row">
+                                    <label for="meeting_point_lat"><?php _e('Latitude', 'fp-esperienze'); ?></label>
+                                </th>
+                                <td>
+                                    <input name="meeting_point_lat" type="number" step="any" id="meeting_point_lat" 
+                                           value="<?php echo $meeting_point ? esc_attr($meeting_point->lat) : ''; ?>" 
+                                           class="regular-text" />
+                                    <p class="description"><?php _e('Decimal degrees format (e.g., 41.9028)', 'fp-esperienze'); ?></p>
+                                </td>
+                            </tr>
+                            
+                            <tr>
+                                <th scope="row">
+                                    <label for="meeting_point_lng"><?php _e('Longitude', 'fp-esperienze'); ?></label>
+                                </th>
+                                <td>
+                                    <input name="meeting_point_lng" type="number" step="any" id="meeting_point_lng" 
+                                           value="<?php echo $meeting_point ? esc_attr($meeting_point->lng) : ''; ?>" 
+                                           class="regular-text" />
+                                    <p class="description"><?php _e('Decimal degrees format (e.g., 12.4964)', 'fp-esperienze'); ?></p>
+                                </td>
+                            </tr>
+                            
+                            <tr>
+                                <th scope="row">
+                                    <label for="meeting_point_place_id"><?php _e('Google Place ID', 'fp-esperienze'); ?></label>
+                                </th>
+                                <td>
+                                    <input name="meeting_point_place_id" type="text" id="meeting_point_place_id" 
+                                           value="<?php echo $meeting_point ? esc_attr($meeting_point->place_id) : ''; ?>" 
+                                           class="regular-text" />
+                                    <p class="description"><?php _e('Google Places API Place ID for enhanced integration', 'fp-esperienze'); ?></p>
+                                </td>
+                            </tr>
+                            
+                            <tr>
+                                <th scope="row">
+                                    <label for="meeting_point_note"><?php _e('Note', 'fp-esperienze'); ?></label>
+                                </th>
+                                <td>
+                                    <textarea name="meeting_point_note" id="meeting_point_note" 
+                                              rows="5" cols="50" class="large-text"><?php echo $meeting_point ? esc_textarea($meeting_point->note) : ''; ?></textarea>
+                                    <p class="description"><?php _e('Additional instructions or notes for this meeting point', 'fp-esperienze'); ?></p>
+                                </td>
+                            </tr>
+                        </table>
+                        
+                        <p class="submit">
+                            <input type="submit" name="submit" id="submit" class="button button-primary" 
+                                   value="<?php echo $meeting_point ? __('Update Meeting Point', 'fp-esperienze') : __('Add Meeting Point', 'fp-esperienze'); ?>">
+                            
+                            <?php if ($meeting_point) : ?>
+                                <a href="<?php echo admin_url('admin.php?page=fp-esperienze-meeting-points'); ?>" class="button">
+                                    <?php _e('Cancel', 'fp-esperienze'); ?>
+                                </a>
+                            <?php endif; ?>
+                        </p>
+                    </form>
+                </div>
+                
+                <?php if ($action !== 'edit') : ?>
+                    <hr />
+                <?php endif; ?>
+            <?php endif; ?>
+            
+            <?php if ($action !== 'edit') : ?>
+                <!-- Meeting Points List -->
+                <div class="fp-meeting-points-list">
+                    <h2><?php _e('Meeting Points List', 'fp-esperienze'); ?></h2>
+                    
+                    <?php
+                    $meeting_points = MeetingPointManager::getAllMeetingPoints();
+                    
+                    if (empty($meeting_points)) :
+                    ?>
+                        <p><?php _e('No meeting points found. Add your first meeting point above.', 'fp-esperienze'); ?></p>
+                    <?php else : ?>
+                        <table class="wp-list-table widefat fixed striped">
+                            <thead>
+                                <tr>
+                                    <th scope="col" class="column-primary"><?php _e('Name', 'fp-esperienze'); ?></th>
+                                    <th scope="col"><?php _e('Address', 'fp-esperienze'); ?></th>
+                                    <th scope="col"><?php _e('Coordinates', 'fp-esperienze'); ?></th>
+                                    <th scope="col"><?php _e('Actions', 'fp-esperienze'); ?></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($meeting_points as $mp) : ?>
+                                    <tr>
+                                        <td class="column-primary">
+                                            <strong><?php echo esc_html($mp->name); ?></strong>
+                                            <div class="row-actions">
+                                                <span class="edit">
+                                                    <a href="<?php echo admin_url('admin.php?page=fp-esperienze-meeting-points&action=edit&id=' . $mp->id); ?>">
+                                                        <?php _e('Edit', 'fp-esperienze'); ?>
+                                                    </a> |
+                                                </span>
+                                                <span class="delete">
+                                                    <a href="#" onclick="return confirmDelete(<?php echo $mp->id; ?>, '<?php echo esc_js($mp->name); ?>');" class="submitdelete">
+                                                        <?php _e('Delete', 'fp-esperienze'); ?>
+                                                    </a>
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td><?php echo esc_html(wp_trim_words($mp->address, 10)); ?></td>
+                                        <td>
+                                            <?php if ($mp->lat && $mp->lng) : ?>
+                                                <?php echo esc_html($mp->lat . ', ' . $mp->lng); ?>
+                                            <?php else : ?>
+                                                <span class="description"><?php _e('Not set', 'fp-esperienze'); ?></span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td>
+                                            <a href="<?php echo admin_url('admin.php?page=fp-esperienze-meeting-points&action=edit&id=' . $mp->id); ?>" class="button button-small">
+                                                <?php _e('Edit', 'fp-esperienze'); ?>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
         </div>
+        
+        <!-- Delete Confirmation Form -->
+        <form id="delete-meeting-point-form" method="post" style="display: none;">
+            <?php wp_nonce_field('fp_meeting_points_action'); ?>
+            <input type="hidden" name="action" value="delete">
+            <input type="hidden" name="meeting_point_id" id="delete-meeting-point-id" value="">
+        </form>
+        
+        <script>
+        function confirmDelete(id, name) {
+            if (confirm('<?php echo esc_js(__('Are you sure you want to delete the meeting point', 'fp-esperienze')); ?> "' + name + '"?\n\n<?php echo esc_js(__('This action cannot be undone and will fail if the meeting point is currently in use.', 'fp-esperienze')); ?>')) {
+                document.getElementById('delete-meeting-point-id').value = id;
+                document.getElementById('delete-meeting-point-form').submit();
+            }
+            return false;
+        }
+        </script>
         <?php
+    }
+    
+    /**
+     * Handle meeting point form actions
+     */
+    private function handleMeetingPointAction(): void {
+        $action = sanitize_text_field($_POST['action'] ?? '');
+        
+        switch ($action) {
+            case 'create':
+                $this->createMeetingPoint();
+                break;
+                
+            case 'update':
+                $this->updateMeetingPoint();
+                break;
+                
+            case 'delete':
+                $this->deleteMeetingPoint();
+                break;
+        }
+    }
+    
+    /**
+     * Create new meeting point
+     */
+    private function createMeetingPoint(): void {
+        $data = [
+            'name' => sanitize_text_field($_POST['meeting_point_name'] ?? ''),
+            'address' => sanitize_textarea_field($_POST['meeting_point_address'] ?? ''),
+            'lat' => !empty($_POST['meeting_point_lat']) ? (float) $_POST['meeting_point_lat'] : null,
+            'lng' => !empty($_POST['meeting_point_lng']) ? (float) $_POST['meeting_point_lng'] : null,
+            'place_id' => sanitize_text_field($_POST['meeting_point_place_id'] ?? ''),
+            'note' => sanitize_textarea_field($_POST['meeting_point_note'] ?? '')
+        ];
+        
+        if (empty($data['name']) || empty($data['address'])) {
+            add_action('admin_notices', function() {
+                echo '<div class="notice notice-error is-dismissible"><p>' . 
+                     esc_html__('Name and address are required fields.', 'fp-esperienze') . 
+                     '</p></div>';
+            });
+            return;
+        }
+        
+        $result = MeetingPointManager::createMeetingPoint($data);
+        
+        if ($result) {
+            add_action('admin_notices', function() {
+                echo '<div class="notice notice-success is-dismissible"><p>' . 
+                     esc_html__('Meeting point created successfully.', 'fp-esperienze') . 
+                     '</p></div>';
+            });
+        } else {
+            add_action('admin_notices', function() {
+                echo '<div class="notice notice-error is-dismissible"><p>' . 
+                     esc_html__('Failed to create meeting point.', 'fp-esperienze') . 
+                     '</p></div>';
+            });
+        }
+    }
+    
+    /**
+     * Update meeting point
+     */
+    private function updateMeetingPoint(): void {
+        $id = (int) ($_POST['meeting_point_id'] ?? 0);
+        
+        if (!$id) {
+            add_action('admin_notices', function() {
+                echo '<div class="notice notice-error is-dismissible"><p>' . 
+                     esc_html__('Invalid meeting point ID.', 'fp-esperienze') . 
+                     '</p></div>';
+            });
+            return;
+        }
+        
+        $data = [
+            'name' => sanitize_text_field($_POST['meeting_point_name'] ?? ''),
+            'address' => sanitize_textarea_field($_POST['meeting_point_address'] ?? ''),
+            'lat' => !empty($_POST['meeting_point_lat']) ? (float) $_POST['meeting_point_lat'] : null,
+            'lng' => !empty($_POST['meeting_point_lng']) ? (float) $_POST['meeting_point_lng'] : null,
+            'place_id' => sanitize_text_field($_POST['meeting_point_place_id'] ?? ''),
+            'note' => sanitize_textarea_field($_POST['meeting_point_note'] ?? '')
+        ];
+        
+        if (empty($data['name']) || empty($data['address'])) {
+            add_action('admin_notices', function() {
+                echo '<div class="notice notice-error is-dismissible"><p>' . 
+                     esc_html__('Name and address are required fields.', 'fp-esperienze') . 
+                     '</p></div>';
+            });
+            return;
+        }
+        
+        $result = MeetingPointManager::updateMeetingPoint($id, $data);
+        
+        if ($result) {
+            add_action('admin_notices', function() {
+                echo '<div class="notice notice-success is-dismissible"><p>' . 
+                     esc_html__('Meeting point updated successfully.', 'fp-esperienze') . 
+                     '</p></div>';
+            });
+            
+            // Redirect to list view after successful update
+            wp_redirect(admin_url('admin.php?page=fp-esperienze-meeting-points'));
+            exit;
+        } else {
+            add_action('admin_notices', function() {
+                echo '<div class="notice notice-error is-dismissible"><p>' . 
+                     esc_html__('Failed to update meeting point.', 'fp-esperienze') . 
+                     '</p></div>';
+            });
+        }
+    }
+    
+    /**
+     * Delete meeting point
+     */
+    private function deleteMeetingPoint(): void {
+        $id = (int) ($_POST['meeting_point_id'] ?? 0);
+        
+        if (!$id) {
+            add_action('admin_notices', function() {
+                echo '<div class="notice notice-error is-dismissible"><p>' . 
+                     esc_html__('Invalid meeting point ID.', 'fp-esperienze') . 
+                     '</p></div>';
+            });
+            return;
+        }
+        
+        $result = MeetingPointManager::deleteMeetingPoint($id);
+        
+        if ($result) {
+            add_action('admin_notices', function() {
+                echo '<div class="notice notice-success is-dismissible"><p>' . 
+                     esc_html__('Meeting point deleted successfully.', 'fp-esperienze') . 
+                     '</p></div>';
+            });
+        } else {
+            add_action('admin_notices', function() {
+                echo '<div class="notice notice-error is-dismissible"><p>' . 
+                     esc_html__('Cannot delete meeting point. It may be in use by schedules or set as default for products.', 'fp-esperienze') . 
+                     '</p></div>';
+            });
+        }
     }
 
     /**
