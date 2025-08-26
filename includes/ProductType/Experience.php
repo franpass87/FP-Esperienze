@@ -2,6 +2,17 @@
 /**
  * Experience Product Type
  *
+ * Hooks and Filters available:
+ * - woocommerce_product_data_tabs: Adds experience, schedules, and overrides tabs
+ * - woocommerce_product_data_panels: Renders tab content with CRUD interfaces
+ * - woocommerce_process_product_meta: Saves experience, schedule, and override data
+ * 
+ * Custom hooks:
+ * - fp_experience_before_save_schedules: Before saving schedules
+ * - fp_experience_after_save_schedules: After saving schedules  
+ * - fp_experience_before_save_overrides: Before saving overrides
+ * - fp_experience_after_save_overrides: After saving overrides
+ *
  * @package FP\Esperienze\ProductType
  */
 
@@ -203,6 +214,16 @@ class Experience {
      * @param int $post_id Post ID
      */
     public function saveProductData(int $post_id): void {
+        // Verify nonce for security
+        if (!isset($_POST['woocommerce_meta_nonce']) || !wp_verify_nonce($_POST['woocommerce_meta_nonce'], 'woocommerce_save_data')) {
+            return;
+        }
+        
+        // Check user permissions
+        if (!current_user_can('edit_post', $post_id)) {
+            return;
+        }
+        
         // Save basic experience data
         $fields = [
             '_experience_duration',
@@ -236,6 +257,9 @@ class Experience {
             return;
         }
 
+        // Allow plugins to hook before saving schedules
+        do_action('fp_experience_before_save_schedules', $post_id, $_POST['schedules']);
+
         global $wpdb;
         $table = $wpdb->prefix . 'fp_schedules';
         
@@ -262,6 +286,9 @@ class Experience {
                 'created_at' => current_time('mysql')
             ]);
         }
+
+        // Allow plugins to hook after saving schedules
+        do_action('fp_experience_after_save_schedules', $post_id);
     }
 
     /**
@@ -273,6 +300,9 @@ class Experience {
         if (!isset($_POST['overrides']) || !is_array($_POST['overrides'])) {
             return;
         }
+
+        // Allow plugins to hook before saving overrides
+        do_action('fp_experience_before_save_overrides', $post_id, $_POST['overrides']);
 
         global $wpdb;
         $table = $wpdb->prefix . 'fp_overrides';
@@ -304,6 +334,9 @@ class Experience {
                 'created_at' => current_time('mysql')
             ]);
         }
+
+        // Allow plugins to hook after saving overrides
+        do_action('fp_experience_after_save_overrides', $post_id);
     }
 
     /**

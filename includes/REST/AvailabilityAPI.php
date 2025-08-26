@@ -74,8 +74,8 @@ class AvailabilityAPI {
             );
         }
 
-        // Validate date
-        $date_obj = \DateTime::createFromFormat('Y-m-d', $date);
+        // Validate date format for WordPress timezone
+        $date_obj = \DateTime::createFromFormat('Y-m-d', $date, wp_timezone());
         if (!$date_obj || $date_obj->format('Y-m-d') !== $date) {
             return new WP_Error(
                 'invalid_date',
