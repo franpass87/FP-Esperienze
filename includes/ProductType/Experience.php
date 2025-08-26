@@ -7,6 +7,8 @@
 
 namespace FP\Esperienze\ProductType;
 
+use FP\Esperienze\Data\ExtraManager;
+
 defined('ABSPATH') || exit;
 
 /**
@@ -58,6 +60,13 @@ class Experience {
             'target' => 'experience_product_data',
             'class'  => ['show_if_experience'],
         ];
+        
+        $tabs['experience_extras'] = [
+            'label'  => __('Extras', 'fp-esperienze'),
+            'target' => 'experience_extras_data',
+            'class'  => ['show_if_experience'],
+        ];
+        
         return $tabs;
     }
 
@@ -149,6 +158,72 @@ class Experience {
 
             ?>
         </div>
+        
+        <div id="experience_extras_data" class="panel woocommerce_options_panel">
+            <?php
+            
+            // Get available extras
+            $all_extras = ExtraManager::getAllExtras(['is_active' => 1]);
+            $selected_extras = ExtraManager::getProductExtras($post->ID);
+            $selected_extra_ids = array_column($selected_extras, 'id');
+            
+            ?>
+            <div class="options_group">
+                <p class="form-field">
+                    <label><?php _e('Available Extras', 'fp-esperienze'); ?></label>
+                </p>
+                
+                <?php if (empty($all_extras)) : ?>
+                    <p>
+                        <?php _e('No extras available.', 'fp-esperienze'); ?>
+                        <a href="<?php echo admin_url('admin.php?page=fp-esperienze-extras&action=add'); ?>" target="_blank">
+                            <?php _e('Create one now', 'fp-esperienze'); ?>
+                        </a>
+                    </p>
+                <?php else : ?>
+                    <table class="wp-list-table widefat fixed" style="max-width: 800px;">
+                        <thead>
+                            <tr>
+                                <th width="50"><?php _e('Select', 'fp-esperienze'); ?></th>
+                                <th><?php _e('Name', 'fp-esperienze'); ?></th>
+                                <th><?php _e('Price', 'fp-esperienze'); ?></th>
+                                <th><?php _e('Type', 'fp-esperienze'); ?></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($all_extras as $extra) : ?>
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" 
+                                               name="experience_extras[]" 
+                                               value="<?php echo esc_attr($extra['id']); ?>" 
+                                               <?php checked(in_array($extra['id'], $selected_extra_ids)); ?>>
+                                    </td>
+                                    <td>
+                                        <strong><?php echo esc_html($extra['name']); ?></strong>
+                                        <?php if (!empty($extra['description'])) : ?>
+                                            <br><small><?php echo esc_html(wp_trim_words($extra['description'], 15)); ?></small>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td><?php echo wc_price($extra['price']); ?></td>
+                                    <td>
+                                        <?php 
+                                        echo $extra['pricing_type'] === 'per_person' 
+                                            ? __('Per Person', 'fp-esperienze') 
+                                            : __('Per Booking', 'fp-esperienze');
+                                        ?>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                    
+                    <p class="description">
+                        <?php _e('Select the extras that should be available for this experience.', 'fp-esperienze'); ?>
+                    </p>
+                <?php endif; ?>
+            </div>
+        </div>
         <?php
     }
 
@@ -171,6 +246,15 @@ class Experience {
             if (isset($_POST[$field])) {
                 update_post_meta($post_id, $field, sanitize_text_field($_POST[$field]));
             }
+        }
+        
+        // Save extras associations
+        if (isset($_POST['experience_extras'])) {
+            $extra_ids = array_map('intval', $_POST['experience_extras']);
+            ExtraManager::setProductExtras($post_id, $extra_ids);
+        } else {
+            // Clear all associations if none selected
+            ExtraManager::setProductExtras($post_id, []);
         }
     }
 
