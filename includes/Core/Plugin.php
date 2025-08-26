@@ -13,6 +13,7 @@ use FP\Esperienze\Frontend\Shortcodes;
 use FP\Esperienze\Frontend\Templates;
 use FP\Esperienze\REST\AvailabilityAPI;
 use FP\Esperienze\Data\DataManager;
+use FP\Esperienze\Booking\Cart_Hooks;
 
 defined('ABSPATH') || exit;
 
@@ -81,6 +82,9 @@ class Plugin {
         
         // Initialize experience product type
         new Experience();
+        
+        // Initialize cart hooks for experience bookings
+        new Cart_Hooks();
     }
 
     /**
@@ -123,6 +127,16 @@ class Plugin {
             FP_ESPERIENZE_VERSION,
             true
         );
+
+        // Localize script with WooCommerce data
+        if (function_exists('wc_get_cart_url')) {
+            wp_localize_script('fp-esperienze-frontend', 'fp_esperienze_params', [
+                'cart_url' => wc_get_cart_url(),
+                'ajax_url' => admin_url('admin-ajax.php'),
+                'rest_url' => get_rest_url(),
+                'nonce' => wp_create_nonce('fp_esperienze_nonce'),
+            ]);
+        }
     }
 
     /**

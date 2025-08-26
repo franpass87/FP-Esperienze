@@ -236,6 +236,187 @@
     color: #333;
 }
 
+.fp-form-field {
+    margin-bottom: 20px;
+}
+
+.fp-form-field label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #333;
+}
+
+.fp-date-input,
+.fp-select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.fp-time-slots {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 10px;
+    background: white;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.fp-slots-placeholder {
+    color: #666;
+    text-align: center;
+    margin: 0;
+    padding: 20px 0;
+}
+
+.fp-time-slot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    margin-bottom: 8px;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.fp-time-slot:hover {
+    border-color: #0073aa;
+    background-color: #f0f8ff;
+}
+
+.fp-time-slot.selected {
+    border-color: #0073aa;
+    background-color: #e6f3ff;
+}
+
+.fp-time-slot.unavailable {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: #f8f8f8;
+}
+
+.fp-slot-time {
+    font-weight: 600;
+    color: #333;
+}
+
+.fp-slot-info {
+    text-align: right;
+    font-size: 12px;
+}
+
+.fp-slot-price {
+    font-weight: 600;
+    color: #0073aa;
+}
+
+.fp-slot-available {
+    color: #28a745;
+}
+
+.fp-slot-unavailable {
+    color: #dc3545;
+}
+
+.fp-quantity-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.fp-quantity-row:last-child {
+    border-bottom: none;
+}
+
+.fp-quantity-controls {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.fp-qty-btn {
+    width: 30px;
+    height: 30px;
+    border: 1px solid #ddd;
+    background: white;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    line-height: 1;
+}
+
+.fp-qty-btn:hover {
+    background: #f0f0f0;
+    border-color: #0073aa;
+}
+
+.fp-qty-input {
+    width: 50px;
+    text-align: center;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 6px;
+    font-size: 14px;
+}
+
+.fp-price-per {
+    font-weight: 600;
+    color: #0073aa;
+    min-width: 70px;
+    text-align: right;
+}
+
+.fp-total-price {
+    margin: 20px 0;
+    padding: 15px;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.fp-price-breakdown {
+    font-size: 14px;
+}
+
+.fp-price-breakdown > div {
+    margin-bottom: 5px;
+}
+
+.fp-total-row {
+    padding-top: 10px;
+    border-top: 1px solid #eee;
+    margin-top: 10px;
+}
+
+.fp-loading {
+    text-align: center;
+    padding: 20px;
+    color: #666;
+}
+
+.fp-error-messages {
+    margin-top: 15px;
+}
+
+.fp-error-message {
+    background: #f8d7da;
+    color: #721c24;
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    border: 1px solid #f5c6cb;
+}
+
 .fp-booking-placeholder {
     color: #666;
     font-style: italic;
