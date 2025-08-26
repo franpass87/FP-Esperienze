@@ -113,6 +113,76 @@ $child_price = get_post_meta($product->get_id(), '_experience_child_price', true
                     </ul>
                 </section>
 
+                <!-- Meeting Point -->
+                <?php 
+                $meeting_point_id = get_post_meta($product->get_id(), '_fp_exp_meeting_point_id', true);
+                if ($meeting_point_id) {
+                    $meeting_point = \FP\Esperienze\Data\MeetingPoint::get($meeting_point_id);
+                    if ($meeting_point) :
+                ?>
+                <section class="fp-experience-meeting-point">
+                    <h2><?php _e('Meeting Point', 'fp-esperienze'); ?></h2>
+                    <div class="fp-meeting-point-info">
+                        <div class="fp-meeting-point-details">
+                            <h3><?php echo esc_html($meeting_point->name); ?></h3>
+                            <p class="fp-meeting-address">
+                                <strong><?php _e('Address:', 'fp-esperienze'); ?></strong><br>
+                                <?php echo esc_html($meeting_point->address); ?>
+                            </p>
+                            
+                            <?php if (!empty($meeting_point->note)) : ?>
+                                <div class="fp-meeting-notes">
+                                    <strong><?php _e('Instructions:', 'fp-esperienze'); ?></strong><br>
+                                    <?php echo esc_html($meeting_point->note); ?>
+                                </div>
+                            <?php endif; ?>
+                            
+                            <div class="fp-meeting-actions">
+                                <?php if ($meeting_point->latitude && $meeting_point->longitude) : ?>
+                                    <a href="https://www.google.com/maps/search/?api=1&query=<?php echo urlencode($meeting_point->latitude . ',' . $meeting_point->longitude); ?>" 
+                                       target="_blank" 
+                                       class="fp-btn fp-btn-outline">
+                                        <?php _e('Open in Google Maps', 'fp-esperienze'); ?>
+                                    </a>
+                                <?php elseif (!empty($meeting_point->address)) : ?>
+                                    <a href="https://www.google.com/maps/search/?api=1&query=<?php echo urlencode($meeting_point->address); ?>" 
+                                       target="_blank" 
+                                       class="fp-btn fp-btn-outline">
+                                        <?php _e('Open in Google Maps', 'fp-esperienze'); ?>
+                                    </a>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                        
+                        <div class="fp-meeting-point-map">
+                            <?php if ($meeting_point->latitude && $meeting_point->longitude) : ?>
+                                <!-- Map placeholder - future integration with Google Maps -->
+                                <div class="fp-map-placeholder" 
+                                     data-lat="<?php echo esc_attr($meeting_point->latitude); ?>" 
+                                     data-lng="<?php echo esc_attr($meeting_point->longitude); ?>"
+                                     data-name="<?php echo esc_attr($meeting_point->name); ?>">
+                                    <div class="fp-map-placeholder-content">
+                                        <div class="fp-map-pin">📍</div>
+                                        <p><?php _e('Map will be displayed here', 'fp-esperienze'); ?></p>
+                                        <small><?php printf(__('Coordinates: %s, %s', 'fp-esperienze'), $meeting_point->latitude, $meeting_point->longitude); ?></small>
+                                    </div>
+                                </div>
+                            <?php else : ?>
+                                <div class="fp-map-placeholder">
+                                    <div class="fp-map-placeholder-content">
+                                        <div class="fp-map-pin">📍</div>
+                                        <p><?php _e('Map location not available', 'fp-esperienze'); ?></p>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </section>
+                <?php 
+                    endif;
+                }
+                ?>
+
                 <!-- Reviews Placeholder -->
                 <section class="fp-experience-reviews">
                     <h2><?php _e('Customer Reviews', 'fp-esperienze'); ?></h2>

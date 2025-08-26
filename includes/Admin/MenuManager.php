@@ -159,12 +159,8 @@ class MenuManager {
      * Meeting Points page
      */
     public function meetingPointsPage(): void {
-        ?>
-        <div class="wrap">
-            <h1><?php _e('Meeting Points', 'fp-esperienze'); ?></h1>
-            <p><?php _e('Meeting points management will be implemented in future updates.', 'fp-esperienze'); ?></p>
-        </div>
-        <?php
+        $manager = new \FP\Esperienze\Admin\MeetingPointsManager();
+        $manager->render();
     }
 
     /**

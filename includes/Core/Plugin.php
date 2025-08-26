@@ -84,6 +84,7 @@ class Plugin {
      */
     public function initAdmin(): void {
         new MenuManager();
+        new \FP\Esperienze\Admin\MeetingPointsManager();
     }
 
     /**
