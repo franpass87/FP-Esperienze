@@ -12,6 +12,7 @@ use FP\Esperienze\Admin\MenuManager;
 use FP\Esperienze\Frontend\Shortcodes;
 use FP\Esperienze\Frontend\Templates;
 use FP\Esperienze\REST\AvailabilityAPI;
+use FP\Esperienze\Data\DataManager;
 
 defined('ABSPATH') || exit;
 
@@ -75,6 +76,9 @@ class Plugin {
      * Initialize components
      */
     public function initComponents(): void {
+        // Initialize data manager
+        new DataManager();
+        
         // Initialize experience product type
         new Experience();
     }

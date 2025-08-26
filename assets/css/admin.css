@@ -81,3 +81,82 @@
 .fp-admin-notice.success {
     border-left-color: #00a32a;
 }
+
+/* Schedules and Overrides Management */
+.schedule-row, .override-row {
+    margin-bottom: 20px;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: #f9f9f9;
+}
+
+.schedule-row table, .override-row table {
+    margin: 0;
+}
+
+.schedule-row table td, .override-row table td {
+    padding: 10px;
+    vertical-align: top;
+}
+
+.schedule-row label, .override-row label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 5px;
+    color: #1d2327;
+}
+
+.schedule-row input, .schedule-row select, 
+.override-row input, .override-row select {
+    width: 100%;
+    max-width: 200px;
+}
+
+.schedule-row input[type="checkbox"], 
+.override-row input[type="checkbox"] {
+    width: auto;
+    margin-right: 5px;
+}
+
+#add-schedule, #add-override {
+    margin-top: 15px;
+}
+
+.remove-schedule, .remove-override {
+    background: #d63638;
+    border-color: #d63638;
+    color: white;
+}
+
+.remove-schedule:hover, .remove-override:hover {
+    background: #b32d2e;
+    border-color: #b32d2e;
+}
+
+/* Closures page */
+.postbox .inside {
+    margin: 0;
+    padding: 20px;
+}
+
+.form-table th {
+    width: 150px;
+    padding: 20px 10px 20px 0;
+}
+
+.wp-list-table .column-date {
+    width: 20%;
+}
+
+.wp-list-table .column-reason {
+    width: 40%;
+}
+
+.wp-list-table .column-created {
+    width: 25%;
+}
+
+.wp-list-table .column-actions {
+    width: 15%;
+}
