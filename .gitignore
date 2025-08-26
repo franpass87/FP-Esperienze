@@ -43,3 +43,7 @@ error_log
 
 # PHPStorm
 .phpstorm.meta.php
+
+# Testing and development files
+includes/verify-extras-db.php
+includes/sample-extras.php

@@ -157,7 +157,12 @@
         formatPrice: function(amount) {
             // This is a simplified price formatter
             // In a real implementation, this should use WooCommerce's price formatting
-            return '€' + amount.toFixed(2);
+            // For now, we'll use a basic Euro format
+            return new Intl.NumberFormat('en-DE', {
+                style: 'currency',
+                currency: 'EUR',
+                minimumFractionDigits: 2
+            }).format(amount);
         }
     };
 
