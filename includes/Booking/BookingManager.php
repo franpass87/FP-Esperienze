@@ -107,6 +107,11 @@ class BookingManager {
                 $booking_time = '10:00:00';
             }
             
+            // Ensure meeting_point_id is valid
+            if (empty($meeting_point_id)) {
+                $meeting_point_id = null;
+            }
+            
             // Create booking record
             $result = $wpdb->insert(
                 $table_bookings,

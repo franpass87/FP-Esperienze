@@ -46,3 +46,4 @@ error_log
 
 # Test files
 manual-tests.php
+validation-test.php
