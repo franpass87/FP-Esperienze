@@ -1,0 +1,306 @@
+/**
+ * FP Esperienze Booking Widget Styles
+ *
+ * @package FP\Esperienze
+ */
+
+/* Experience Layout */
+.fp-experience-single .fp-experience-layout {
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+@media (max-width: 768px) {
+    .fp-experience-single .fp-experience-layout {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+}
+
+.fp-experience-gallery {
+    min-height: 400px;
+}
+
+.fp-experience-info {
+    position: sticky;
+    top: 2rem;
+    height: fit-content;
+}
+
+/* Booking Widget */
+.fp-booking-widget {
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 1.5rem;
+    background: #ffffff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    margin-top: 1rem;
+}
+
+.fp-booking-step {
+    margin-bottom: 1.5rem;
+}
+
+.fp-booking-step:last-child {
+    margin-bottom: 0;
+}
+
+.fp-booking-step h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0 0 0.75rem 0;
+    color: #333;
+}
+
+/* Date Picker */
+.fp-date-picker {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 1rem;
+    background: #fff;
+    cursor: pointer;
+}
+
+.fp-date-picker:focus {
+    outline: none;
+    border-color: #007cba;
+    box-shadow: 0 0 0 2px rgba(0, 124, 186, 0.1);
+}
+
+/* Slots Container */
+.fp-slots-container {
+    display: grid;
+    gap: 0.5rem;
+}
+
+.fp-slot-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: #fff;
+}
+
+.fp-slot-item:hover:not(.fp-slot-disabled) {
+    border-color: #007cba;
+    background: #f8f9fa;
+}
+
+.fp-slot-item.fp-slot-selected {
+    border-color: #007cba;
+    background: #e3f2fd;
+}
+
+.fp-slot-item.fp-slot-disabled {
+    background: #f5f5f5;
+    color: #999;
+    cursor: not-allowed;
+}
+
+.fp-slot-time {
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.fp-slot-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    font-size: 0.85rem;
+}
+
+.fp-slot-capacity {
+    color: #666;
+}
+
+.fp-slot-warning {
+    color: #ff6b35;
+    font-weight: 600;
+}
+
+.fp-slot-sold-out {
+    color: #dc3545;
+    font-weight: 600;
+}
+
+/* Quantity Controls */
+.fp-quantity-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.fp-quantity-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    background: #fafafa;
+}
+
+.fp-quantity-item label {
+    font-weight: 600;
+    margin: 0;
+}
+
+.fp-quantity-input {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.fp-qty-btn {
+    width: 32px;
+    height: 32px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.fp-qty-btn:hover {
+    border-color: #007cba;
+    background: #f8f9fa;
+}
+
+.fp-qty-btn:disabled {
+    background: #f5f5f5;
+    color: #999;
+    cursor: not-allowed;
+}
+
+.fp-qty-input {
+    width: 60px;
+    text-align: center;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 0.25rem;
+    font-size: 1rem;
+}
+
+.fp-price {
+    font-weight: 600;
+    color: #007cba;
+}
+
+/* Booking Summary */
+.fp-booking-summary {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+}
+
+.fp-booking-details {
+    margin-bottom: 0.75rem;
+}
+
+.fp-booking-detail-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.fp-booking-detail-item:last-child {
+    margin-bottom: 0;
+}
+
+.fp-total-price {
+    font-size: 1.1rem;
+    text-align: center;
+    padding-top: 0.75rem;
+    border-top: 1px solid #ddd;
+}
+
+/* Add to Cart Button */
+.fp-add-to-cart-btn {
+    width: 100%;
+    padding: 1rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 6px;
+    background: #007cba;
+    color: #fff;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.fp-add-to-cart-btn:hover {
+    background: #005a87;
+}
+
+.fp-add-to-cart-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+/* Loading State */
+.fp-loading {
+    text-align: center;
+    padding: 2rem;
+    color: #666;
+}
+
+.fp-loading span {
+    display: inline-block;
+    animation: fp-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes fp-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* Error Messages */
+.fp-error-message {
+    background: #fee;
+    color: #c33;
+    padding: 0.75rem;
+    border-radius: 4px;
+    margin: 0.5rem 0;
+    border: 1px solid #fcc;
+}
+
+/* Success Messages */
+.fp-success-message {
+    background: #efe;
+    color: #363;
+    padding: 0.75rem;
+    border-radius: 4px;
+    margin: 0.5rem 0;
+    border: 1px solid #cfc;
+}
+
+/* Responsive Design */
+@media (max-width: 480px) {
+    .fp-booking-widget {
+        padding: 1rem;
+    }
+    
+    .fp-quantity-item {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+    }
+    
+    .fp-quantity-input {
+        justify-content: center;
+    }
+}
