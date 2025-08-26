@@ -510,3 +510,110 @@
     margin: 0 auto;
     padding: 0 20px;
 }
+
+/* Meeting Point Section */
+.fp-experience-meeting-point {
+    margin: 40px 0;
+    padding: 30px;
+    background: #f9f9f9;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+}
+
+.fp-experience-meeting-point h2 {
+    color: #333;
+    margin: 0 0 20px 0;
+    font-size: 1.8em;
+    border-bottom: 2px solid #0073aa;
+    padding-bottom: 10px;
+}
+
+.fp-meeting-point-info {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 30px;
+    align-items: start;
+}
+
+.fp-meeting-point-details h3 {
+    color: #0073aa;
+    margin: 0 0 15px 0;
+    font-size: 1.3em;
+}
+
+.fp-meeting-address {
+    margin-bottom: 15px;
+    line-height: 1.5;
+}
+
+.fp-meeting-point-note {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #fff;
+    border-radius: 5px;
+    border-left: 4px solid #0073aa;
+    line-height: 1.5;
+}
+
+.fp-meeting-point-actions {
+    margin-top: 20px;
+}
+
+.fp-maps-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: #4285f4;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    font-weight: 500;
+    transition: background-color 0.3s ease;
+}
+
+.fp-maps-link:hover {
+    background: #3367d6;
+    color: white;
+    text-decoration: none;
+}
+
+.fp-maps-link:before {
+    content: "📍";
+    font-size: 16px;
+}
+
+.fp-meeting-point-map {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.fp-map-coordinates {
+    font-size: 0.9em;
+    color: #666;
+    text-align: center;
+    padding: 5px;
+}
+
+.fp-map-container {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .fp-meeting-point-info {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    .fp-meeting-point-map {
+        order: -1;
+    }
+    
+    .fp-experience-meeting-point {
+        padding: 20px;
+        margin: 20px 0;
+    }
+}

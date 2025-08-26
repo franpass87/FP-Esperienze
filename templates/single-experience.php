@@ -298,7 +298,7 @@ if ($meeting_point_id) {
                     <input type="hidden" id="fp-adult-price" value="<?php echo esc_attr($adult_price ?: 0); ?>" />
                     <input type="hidden" id="fp-child-price" value="<?php echo esc_attr($child_price ?: 0); ?>" />
                     <input type="hidden" id="fp-capacity" value="<?php echo esc_attr($capacity ?: 10); ?>" />
-                    <input type="hidden" id="fp-meeting-point-id" value="<?php echo esc_attr($product->get_default_meeting_point() ?: 1); ?>" />
+                    <input type="hidden" id="fp-meeting-point-id" value="<?php echo esc_attr($meeting_point_id ?: ''); ?>" />
                 </div>
             </div>
         </div>
