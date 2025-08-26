@@ -44,7 +44,7 @@ class Installer {
 
         $charset_collate = $wpdb->get_charset_collate();
 
-        // Meeting Points table
+        // Meeting Points table  
         $table_meeting_points = $wpdb->prefix . 'fp_meeting_points';
         $sql_meeting_points = "CREATE TABLE $table_meeting_points (
             id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -52,7 +52,8 @@ class Installer {
             address text NOT NULL,
             latitude decimal(10,8) DEFAULT NULL,
             longitude decimal(11,8) DEFAULT NULL,
-            instructions text DEFAULT NULL,
+            place_id varchar(255) DEFAULT NULL,
+            note text DEFAULT NULL,
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (id)
@@ -65,11 +66,27 @@ class Installer {
             name varchar(255) NOT NULL,
             description text DEFAULT NULL,
             price decimal(10,2) NOT NULL DEFAULT 0.00,
+            pricing_type enum('per_person', 'per_booking') NOT NULL DEFAULT 'per_person',
+            tax_class varchar(50) DEFAULT '',
             is_required tinyint(1) NOT NULL DEFAULT 0,
+            is_active tinyint(1) NOT NULL DEFAULT 1,
             max_quantity int(11) NOT NULL DEFAULT 1,
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (id)
+        ) $charset_collate;
+        
+        // Product Extras association table
+        $table_product_extras = $wpdb->prefix . 'fp_product_extras';
+        $sql_product_extras = "CREATE TABLE $table_product_extras (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            product_id bigint(20) unsigned NOT NULL,
+            extra_id bigint(20) unsigned NOT NULL,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY product_id (product_id),
+            KEY extra_id (extra_id),
+            UNIQUE KEY product_extra (product_id, extra_id)
         ) $charset_collate;";
 
         // Schedules table
@@ -79,14 +96,19 @@ class Installer {
             product_id bigint(20) unsigned NOT NULL,
             day_of_week tinyint(1) NOT NULL COMMENT '0=Sunday, 1=Monday, etc.',
             start_time time NOT NULL,
-            end_time time NOT NULL,
-            max_participants int(11) NOT NULL DEFAULT 1,
+            duration_min int(11) NOT NULL DEFAULT 60,
+            capacity int(11) NOT NULL DEFAULT 1,
+            lang varchar(10) DEFAULT '',
+            meeting_point_id bigint(20) unsigned DEFAULT NULL,
+            price_adult decimal(10,2) DEFAULT 0.00,
+            price_child decimal(10,2) DEFAULT 0.00,
             is_active tinyint(1) NOT NULL DEFAULT 1,
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
             KEY product_id (product_id),
-            KEY day_of_week (day_of_week)
+            KEY day_of_week (day_of_week),
+            KEY meeting_point_id (meeting_point_id)
         ) $charset_collate;";
 
         // Overrides table
@@ -95,10 +117,9 @@ class Installer {
             id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
             product_id bigint(20) unsigned NOT NULL,
             date date NOT NULL,
-            start_time time DEFAULT NULL,
-            end_time time DEFAULT NULL,
-            max_participants int(11) DEFAULT NULL,
             is_closed tinyint(1) NOT NULL DEFAULT 0,
+            capacity_override int(11) DEFAULT NULL,
+            price_override_json text DEFAULT NULL,
             reason varchar(255) DEFAULT NULL,
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -155,6 +176,7 @@ class Installer {
         
         dbDelta($sql_meeting_points);
         dbDelta($sql_extras);
+        dbDelta($sql_product_extras);
         dbDelta($sql_schedules);
         dbDelta($sql_overrides);
         dbDelta($sql_bookings);

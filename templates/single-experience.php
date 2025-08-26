@@ -133,37 +133,60 @@ $child_price = get_post_meta($product->get_id(), '_experience_child_price', true
                         </div>
                     </div>
                 </section>
+                
+                <?php
+                /**
+                 * Hook: fp_exp/single/meeting_point
+                 * 
+                 * @hooked A3 Meeting Point display - 10
+                 */
+                do_action('fp_exp/single/meeting_point', $product);
+                ?>
             </div>
 
             <!-- Sidebar -->
             <div class="fp-sidebar">
-                <!-- Booking Widget Placeholder -->
+                <?php
+                /**
+                 * Hook: fp_exp/single/before_booking
+                 * 
+                 * Allows plugins to add content before the booking widget
+                 */
+                do_action('fp_exp/single/before_booking', $product);
+                ?>
+                
+                <!-- Booking Widget -->
                 <div class="fp-booking-widget">
                     <h3><?php _e('Book This Experience', 'fp-esperienze'); ?></h3>
                     <div class="fp-booking-form">
-                        <p class="fp-booking-placeholder">
-                            <?php _e('Booking widget will be implemented in future updates.', 'fp-esperienze'); ?>
-                        </p>
-                        <div class="fp-price-info">
-                            <?php if ($adult_price) : ?>
-                                <div class="fp-price-row">
-                                    <span><?php _e('Adult', 'fp-esperienze'); ?></span>
-                                    <span><?php echo wc_price($adult_price); ?></span>
-                                </div>
-                            <?php endif; ?>
-                            
-                            <?php if ($child_price) : ?>
-                                <div class="fp-price-row">
-                                    <span><?php _e('Child', 'fp-esperienze'); ?></span>
-                                    <span><?php echo wc_price($child_price); ?></span>
-                                </div>
-                            <?php endif; ?>
-                        </div>
-                        <button class="fp-btn fp-btn-primary fp-btn-large" disabled>
-                            <?php _e('Coming Soon', 'fp-esperienze'); ?>
-                        </button>
+                        <?php
+                        /**
+                         * Hook: fp_exp/single/booking_widget
+                         * 
+                         * @hooked A1 Booking Widget display - 10
+                         */
+                        do_action('fp_exp/single/booking_widget', $product);
+                        ?>
                     </div>
                 </div>
+                
+                <?php
+                /**
+                 * Hook: fp_exp/single/extras
+                 * 
+                 * @hooked A4 Extras display - 10
+                 */
+                do_action('fp_exp/single/extras', $product);
+                ?>
+                
+                <?php
+                /**
+                 * Hook: fp_exp/single/after_booking
+                 * 
+                 * Allows plugins to add content after the booking widget
+                 */
+                do_action('fp_exp/single/after_booking', $product);
+                ?>
             </div>
         </div>
     </div>
