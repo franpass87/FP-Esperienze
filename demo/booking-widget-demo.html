@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FP Esperienze - Booking Widget Demo</title>
+    <link rel="stylesheet" href="../assets/css/booking-widget.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .demo-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .demo-header {
+            background: #007cba;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .demo-content {
+            padding: 30px;
+        }
+        .demo-product {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 30px;
+        }
+        .demo-images {
+            background: #eee;
+            height: 400px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-size: 18px;
+        }
+        .demo-info h1 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        .demo-price {
+            font-size: 24px;
+            font-weight: 600;
+            color: #007cba;
+            margin: 10px 0;
+        }
+        .demo-description {
+            color: #666;
+            line-height: 1.6;
+            margin: 15px 0;
+        }
+        @media (max-width: 768px) {
+            .demo-product {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <div class="demo-header">
+            <h1>FP Esperienze - Booking Widget Demo</h1>
+            <p>GetYourGuide-style booking experience for WordPress/WooCommerce</p>
+        </div>
+        
+        <div class="demo-content">
+            <div class="demo-product">
+                <div class="demo-left">
+                    <div class="demo-images">
+                        Product Images Gallery
+                    </div>
+                </div>
+                
+                <div class="demo-right">
+                    <div class="demo-info">
+                        <h1>Tuscan Cooking Experience</h1>
+                        <div class="demo-price">From €89.00</div>
+                        <div class="demo-description">
+                            Join us for an authentic Tuscan cooking experience in the heart of Florence. 
+                            Learn to prepare traditional dishes with fresh, local ingredients.
+                        </div>
+                    </div>
+                    
+                    <!-- Booking Widget Demo -->
+                    <div id="fp-booking-widget" class="fp-booking-widget" data-product-id="123">
+                        <div class="fp-booking-step fp-step-date">
+                            <h3>Select Date</h3>
+                            <input type="date" id="fp-date-picker" class="fp-date-picker" 
+                                   min="2024-01-01" value="2024-01-15">
+                        </div>
+                        
+                        <div class="fp-booking-step fp-step-slots">
+                            <h3>Select Time</h3>
+                            <div id="fp-slots-container" class="fp-slots-container">
+                                <div class="fp-slot-item" data-time="09:00" data-capacity-left="15">
+                                    <div class="fp-slot-time">09:00</div>
+                                    <div class="fp-slot-info">
+                                        <span class="fp-slot-capacity">15 spots</span>
+                                    </div>
+                                </div>
+                                <div class="fp-slot-item fp-slot-selected" data-time="11:00" data-capacity-left="5">
+                                    <div class="fp-slot-time">11:00</div>
+                                    <div class="fp-slot-info">
+                                        <span class="fp-slot-warning">Last 5 spots available!</span>
+                                    </div>
+                                </div>
+                                <div class="fp-slot-item" data-time="14:00" data-capacity-left="2">
+                                    <div class="fp-slot-time">14:00</div>
+                                    <div class="fp-slot-info">
+                                        <span class="fp-slot-warning">Last 2 spots available!</span>
+                                    </div>
+                                </div>
+                                <div class="fp-slot-item fp-slot-disabled" data-time="16:00" data-capacity-left="0">
+                                    <div class="fp-slot-time">16:00</div>
+                                    <div class="fp-slot-info">
+                                        <span class="fp-slot-sold-out">Sold Out</span>
+                                    </div>
+                                </div>
+                                <div class="fp-slot-item" data-time="18:00" data-capacity-left="18">
+                                    <div class="fp-slot-time">18:00</div>
+                                    <div class="fp-slot-info">
+                                        <span class="fp-slot-capacity">18 spots</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="fp-booking-step fp-step-quantity">
+                            <h3>Select Quantity</h3>
+                            <div class="fp-quantity-controls">
+                                <div class="fp-quantity-item">
+                                    <label for="fp-adults">Adults</label>
+                                    <div class="fp-quantity-input">
+                                        <button type="button" class="fp-qty-btn fp-qty-minus" data-target="fp-adults">-</button>
+                                        <input type="number" id="fp-adults" class="fp-qty-input" value="2" min="1" max="20">
+                                        <button type="button" class="fp-qty-btn fp-qty-plus" data-target="fp-adults">+</button>
+                                    </div>
+                                    <span class="fp-price">€89.00</span>
+                                </div>
+                                
+                                <div class="fp-quantity-item">
+                                    <label for="fp-children">Children (0-12)</label>
+                                    <div class="fp-quantity-input">
+                                        <button type="button" class="fp-qty-btn fp-qty-minus" data-target="fp-children">-</button>
+                                        <input type="number" id="fp-children" class="fp-qty-input" value="1" min="0" max="20">
+                                        <button type="button" class="fp-qty-btn fp-qty-plus" data-target="fp-children">+</button>
+                                    </div>
+                                    <span class="fp-price">€62.30</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="fp-booking-step fp-step-cart">
+                            <div class="fp-booking-summary">
+                                <div id="fp-booking-details">
+                                    <div class="fp-booking-detail-item">
+                                        <span>Date:</span>
+                                        <span>Monday, January 15, 2024</span>
+                                    </div>
+                                    <div class="fp-booking-detail-item">
+                                        <span>Time:</span>
+                                        <span>11:00</span>
+                                    </div>
+                                    <div class="fp-booking-detail-item">
+                                        <span>Adults (2):</span>
+                                        <span>€178.00</span>
+                                    </div>
+                                    <div class="fp-booking-detail-item">
+                                        <span>Children (1):</span>
+                                        <span>€62.30</span>
+                                    </div>
+                                </div>
+                                <div class="fp-total-price">
+                                    <strong>Total: <span id="fp-total-amount">€240.30</span></strong>
+                                </div>
+                            </div>
+                            
+                            <button type="button" id="fp-add-to-cart" class="fp-add-to-cart-btn button alt">
+                                Add to Cart
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                <h3>Demo Features Shown:</h3>
+                <ul>
+                    <li>✅ Date picker with validation</li>
+                    <li>✅ Real-time slot availability display</li>
+                    <li>✅ Capacity warnings ("Last X spots")</li>
+                    <li>✅ Sold out slots disabled</li>
+                    <li>✅ Adult/child quantity selection</li>
+                    <li>✅ Dynamic pricing calculation</li>
+                    <li>✅ Booking summary with details</li>
+                    <li>✅ Responsive design for mobile</li>
+                </ul>
+                
+                <h3>Live API Endpoint:</h3>
+                <code>GET /wp-json/fp-exp/v1/availability?product_id=123&date=2024-01-15</code>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
