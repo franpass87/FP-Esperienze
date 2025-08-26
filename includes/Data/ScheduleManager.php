@@ -139,7 +139,7 @@ class ScheduleManager {
         
         if (isset($data['meeting_point_id'])) {
             $update_data['meeting_point_id'] = $data['meeting_point_id'] ? (int) $data['meeting_point_id'] : null;
-            $formats[] = '%d';
+            $formats[] = $data['meeting_point_id'] ? '%d' : '%s';
         }
         
         if (isset($data['price_adult'])) {
