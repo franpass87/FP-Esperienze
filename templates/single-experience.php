@@ -160,9 +160,19 @@ $child_price = get_post_meta($product->get_id(), '_experience_child_price', true
                         <div class="fp-form-field">
                             <label for="fp-language"><?php _e('Language', 'fp-esperienze'); ?></label>
                             <select id="fp-language" class="fp-select">
-                                <option value="English"><?php _e('English', 'fp-esperienze'); ?></option>
-                                <option value="Italian"><?php _e('Italian', 'fp-esperienze'); ?></option>
-                                <option value="Spanish"><?php _e('Spanish', 'fp-esperienze'); ?></option>
+                                <?php
+                                $languages = $product->get_languages();
+                                if ($languages) {
+                                    $lang_array = array_map('trim', explode(',', $languages));
+                                    foreach ($lang_array as $lang) {
+                                        echo '<option value="' . esc_attr($lang) . '">' . esc_html($lang) . '</option>';
+                                    }
+                                } else {
+                                    // Default languages if none specified
+                                    echo '<option value="English">' . __('English', 'fp-esperienze') . '</option>';
+                                    echo '<option value="Italian">' . __('Italian', 'fp-esperienze') . '</option>';
+                                }
+                                ?>
                             </select>
                         </div>
 
@@ -222,6 +232,7 @@ $child_price = get_post_meta($product->get_id(), '_experience_child_price', true
                     <input type="hidden" id="fp-adult-price" value="<?php echo esc_attr($adult_price ?: 0); ?>" />
                     <input type="hidden" id="fp-child-price" value="<?php echo esc_attr($child_price ?: 0); ?>" />
                     <input type="hidden" id="fp-capacity" value="<?php echo esc_attr($capacity ?: 10); ?>" />
+                    <input type="hidden" id="fp-meeting-point-id" value="<?php echo esc_attr($product->get_default_meeting_point() ?: 1); ?>" />
                 </div>
             </div>
         </div>

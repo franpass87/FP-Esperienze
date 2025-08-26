@@ -129,6 +129,7 @@ class Plugin {
             wp_localize_script('fp-esperienze-frontend', 'fp_esperienze_params', [
                 'cart_url' => wc_get_cart_url(),
                 'ajax_url' => admin_url('admin-ajax.php'),
+                'rest_url' => get_rest_url(),
                 'nonce' => wp_create_nonce('fp_esperienze_nonce'),
             ]);
         }

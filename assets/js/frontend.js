@@ -127,9 +127,15 @@
             
             $('#fp-loading').show();
             $('#fp-time-slots').html('<p class="fp-slots-placeholder">' + 'Loading available times...' + '</p>');
+            $('#fp-error-messages').empty();
+            
+            // Build the full REST URL
+            var restUrl = (typeof fp_esperienze_params !== 'undefined' && fp_esperienze_params.rest_url) 
+                ? fp_esperienze_params.rest_url + 'fp-exp/v1/availability'
+                : '/wp-json/fp-exp/v1/availability';
             
             $.ajax({
-                url: '/wp-json/fp-exp/v1/availability',
+                url: restUrl,
                 method: 'GET',
                 data: {
                     product_id: productId,
@@ -138,10 +144,14 @@
                 success: function(response) {
                     self.displayTimeSlots(response.slots);
                 },
-                error: function(xhr) {
+                error: function(xhr, status, error) {
                     var errorMsg = 'Failed to load availability.';
                     if (xhr.responseJSON && xhr.responseJSON.message) {
                         errorMsg = xhr.responseJSON.message;
+                    } else if (status === 'timeout') {
+                        errorMsg = 'Request timed out. Please try again.';
+                    } else if (status === 'error') {
+                        errorMsg = 'Network error. Please check your connection.';
                     }
                     self.showError(errorMsg);
                     $('#fp-time-slots').html('<p class="fp-slots-placeholder">' + errorMsg + '</p>');
@@ -175,7 +185,7 @@
                            'data-available="' + slot.available + '">' +
                            '<div class="fp-slot-time">' + slot.start_time + ' - ' + slot.end_time + '</div>' +
                            '<div class="fp-slot-info">' +
-                           '<div class="fp-slot-price">From $' + slot.adult_price + '</div>' +
+                           '<div class="fp-slot-price">From €' + slot.adult_price + '</div>' +
                            '<div class="' + availableColorClass + '">' + availableText + '</div>' +
                            '</div>' +
                            '</div>';
@@ -201,14 +211,14 @@
             
             var detailsHtml = '';
             if (adultQty > 0) {
-                detailsHtml += '<div>' + adultQty + ' Adult' + (adultQty > 1 ? 's' : '') + ': $' + adultTotal.toFixed(2) + '</div>';
+                detailsHtml += '<div>' + adultQty + ' Adult' + (adultQty > 1 ? 's' : '') + ': €' + adultTotal.toFixed(2) + '</div>';
             }
             if (childQty > 0) {
-                detailsHtml += '<div>' + childQty + ' Child' + (childQty > 1 ? 'ren' : '') + ': $' + childTotal.toFixed(2) + '</div>';
+                detailsHtml += '<div>' + childQty + ' Child' + (childQty > 1 ? 'ren' : '') + ': €' + childTotal.toFixed(2) + '</div>';
             }
             
             $('#fp-price-details').html(detailsHtml);
-            $('#fp-total-amount').text('$' + total.toFixed(2));
+            $('#fp-total-amount').text('€' + total.toFixed(2));
         },
 
         /**
@@ -247,6 +257,7 @@
             var language = $('#fp-language').val();
             var adultQty = parseInt($('#fp-qty-adult').val()) || 0;
             var childQty = parseInt($('#fp-qty-child').val()) || 0;
+            var meetingPointId = $('#fp-meeting-point-id').val() || 1;
             
             $('#fp-add-to-cart').prop('disabled', true).text('Adding...');
             
@@ -255,7 +266,7 @@
             formData.append('add-to-cart', productId);
             formData.append('quantity', 1); // We handle quantity in our custom fields
             formData.append('fp_slot_start', slotStart);
-            formData.append('fp_meeting_point_id', 1); // Default meeting point
+            formData.append('fp_meeting_point_id', meetingPointId);
             formData.append('fp_lang', language);
             formData.append('fp_qty_adult', adultQty);
             formData.append('fp_qty_child', childQty);

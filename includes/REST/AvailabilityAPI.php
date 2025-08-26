@@ -140,6 +140,7 @@ class AvailabilityAPI {
                 'is_available'    => $is_available && $available_spots > 0,
                 'adult_price'     => $product->get_adult_price() ?: 0,
                 'child_price'     => $product->get_child_price() ?: 0,
+                'languages'       => $product->get_languages() ?: 'English',
             ];
         }
 
