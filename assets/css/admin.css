@@ -1,0 +1,83 @@
+/* FP Esperienze Admin Styles */
+
+/* Dashboard */
+.fp-admin-dashboard {
+    margin-top: 20px;
+}
+
+.fp-dashboard-widgets {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.fp-widget {
+    background: white;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    padding: 20px;
+    box-shadow: 0 1px 1px rgba(0,0,0,0.04);
+}
+
+.fp-widget h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #1d2327;
+    font-size: 16px;
+}
+
+/* Experience Product Type */
+.show_if_experience {
+    display: none;
+}
+
+.product-type-experience .show_if_experience {
+    display: block;
+}
+
+.product-type-experience .hide_if_experience {
+    display: none;
+}
+
+/* Form styling for experience fields */
+#experience_product_data .form-field {
+    margin-bottom: 15px;
+}
+
+#experience_product_data label {
+    font-weight: 600;
+    color: #1d2327;
+}
+
+#experience_product_data input[type="number"],
+#experience_product_data input[type="text"],
+#experience_product_data textarea,
+#experience_product_data select {
+    width: 100%;
+    max-width: 300px;
+}
+
+#experience_product_data textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+
+/* Admin notices */
+.fp-admin-notice {
+    margin: 15px 0;
+    padding: 12px;
+    border-left: 4px solid #0073aa;
+    background: #f7f7f7;
+}
+
+.fp-admin-notice.error {
+    border-left-color: #d63638;
+}
+
+.fp-admin-notice.warning {
+    border-left-color: #dba617;
+}
+
+.fp-admin-notice.success {
+    border-left-color: #00a32a;
+}

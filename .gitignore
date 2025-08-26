@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+vendor/
+
+# Build artifacts
+/build/
+/dist/
+
+# WordPress files
+wp-config.php
+wp-content/uploads/
+
+# IDE files
+.vscode/
+.idea/
+*.sublime-*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+error_log
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# Backup files
+*.bak
+*.backup
+
+# Compiled assets (if using build tools)
+*.min.css
+*.min.js
+
+# PHPStorm
+.phpstorm.meta.php
