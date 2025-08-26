@@ -43,3 +43,6 @@ error_log
 
 # PHPStorm
 .phpstorm.meta.php
+
+# Development testing files
+tests/
