@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FP Esperienze - Booking Reschedule Interface Preview</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f1f1f1;
+        }
+        
+        .wrap {
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: #23282d;
+            margin-bottom: 20px;
+        }
+        
+        .wp-list-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        .wp-list-table th,
+        .wp-list-table td {
+            padding: 8px 10px;
+            text-align: left;
+            border-bottom: 1px solid #e1e1e1;
+        }
+        
+        .wp-list-table th {
+            background: #f9f9f9;
+            font-weight: 600;
+        }
+        
+        .booking-status {
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .status-confirmed {
+            background: #46b450;
+            color: white;
+        }
+        
+        .button {
+            background: #0073aa;
+            color: white;
+            border: 1px solid #0073aa;
+            padding: 5px 10px;
+            border-radius: 3px;
+            text-decoration: none;
+            font-size: 11px;
+            margin-right: 5px;
+            cursor: pointer;
+        }
+        
+        .button:hover {
+            background: #005a87;
+        }
+        
+        .button-small {
+            padding: 3px 8px;
+        }
+        
+        /* Modal Styles */
+        .fp-modal {
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .fp-modal-content {
+            background-color: #fefefe;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 600px;
+            max-width: 90%;
+            border-radius: 5px;
+            position: relative;
+        }
+        
+        .fp-modal-close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            position: absolute;
+            right: 10px;
+            top: 10px;
+        }
+        
+        .fp-modal-content label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+        }
+        
+        .fp-modal-content input,
+        .fp-modal-content select,
+        .fp-modal-content textarea {
+            width: 100%;
+            padding: 5px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+        
+        .button-primary {
+            background: #0073aa;
+        }
+        
+        .highlight {
+            background: #fffbee;
+            border-left: 4px solid #ffba00;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        
+        .feature-list {
+            background: #f0f8f0;
+            border-left: 4px solid #46b450;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        
+        .feature-list h3 {
+            color: #2e7d32;
+            margin-top: 0;
+        }
+        
+        .feature-list ul {
+            margin: 0;
+        }
+        
+        .feature-list li {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <h1>🚀 FP Esperienze - Reschedule & Refund Feature</h1>
+        
+        <div class="highlight">
+            <h3>✅ Feature Implementation Complete</h3>
+            <p>The reschedule and refund functionality has been successfully implemented with cancellation rules, capacity validation, and email notifications.</p>
+        </div>
+        
+        <div class="feature-list">
+            <h3>🛠️ Features Implemented</h3>
+            <ul>
+                <li><strong>Product Cancellation Rules:</strong> Free cancellation period, fee percentage, no-show policy</li>
+                <li><strong>Admin Reschedule Panel:</strong> Modal interface with date/time selection</li>
+                <li><strong>Capacity Validation:</strong> Real-time availability checking</li>
+                <li><strong>Cutoff Time Validation:</strong> Prevents reschedule too close to departure</li>
+                <li><strong>Email Notifications:</strong> Automatic customer notifications for reschedules</li>
+                <li><strong>Cancellation Rules:</strong> Time-based free cancellation with fee calculation</li>
+                <li><strong>AJAX Interface:</strong> Smooth admin experience with real-time validation</li>
+            </ul>
+        </div>
+        
+        <h2>📋 Bookings Management Interface</h2>
+        
+        <table class="wp-list-table widefat fixed striped">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Order</th>
+                    <th>Product</th>
+                    <th>Date & Time</th>
+                    <th>Participants</th>
+                    <th>Status</th>
+                    <th>Meeting Point</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>123</td>
+                    <td><a href="#">#5678</a></td>
+                    <td>City Walking Tour</td>
+                    <td>2024-12-20<br>10:00 AM</td>
+                    <td>4 total (2 adults, 2 children)</td>
+                    <td><span class="booking-status status-confirmed">Confirmed</span></td>
+                    <td>Central Plaza</td>
+                    <td>2024-12-18 14:30</td>
+                    <td>
+                        <button class="button button-small fp-reschedule-booking" onclick="showRescheduleModal()">
+                            Reschedule
+                        </button>
+                        <button class="button button-small fp-cancel-booking" onclick="showCancelModal()">
+                            Cancel
+                        </button>
+                    </td>
+                </tr>
+                <tr>
+                    <td>124</td>
+                    <td><a href="#">#5679</a></td>
+                    <td>Cooking Experience</td>
+                    <td>2024-12-21<br>2:00 PM</td>
+                    <td>2 total (2 adults, 0 children)</td>
+                    <td><span class="booking-status status-confirmed">Confirmed</span></td>
+                    <td>Kitchen Studio</td>
+                    <td>2024-12-18 16:45</td>
+                    <td>
+                        <button class="button button-small fp-reschedule-booking" onclick="showRescheduleModal()">
+                            Reschedule
+                        </button>
+                        <button class="button button-small fp-cancel-booking" onclick="showCancelModal()">
+                            Cancel
+                        </button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Reschedule Modal (Hidden by default) -->
+    <div id="reschedule-modal" class="fp-modal" style="display: none;">
+        <div class="fp-modal-content">
+            <span class="fp-modal-close" onclick="hideModal('reschedule-modal')">&times;</span>
+            <h3>📅 Reschedule Booking #123</h3>
+            <form>
+                <p>
+                    <label for="new-date">New Date:</label>
+                    <input type="date" id="new-date" name="new_date" value="2024-12-22" required>
+                </p>
+                
+                <p>
+                    <label for="new-time">New Time Slot:</label>
+                    <select id="new-time" name="new_time" required>
+                        <option value="">Select time slot</option>
+                        <option value="09:00">09:00 - 11:00 (8 spots available)</option>
+                        <option value="11:30">11:30 - 13:30 (5 spots available)</option>
+                        <option value="14:00">14:00 - 16:00 (10 spots available)</option>
+                        <option value="16:30">16:30 - 18:30 (3 spots available)</option>
+                    </select>
+                </p>
+                
+                <p>
+                    <label for="admin-notes">Admin Notes:</label>
+                    <textarea id="admin-notes" name="admin_notes" rows="3" placeholder="Optional notes about the reschedule..."></textarea>
+                </p>
+                
+                <p>
+                    <button type="button" class="button button-primary" onclick="submitReschedule()">
+                        ✅ Reschedule Booking
+                    </button>
+                    <button type="button" class="button" onclick="hideModal('reschedule-modal')">
+                        Cancel
+                    </button>
+                </p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Cancel Modal (Hidden by default) -->
+    <div id="cancel-modal" class="fp-modal" style="display: none;">
+        <div class="fp-modal-content">
+            <span class="fp-modal-close" onclick="hideModal('cancel-modal')">&times;</span>
+            <h3>❌ Cancel Booking #123</h3>
+            
+            <div class="highlight">
+                <p><strong>Cancellation Policy:</strong> Free cancellation available (booking is more than 24 hours away)</p>
+                <p><strong>Cancellation Fee:</strong> 0% (within free cancellation period)</p>
+                <p><strong>Refund Amount:</strong> 100% of booking value</p>
+            </div>
+            
+            <form>
+                <p>
+                    <label for="cancel-reason">Cancellation Reason:</label>
+                    <textarea id="cancel-reason" name="cancel_reason" rows="3" placeholder="Reason for cancellation..." required></textarea>
+                </p>
+                
+                <p>
+                    <button type="button" class="button button-primary" onclick="submitCancellation()">
+                        ❌ Confirm Cancellation
+                    </button>
+                    <button type="button" class="button" onclick="hideModal('cancel-modal')">
+                        Cancel
+                    </button>
+                </p>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function showRescheduleModal() {
+            document.getElementById('reschedule-modal').style.display = 'flex';
+        }
+
+        function showCancelModal() {
+            document.getElementById('cancel-modal').style.display = 'flex';
+        }
+
+        function hideModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        function submitReschedule() {
+            alert('✅ Booking rescheduled successfully!\n\n• Customer will receive email notification\n• Capacity updated for old and new slots\n• Admin notes saved');
+            hideModal('reschedule-modal');
+        }
+
+        function submitCancellation() {
+            if (confirm('Are you sure you want to cancel this booking?')) {
+                alert('✅ Booking cancelled successfully!\n\n• Capacity released for original slot\n• Cancellation reason saved\n• Status updated to cancelled');
+                hideModal('cancel-modal');
+            }
+        }
+
+        // Close modals when clicking outside
+        window.onclick = function(event) {
+            if (event.target.classList.contains('fp-modal')) {
+                event.target.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
