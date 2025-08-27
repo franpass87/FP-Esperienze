@@ -10,6 +10,8 @@ namespace FP\Esperienze\Booking;
 use FP\Esperienze\Data\ExtraManager;
 use FP\Esperienze\Data\VoucherManager;
 use FP\Esperienze\Data\DynamicPricingManager;
+use FP\Esperienze\Data\HoldManager;
+use FP\Esperienze\Data\Availability;
 use FP\Esperienze\Core\RateLimiter;
 
 defined('ABSPATH') || exit;
@@ -27,6 +29,7 @@ class Cart_Hooks {
         add_filter('woocommerce_add_to_cart_validation', [$this, 'validateExperienceBooking'], 10, 6);
         add_filter('woocommerce_get_item_data', [$this, 'displayExperienceCartData'], 10, 2);
         add_action('woocommerce_checkout_create_order_line_item', [$this, 'addExperienceOrderItemMeta'], 10, 4);
+        add_action('woocommerce_checkout_create_order', [$this, 'saveSessionIdToOrder'], 10, 2);
         add_action('woocommerce_before_calculate_totals', [$this, 'calculateExperiencePrice'], 10, 1);
         
         // Voucher redemption hooks
@@ -184,14 +187,23 @@ class Cart_Hooks {
             return false;
         }
 
-        // Check capacity (simplified validation - in real implementation would check database)
+        // Check capacity with real availability calculation
         $total_participants = $qty_adult + $qty_child;
-        $capacity = $product->get_capacity() ?: 10;
+        $date = $slot_datetime->format('Y-m-d');
+        $time = $slot_datetime->format('H:i');
         
-        // For demo purposes, assume 30% of capacity is already booked
-        $available_spots = ceil($capacity * 0.7);
+        // Get real availability for the slot
+        $slots = Availability::forDay($product_id, $date);
+        $available_spots = 0;
         
-        if ($total_participants > $available_spots) {
+        foreach ($slots as $slot) {
+            if ($slot['start_time'] === $time) {
+                $available_spots = $slot['available'];
+                break;
+            }
+        }
+        
+        if ($available_spots < $total_participants) {
             wc_add_notice(
                 sprintf(
                     __('Only %d spots available for this time slot. You selected %d participants.', 'fp-esperienze'),
@@ -201,6 +213,20 @@ class Cart_Hooks {
                 'error'
             );
             return false;
+        }
+        
+        // Create hold if holds system is enabled
+        if (HoldManager::isEnabled()) {
+            $session_id = WC()->session->get_customer_id();
+            $hold_result = HoldManager::createHold($product_id, $slot_start, $total_participants, $session_id);
+            
+            if (!$hold_result['success']) {
+                wc_add_notice($hold_result['message'], 'error');
+                return false;
+            }
+            
+            // Show hold confirmation message
+            wc_add_notice($hold_result['message'], 'success');
         }
 
         return $passed;
@@ -395,6 +421,19 @@ class Cart_Hooks {
             $item->add_meta_data('_fp_voucher_code', $applied_voucher['code']);
             $item->add_meta_data('_fp_voucher_id', $applied_voucher['voucher_id']);
             $item->add_meta_data(__('Voucher Applied', 'fp-esperienze'), $applied_voucher['code']);
+        }
+    }
+
+    /**
+     * Save session ID to order meta for hold conversion
+     *
+     * @param \WC_Order $order Order object
+     * @param array $data Posted data
+     */
+    public function saveSessionIdToOrder($order, $data) {
+        $session_id = WC()->session ? WC()->session->get_customer_id() : '';
+        if (!empty($session_id)) {
+            $order->add_meta_data('_fp_session_id', $session_id);
         }
     }
 

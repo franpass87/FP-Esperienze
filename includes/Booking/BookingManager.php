@@ -7,6 +7,8 @@
 
 namespace FP\Esperienze\Booking;
 
+use FP\Esperienze\Data\HoldManager;
+
 defined('ABSPATH') || exit;
 
 /**
@@ -170,18 +172,54 @@ class BookingManager {
      * @return int|false Booking ID or false on failure
      */
     private function createBooking(int $order_id, int $item_id, array $booking_data) {
-        global $wpdb;
+        // Get order to find session ID for hold conversion
+        $order = wc_get_order($order_id);
+        $session_id = '';
         
-        $table_name = $wpdb->prefix . 'fp_bookings';
+        if ($order) {
+            // Try to get session ID from order meta or customer ID
+            $session_id = $order->get_meta('_fp_session_id') ?: $order->get_customer_id();
+        }
         
-        $data = array_merge($booking_data, [
+        // Prepare complete booking data for database
+        $complete_booking_data = array_merge($booking_data, [
             'order_id' => $order_id,
             'order_item_id' => $item_id,
             'created_at' => current_time('mysql'),
             'updated_at' => current_time('mysql'),
         ]);
         
-        $result = $wpdb->insert($table_name, $data);
+        // Create slot_start in the format expected by HoldManager
+        $slot_start = $booking_data['booking_date'] . ' ' . substr($booking_data['booking_time'], 0, 5);
+        
+        // Try to convert hold to booking if holds are enabled
+        if (HoldManager::isEnabled() && !empty($session_id)) {
+            $conversion_result = HoldManager::convertHoldToBooking(
+                $booking_data['product_id'],
+                $slot_start,
+                $session_id,
+                $complete_booking_data
+            );
+            
+            if ($conversion_result['success']) {
+                // Trigger cache invalidation
+                do_action('fp_esperienze_booking_created', $booking_data['product_id'], $booking_data['booking_date']);
+                
+                // Log success
+                error_log("Created booking #{$conversion_result['booking_id']} from hold for order #{$order_id}, item #{$item_id}");
+                
+                return $conversion_result['booking_id'];
+            } else {
+                // Log hold conversion failure and fall through to direct creation
+                error_log("Hold conversion failed for order {$order_id}, item {$item_id}: " . $conversion_result['message']);
+            }
+        }
+        
+        // Fallback: Direct booking creation (when holds disabled or conversion failed)
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'fp_bookings';
+        
+        $result = $wpdb->insert($table_name, $complete_booking_data);
         
         if ($result === false) {
             error_log("Failed to create booking for order {$order_id}, item {$item_id}: " . $wpdb->last_error);

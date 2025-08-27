@@ -246,6 +246,22 @@ class Installer {
             KEY priority (priority)
         ) $charset_collate;";
 
+        // Capacity Holds table for optimistic locking
+        $table_holds = $wpdb->prefix . 'fp_exp_holds';
+        $sql_holds = "CREATE TABLE $table_holds (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            session_id varchar(128) NOT NULL,
+            product_id bigint(20) unsigned NOT NULL,
+            slot_start datetime NOT NULL,
+            qty int(11) NOT NULL DEFAULT 1,
+            expires_at datetime NOT NULL,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY product_slot (product_id, slot_start),
+            KEY session_id (session_id),
+            KEY expires_at (expires_at)
+        ) $charset_collate;";
+
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         
         dbDelta($sql_meeting_points);
@@ -257,6 +273,7 @@ class Installer {
         dbDelta($sql_exp_vouchers);
         dbDelta($sql_vouchers);
         dbDelta($sql_dynamic_pricing);
+        dbDelta($sql_holds);
     }
 
     /**
@@ -277,6 +294,9 @@ class Installer {
             'fp_esperienze_gift_email_sender_email' => get_option('admin_email'),
             'fp_esperienze_gift_secret_hmac' => bin2hex(random_bytes(32)), // 256-bit cryptographically secure key
             'fp_esperienze_gift_terms' => __('This voucher is valid for one experience booking. Please present the QR code when redeeming.', 'fp-esperienze'),
+            // Optimistic locking / holds settings
+            'fp_esperienze_enable_holds' => 1,
+            'fp_esperienze_hold_duration_minutes' => 15,
         ];
 
         foreach ($default_options as $option_name => $option_value) {
