@@ -415,24 +415,21 @@ class Cart_Hooks {
             $qty_child = $experience_data['qty_child'] ?? 0;
             $total_participants = $qty_adult + $qty_child;
 
-            // Calculate base price (adults + children)
-            $adult_price = floatval(get_post_meta($product->get_id(), '_experience_adult_price', true) ?: 0);
-            $child_price = floatval(get_post_meta($product->get_id(), '_experience_child_price', true) ?: 0);
+            // Calculate base price (adults + children) with proper tax handling
+            $adult_price = $this->getExperiencePriceWithTax($product, 'adult', $qty_adult);
+            $child_price = $this->getExperiencePriceWithTax($product, 'child', $qty_child);
             
-            $base_total = ($qty_adult * $adult_price) + ($qty_child * $child_price);
+            $base_total = $adult_price + $child_price;
 
-            // Calculate extras price
+            // Calculate extras price with tax handling
             $extras_total = 0;
             if (!empty($experience_data['extras']) && is_array($experience_data['extras'])) {
                 foreach ($experience_data['extras'] as $extra_id => $quantity) {
                     if ($quantity > 0) {
                         $extra = ExtraManager::getExtra($extra_id);
                         if ($extra && $extra->is_active) {
-                            if ($extra->billing_type === 'per_person') {
-                                $extras_total += $extra->price * $quantity * $total_participants;
-                            } else {
-                                $extras_total += $extra->price * $quantity;
-                            }
+                            $extra_price_with_tax = $this->getExtraPriceWithTax($extra, $quantity, $total_participants);
+                            $extras_total += $extra_price_with_tax;
                         }
                     }
                 }
@@ -471,6 +468,9 @@ class Cart_Hooks {
             
             // Allow filtering of final cart item price
             $total_price = apply_filters('fp_esperienze_cart_item_price', $total_price, $cart_item, $base_total, $extras_total);
+            
+            // Set the calculated price on the product
+            $product->set_price($total_price);
         }
     }
     
@@ -683,5 +683,60 @@ class Cart_Hooks {
         }
         
         return ob_get_clean();
+    }
+    
+    /**
+     * Get experience price with tax for adult or child
+     *
+     * @param \WC_Product $product Experience product
+     * @param string $type 'adult' or 'child'
+     * @param int $quantity Quantity
+     * @return float Price including tax
+     */
+    private function getExperiencePriceWithTax($product, $type, $quantity) {
+        if ($quantity <= 0) {
+            return 0;
+        }
+        
+        $base_price = floatval(get_post_meta($product->get_id(), "_experience_{$type}_price", true) ?: 0);
+        $tax_class = get_post_meta($product->get_id(), "_experience_{$type}_tax_class", true) ?: '';
+        
+        // Create a temporary simple product for tax calculation
+        $temp_product = new \WC_Product_Simple();
+        $temp_product->set_price($base_price);
+        $temp_product->set_tax_class($tax_class);
+        
+        // Get price with tax handling (respects tax settings and customer location)
+        $price_with_tax = wc_get_price_to_display($temp_product, ['price' => $base_price]);
+        
+        return $price_with_tax * $quantity;
+    }
+    
+    /**
+     * Get extra price with tax
+     *
+     * @param object $extra Extra object
+     * @param int $quantity Quantity
+     * @param int $total_participants Total participants for per-person extras
+     * @return float Price including tax
+     */
+    private function getExtraPriceWithTax($extra, $quantity, $total_participants) {
+        $base_price = floatval($extra->price);
+        $tax_class = $extra->tax_class ?? '';
+        
+        // Create a temporary simple product for tax calculation
+        $temp_product = new \WC_Product_Simple();
+        $temp_product->set_price($base_price);
+        $temp_product->set_tax_class($tax_class);
+        
+        // Get price with tax handling
+        $price_with_tax = wc_get_price_to_display($temp_product, ['price' => $base_price]);
+        
+        // Apply billing type logic
+        if ($extra->billing_type === 'per_person') {
+            return $price_with_tax * $quantity * $total_participants;
+        } else {
+            return $price_with_tax * $quantity;
+        }
     }
 }
