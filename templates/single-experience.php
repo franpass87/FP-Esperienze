@@ -83,7 +83,10 @@ $ga4_view_item = [
                 'item_name' => $product->get_name(),
                 'item_category' => 'Experience',
                 'price' => $adult_price ?: 0,
-                'quantity' => 1
+                'quantity' => 1,
+                'slot_start' => null, // Will be set when slot is selected
+                'meeting_point_id' => null, // Will be set when slot is selected  
+                'lang' => $language_chips // Available languages array
             ]
         ]
     ]
@@ -97,10 +100,19 @@ $ga4_view_item = [
 
 <!-- GA4 View Item Event -->
 <script>
-// GA4 view_item event - hookable for implementation
-window.dataLayer = window.dataLayer || [];
-window.dataLayer.push(<?php echo wp_json_encode($ga4_view_item, JSON_UNESCAPED_SLASHES); ?>);
-// TODO: Add actual GA4 implementation in Milestone D
+// Trigger view_item event through tracking system
+jQuery(document).ready(function($) {
+    if (typeof window.FPTracking !== 'undefined') {
+        $(document).trigger('fp_track_view_item', {
+            product_id: <?php echo json_encode($product_id); ?>,
+            product_name: <?php echo json_encode($product->get_name()); ?>,
+            price: <?php echo json_encode($adult_price ?: 0); ?>,
+            slot_start: null,
+            meeting_point_id: null,
+            lang: <?php echo json_encode($language_chips); ?>
+        });
+    }
+});
 </script>
 
 <div class="fp-experience-single">
