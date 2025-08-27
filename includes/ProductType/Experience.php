@@ -132,6 +132,25 @@ class Experience {
                 ]
             ]);
 
+            // Tax class for adult price
+            $tax_classes = ExtraManager::getTaxClasses();
+            woocommerce_wp_select([
+                'id'          => '_experience_adult_tax_class',
+                'label'       => __('Adult Tax Class', 'fp-esperienze'),
+                'options'     => $tax_classes,
+                'desc_tip'    => true,
+                'description' => __('Tax class for adult price', 'fp-esperienze')
+            ]);
+
+            // Tax class for child price
+            woocommerce_wp_select([
+                'id'          => '_experience_child_tax_class',
+                'label'       => __('Child Tax Class', 'fp-esperienze'),
+                'options'     => $tax_classes,
+                'desc_tip'    => true,
+                'description' => __('Tax class for child price', 'fp-esperienze')
+            ]);
+
             // Languages
             woocommerce_wp_textarea_input([
                 'id'          => '_experience_languages',
@@ -402,6 +421,8 @@ class Experience {
             '_experience_capacity',
             '_experience_adult_price',
             '_experience_child_price',
+            '_experience_adult_tax_class',
+            '_experience_child_tax_class',
             '_experience_languages',
             '_fp_exp_meeting_point_id'
         ];

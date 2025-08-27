@@ -35,6 +35,9 @@ class Cart_Hooks {
         add_action('woocommerce_order_status_completed', [$this, 'processVoucherRedemption'], 20, 1);
         add_action('woocommerce_order_status_cancelled', [$this, 'rollbackVoucherRedemption'], 10, 1);
         add_action('woocommerce_order_status_refunded', [$this, 'rollbackVoucherRedemption'], 10, 1);
+        
+        // WooCommerce coupon compatibility hooks
+        add_action('woocommerce_applied_coupon', [$this, 'checkCouponVoucherConflict'], 10, 1);
     }
 
     /**
@@ -415,24 +418,21 @@ class Cart_Hooks {
             $qty_child = $experience_data['qty_child'] ?? 0;
             $total_participants = $qty_adult + $qty_child;
 
-            // Calculate base price (adults + children)
-            $adult_price = floatval(get_post_meta($product->get_id(), '_experience_adult_price', true) ?: 0);
-            $child_price = floatval(get_post_meta($product->get_id(), '_experience_child_price', true) ?: 0);
+            // Calculate base price (adults + children) with proper tax handling
+            $adult_price = $this->getExperiencePriceWithTax($product, 'adult', $qty_adult);
+            $child_price = $this->getExperiencePriceWithTax($product, 'child', $qty_child);
             
-            $base_total = ($qty_adult * $adult_price) + ($qty_child * $child_price);
+            $base_total = $adult_price + $child_price;
 
-            // Calculate extras price
+            // Calculate extras price with tax handling
             $extras_total = 0;
             if (!empty($experience_data['extras']) && is_array($experience_data['extras'])) {
                 foreach ($experience_data['extras'] as $extra_id => $quantity) {
                     if ($quantity > 0) {
                         $extra = ExtraManager::getExtra($extra_id);
                         if ($extra && $extra->is_active) {
-                            if ($extra->billing_type === 'per_person') {
-                                $extras_total += $extra->price * $quantity * $total_participants;
-                            } else {
-                                $extras_total += $extra->price * $quantity;
-                            }
+                            $extra_price_with_tax = $this->getExtraPriceWithTax($extra, $quantity, $total_participants);
+                            $extras_total += $extra_price_with_tax;
                         }
                     }
                 }
@@ -444,6 +444,9 @@ class Cart_Hooks {
             // Check if voucher is applied to this cart item
             $applied_voucher = $this->getAppliedVoucher($cart_item_key);
             if ($applied_voucher) {
+                // Check for WooCommerce coupon conflicts
+                $has_wc_coupons = !empty(WC()->cart->get_applied_coupons());
+                
                 $validation = VoucherManager::validateVoucherForRedemption(
                     $applied_voucher['code'], 
                     $product->get_id()
@@ -452,18 +455,29 @@ class Cart_Hooks {
                 if ($validation['success']) {
                     $voucher = $validation['voucher'];
                     
-                    if ($voucher['amount_type'] === 'full') {
-                        // Full voucher: make base product free, keep extras
-                        $voucher_discount = $base_total;
+                    // For full vouchers, check if WooCommerce coupons are applied
+                    if ($voucher['amount_type'] === 'full' && $has_wc_coupons) {
+                        // Full vouchers are not stackable with WooCommerce coupons
+                        // Remove the voucher and add a notice
+                        $this->removeAppliedVoucher($cart_item_key);
+                        wc_add_notice(
+                            __('Full discount vouchers cannot be combined with other coupons. The voucher has been removed.', 'fp-esperienze'),
+                            'notice'
+                        );
                     } else {
-                        // Value voucher: apply discount up to voucher amount on base price only
-                        $voucher_discount = min($base_total, floatval($voucher['amount']));
+                        if ($voucher['amount_type'] === 'full') {
+                            // Full voucher: make base product free, keep extras
+                            $voucher_discount = $base_total;
+                        } else {
+                            // Value voucher: apply discount up to voucher amount on base price only
+                            $voucher_discount = min($base_total, floatval($voucher['amount']));
+                        }
+                        
+                        // Allow filtering of voucher discount amount
+                        $voucher_discount = apply_filters('fp_esperienze_voucher_discount_amount', $voucher_discount, $voucher, $cart_item);
+                        
+                        $base_total = max(0, $base_total - $voucher_discount);
                     }
-                    
-                    // Allow filtering of voucher discount amount
-                    $voucher_discount = apply_filters('fp_esperienze_voucher_discount_amount', $voucher_discount, $voucher, $cart_item);
-                    
-                    $base_total = max(0, $base_total - $voucher_discount);
                 }
             }
             
@@ -471,6 +485,9 @@ class Cart_Hooks {
             
             // Allow filtering of final cart item price
             $total_price = apply_filters('fp_esperienze_cart_item_price', $total_price, $cart_item, $base_total, $extras_total);
+            
+            // Set the calculated price on the product
+            $product->set_price($total_price);
         }
     }
     
@@ -496,6 +513,14 @@ class Cart_Hooks {
         
         if (!$validation['success']) {
             wp_send_json_error(['message' => $validation['message']]);
+        }
+        
+        // Check for WooCommerce coupon conflicts with full vouchers
+        $has_wc_coupons = !empty(WC()->cart->get_applied_coupons());
+        if ($validation['voucher']['amount_type'] === 'full' && $has_wc_coupons) {
+            wp_send_json_error([
+                'message' => __('Full discount vouchers cannot be combined with other coupons. Please remove existing coupons first.', 'fp-esperienze')
+            ]);
         }
         
         // Store voucher in session
@@ -683,5 +708,106 @@ class Cart_Hooks {
         }
         
         return ob_get_clean();
+    }
+    
+    /**
+     * Check for conflicts when WooCommerce coupons are applied
+     *
+     * @param string $coupon_code Applied coupon code
+     */
+    public function checkCouponVoucherConflict($coupon_code) {
+        $session_key = 'fp_applied_vouchers';
+        $applied_vouchers = WC()->session->get($session_key, []);
+        
+        if (empty($applied_vouchers)) {
+            return;
+        }
+        
+        $conflicts_found = false;
+        foreach ($applied_vouchers as $cart_item_key => $voucher_data) {
+            // Only full vouchers conflict with WooCommerce coupons
+            if ($voucher_data['amount_type'] === 'full') {
+                unset($applied_vouchers[$cart_item_key]);
+                $conflicts_found = true;
+            }
+        }
+        
+        if ($conflicts_found) {
+            WC()->session->set($session_key, $applied_vouchers);
+            wc_add_notice(
+                sprintf(
+                    __('Full discount vouchers cannot be combined with coupon "%s". Conflicting vouchers have been removed.', 'fp-esperienze'),
+                    $coupon_code
+                ),
+                'notice'
+            );
+        }
+    }
+    
+    /**
+     * Get experience price with tax for adult or child
+     *
+     * @param \WC_Product $product Experience product
+     * @param string $type 'adult' or 'child'
+     * @param int $quantity Quantity
+     * @return float Price including tax
+     */
+    private function getExperiencePriceWithTax($product, $type, $quantity) {
+        if ($quantity <= 0) {
+            return 0;
+        }
+        
+        $base_price = floatval(get_post_meta($product->get_id(), "_experience_{$type}_price", true) ?: 0);
+        $tax_class = get_post_meta($product->get_id(), "_experience_{$type}_tax_class", true) ?: '';
+        
+        // Allow filtering of base price before tax calculation
+        $base_price = apply_filters("fp_esperienze_{$type}_price", $base_price, $product->get_id());
+        
+        // Create a temporary simple product for tax calculation
+        $temp_product = new \WC_Product_Simple();
+        $temp_product->set_price($base_price);
+        $temp_product->set_tax_class($tax_class);
+        
+        // Get price with tax handling (respects tax settings and customer location)
+        $price_with_tax = wc_get_price_to_display($temp_product, ['price' => $base_price]);
+        
+        $total_price = $price_with_tax * $quantity;
+        
+        // Allow filtering of final calculated price
+        return apply_filters("fp_esperienze_{$type}_price_with_tax", $total_price, $base_price, $tax_class, $quantity, $product->get_id());
+    }
+    
+    /**
+     * Get extra price with tax
+     *
+     * @param object $extra Extra object
+     * @param int $quantity Quantity
+     * @param int $total_participants Total participants for per-person extras
+     * @return float Price including tax
+     */
+    private function getExtraPriceWithTax($extra, $quantity, $total_participants) {
+        $base_price = floatval($extra->price);
+        $tax_class = $extra->tax_class ?? '';
+        
+        // Allow filtering of extra base price
+        $base_price = apply_filters('fp_esperienze_extra_price', $base_price, $extra->id);
+        
+        // Create a temporary simple product for tax calculation
+        $temp_product = new \WC_Product_Simple();
+        $temp_product->set_price($base_price);
+        $temp_product->set_tax_class($tax_class);
+        
+        // Get price with tax handling
+        $price_with_tax = wc_get_price_to_display($temp_product, ['price' => $base_price]);
+        
+        // Apply billing type logic
+        if ($extra->billing_type === 'per_person') {
+            $total_price = $price_with_tax * $quantity * $total_participants;
+        } else {
+            $total_price = $price_with_tax * $quantity;
+        }
+        
+        // Allow filtering of final extra price
+        return apply_filters('fp_esperienze_extra_price_with_tax', $total_price, $base_price, $tax_class, $quantity, $total_participants, $extra);
     }
 }
