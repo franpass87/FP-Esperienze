@@ -23,6 +23,13 @@ class MenuManager {
      */
     public function __construct() {
         add_action('admin_menu', [$this, 'addAdminMenu']);
+        
+        // Initialize Setup Wizard and System Status
+        new SetupWizard();
+        new SystemStatus();
+        
+        // Handle setup wizard redirect
+        add_action('admin_init', [$this, 'handleSetupWizardRedirect']);
     }
 
     /**
@@ -112,12 +119,42 @@ class MenuManager {
     }
 
     /**
+     * Handle setup wizard redirect on first activation
+     */
+    public function handleSetupWizardRedirect(): void {
+        // Only redirect on admin pages, not AJAX or REST requests
+        if (!is_admin() || wp_doing_ajax() || wp_doing_cron() || 
+            (defined('REST_REQUEST') && REST_REQUEST)) {
+            return;
+        }
+
+        // Check if we should redirect to setup wizard
+        if (get_transient('fp_esperienze_activation_redirect')) {
+            delete_transient('fp_esperienze_activation_redirect');
+            
+            // Don't redirect if setup is already complete
+            $setup_wizard = new SetupWizard();
+            if (!$setup_wizard->isSetupComplete()) {
+                wp_redirect(admin_url('admin.php?page=fp-esperienze-setup-wizard'));
+                exit;
+            }
+        }
+    }
+
+    /**
      * Dashboard page
      */
     public function dashboardPage(): void {
         ?>
         <div class="wrap">
             <h1><?php _e('FP Esperienze Dashboard', 'fp-esperienze'); ?></h1>
+            
+            <?php if (isset($_GET['setup']) && $_GET['setup'] === 'complete') : ?>
+                <div class="notice notice-success is-dismissible">
+                    <p><?php _e('Setup wizard completed successfully! Your experience booking system is ready to use.', 'fp-esperienze'); ?></p>
+                </div>
+            <?php endif; ?>
+            
             <div class="fp-admin-dashboard">
                 <div class="fp-dashboard-widgets">
                     <div class="fp-widget">
