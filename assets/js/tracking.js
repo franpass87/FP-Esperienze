@@ -68,6 +68,14 @@
                     });
                 }
                 
+                if (data.add_payment_info) {
+                    this.trackGA4Event('add_payment_info', {
+                        currency: data.add_payment_info.currency,
+                        value: data.add_payment_info.value,
+                        items: data.add_payment_info.items
+                    });
+                }
+                
                 if (data.purchase) {
                     this.trackGA4Event('purchase', {
                         transaction_id: data.purchase.transaction_id,

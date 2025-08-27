@@ -31,6 +31,7 @@ class TrackingManager {
         // WooCommerce tracking hooks
         add_action('woocommerce_add_to_cart', [$this, 'trackAddToCart'], 10, 6);
         add_action('woocommerce_before_checkout_form', [$this, 'trackBeginCheckout']);
+        add_action('woocommerce_checkout_process', [$this, 'trackAddPaymentInfo']);
         add_action('woocommerce_checkout_order_processed', [$this, 'trackPurchase'], 10, 1);
     }
     
@@ -215,6 +216,47 @@ class TrackingManager {
     }
     
     /**
+     * Track add payment info event
+     */
+    public function trackAddPaymentInfo(): void {
+        $cart = WC()->cart;
+        if (!$cart || $cart->is_empty()) {
+            return;
+        }
+        
+        $items = [];
+        $total_value = 0;
+        
+        foreach ($cart->get_cart() as $cart_item) {
+            $product = $cart_item['data'];
+            if ($product->get_type() === 'experience') {
+                $items[] = [
+                    'item_id' => $product->get_id(),
+                    'item_name' => $product->get_name(),
+                    'item_category' => 'Experience',
+                    'price' => floatval($product->get_price()),
+                    'quantity' => $cart_item['quantity'],
+                    'slot_start' => $cart_item['fp_slot_start'] ?? null,
+                    'meeting_point_id' => $cart_item['fp_meeting_point_id'] ?? null,
+                    'lang' => $cart_item['fp_lang'] ?? null,
+                ];
+                $total_value += floatval($product->get_price()) * $cart_item['quantity'];
+            }
+        }
+        
+        if (!empty($items)) {
+            $tracking_data = [
+                'event' => 'add_payment_info',
+                'currency' => get_woocommerce_currency(),
+                'value' => $total_value,
+                'items' => $items,
+            ];
+            
+            WC()->session->set('fp_tracking_add_payment_info', $tracking_data);
+        }
+    }
+    
+    /**
      * Track purchase event
      */
     public function trackPurchase(int $order_id): void {
@@ -274,6 +316,12 @@ class TrackingManager {
         if ($begin_checkout = WC()->session->get('fp_tracking_begin_checkout')) {
             $data['begin_checkout'] = $begin_checkout;
             WC()->session->__unset('fp_tracking_begin_checkout');
+        }
+        
+        // Check for add payment info event
+        if ($add_payment_info = WC()->session->get('fp_tracking_add_payment_info')) {
+            $data['add_payment_info'] = $add_payment_info;
+            WC()->session->__unset('fp_tracking_add_payment_info');
         }
         
         // Check for purchase event on order received page
