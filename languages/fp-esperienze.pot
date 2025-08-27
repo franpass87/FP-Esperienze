@@ -1439,6 +1439,46 @@ msgstr ""
 msgid "Brand & PDF"
 msgstr ""
 
+#: includes/Admin/MenuManager.php:2526
+msgid "General"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2542
+msgid "Archive Page"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2548
+msgid "Select a page"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2552
+msgid "Select the page to use as the experience archive. This is used for WPML/Polylang URL translation."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2558
+msgid "Multilingual Plugin"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2563
+msgid "detected and active"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2566
+msgid "The plugin will automatically filter experiences by language and provide translated meeting point data."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2571
+msgid "Multilingual Support"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2573
+msgid "No multilingual plugin detected."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2575
+msgid "Install WPML or Polylang to enable multilingual features including translated meeting points and language-filtered archives."
+msgstr ""
+
 #: includes/Admin/SetupWizard.php:311 includes/Frontend/Shortcodes.php:414
 msgid "Previous"
 msgstr ""

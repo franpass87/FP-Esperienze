@@ -7,6 +7,8 @@
 
 namespace FP\Esperienze\Data;
 
+use FP\Esperienze\Core\I18nManager;
+
 defined('ABSPATH') || exit;
 
 /**
@@ -17,24 +19,37 @@ class MeetingPointManager {
     /**
      * Get all meeting points
      *
+     * @param bool $translate Whether to return translated versions
      * @return array
      */
-    public static function getAllMeetingPoints(): array {
+    public static function getAllMeetingPoints(bool $translate = true): array {
         global $wpdb;
         
         $table_name = $wpdb->prefix . 'fp_meeting_points';
         $results = $wpdb->get_results("SELECT * FROM $table_name ORDER BY name ASC");
         
-        return $results ?: [];
+        if (!$results) {
+            return [];
+        }
+        
+        // Apply translations if requested and multilingual plugin is active
+        if ($translate && I18nManager::isMultilingualActive()) {
+            $results = array_map(function($meeting_point) {
+                return I18nManager::getTranslatedMeetingPoint($meeting_point);
+            }, $results);
+        }
+        
+        return $results;
     }
 
     /**
      * Get meeting point by ID
      *
      * @param int $id Meeting point ID
+     * @param bool $translate Whether to return translated version
      * @return object|null
      */
-    public static function getMeetingPoint(int $id): ?object {
+    public static function getMeetingPoint(int $id, bool $translate = true): ?object {
         global $wpdb;
         
         $table_name = $wpdb->prefix . 'fp_meeting_points';
@@ -43,7 +58,16 @@ class MeetingPointManager {
             $id
         ));
         
-        return $result ?: null;
+        if (!$result) {
+            return null;
+        }
+        
+        // Apply translation if requested and multilingual plugin is active
+        if ($translate && I18nManager::isMultilingualActive()) {
+            $result = I18nManager::getTranslatedMeetingPoint($result);
+        }
+        
+        return $result;
     }
 
     /**
@@ -83,7 +107,16 @@ class MeetingPointManager {
             ]
         );
         
-        return $result ? $wpdb->insert_id : false;
+        if ($result) {
+            $meeting_point_id = $wpdb->insert_id;
+            
+            // Fire hook for translation registration
+            do_action('fp_meeting_point_created', $meeting_point_id);
+            
+            return $meeting_point_id;
+        }
+        
+        return false;
     }
 
     /**
@@ -142,6 +175,11 @@ class MeetingPointManager {
             $formats,
             ['%d']
         );
+        
+        if ($result !== false) {
+            // Fire hook for translation registration
+            do_action('fp_meeting_point_updated', $id);
+        }
         
         return $result !== false;
     }

@@ -2469,7 +2469,10 @@ class MenuManager {
         }
         
         // Get current tab
-        $current_tab = sanitize_text_field($_GET['tab'] ?? 'gift');
+        $current_tab = sanitize_text_field($_GET['tab'] ?? 'general');
+        
+        // Get general settings
+        $archive_page_id = get_option('fp_esperienze_archive_page_id', 0);
         
         // Get current settings
         $gift_exp_months = get_option('fp_esperienze_gift_default_exp_months', 12);
@@ -2520,6 +2523,7 @@ class MenuManager {
             <h1><?php _e('FP Esperienze Settings', 'fp-esperienze'); ?></h1>
             
             <h2 class="nav-tab-wrapper">
+                <a href="<?php echo admin_url('admin.php?page=fp-esperienze-settings&tab=general'); ?>" class="nav-tab <?php echo $current_tab === 'general' ? 'nav-tab-active' : ''; ?>"><?php _e('General', 'fp-esperienze'); ?></a>
                 <a href="<?php echo admin_url('admin.php?page=fp-esperienze-settings&tab=gift'); ?>" class="nav-tab <?php echo $current_tab === 'gift' ? 'nav-tab-active' : ''; ?>"><?php _e('Gift Vouchers', 'fp-esperienze'); ?></a>
                 <a href="<?php echo admin_url('admin.php?page=fp-esperienze-settings&tab=notifications'); ?>" class="nav-tab <?php echo $current_tab === 'notifications' ? 'nav-tab-active' : ''; ?>"><?php _e('Notifications', 'fp-esperienze'); ?></a>
                 <a href="<?php echo admin_url('admin.php?page=fp-esperienze-settings&tab=integrations'); ?>" class="nav-tab <?php echo $current_tab === 'integrations' ? 'nav-tab-active' : ''; ?>"><?php _e('Integrations', 'fp-esperienze'); ?></a>
@@ -2529,6 +2533,58 @@ class MenuManager {
             <form method="post" action="">
                 <?php wp_nonce_field('fp_settings_nonce', 'fp_settings_nonce'); ?>
                 <input type="hidden" name="settings_tab" value="<?php echo esc_attr($current_tab); ?>" />
+                
+                <?php if ($current_tab === 'general') : ?>
+                <div class="tab-content">
+                    <table class="form-table">
+                        <tr>
+                            <th scope="row">
+                                <label for="archive_page_id"><?php _e('Archive Page', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <?php
+                                $pages = get_pages();
+                                echo '<select id="archive_page_id" name="archive_page_id" class="regular-text">';
+                                echo '<option value="0">' . esc_html__('Select a page', 'fp-esperienze') . '</option>';
+                                foreach ($pages as $page) {
+                                    $selected = selected($archive_page_id, $page->ID, false);
+                                    echo '<option value="' . esc_attr($page->ID) . '" ' . $selected . '>' . esc_html($page->post_title) . '</option>';
+                                }
+                                echo '</select>';
+                                ?>
+                                <p class="description"><?php _e('Select the page to use as the experience archive. This is used for WPML/Polylang URL translation.', 'fp-esperienze'); ?></p>
+                            </td>
+                        </tr>
+                        
+                        <?php if (\FP\Esperienze\Core\I18nManager::isMultilingualActive()) : ?>
+                        <tr>
+                            <th scope="row"><?php _e('Multilingual Plugin', 'fp-esperienze'); ?></th>
+                            <td>
+                                <p>
+                                    <strong><?php echo esc_html(ucfirst(\FP\Esperienze\Core\I18nManager::getActivePlugin())); ?></strong> 
+                                    <?php _e('detected and active', 'fp-esperienze'); ?>
+                                </p>
+                                <p class="description">
+                                    <?php _e('The plugin will automatically filter experiences by language and provide translated meeting point data.', 'fp-esperienze'); ?>
+                                </p>
+                            </td>
+                        </tr>
+                        <?php else : ?>
+                        <tr>
+                            <th scope="row"><?php _e('Multilingual Support', 'fp-esperienze'); ?></th>
+                            <td>
+                                <p><?php _e('No multilingual plugin detected.', 'fp-esperienze'); ?></p>
+                                <p class="description">
+                                    <?php _e('Install WPML or Polylang to enable multilingual features including translated meeting points and language-filtered archives.', 'fp-esperienze'); ?>
+                                </p>
+                            </td>
+                        </tr>
+                        <?php endif; ?>
+                    </table>
+                    
+                    <?php submit_button(__('Save Settings', 'fp-esperienze')); ?>
+                </div>
+                <?php endif; ?>
                 
                 <?php if ($current_tab === 'gift') : ?>
                 <div class="tab-content">
@@ -3232,9 +3288,13 @@ class MenuManager {
             wp_die(__('Security check failed.', 'fp-esperienze'));
         }
         
-        $tab = sanitize_text_field($_POST['settings_tab'] ?? 'gift');
+        $tab = sanitize_text_field($_POST['settings_tab'] ?? 'general');
         
-        if ($tab === 'gift') {
+        if ($tab === 'general') {
+            // Update general settings
+            update_option('fp_esperienze_archive_page_id', absint($_POST['archive_page_id'] ?? 0));
+            
+        } elseif ($tab === 'gift') {
             // Update gift settings
             $settings = [
                 'fp_esperienze_gift_default_exp_months' => absint($_POST['gift_default_exp_months'] ?? 12),

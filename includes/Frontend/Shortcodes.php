@@ -146,6 +146,9 @@ class Shortcodes {
             $args['meta_key'] = $meta_key;
         }
 
+        // Apply language filtering hook for multilingual plugins
+        $args = apply_filters('fp_experience_archive_query_args', $args);
+
         return $args;
     }
 
@@ -455,7 +458,10 @@ class Shortcodes {
      */
     private function getPaginationUrl(int $page): string {
         $current_url = add_query_arg(null, null);
-        return add_query_arg('paged', $page, $current_url);
+        $url = add_query_arg('paged', $page, $current_url);
+        
+        // Apply language filtering hook for multilingual plugins
+        return apply_filters('fp_archive_pagination_url', $url);
     }
 
     /**
