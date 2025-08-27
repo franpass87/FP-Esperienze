@@ -165,9 +165,14 @@ class GooglePlacesManager {
             $processed['rating'] = max(1, min(5, absint($review['rating'])));
         }
         
-        // Review text (excerpt)
+        // Review text (excerpt with enhanced sanitization)
         if (isset($review['text']['text'])) {
             $text = sanitize_textarea_field($review['text']['text']);
+            // Strip any remaining HTML tags and decode HTML entities
+            $text = wp_strip_all_tags($text);
+            $text = html_entity_decode($text, ENT_QUOTES, 'UTF-8');
+            // Re-sanitize after decoding
+            $text = sanitize_textarea_field($text);
             $processed['text'] = $this->createExcerpt($text, 150);
         }
         

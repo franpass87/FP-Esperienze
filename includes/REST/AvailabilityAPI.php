@@ -8,6 +8,7 @@
 namespace FP\Esperienze\REST;
 
 use FP\Esperienze\Data\Availability;
+use FP\Esperienze\Core\RateLimiter;
 use WP_REST_Server;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -61,8 +62,26 @@ class AvailabilityAPI {
      * @return WP_REST_Response|WP_Error
      */
     public function getAvailability(WP_REST_Request $request) {
+        // Apply rate limiting (30 requests per minute per IP)
+        if (!RateLimiter::checkRateLimit('availability', 30, 60)) {
+            return RateLimiter::createRateLimitResponse();
+        }
+
         $product_id = $request->get_param('product_id');
         $date = $request->get_param('date');
+
+        // Check cache first (5 minute cache)
+        $cache_key = 'fp_availability_' . $product_id . '_' . $date;
+        $cached_data = get_transient($cache_key);
+        if ($cached_data !== false) {
+            $response = new WP_REST_Response($cached_data, 200);
+            // Add rate limit headers
+            foreach (RateLimiter::getRateLimitHeaders('availability', 30, 60) as $header => $value) {
+                $response->header($header, $value);
+            }
+            $response->header('X-Cache', 'HIT');
+            return $response;
+        }
 
         // Check if product exists and is an experience
         $product = wc_get_product($product_id);
@@ -107,6 +126,17 @@ class AvailabilityAPI {
             'total_slots' => count($slots),
         ];
 
-        return new WP_REST_Response($response_data, 200);
+        // Cache the response for 5 minutes
+        set_transient($cache_key, $response_data, 300);
+
+        $response = new WP_REST_Response($response_data, 200);
+        
+        // Add rate limit headers
+        foreach (RateLimiter::getRateLimitHeaders('availability', 30, 60) as $header => $value) {
+            $response->header($header, $value);
+        }
+        $response->header('X-Cache', 'MISS');
+
+        return $response;
     }
 }
