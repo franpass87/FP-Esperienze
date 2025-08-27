@@ -1,45 +1,2403 @@
 # FP Esperienze Language Template
+# Copyright (C) 2024 Francesco Passeri
+# This file is distributed under the same license as the FP Esperienze package.
+# Francesco Passeri <francesco@francescopasseri.com>, 2024.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: FP Esperienze 1.0.0\n"
+"Report-Msgid-Bugs-To: https://github.com/franpass87/FP-Esperienze/issues\n"
+"POT-Creation-Date: 2025-08-27 10:39+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 
-# Main plugin
-FP Esperienze
-Experience booking management plugin for WordPress and WooCommerce
+#: includes/Integrations/GoogleBusinessProfileManager.php:129
+#: includes/Admin/MenuManager.php:2594
+msgid "OAuth Client ID"
+msgstr ""
 
-# Product type
-Experience
-Duration (minutes)
-Max Capacity
-Adult Price
-Child Price
-Languages
-Default Meeting Point
+#: includes/Integrations/GoogleBusinessProfileManager.php:131
+msgid "Google OAuth Client ID for Business Profile access"
+msgstr ""
 
-# Frontend
-Why Choose This Experience
-Description
-What's Included
-What's Not Included
-Customer Reviews
-Book This Experience
-From
-per person
-Coming Soon
+#: includes/Integrations/GoogleBusinessProfileManager.php:132
+#: includes/Integrations/GoogleBusinessProfileManager.php:138
+#: includes/Admin/MenuManager.php:2602 includes/Admin/MenuManager.php:2618
+msgid "Coming soon - OAuth integration"
+msgstr ""
 
-# Admin menu
-Dashboard
-Bookings
-Meeting Points
-Extras
-Vouchers
-Closures
-Settings
+#: includes/Integrations/GoogleBusinessProfileManager.php:135
+#: includes/Admin/MenuManager.php:2610
+msgid "OAuth Client Secret"
+msgstr ""
 
-# Messages
-No experiences found.
-Booking widget will be implemented in future updates.
-Dashboard functionality will be implemented in future updates.
+#: includes/Integrations/GoogleBusinessProfileManager.php:137
+msgid "Google OAuth Client Secret (keep secure)"
+msgstr ""
 
-# Errors
-FP Esperienze requires WordPress 6.5 or higher.
-FP Esperienze requires PHP 8.1 or higher.
-FP Esperienze requires WooCommerce to be installed and active.
-FP Esperienze requires WooCommerce 8.0 or higher.
+#: includes/Admin/SystemStatus.php:31 includes/Admin/SystemStatus.php:32
+msgid "System Status"
+msgstr ""
+
+#: includes/Admin/SystemStatus.php:87
+msgid "FP Esperienze System Status"
+msgstr ""
+
+#: includes/Admin/SystemStatus.php:95
+msgid "Database tables have been created successfully."
+msgstr ""
+
+#: includes/Admin/SystemStatus.php:98
+msgid "Rewrite rules have been flushed successfully."
+msgstr ""
+
+#: includes/Admin/SystemStatus.php:182
+msgid "System Information"
+msgstr ""
+
+#: includes/Admin/SystemStatus.php:185
+msgid "WordPress Version"
+msgstr ""
+
+#: includes/Admin/SystemStatus.php:189 includes/Admin/SystemStatus.php:201
+#: includes/Admin/SystemStatus.php:215
+msgid "Compatible"
+msgstr ""
+
+#: includes/Admin/SystemStatus.php:191
+msgid "Requires WordPress 6.5+"
+msgstr ""
+
+#: includes/Admin/SystemStatus.php:196
+msgid "WooCommerce Version"
+msgstr ""
+
+#: includes/Admin/SystemStatus.php:203
+msgid "Requires WooCommerce 8.0+"
+msgstr ""
+
+#: includes/Admin/SystemStatus.php:206
+msgid "WooCommerce not detected"
+msgstr ""
+
+#: includes/Admin/SystemStatus.php:211
+msgid "PHP Version"
+msgstr ""
+
+#: includes/Admin/SystemStatus.php:217
+msgid "Requires PHP 8.1+"
+msgstr ""
+
+#: includes/Admin/SystemStatus.php:222
+msgid "Plugin Version"
+msgstr ""
+
+#: includes/Admin/SystemStatus.php:226
+msgid "WordPress Timezone"
+msgstr ""
+
+#: includes/Admin/SystemStatus.php:274
+msgid "System Checks"
+msgstr ""
+
+#: includes/Admin/SystemStatus.php:327 includes/Admin/SystemStatus.php:334
+msgid "Database Tables"
+msgstr ""
+
+#: includes/Admin/SystemStatus.php:329
+msgid "All required tables present"
+msgstr ""
+
+#: includes/Admin/SystemStatus.php:336
+#, php-format
+msgid "%d missing tables"
+msgstr ""
+
+#: includes/Admin/SystemStatus.php:337
+msgid "Missing tables: "
+msgstr ""
+
+#: includes/Admin/SystemStatus.php:339
+msgid "Create Tables"
+msgstr ""
+
+#: includes/Admin/SystemStatus.php:354 includes/Admin/SystemStatus.php:362
+msgid "WordPress Cron"
+msgstr ""
+
+#: includes/Admin/SystemStatus.php:356
+msgid "Disabled via DISABLE_WP_CRON"
+msgstr ""
+
+#: includes/Admin/SystemStatus.php:357
+msgid "WordPress cron is disabled. Scheduled tasks may not work properly."
+msgstr ""
+
+#: includes/Admin/SystemStatus.php:364
+msgid "Enabled"
+msgstr ""
+
+#: includes/Admin/SystemStatus.php:380 includes/Admin/SystemStatus.php:390
+#: includes/Admin/SystemStatus.php:397
+msgid "Remote Requests"
+msgstr ""
+
+#: includes/Admin/SystemStatus.php:382
+msgid "Failed"
+msgstr ""
+
+#: includes/Admin/SystemStatus.php:392
+#, php-format
+msgid "Unexpected response code: %d"
+msgstr ""
+
+#: includes/Admin/SystemStatus.php:399
+msgid "Working"
+msgstr ""
+
+#: includes/Admin/SystemStatus.php:412 includes/Admin/SystemStatus.php:420
+msgid "File Permissions"
+msgstr ""
+
+#: includes/Admin/SystemStatus.php:414
+msgid "Uploads directory not writable"
+msgstr ""
+
+#: includes/Admin/SystemStatus.php:415
+msgid ""
+"PDF vouchers cannot be generated without write access to uploads directory."
+msgstr ""
+
+#: includes/Admin/SystemStatus.php:422
+msgid "Uploads directory writable"
+msgstr ""
+
+#: includes/Admin/SystemStatus.php:441 includes/Admin/SystemStatus.php:449
+msgid "PHP Extensions"
+msgstr ""
+
+#: includes/Admin/SystemStatus.php:443
+#, php-format
+msgid "%d missing extensions"
+msgstr ""
+
+#: includes/Admin/SystemStatus.php:444
+msgid "Missing extensions: "
+msgstr ""
+
+#: includes/Admin/SystemStatus.php:451
+msgid "All required extensions loaded"
+msgstr ""
+
+#: includes/Admin/SystemStatus.php:474
+msgid "Database Information"
+msgstr ""
+
+#: includes/Admin/SystemStatus.php:486
+#, php-format
+msgid "%d records"
+msgstr ""
+
+#: includes/Admin/SystemStatus.php:489
+msgid "Table missing"
+msgstr ""
+
+#: includes/Admin/SystemStatus.php:530
+msgid "Integration Status"
+msgstr ""
+
+#: includes/Admin/SystemStatus.php:538
+msgid "Configured"
+msgstr ""
+
+#: includes/Admin/SystemStatus.php:540
+msgid "Not configured"
+msgstr ""
+
+#: includes/Admin/SystemStatus.php:543
+msgid "Configure"
+msgstr ""
+
+#: includes/Admin/SystemStatus.php:547
+msgid "Documentation"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:43 includes/Admin/MenuManager.php:44
+msgid "FP Esperienze"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:55 includes/Admin/MenuManager.php:56
+msgid "Dashboard"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:65 includes/Admin/MenuManager.php:66
+msgid "Bookings"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:75 includes/Admin/MenuManager.php:76
+#: includes/Admin/MenuManager.php:447
+msgid "Meeting Points"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:85 includes/Admin/MenuManager.php:86
+#: includes/ProductType/Experience.php:178
+msgid "Extras"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:95 includes/Admin/MenuManager.php:96
+msgid "Vouchers"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:105 includes/Admin/MenuManager.php:106
+msgid "Closures"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:115 includes/Admin/MenuManager.php:116
+#: includes/Admin/PerformanceSettings.php:48
+msgid "Performance"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:125 includes/Admin/MenuManager.php:126
+msgid "Settings"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:162
+msgid "FP Esperienze Dashboard"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:166
+msgid ""
+"Setup wizard completed successfully! Your experience booking system is ready "
+"to use."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:173
+msgid "Recent Bookings"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:174
+msgid "Dashboard functionality will be implemented in future updates."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:178
+msgid "Statistics"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:179
+msgid "Booking statistics and analytics coming soon."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:183
+msgid "Quick Actions"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:186
+msgid "View Bookings"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:189
+msgid "Add Experience"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:233
+msgid "Bookings Management"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:242 includes/Admin/MenuManager.php:1144
+msgid "All Statuses"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:243
+msgid "Confirmed"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:244
+msgid "Cancelled"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:245
+msgid "Refunded"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:249 includes/Admin/MenuManager.php:1152
+msgid "All Products"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:257
+msgid "From Date"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:258
+msgid "To Date"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:260 includes/Admin/MenuManager.php:1175
+msgid "Filter"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:261 includes/Admin/MenuManager.php:1178
+#: includes/Frontend/Shortcodes.php:354
+msgid "Clear"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:262
+msgid "Export CSV"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:269
+msgid "List View"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:270
+msgid "Calendar View"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:277
+msgid "No bookings found matching your criteria."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:283
+msgid "ID"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:284
+msgid "Order"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:285 includes/Admin/MenuManager.php:1217
+#: includes/Admin/MenuManager.php:2795
+msgid "Product"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:286
+msgid "Date & Time"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:287 templates/single-experience.php:569
+msgid "Participants"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:288 includes/Admin/MenuManager.php:1220
+#: includes/Admin/MenuManager.php:2801
+msgid "Status"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:289 includes/Admin/MenuManager.php:2802
+#: includes/Frontend/Shortcodes.php:296 templates/single-experience.php:267
+msgid "Meeting Point"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:290 includes/Admin/MenuManager.php:1222
+#: includes/Admin/MenuManager.php:2805
+msgid "Created"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:305 includes/Admin/MenuManager.php:1237
+#: includes/Admin/MenuManager.php:2811
+msgid "Product not found"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:318
+#, php-format
+msgid "%d total (%d adults, %d children)"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:330 includes/Admin/MenuManager.php:2816
+msgid "Not found"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:332 includes/Admin/MenuManager.php:606
+msgid "Not set"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:428 includes/Admin/MenuManager.php:1470
+#: includes/Admin/MenuManager.php:1951 includes/Admin/MenuManager.php:2105
+#: includes/Admin/MenuManager.php:2669 includes/Admin/MenuManager.php:2737
+msgid "Security check failed."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:451 includes/Admin/MenuManager.php:455
+msgid "Add New"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:464
+msgid "Edit Meeting Point"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:464
+msgid "Add New Meeting Point"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:477 includes/Admin/MenuManager.php:577
+#: includes/Admin/MenuManager.php:813 includes/Admin/MenuManager.php:894
+#: includes/Admin/MenuManager.php:958
+msgid "Name"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:488 includes/Admin/MenuManager.php:578
+msgid "Address"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:498
+msgid "Latitude"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:504
+msgid "Decimal degrees format (e.g., 41.9028)"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:510
+msgid "Longitude"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:516
+msgid "Decimal degrees format (e.g., 12.4964)"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:522
+msgid "Google Place ID"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:528
+msgid "Google Places API Place ID for enhanced integration"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:534
+msgid "Note"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:539
+msgid "Additional instructions or notes for this meeting point"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:546
+msgid "Update Meeting Point"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:546
+msgid "Add Meeting Point"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:550
+msgid "Cancel"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:565
+msgid "Meeting Points List"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:572
+msgid "No meeting points found. Add your first meeting point above."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:579
+msgid "Coordinates"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:580 includes/Admin/MenuManager.php:902
+#: includes/Admin/MenuManager.php:1223 includes/Admin/MenuManager.php:1916
+msgid "Actions"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:591 includes/Admin/MenuManager.php:611
+#: includes/Admin/MenuManager.php:932
+msgid "Edit"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:596 includes/Admin/MenuManager.php:938
+msgid "Delete"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:632
+msgid "Are you sure you want to delete the meeting point"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:632
+msgid ""
+"This action cannot be undone and will fail if the meeting point is currently "
+"in use."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:679 includes/Admin/MenuManager.php:729
+msgid "Name and address are required fields."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:690
+msgid "Meeting point created successfully."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:696
+msgid "Failed to create meeting point."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:711 includes/Admin/MenuManager.php:765
+msgid "Invalid meeting point ID."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:740
+msgid "Meeting point updated successfully."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:750
+msgid "Failed to update meeting point."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:776
+msgid "Meeting point deleted successfully."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:782
+msgid ""
+"Cannot delete meeting point. It may be in use by schedules or set as default "
+"for products."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:802
+msgid "Extras Management"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:805
+msgid "Add New Extra"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:821 includes/Admin/MenuManager.php:895
+#: includes/Admin/MenuManager.php:966
+msgid "Description"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:829 includes/Admin/MenuManager.php:896
+#: includes/Admin/MenuManager.php:974
+msgid "Price"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:837 includes/Admin/MenuManager.php:897
+#: includes/Admin/MenuManager.php:982
+msgid "Billing Type"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:841 includes/Admin/MenuManager.php:916
+#: includes/Admin/MenuManager.php:986
+msgid "Per Person"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:842 includes/Admin/MenuManager.php:916
+#: includes/Admin/MenuManager.php:987
+msgid "Per Booking"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:848 includes/Admin/MenuManager.php:898
+#: includes/Admin/MenuManager.php:993
+msgid "Tax Class"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:860 includes/Admin/MenuManager.php:1005
+msgid "Max Quantity"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:868 includes/Admin/MenuManager.php:900
+#: includes/Admin/MenuManager.php:1013 templates/single-experience.php:665
+msgid "Required"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:872
+msgid "Check if this extra is required for booking"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:877 includes/Admin/MenuManager.php:901
+#: includes/Admin/MenuManager.php:1021 includes/Admin/MenuManager.php:1145
+msgid "Active"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:881
+msgid "Check to make this extra available for selection"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:886
+msgid "Add Extra"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:890
+msgid "Existing Extras"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:899
+msgid "Max Qty"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:908
+msgid "No extras found."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:917 includes/Data/ExtraManager.php:305
+msgid "Standard"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:934
+msgid "Are you sure you want to delete this extra?"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1136 includes/Admin/MenuManager.php:2208
+msgid "Gift Vouchers"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1146
+msgid "Redeemed"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1147 includes/Admin/MenuManager.php:1290
+msgid "Expired"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1148 includes/Admin/MenuManager.php:1195
+#: includes/Admin/MenuManager.php:1341
+msgid "Void"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1163
+msgid "From date"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1168
+msgid "To date"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1173
+msgid "Search vouchers..."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1183 includes/Admin/MenuManager.php:1358
+#, php-format
+msgid "%d items"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1194
+msgid "Bulk actions"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1196
+msgid "Resend emails"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1197
+msgid "Extend expiration"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1202
+msgid "months"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1205 templates/single-experience.php:806
+#: templates/voucher-form.php:34
+msgid "Apply"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1216
+msgid "Code"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1218 includes/Booking/Cart_Hooks.php:271
+msgid "Recipient"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1219
+msgid "Value"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1221
+msgid "Expires"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1230
+msgid "No vouchers found."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1256
+msgid "Full Experience"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1270
+#, php-format
+msgid "Order #%d"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1278
+#, php-format
+msgid "From: %s"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1299
+msgid "Download PDF"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1303
+msgid "Copy PDF link"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1304
+msgid "Copy Link"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1318
+msgid "Resend"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1327
+msgid "Months to extend"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1330
+msgid "Extend"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1459 includes/Admin/MenuManager.php:1955
+#: includes/Admin/MenuManager.php:2109 includes/Admin/MenuManager.php:2733
+#: includes/Core/CapabilityManager.php:88
+msgid "You do not have permission to perform this action."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1529
+msgid "Voucher voided successfully."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1535
+msgid "Failed to void voucher."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1557 includes/Admin/MenuManager.php:1647
+msgid "Voucher not found."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1568
+msgid "Associated order not found."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1607
+msgid "Voucher email resent successfully."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1615
+msgid "Failed to resend voucher email."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1630
+msgid "Invalid extension period."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1670
+#, php-format
+msgid "Voucher expiration extended to %s."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1676
+msgid "Failed to extend voucher expiration."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1696
+msgid "No vouchers selected."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1748
+#, php-format
+msgid "%d voucher voided."
+msgid_plural "%d vouchers voided."
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/Admin/MenuManager.php:1751
+#, php-format
+msgid "%d voucher email resent."
+msgid_plural "%d voucher emails resent."
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/Admin/MenuManager.php:1754
+#, php-format
+msgid "%d voucher extended."
+msgid_plural "%d vouchers extended."
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/Admin/MenuManager.php:1764
+#, php-format
+msgid "%d vouchers failed to process."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1784 includes/Admin/MenuManager.php:1845
+msgid "PDF not found."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1822
+#, php-format
+msgid "Voucher %s: %s by %s"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1871
+msgid "Global Closures Management"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1874 includes/Admin/MenuManager.php:1900
+msgid "Add Global Closure"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1882 includes/Admin/MenuManager.php:1913
+#: includes/Admin/MenuManager.php:2796
+msgid "Date"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1886
+msgid "Select the date to close for all experiences."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1891 includes/Admin/MenuManager.php:1915
+#: includes/ProductType/Experience.php:319
+msgid "Reason"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1895
+msgid "Optional reason for the closure."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1905
+msgid "Existing Closures"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1908
+msgid "No global closures found."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1914 includes/PDF/Voucher_Pdf.php:73
+#: includes/ProductType/Experience.php:50
+#: includes/ProductType/Experience.php:62 includes/Data/VoucherManager.php:241
+#: includes/Data/VoucherManager.php:306
+msgid "Experience"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1923 includes/REST/BookingsAPI.php:137
+#: includes/Data/VoucherManager.php:492
+msgid "Unknown Product"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1931
+msgid "Are you sure you want to remove this closure?"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1932 includes/ProductType/Experience.php:265
+#: includes/ProductType/Experience.php:321 templates/single-experience.php:813
+#: templates/voucher-form.php:41
+msgid "Remove"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:1993 includes/Admin/MenuManager.php:2045
+msgid "Extra name is required."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2004
+msgid "Extra created successfully."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2010
+msgid "Failed to create extra."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2025 includes/Admin/MenuManager.php:2077
+msgid "Invalid extra ID."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2056
+msgid "Extra updated successfully."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2062
+msgid "Failed to update extra."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2088
+msgid "Extra deleted successfully."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2094
+msgid "Cannot delete extra. It may be in use by products."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2124
+msgid "Global closure added successfully."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2130
+msgid "Failed to add global closure."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2145
+msgid "Global closure removed successfully."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2151
+msgid "Failed to remove global closure."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2178 includes/Admin/SetupWizard.php:568
+#: includes/Core/Installer.php:252
+msgid ""
+"This voucher is valid for one experience booking. Please present the QR code "
+"when redeeming."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2205
+msgid "FP Esperienze Settings"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2209 includes/Admin/SetupWizard.php:292
+msgid "Integrations"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2221
+msgid "Default Expiration (months)"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2231
+msgid "How many months gift vouchers should be valid for by default."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2237
+msgid "PDF Logo URL"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2245
+msgid "Select Image"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2246
+msgid "Logo to display on gift voucher PDFs."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2252 includes/Admin/SetupWizard.php:594
+msgid "Brand Color"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2259
+msgid "Primary color for gift voucher PDFs."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2265
+msgid "Email Sender Name"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2273
+msgid "Name used in the \"From\" field of gift voucher emails."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2279
+msgid "Email Sender Address"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2287
+msgid "Email address used in the \"From\" field of gift voucher emails."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2293
+msgid "Terms & Conditions"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2300
+msgid "Terms and conditions text displayed on gift voucher PDFs."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2306
+msgid "HMAC Secret Key"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2312
+msgid "Regenerate Secret"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2314
+msgid ""
+"Secret key used to sign QR codes for security. Regenerating will invalidate "
+"existing QR codes!"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2319
+msgid "Save Settings"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2328 includes/Admin/SetupWizard.php:470
+msgid "Google Analytics 4"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2333 includes/Admin/SetupWizard.php:474
+msgid "Measurement ID"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2342
+msgid "Your Google Analytics 4 Measurement ID (starts with G-)."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2348
+msgid "Enhanced eCommerce"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2357
+msgid "Enable enhanced eCommerce tracking (recommended)"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2359
+msgid "Track purchase events and conversion data for better analytics."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2365 includes/Admin/SetupWizard.php:492
+msgid "Google Ads"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2370 includes/Admin/SetupWizard.php:496
+msgid "Conversion ID"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2379
+msgid ""
+"Your Google Ads Conversion ID (starts with AW-). Configure conversion "
+"actions in Google Ads dashboard."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2385 includes/Admin/SetupWizard.php:505
+msgid "Meta Pixel (Facebook)"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2390 includes/Admin/SetupWizard.php:509
+msgid "Pixel ID"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2399
+msgid "Your Meta (Facebook) Pixel ID number."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2405
+msgid "Conversions API"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2414
+msgid "Enable Conversions API and event deduplication (placeholder)"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2416
+msgid ""
+"Advanced feature for server-side tracking and better data accuracy. "
+"Implementation coming in future version."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2422
+msgid "Consent Mode v2"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2427
+msgid "Enable Consent Mode"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2436
+msgid "Use Consent Mode v2 for tracking compliance"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2438
+msgid ""
+"When enabled, GA4 and Meta Pixel events only fire if marketing consent is "
+"granted. Requires integration with a Consent Management Platform (CMP)."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2444
+msgid "Consent Cookie Name"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2453
+msgid ""
+"Name of the cookie that stores marketing consent status (should contain "
+"\"true\" or \"1\" for granted)."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2459
+msgid "Consent JavaScript Function"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2468
+msgid ""
+"Optional: JavaScript function path that returns boolean consent status. Use "
+"either this OR cookie name, not both."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2474 includes/Admin/SetupWizard.php:518
+msgid "Brevo (Email Marketing)"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2479 includes/Admin/SetupWizard.php:522
+msgid "API Key v3"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2487
+msgid "Your Brevo API key v3 for email list management."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2493 includes/Admin/SetupWizard.php:531
+msgid "List ID (Italian)"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2501
+msgid "Brevo list ID for Italian customers."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2507 includes/Admin/SetupWizard.php:539
+msgid "List ID (English)"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2515
+msgid "Brevo list ID for English customers."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2521 includes/Admin/SetupWizard.php:547
+msgid "Google Places API"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2526 includes/Admin/SetupWizard.php:551
+msgid "API Key"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2534
+msgid "Google Places API key for retrieving reviews and location data."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2540
+msgid "Display Reviews"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2549
+msgid "Show Google reviews on Meeting Point pages"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2551
+msgid "Display Google reviews for meeting points when available."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2557
+msgid "Reviews Limit"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2567
+msgid "Maximum number of reviews to display (1-10)."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2573
+msgid "Cache TTL (minutes)"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2583
+msgid "How long to cache Google Places data (5-1440 minutes)."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2589
+msgid "Google Business Profile API (Optional)"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2604
+msgid ""
+"Google OAuth Client ID for Business Profile access (placeholder for future "
+"implementation)."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2620
+msgid ""
+"Google OAuth Client Secret (keep secure) - placeholder for future "
+"implementation."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2626
+msgid "Requirements"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2630
+msgid "Note:"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2631
+msgid ""
+"You must be the verified owner of the Google Business Profile to use this "
+"feature. OAuth integration will be implemented in a future version."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2637
+msgid "Save Integrations"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2723
+msgid "Settings saved successfully!"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2751
+msgid "Booking status updated successfully."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2764
+msgid "Insufficient permissions."
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2793
+msgid "Booking ID"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2794
+msgid "Order ID"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2797
+msgid "Time"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2798 includes/Booking/Cart_Hooks.php:234
+#: includes/Booking/Cart_Hooks.php:346 templates/single-experience.php:574
+msgid "Adults"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2799 includes/Booking/Cart_Hooks.php:241
+#: includes/Booking/Cart_Hooks.php:350 templates/single-experience.php:601
+msgid "Children"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2800
+msgid "Total Participants"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2803
+msgid "Customer Notes"
+msgstr ""
+
+#: includes/Admin/MenuManager.php:2804
+msgid "Admin Notes"
+msgstr ""
+
+#: includes/Admin/PerformanceSettings.php:47
+msgid "Performance Settings"
+msgstr ""
+
+#: includes/Admin/PerformanceSettings.php:66
+#, php-format
+msgid "Cleared %d cache entries."
+msgstr ""
+
+#: includes/Admin/PerformanceSettings.php:75
+msgid "Regenerated minified assets."
+msgstr ""
+
+#: includes/Admin/PerformanceSettings.php:84
+msgid "Started pre-building availability cache."
+msgstr ""
+
+#: includes/Admin/PerformanceSettings.php:98
+msgid "Cache Settings"
+msgstr ""
+
+#: includes/Admin/PerformanceSettings.php:103
+msgid "Pre-build Days"
+msgstr ""
+
+#: includes/Admin/PerformanceSettings.php:113
+msgid ""
+"Number of days ahead to pre-build availability cache. Set to 0 to disable "
+"pre-building."
+msgstr ""
+
+#: includes/Admin/PerformanceSettings.php:122
+msgid "Cache Statistics"
+msgstr ""
+
+#: includes/Admin/PerformanceSettings.php:126
+msgid "Availability Caches"
+msgstr ""
+
+#: includes/Admin/PerformanceSettings.php:130
+msgid "Archive Caches"
+msgstr ""
+
+#: includes/Admin/PerformanceSettings.php:134
+msgid "Total Caches"
+msgstr ""
+
+#: includes/Admin/PerformanceSettings.php:140
+msgid "Asset Optimization Statistics"
+msgstr ""
+
+#: includes/Admin/PerformanceSettings.php:144
+msgid "Original Size"
+msgstr ""
+
+#: includes/Admin/PerformanceSettings.php:148
+msgid "Minified Size"
+msgstr ""
+
+#: includes/Admin/PerformanceSettings.php:152
+msgid "Compression Ratio"
+msgstr ""
+
+#: includes/Admin/PerformanceSettings.php:156
+msgid "Minified Assets Available"
+msgstr ""
+
+#: includes/Admin/PerformanceSettings.php:158
+#: includes/Booking/Cart_Hooks.php:267 includes/Booking/Cart_Hooks.php:369
+#: includes/Data/VoucherManager.php:46
+msgid "Yes"
+msgstr ""
+
+#: includes/Admin/PerformanceSettings.php:159
+msgid "No"
+msgstr ""
+
+#: includes/Admin/PerformanceSettings.php:164
+msgid "Performance Actions"
+msgstr ""
+
+#: includes/Admin/PerformanceSettings.php:171
+msgid "Clear All Caches"
+msgstr ""
+
+#: includes/Admin/PerformanceSettings.php:172
+msgid "Are you sure you want to clear all caches?"
+msgstr ""
+
+#: includes/Admin/PerformanceSettings.php:179
+msgid "Regenerate Minified Assets"
+msgstr ""
+
+#: includes/Admin/PerformanceSettings.php:186
+msgid "Pre-build Cache Now"
+msgstr ""
+
+#: includes/Admin/PerformanceSettings.php:191
+msgid "Performance Tips"
+msgstr ""
+
+#: includes/Admin/PerformanceSettings.php:194
+msgid "Cache TTL"
+msgstr ""
+
+#: includes/Admin/PerformanceSettings.php:194
+msgid "Availability caches are stored for 10 minutes by default."
+msgstr ""
+
+#: includes/Admin/PerformanceSettings.php:195
+msgid "Smart Invalidation"
+msgstr ""
+
+#: includes/Admin/PerformanceSettings.php:195
+msgid ""
+"Caches are automatically cleared when bookings are made or overrides are "
+"changed."
+msgstr ""
+
+#: includes/Admin/PerformanceSettings.php:196
+msgid "Asset Optimization"
+msgstr ""
+
+#: includes/Admin/PerformanceSettings.php:196
+msgid ""
+"CSS and JS files are automatically minified and concatenated for better "
+"performance."
+msgstr ""
+
+#: includes/Admin/PerformanceSettings.php:197
+msgid "Lazy Loading"
+msgstr ""
+
+#: includes/Admin/PerformanceSettings.php:197
+msgid ""
+"All images include lazy loading attributes for improved page load times."
+msgstr ""
+
+#: includes/Admin/PerformanceSettings.php:198
+msgid "Script Deferring"
+msgstr ""
+
+#: includes/Admin/PerformanceSettings.php:198
+msgid "Non-critical scripts are deferred to improve page rendering speed."
+msgstr ""
+
+#: includes/Admin/SetupWizard.php:43 includes/Admin/SetupWizard.php:44
+msgid "Setup Wizard"
+msgstr ""
+
+#: includes/Admin/SetupWizard.php:281
+msgid "FP Esperienze Setup Wizard"
+msgstr ""
+
+#: includes/Admin/SetupWizard.php:291 includes/Admin/SetupWizard.php:384
+msgid "Basic Settings"
+msgstr ""
+
+#: includes/Admin/SetupWizard.php:293
+msgid "Brand & PDF"
+msgstr ""
+
+#: includes/Admin/SetupWizard.php:311 includes/Frontend/Shortcodes.php:414
+msgid "Previous"
+msgstr ""
+
+#: includes/Admin/SetupWizard.php:315
+msgid "Skip"
+msgstr ""
+
+#: includes/Admin/SetupWizard.php:319
+msgid "Finish Setup"
+msgstr ""
+
+#: includes/Admin/SetupWizard.php:319 includes/Frontend/Shortcodes.php:440
+msgid "Next"
+msgstr ""
+
+#: includes/Admin/SetupWizard.php:335 includes/Admin/SetupWizard.php:583
+msgid "Upload Logo"
+msgstr ""
+
+#: includes/Admin/SetupWizard.php:386
+msgid "Configure the basic settings for your experience booking system."
+msgstr ""
+
+#: includes/Admin/SetupWizard.php:392
+msgid "Currency"
+msgstr ""
+
+#: includes/Admin/SetupWizard.php:402
+msgid "Default currency for experience pricing."
+msgstr ""
+
+#: includes/Admin/SetupWizard.php:407
+msgid "Timezone"
+msgstr ""
+
+#: includes/Admin/SetupWizard.php:411
+msgid "Use WordPress default"
+msgstr ""
+
+#: includes/Admin/SetupWizard.php:421
+msgid "Timezone for booking schedules and availability."
+msgstr ""
+
+#: includes/Admin/SetupWizard.php:426
+msgid "Default Duration (minutes)"
+msgstr ""
+
+#: includes/Admin/SetupWizard.php:430
+msgid "Default duration for new experiences."
+msgstr ""
+
+#: includes/Admin/SetupWizard.php:435
+msgid "Default Capacity"
+msgstr ""
+
+#: includes/Admin/SetupWizard.php:439
+msgid "Default maximum participants for new experiences."
+msgstr ""
+
+#: includes/Admin/SetupWizard.php:444
+msgid "Default Language"
+msgstr ""
+
+#: includes/Admin/SetupWizard.php:448
+msgid "English"
+msgstr ""
+
+#: includes/Admin/SetupWizard.php:449
+msgid "Italian"
+msgstr ""
+
+#: includes/Admin/SetupWizard.php:451
+msgid "Default language for customer communications."
+msgstr ""
+
+#: includes/Admin/SetupWizard.php:465
+msgid "Third-Party Integrations"
+msgstr ""
+
+#: includes/Admin/SetupWizard.php:467
+msgid ""
+"Configure integrations with Google Analytics, Google Ads, Meta Pixel, Brevo, "
+"and Google Places. You can skip this step and configure these later in "
+"Settings."
+msgstr ""
+
+#: includes/Admin/SetupWizard.php:478
+msgid "Your GA4 Measurement ID for tracking events and conversions."
+msgstr ""
+
+#: includes/Admin/SetupWizard.php:486
+msgid "Enable Enhanced eCommerce tracking"
+msgstr ""
+
+#: includes/Admin/SetupWizard.php:500
+msgid "Your Google Ads Conversion ID for tracking bookings."
+msgstr ""
+
+#: includes/Admin/SetupWizard.php:513
+msgid "Your Meta (Facebook) Pixel ID for tracking conversions."
+msgstr ""
+
+#: includes/Admin/SetupWizard.php:526
+msgid "Your Brevo API key for email list management."
+msgstr ""
+
+#: includes/Admin/SetupWizard.php:555
+msgid "Google Places API key for location and reviews integration."
+msgstr ""
+
+#: includes/Admin/SetupWizard.php:571
+msgid "Brand & PDF Settings"
+msgstr ""
+
+#: includes/Admin/SetupWizard.php:573
+msgid ""
+"Configure your brand settings for voucher PDFs and customer communications."
+msgstr ""
+
+#: includes/Admin/SetupWizard.php:579
+msgid "PDF Logo"
+msgstr ""
+
+#: includes/Admin/SetupWizard.php:589
+msgid "Logo to display on voucher PDFs and emails."
+msgstr ""
+
+#: includes/Admin/SetupWizard.php:598
+msgid "Primary brand color for PDFs and styling."
+msgstr ""
+
+#: includes/Admin/SetupWizard.php:603
+msgid "Voucher Terms"
+msgstr ""
+
+#: includes/Admin/SetupWizard.php:607
+msgid "Terms and conditions text displayed on vouchers."
+msgstr ""
+
+#: includes/Frontend/Shortcodes.php:82
+msgid "No experiences found."
+msgstr ""
+
+#: includes/Frontend/Shortcodes.php:298
+msgid "All locations"
+msgstr ""
+
+#: includes/Frontend/Shortcodes.php:312 includes/Booking/Cart_Hooks.php:227
+#: includes/Booking/Cart_Hooks.php:342 templates/single-experience.php:555
+msgid "Language"
+msgstr ""
+
+#: includes/Frontend/Shortcodes.php:314
+msgid "All languages"
+msgstr ""
+
+#: includes/Frontend/Shortcodes.php:328 templates/single-experience.php:169
+msgid "Duration"
+msgstr ""
+
+#: includes/Frontend/Shortcodes.php:330
+msgid "Any duration"
+msgstr ""
+
+#: includes/Frontend/Shortcodes.php:331
+msgid "Up to 1.5 hours"
+msgstr ""
+
+#: includes/Frontend/Shortcodes.php:332
+msgid "1.5 - 3 hours"
+msgstr ""
+
+#: includes/Frontend/Shortcodes.php:333
+msgid "More than 3 hours"
+msgstr ""
+
+#: includes/Frontend/Shortcodes.php:340
+msgid "Available on"
+msgstr ""
+
+#: includes/Frontend/Shortcodes.php:351
+msgid "Apply Filters"
+msgstr ""
+
+#: includes/Frontend/Shortcodes.php:408
+msgid "Archive pagination"
+msgstr ""
+
+#: includes/Frontend/Shortcodes.php:488
+#, php-format
+msgid "%d min"
+msgstr ""
+
+#: includes/Frontend/Shortcodes.php:518
+#, php-format
+msgid "From %s"
+msgstr ""
+
+#: includes/Frontend/Shortcodes.php:527
+msgid "Dettagli"
+msgstr ""
+
+#: includes/Booking/BookingManager.php:160
+#, php-format
+msgid "Created from order #%d"
+msgstr ""
+
+#: includes/Booking/Cart_Hooks.php:137
+msgid "Please select a time slot."
+msgstr ""
+
+#: includes/Booking/Cart_Hooks.php:142
+msgid "Please select at least one participant."
+msgstr ""
+
+#: includes/Booking/Cart_Hooks.php:149
+msgid "Please enter the recipient name for gift purchase."
+msgstr ""
+
+#: includes/Booking/Cart_Hooks.php:154
+msgid "Please enter a valid recipient email for gift purchase."
+msgstr ""
+
+#: includes/Booking/Cart_Hooks.php:162
+msgid "Invalid time slot format."
+msgstr ""
+
+#: includes/Booking/Cart_Hooks.php:174
+#, php-format
+msgid ""
+"This time slot is too close to departure. Please book at least %d minutes in "
+"advance."
+msgstr ""
+
+#: includes/Booking/Cart_Hooks.php:192
+#, php-format
+msgid ""
+"Only %d spots available for this time slot. You selected %d participants."
+msgstr ""
+
+#: includes/Booking/Cart_Hooks.php:220 includes/Booking/Cart_Hooks.php:334
+msgid "Time Slot"
+msgstr ""
+
+#: includes/Booking/Cart_Hooks.php:254 includes/Booking/Cart_Hooks.php:359
+#, php-format
+msgid "Qty: %d"
+msgstr ""
+
+#: includes/Booking/Cart_Hooks.php:266 includes/Booking/Cart_Hooks.php:369
+msgid "Gift Purchase"
+msgstr ""
+
+#: includes/Booking/Cart_Hooks.php:277 templates/single-experience.php:151
+#: templates/single-experience.php:514 templates/single-experience.php:860
+msgid "From"
+msgstr ""
+
+#: includes/Booking/Cart_Hooks.php:284 includes/Booking/Cart_Hooks.php:381
+msgid "Send Date"
+msgstr ""
+
+#: includes/Booking/Cart_Hooks.php:303 includes/Booking/Cart_Hooks.php:389
+msgid "Voucher Applied"
+msgstr ""
+
+#: includes/Booking/Cart_Hooks.php:308 templates/voucher-form.php:53
+msgid "Full discount"
+msgstr ""
+
+#: includes/Booking/Cart_Hooks.php:309 templates/voucher-form.php:54
+#, php-format
+msgid "Up to %s"
+msgstr ""
+
+#: includes/Booking/Cart_Hooks.php:338
+msgid "Meeting Point ID"
+msgstr ""
+
+#: includes/Booking/Cart_Hooks.php:370
+msgid "Recipient Name"
+msgstr ""
+
+#: includes/Booking/Cart_Hooks.php:371
+msgid "Recipient Email"
+msgstr ""
+
+#: includes/Booking/Cart_Hooks.php:374
+msgid "Sender Name"
+msgstr ""
+
+#: includes/Booking/Cart_Hooks.php:378
+msgid "Gift Message"
+msgstr ""
+
+#: includes/Booking/Cart_Hooks.php:488
+msgid "Please enter a voucher code."
+msgstr ""
+
+#: includes/Booking/Cart_Hooks.php:519
+msgid "Voucher applied successfully!"
+msgstr ""
+
+#: includes/Booking/Cart_Hooks.php:534
+msgid "Invalid cart item."
+msgstr ""
+
+#: includes/Booking/Cart_Hooks.php:547
+msgid "Voucher removed successfully."
+msgstr ""
+
+#: includes/Booking/Cart_Hooks.php:572
+#, php-format
+msgid "Voucher %s redeemed for this order."
+msgstr ""
+
+#: includes/Booking/Cart_Hooks.php:599
+#, php-format
+msgid "Voucher %s restored to active status due to order cancellation/refund."
+msgstr ""
+
+#: includes/Booking/Cart_Hooks.php:654
+msgid "Full experience discount"
+msgstr ""
+
+#: includes/Booking/Cart_Hooks.php:661
+#, php-format
+msgid "Discount up to %s"
+msgstr ""
+
+#: includes/REST/AvailabilityAPI.php:92
+msgid "Product not found or is not an experience."
+msgstr ""
+
+#: includes/REST/AvailabilityAPI.php:103
+msgid "Invalid date format. Use YYYY-MM-DD."
+msgstr ""
+
+#: includes/REST/AvailabilityAPI.php:115
+msgid "Cannot check availability for past dates."
+msgstr ""
+
+#: includes/Core/RateLimiter.php:109
+msgid "Rate limit exceeded. Please try again later."
+msgstr ""
+
+#: includes/Core/Plugin.php:236
+msgid "Failed to load availability."
+msgstr ""
+
+#: includes/Core/Plugin.php:237
+msgid "Booking system temporarily unavailable. Please try again."
+msgstr ""
+
+#: includes/Core/Plugin.php:238
+msgid "No availability for this date."
+msgstr ""
+
+#: includes/Core/Plugin.php:239
+msgid "spots left"
+msgstr ""
+
+#: includes/Core/Plugin.php:240
+msgid "Sold out"
+msgstr ""
+
+#: includes/Core/Plugin.php:241
+msgid "Loading available times..."
+msgstr ""
+
+#: includes/Core/CapabilityManager.php:89
+msgid "Permission Denied"
+msgstr ""
+
+#: includes/PDF/Voucher_Pdf.php:76
+msgid "Prepaid Ticket"
+msgstr ""
+
+#: includes/PDF/Voucher_Pdf.php:84 includes/PDF/Voucher_Pdf.php:184
+msgid "Gift Voucher"
+msgstr ""
+
+#: includes/PDF/Voucher_Pdf.php:192
+msgid "For:"
+msgstr ""
+
+#: includes/PDF/Voucher_Pdf.php:196 includes/Data/VoucherManager.php:323
+msgid "Experience:"
+msgstr ""
+
+#: includes/PDF/Voucher_Pdf.php:200
+msgid "Value:"
+msgstr ""
+
+#: includes/PDF/Voucher_Pdf.php:204
+msgid "Expires:"
+msgstr ""
+
+#: includes/PDF/Voucher_Pdf.php:212 includes/Data/VoucherManager.php:264
+msgid "Personal Message:"
+msgstr ""
+
+#: includes/PDF/Voucher_Pdf.php:219
+msgid "QR Code for voucher redemption"
+msgstr ""
+
+#: includes/PDF/Voucher_Pdf.php:220
+msgid "Scan this QR code to redeem your voucher"
+msgstr ""
+
+#: includes/PDF/Voucher_Pdf.php:224
+msgid "How to Redeem:"
+msgstr ""
+
+#: includes/PDF/Voucher_Pdf.php:226
+#, php-format
+msgid ""
+"Visit %s to book your experience and use the voucher code above or scan the "
+"QR code during checkout."
+msgstr ""
+
+#: includes/ProductType/Experience.php:82
+msgid "Duration (minutes)"
+msgstr ""
+
+#: includes/ProductType/Experience.php:85
+msgid "Experience duration in minutes"
+msgstr ""
+
+#: includes/ProductType/Experience.php:96
+msgid "Max Capacity"
+msgstr ""
+
+#: includes/ProductType/Experience.php:99
+msgid "Maximum number of participants"
+msgstr ""
+
+#: includes/ProductType/Experience.php:110
+#: includes/ProductType/Experience.php:311
+msgid "Adult Price"
+msgstr ""
+
+#: includes/ProductType/Experience.php:113
+msgid "Price per adult participant"
+msgstr ""
+
+#: includes/ProductType/Experience.php:124
+#: includes/ProductType/Experience.php:315
+msgid "Child Price"
+msgstr ""
+
+#: includes/ProductType/Experience.php:127
+msgid "Price per child participant"
+msgstr ""
+
+#: includes/ProductType/Experience.php:138 templates/single-experience.php:179
+msgid "Languages"
+msgstr ""
+
+#: includes/ProductType/Experience.php:139
+msgid "Italian, English, Spanish"
+msgstr ""
+
+#: includes/ProductType/Experience.php:141
+msgid "Available languages for this experience"
+msgstr ""
+
+#: includes/ProductType/Experience.php:149
+msgid "Default Meeting Point"
+msgstr ""
+
+#: includes/ProductType/Experience.php:152
+msgid "Default meeting point for this experience"
+msgstr ""
+
+#: includes/ProductType/Experience.php:158
+msgid "Schedules"
+msgstr ""
+
+#: includes/ProductType/Experience.php:163
+msgid "Add Schedule"
+msgstr ""
+
+#: includes/ProductType/Experience.php:168
+msgid "Date Overrides"
+msgstr ""
+
+#: includes/ProductType/Experience.php:173
+msgid "Add Override"
+msgstr ""
+
+#: includes/ProductType/Experience.php:212
+msgid "Sunday"
+msgstr ""
+
+#: includes/ProductType/Experience.php:213
+msgid "Monday"
+msgstr ""
+
+#: includes/ProductType/Experience.php:214
+msgid "Tuesday"
+msgstr ""
+
+#: includes/ProductType/Experience.php:215
+msgid "Wednesday"
+msgstr ""
+
+#: includes/ProductType/Experience.php:216
+msgid "Thursday"
+msgstr ""
+
+#: includes/ProductType/Experience.php:217
+msgid "Friday"
+msgstr ""
+
+#: includes/ProductType/Experience.php:218
+msgid "Saturday"
+msgstr ""
+
+#: includes/ProductType/Experience.php:226
+msgid "Select Day"
+msgstr ""
+
+#: includes/ProductType/Experience.php:302
+msgid "Closed"
+msgstr ""
+
+#: includes/ProductType/Experience.php:307
+msgid "Capacity Override"
+msgstr ""
+
+#: includes/ProductType/Experience.php:338
+msgid "Select which extras are available for this experience:"
+msgstr ""
+
+#: includes/ProductType/Experience.php:344
+#, php-format
+msgid "No extras available. <a href=\"%s\">Create some extras</a> first."
+msgstr ""
+
+#: includes/ProductType/Experience.php:359 templates/single-experience.php:153
+#: templates/single-experience.php:516 templates/single-experience.php:650
+msgid "per person"
+msgstr ""
+
+#: includes/ProductType/Experience.php:359 templates/single-experience.php:652
+msgid "per booking"
+msgstr ""
+
+#: includes/Data/MeetingPointManager.php:192
+msgid "Select a meeting point"
+msgstr ""
+
+#: includes/Data/VoucherManager.php:186
+#, php-format
+msgid "You have received a gift voucher from %s"
+msgstr ""
+
+#: includes/Data/VoucherManager.php:209
+#, php-format
+msgid "Gift voucher sent: %s"
+msgstr ""
+
+#: includes/Data/VoucherManager.php:246
+msgid "You have received a gift voucher!"
+msgstr ""
+
+#: includes/Data/VoucherManager.php:249 includes/Data/VoucherManager.php:314
+#, php-format
+msgid "Hi %s,"
+msgstr ""
+
+#: includes/Data/VoucherManager.php:255
+#, php-format
+msgid "%s has sent you a gift voucher for an amazing experience!"
+msgstr ""
+
+#: includes/Data/VoucherManager.php:259
+msgid "You have received a gift voucher for an amazing experience!"
+msgstr ""
+
+#: includes/Data/VoucherManager.php:273
+#, php-format
+msgid "Valid until: %s"
+msgstr ""
+
+#: includes/Data/VoucherManager.php:279
+msgid ""
+"To redeem your voucher, visit our website and use the code above during "
+"checkout. You can also present the attached PDF with the QR code."
+msgstr ""
+
+#: includes/Data/VoucherManager.php:284
+msgid "Book Your Experience"
+msgstr ""
+
+#: includes/Data/VoucherManager.php:288 includes/Data/VoucherManager.php:331
+#, php-format
+msgid "This email was sent by %s"
+msgstr ""
+
+#: includes/Data/VoucherManager.php:311
+msgid "Gift voucher confirmation"
+msgstr ""
+
+#: includes/Data/VoucherManager.php:318
+msgid "Your gift voucher has been successfully created and sent!"
+msgstr ""
+
+#: includes/Data/VoucherManager.php:321
+msgid "Gift Details:"
+msgstr ""
+
+#: includes/Data/VoucherManager.php:322
+msgid "Recipient:"
+msgstr ""
+
+#: includes/Data/VoucherManager.php:324
+msgid "Voucher Code:"
+msgstr ""
+
+#: includes/Data/VoucherManager.php:325
+msgid "Valid Until:"
+msgstr ""
+
+#: includes/Data/VoucherManager.php:328
+msgid "A copy of the voucher PDF is attached to this email for your records."
+msgstr ""
+
+#: includes/Data/VoucherManager.php:439
+msgid "Invalid voucher code."
+msgstr ""
+
+#: includes/Data/VoucherManager.php:447
+msgid "This voucher has already been used."
+msgstr ""
+
+#: includes/Data/VoucherManager.php:450 includes/Data/VoucherManager.php:470
+msgid "This voucher has expired."
+msgstr ""
+
+#: includes/Data/VoucherManager.php:453
+msgid "This voucher has been voided."
+msgstr ""
+
+#: includes/Data/VoucherManager.php:456
+msgid "This voucher is not valid."
+msgstr ""
+
+#: includes/Data/VoucherManager.php:478
+msgid "Invalid voucher signature."
+msgstr ""
+
+#: includes/Data/VoucherManager.php:484
+msgid "Voucher code mismatch."
+msgstr ""
+
+#: includes/Data/VoucherManager.php:494
+#, php-format
+msgid "This voucher is only valid for \"%s\"."
+msgstr ""
+
+#: includes/Data/VoucherManager.php:508
+msgid "Voucher is valid and ready to apply."
+msgstr ""
+
+#: templates/single-experience.php:170
+#, php-format
+msgid "%d minutes"
+msgstr ""
+
+#: templates/single-experience.php:192
+msgid "Cancellation"
+msgstr ""
+
+#: templates/single-experience.php:193
+msgid "Free cancellation up to 24 hours"
+msgstr ""
+
+#: templates/single-experience.php:200
+msgid "Booking"
+msgstr ""
+
+#: templates/single-experience.php:201
+msgid "Instant confirmation"
+msgstr ""
+
+#: templates/single-experience.php:215
+msgid "About This Experience"
+msgstr ""
+
+#: templates/single-experience.php:226
+msgid "What's Included"
+msgstr ""
+
+#: templates/single-experience.php:236
+msgid "Professional guide"
+msgstr ""
+
+#: templates/single-experience.php:237
+msgid "All activities as described"
+msgstr ""
+
+#: templates/single-experience.php:238
+msgid "Small group experience"
+msgstr ""
+
+#: templates/single-experience.php:244
+msgid "What's Not Included"
+msgstr ""
+
+#: templates/single-experience.php:254
+msgid "Hotel pickup and drop-off"
+msgstr ""
+
+#: templates/single-experience.php:255
+msgid "Food and drinks"
+msgstr ""
+
+#: templates/single-experience.php:256
+msgid "Personal expenses"
+msgstr ""
+
+#: templates/single-experience.php:257
+msgid "Gratuities"
+msgstr ""
+
+#: templates/single-experience.php:277
+msgid "Meeting Instructions:"
+msgstr ""
+
+#: templates/single-experience.php:288
+msgid "Open meeting point in Google Maps"
+msgstr ""
+
+#: templates/single-experience.php:289
+msgid "Open in Google Maps"
+msgstr ""
+
+#: templates/single-experience.php:298
+msgid "Map showing meeting point location"
+msgstr ""
+
+#: templates/single-experience.php:300
+msgid "Interactive map will be displayed here"
+msgstr ""
+
+#: templates/single-experience.php:306
+msgid "Map coordinates not available"
+msgstr ""
+
+#: templates/single-experience.php:328 templates/single-experience.php:408
+msgid "Reviews"
+msgstr ""
+
+#: templates/single-experience.php:335 templates/single-experience.php:411
+#, php-format
+msgid "%s out of 5 stars"
+msgstr ""
+
+#: templates/single-experience.php:349 templates/single-experience.php:425
+#, php-format
+msgid "%d review"
+msgid_plural "%d reviews"
+msgstr[0] ""
+msgstr[1] ""
+
+#: templates/single-experience.php:368
+#, php-format
+msgid "%d out of 5 stars"
+msgstr ""
+
+#: templates/single-experience.php:391 templates/single-experience.php:431
+msgid "Reviews via Google"
+msgstr ""
+
+#: templates/single-experience.php:397 templates/single-experience.php:436
+msgid "View on Google Maps"
+msgstr ""
+
+#: templates/single-experience.php:454
+msgid "Frequently Asked Questions"
+msgstr ""
+
+#: templates/single-experience.php:487
+msgid "Customer Reviews"
+msgstr ""
+
+#: templates/single-experience.php:489
+msgid ""
+"Reviews integration will be available in a future update. Real customer "
+"reviews from Google will be displayed here."
+msgstr ""
+
+#: templates/single-experience.php:499
+msgid "Based on authentic reviews"
+msgstr ""
+
+#: templates/single-experience.php:511
+msgid "Book This Experience"
+msgstr ""
+
+#: templates/single-experience.php:530 templates/single-experience.php:866
+msgid "Select Date"
+msgstr ""
+
+#: templates/single-experience.php:537
+msgid "Choose your preferred date"
+msgstr ""
+
+#: templates/single-experience.php:543
+msgid "Available Times"
+msgstr ""
+
+#: templates/single-experience.php:548
+msgid "Please select a date to see available times."
+msgstr ""
+
+#: templates/single-experience.php:562
+msgid "Experience language"
+msgstr ""
+
+#: templates/single-experience.php:575
+msgid "Age 13+"
+msgstr ""
+
+#: templates/single-experience.php:581
+msgid "Decrease adult count"
+msgstr ""
+
+#: templates/single-experience.php:589
+msgid "Number of adults"
+msgstr ""
+
+#: templates/single-experience.php:593
+msgid "Increase adult count"
+msgstr ""
+
+#: templates/single-experience.php:602
+msgid "Age 3-12"
+msgstr ""
+
+#: templates/single-experience.php:608
+msgid "Decrease child count"
+msgstr ""
+
+#: templates/single-experience.php:616
+msgid "Number of children"
+msgstr ""
+
+#: templates/single-experience.php:620
+msgid "Increase child count"
+msgstr ""
+
+#: templates/single-experience.php:635
+msgid "Add Extras"
+msgstr ""
+
+#: templates/single-experience.php:677
+msgid "Quantity"
+msgstr ""
+
+#: templates/single-experience.php:681
+#, php-format
+msgid "Decrease %s quantity"
+msgstr ""
+
+#: templates/single-experience.php:688
+#, php-format
+msgid "%s quantity"
+msgstr ""
+
+#: templates/single-experience.php:691
+#, php-format
+msgid "Increase %s quantity"
+msgstr ""
+
+#: templates/single-experience.php:711
+msgid "Gift this experience"
+msgstr ""
+
+#: templates/single-experience.php:718
+msgid "Your name (optional)"
+msgstr ""
+
+#: templates/single-experience.php:723
+msgid "Your name"
+msgstr ""
+
+#: templates/single-experience.php:728 templates/single-experience.php:735
+msgid "Recipient name"
+msgstr ""
+
+#: templates/single-experience.php:741
+msgid "Recipient email"
+msgstr ""
+
+#: templates/single-experience.php:748
+msgid "recipient@example.com"
+msgstr ""
+
+#: templates/single-experience.php:753
+msgid "Send date (optional)"
+msgstr ""
+
+#: templates/single-experience.php:760
+msgid "Leave empty to send immediately"
+msgstr ""
+
+#: templates/single-experience.php:765
+msgid "Personal message (optional)"
+msgstr ""
+
+#: templates/single-experience.php:770
+msgid "Write a personal message..."
+msgstr ""
+
+#: templates/single-experience.php:782
+msgid "Total"
+msgstr ""
+
+#: templates/single-experience.php:793 templates/voucher-form.php:18
+msgid "Have a voucher?"
+msgstr ""
+
+#: templates/single-experience.php:800 templates/voucher-form.php:25
+msgid "Enter voucher code"
+msgstr ""
+
+#: templates/single-experience.php:828
+msgid "Add to Cart"
+msgstr ""
+
+#: templates/single-experience.php:831
+msgid "Select date and participants to continue"
+msgstr ""
+
+#: templates/single-experience.php:837
+msgid "Loading availability..."
+msgstr ""
+
+#: templates/voucher-form.php:51
+#, php-format
+msgid "Voucher applied: %s"
+msgstr ""
+
+#: fp-esperienze.php:37
+msgid "FP Esperienze requires WordPress 6.5 or higher."
+msgstr ""
+
+#: fp-esperienze.php:47
+msgid "FP Esperienze requires PHP 8.1 or higher."
+msgstr ""
+
+#: fp-esperienze.php:57
+msgid "FP Esperienze requires WooCommerce to be installed and active."
+msgstr ""
+
+#: fp-esperienze.php:86
+msgid "FP Esperienze requires WooCommerce 8.0 or higher."
+msgstr ""

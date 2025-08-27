@@ -98,6 +98,33 @@
                     $(this).click();
                 }
             });
+
+            // Enhanced FAQ keyboard navigation
+            $(document).on('keydown', '.fp-faq-question', function(e) {
+                var $faqButtons = $('.fp-faq-question');
+                var currentIndex = $faqButtons.index(this);
+                
+                switch(e.key) {
+                    case 'ArrowDown':
+                        e.preventDefault();
+                        var nextIndex = (currentIndex + 1) % $faqButtons.length;
+                        $faqButtons.eq(nextIndex).focus();
+                        break;
+                    case 'ArrowUp':
+                        e.preventDefault();
+                        var prevIndex = currentIndex === 0 ? $faqButtons.length - 1 : currentIndex - 1;
+                        $faqButtons.eq(prevIndex).focus();
+                        break;
+                    case 'Home':
+                        e.preventDefault();
+                        $faqButtons.first().focus();
+                        break;
+                    case 'End':
+                        e.preventDefault();
+                        $faqButtons.last().focus();
+                        break;
+                }
+            });
         },
 
         /**
@@ -223,7 +250,7 @@
                     $('#fp-loading').hide();
                 },
                 error: function(xhr, status, error) {
-                    var errorMsg = 'Failed to load availability.';
+                    var errorMsg = fp_booking_widget_i18n.error_failed_load_availability;
                     if (xhr.responseJSON && xhr.responseJSON.message) {
                         errorMsg = xhr.responseJSON.message;
                     }
@@ -257,7 +284,10 @@
                            'data-available="' + slot.available + '" ' +
                            'role="radio" ' +
                            'tabindex="0" ' +
-                           'aria-checked="false">' +
+                           'aria-checked="false" ' +
+                           'aria-label="Time slot ' + slot.start_time + ' to ' + slot.end_time + ', ' + 
+                           (slot.is_available ? slot.available + ' spots available' : 'sold out') + 
+                           ', price from €' + slot.adult_price + '">' +
                            '<div class="fp-slot-time">' + slot.start_time + ' - ' + slot.end_time + '</div>' +
                            '<div class="fp-slot-info">' +
                            '<div class="fp-slot-price">From €' + slot.adult_price + '</div>' +
@@ -444,7 +474,7 @@
                 window.FPEsperienze.addToCart();
             } else {
                 // Fallback: redirect to shop with error
-                self.showError('Booking system temporarily unavailable. Please try again.');
+                self.showError(fp_booking_widget_i18n.error_booking_unavailable || 'Booking system temporarily unavailable. Please try again.');
                 $('#fp-add-to-cart').prop('disabled', false).text('Add to Cart');
             }
         },
@@ -455,6 +485,15 @@
         showError: function(message) {
             var $errorContainer = $('#fp-error-messages');
             $errorContainer.html('<div class="fp-error-message">' + message + '</div>');
+            
+            // Auto-hide after 5 seconds
+            setTimeout(function() {
+                $errorContainer.empty();
+            }, 5000);
+        }
+    };
+
+})(jQuery);/div>');
             
             // Auto-hide after 5 seconds
             setTimeout(function() {

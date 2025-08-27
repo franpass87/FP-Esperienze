@@ -720,6 +720,96 @@ add_action('fp_esperienze_voucher_redeemed', function($voucher_code, $order_id) 
 }, 10, 2);
 ```
 
+## Translation
+
+FP Esperienze is fully internationalized and ready for translation.
+
+### Text Domain
+
+All translatable strings use the text domain: `fp-esperienze`
+
+### Translation Files
+
+- **POT Template**: `languages/fp-esperienze.pot` - Contains all translatable strings
+- **Language Files**: Place translation files in `languages/` directory
+  - Example: `languages/fp-esperienze-it_IT.po` for Italian
+  - Example: `languages/fp-esperienze-es_ES.po` for Spanish
+
+### Translation Process
+
+1. **For translators**: Use the `fp-esperienze.pot` file as the template
+2. **For developers**: Run the following command to regenerate the POT file after adding new strings:
+
+```bash
+# From plugin root directory
+find . -name "*.php" -not -path "./vendor/*" | xargs xgettext \
+  --from-code=UTF-8 \
+  --keyword=__ \
+  --keyword=_e \
+  --keyword=_x:1,2c \
+  --keyword=_ex:1,2c \
+  --keyword=_n:1,2 \
+  --keyword=_nx:1,2,4c \
+  --keyword=_n_noop:1,2 \
+  --keyword=_nx_noop:1,2,3c \
+  --keyword=esc_attr__ \
+  --keyword=esc_attr_e \
+  --keyword=esc_attr_x:1,2c \
+  --keyword=esc_html__ \
+  --keyword=esc_html_e \
+  --keyword=esc_html_x:1,2c \
+  --package-name="FP Esperienze" \
+  --package-version="1.0.0" \
+  --default-domain=fp-esperienze \
+  --output=languages/fp-esperienze.pot \
+  --add-comments=translators \
+  --force-po
+```
+
+### JavaScript Localization
+
+JavaScript strings are localized through the WordPress `wp_localize_script()` function. The following objects are available:
+
+- `fp_booking_widget_i18n` - Booking widget error messages and status texts
+- `fp_esperienze_params` - General plugin parameters and AJAX endpoints
+
+### String Guidelines
+
+- Use descriptive context with `_x()` function when needed
+- Add translator comments with `/* translators: comment */` for complex strings
+- Keep strings concise but descriptive
+- Use proper capitalization and punctuation
+
+## Accessibility
+
+FP Esperienze follows WCAG 2.1 AA accessibility standards.
+
+### Features
+
+- **Color Contrast**: All text meets AA contrast standards (4.5:1 ratio minimum)
+- **Keyboard Navigation**: Full keyboard support for all interactive elements
+- **Screen Reader Support**: Proper ARIA labels, roles, and live regions
+- **Focus Management**: Clear focus states and logical tab order
+- **Semantic HTML**: Proper heading hierarchy and landmark regions
+
+### Accessibility Checklist
+
+- [x] Color contrast meets AA standards (4.5:1 ratio)
+- [x] All interactive elements are keyboard accessible
+- [x] Proper ARIA attributes on dynamic content
+- [x] Clear focus states on all focusable elements
+- [x] Logical heading hierarchy (H1 → H2 → H3)
+- [x] Alternative text for images and icons
+- [x] Form labels and descriptions
+- [x] Error messages are announced to screen readers
+
+### Testing Tools
+
+- Use browser accessibility tools for automated testing
+- Test with keyboard navigation (Tab, Enter, Arrow keys)
+- Verify with screen readers (NVDA, JAWS, VoiceOver)
+- Check color contrast with online tools
+
 ## Author
 
 **Francesco Passeri**
