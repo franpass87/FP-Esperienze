@@ -24,6 +24,7 @@ use FP\Esperienze\Integrations\TrackingManager;
 use FP\Esperienze\Integrations\BrevoManager;
 use FP\Esperienze\Integrations\GooglePlacesManager;
 use FP\Esperienze\Core\CapabilityManager;
+use FP\Esperienze\Core\WebhookManager;
 
 defined('ABSPATH') || exit;
 
@@ -120,6 +121,9 @@ class Plugin {
         
         // Initialize notification manager for ICS and staff emails
         new NotificationManager();
+        
+        // Initialize webhook manager for external integrations
+        new WebhookManager();
         
         // Initialize tracking manager for GA4 and Meta Pixel
         new TrackingManager();
@@ -301,6 +305,26 @@ class Plugin {
             'rest_url' => get_rest_url(),
             'nonce' => wp_create_nonce('fp_esperienze_admin_nonce'),
         ]);
+
+        // Enqueue reports script only on reports page
+        $current_screen = get_current_screen();
+        if ($current_screen && $current_screen->id === 'fp-esperienze_page_fp-esperienze-reports') {
+            wp_enqueue_script(
+                'fp-esperienze-reports',
+                FP_ESPERIENZE_PLUGIN_URL . 'assets/js/reports.js',
+                ['jquery'],
+                FP_ESPERIENZE_VERSION,
+                true
+            );
+
+            // Localize reports script
+            wp_localize_script('fp-esperienze-reports', 'fp_reports_i18n', [
+                'no_data' => __('No data available', 'fp-esperienze'),
+                'loading' => __('Loading...', 'fp-esperienze'),
+                'error_load_data' => __('Failed to load data', 'fp-esperienze'),
+                'ajax_url' => admin_url('admin-ajax.php'),
+            ]);
+        }
     }
 
     /**
