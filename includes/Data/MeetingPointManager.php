@@ -25,8 +25,8 @@ class MeetingPointManager {
     public static function getAllMeetingPoints(bool $translate = true): array {
         global $wpdb;
         
-        $table_name = $wpdb->prefix . 'fp_meeting_points';
-        $results = $wpdb->get_results("SELECT * FROM $table_name ORDER BY name ASC");
+        $table_name = esc_sql($wpdb->prefix . 'fp_meeting_points');
+        $results = $wpdb->get_results("SELECT * FROM `{$table_name}` ORDER BY name ASC");
         
         if (!$results) {
             return [];
