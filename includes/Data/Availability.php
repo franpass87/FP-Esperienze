@@ -26,6 +26,12 @@ class Availability {
      * @return array
      */
     public static function forDay(int $product_id, string $date): array {
+        // Check cache first for performance
+        $cached_data = CacheManager::getAvailabilityCache($product_id, $date);
+        if ($cached_data !== false && isset($cached_data['slots'])) {
+            return $cached_data['slots'];
+        }
+        
         // Get WordPress timezone
         $wp_timezone = wp_timezone();
         

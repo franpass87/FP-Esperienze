@@ -327,6 +327,7 @@ class Installer {
                 'product_date_time' => 'ADD INDEX idx_product_date_time (product_id, booking_date, booking_time)',
                 'date_status' => 'ADD INDEX idx_date_status (booking_date, status)',
                 'product_status' => 'ADD INDEX idx_product_status (product_id, status)',
+                'status_active' => 'ADD INDEX idx_status_active (status)',
             ],
             
             // Schedules table performance indexes  

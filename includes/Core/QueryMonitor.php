@@ -36,35 +36,95 @@ class QueryMonitor {
             return;
         }
         
-        // Hook into WordPress query logging
-        add_filter('query', [__CLASS__, 'logQuery'], 10, 1);
-        add_action('wp_footer', [__CLASS__, 'logStatistics'], 999);
-        add_action('admin_footer', [__CLASS__, 'logStatistics'], 999);
+        // Enable query saving for performance analysis
+        if (!defined('SAVEQUERIES')) {
+            define('SAVEQUERIES', true);
+        }
+        
+        // Hook to analyze queries after page load
+        add_action('wp_footer', [__CLASS__, 'analyzeQueries'], 999);
+        add_action('admin_footer', [__CLASS__, 'analyzeQueries'], 999);
+        add_action('wp_footer', [__CLASS__, 'logStatistics'], 1000);
+        add_action('admin_footer', [__CLASS__, 'logStatistics'], 1000);
     }
     
     /**
-     * Log individual query performance
+     * Analyze all executed queries for performance issues
+     */
+    public static function analyzeQueries(): void {
+        global $wpdb;
+        
+        if (!isset($wpdb->queries) || empty($wpdb->queries)) {
+            return;
+        }
+        
+        foreach ($wpdb->queries as $query_data) {
+            if (!is_array($query_data) || count($query_data) < 3) {
+                continue;
+            }
+            
+            $query = $query_data[0];
+            $execution_time = (float) $query_data[1] * 1000; // Convert to milliseconds
+            $caller = $query_data[2] ?? 'unknown';
+            
+            // Only analyze FP Esperienze queries
+            if (!self::isFpEsperienzeQuery($query)) {
+                continue;
+            }
+            
+            self::recordQueryStats($query, $execution_time);
+            
+            // Log slow queries
+            if ($execution_time > self::SLOW_QUERY_THRESHOLD) {
+                self::logSlowQuery($query, $execution_time, $caller);
+            }
+        }
+    }
+    
+    /**
+     * Record query statistics for performance tracking
      *
      * @param string $query SQL query
-     * @return string
+     * @param float $execution_time Execution time in milliseconds
      */
-    public static function logQuery(string $query): string {
+    private static function recordQueryStats(string $query, float $execution_time): void {
+        self::$query_stats['total_queries']++;
+        self::$query_stats['total_time'] += $execution_time;
+        
+        if ($execution_time > self::SLOW_QUERY_THRESHOLD) {
+            self::$query_stats['slow_queries']++;
+        }
+    }
+    
+    /**
+     * Log slow query details
+     *
+     * @param string $query SQL query
+     * @param float $execution_time Execution time in milliseconds  
+     * @param string $caller Query caller information
+     */
+    private static function logSlowQuery(string $query, float $execution_time, string $caller): void {
         if (!defined('WP_DEBUG_LOG') || !WP_DEBUG_LOG) {
-            return $query;
+            return;
         }
         
-        $start_time = microtime(true);
+        $log_message = sprintf(
+            "[FP Esperienze] Slow Query (%.2fms): %s | Caller: %s",
+            $execution_time,
+            self::sanitizeQueryForLog($query),
+            $caller
+        );
         
-        // We can't actually time the query here since we're in a filter
-        // But we can log FP-specific queries for analysis
-        if (self::isFpEsperienzeQuery($query)) {
-            // Add a hook to capture timing after query execution
-            add_action('shutdown', function() use ($query, $start_time) {
-                self::analyzeQuery($query, $start_time);
-            }, 1);
+        error_log($log_message);
+        
+        // Also log EXPLAIN plan for optimization insights
+        global $wpdb;
+        if (strpos(strtoupper(trim($query)), 'SELECT') === 0) {
+            $explain = $wpdb->get_results("EXPLAIN " . $query, ARRAY_A);
+            if ($explain) {
+                error_log("[FP Esperienze] Query Plan: " . json_encode($explain));
+            }
         }
-        
-        return $query;
     }
     
     /**
@@ -86,41 +146,6 @@ class QueryMonitor {
         );
     }
     
-    /**
-     * Analyze query performance
-     *
-     * @param string $query SQL query
-     * @param float $start_time Start time
-     */
-    private static function analyzeQuery(string $query, float $start_time): void {
-        global $wpdb;
-        
-        $execution_time = (microtime(true) - $start_time) * 1000; // Convert to milliseconds
-        
-        self::$query_stats['total_queries']++;
-        self::$query_stats['total_time'] += $execution_time;
-        
-        // Log slow queries
-        if ($execution_time > self::SLOW_QUERY_THRESHOLD) {
-            self::$query_stats['slow_queries']++;
-            
-            $log_message = sprintf(
-                "[FP Esperienze] Slow Query (%.2fms): %s",
-                $execution_time,
-                self::sanitizeQueryForLog($query)
-            );
-            
-            error_log($log_message);
-            
-            // Also log query plan for analysis
-            if ($wpdb->last_query && defined('WP_DEBUG') && WP_DEBUG) {
-                $explain = $wpdb->get_results("EXPLAIN " . $wpdb->last_query, ARRAY_A);
-                if ($explain) {
-                    error_log("[FP Esperienze] Query Plan: " . json_encode($explain));
-                }
-            }
-        }
-    }
     
     /**
      * Sanitize query for logging (remove sensitive data)
