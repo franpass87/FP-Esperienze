@@ -211,6 +211,44 @@ The plugin includes a comprehensive gift voucher system allowing customers to pu
 - Customizable PDF branding (logo, colors, terms)
 - Voucher status tracking (active, redeemed, expired, void)
 
+### Voucher Administration (Phase 3)
+
+A complete admin interface for managing gift vouchers with advanced filtering, bulk actions, and audit logging:
+
+#### Enhanced Voucher Listing
+- **Comprehensive Filters**: Status, product, date range, and text search
+- **Detailed Information**: Voucher code, product, recipient details, value type, status, expiration, and creation dates
+- **Order Integration**: Direct links to associated orders and customer information
+- **Real-time Status**: Color-coded status indicators with expiration warnings
+
+#### Individual Actions
+- **Download PDF**: Direct access to voucher PDFs with proper headers
+- **Copy PDF Link**: One-click clipboard copying of PDF download URLs  
+- **Resend Email**: Re-send voucher emails to recipients with PDF regeneration if needed
+- **Extend Expiration**: Flexible voucher expiration extension (1-60 months)
+- **Void Voucher**: Cancel vouchers with confirmation dialogs
+
+#### Bulk Operations
+- **Multi-select**: Checkbox-based selection with "select all" functionality
+- **Bulk Void**: Cancel multiple vouchers simultaneously
+- **Bulk Resend**: Re-send emails for multiple vouchers at once
+- **Bulk Extend**: Extend expiration for multiple vouchers with custom duration
+
+#### Security & Audit
+- **Permission Control**: Requires `manage_woocommerce` capability
+- **Action Logging**: All actions logged with user information and timestamps
+- **Order Integration**: Voucher actions recorded in associated order notes
+- **Confirmation Dialogs**: Prevent accidental destructive actions
+
+#### User Experience
+- **Responsive Design**: Mobile-friendly table layout
+- **JavaScript Enhancements**: Enhanced interactions with graceful degradation
+- **Real-time Feedback**: Success/error notifications for all actions
+- **Pagination**: Efficient handling of large voucher datasets
+
+#### Access
+Available at **FP Esperienze → Vouchers** in the WordPress admin panel.
+
 #### Configuration
 Gift voucher settings are available in **FP Esperienze → Settings → Gift Vouchers**:
 - Default expiration period in months
