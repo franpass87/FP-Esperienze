@@ -19,6 +19,7 @@ use FP\Esperienze\Booking\BookingManager;
 use FP\Esperienze\Data\VoucherManager;
 use FP\Esperienze\Integrations\TrackingManager;
 use FP\Esperienze\Integrations\BrevoManager;
+use FP\Esperienze\Integrations\GooglePlacesManager;
 
 defined('ABSPATH') || exit;
 
@@ -103,6 +104,9 @@ class Plugin {
         
         // Initialize Brevo manager for email marketing
         new BrevoManager();
+        
+        // Initialize Google Places manager for meeting point reviews
+        new GooglePlacesManager();
     }
 
     /**
