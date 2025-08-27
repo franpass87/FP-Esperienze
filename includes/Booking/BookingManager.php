@@ -245,7 +245,7 @@ class BookingManager {
      * @param string $status New status
      * @return bool Success
      */
-    private function updateBookingStatus(int $order_id, int $item_id, string $status): bool {
+    public function updateBookingStatus(int $order_id, int $item_id, string $status): bool {
         global $wpdb;
         
         $table_name = $wpdb->prefix . 'fp_bookings';

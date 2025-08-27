@@ -178,8 +178,9 @@ class VoucherManager {
      * @param array $voucher_data Voucher data
      * @param string $pdf_path PDF file path
      * @param \WC_Order $order Order object
+     * @return bool True if both emails sent successfully
      */
-    private function sendVoucherEmail($voucher_data, $pdf_path, $order) {
+    private function sendVoucherEmail($voucher_data, $pdf_path, $order): bool {
         $sender_name = get_option('fp_esperienze_gift_email_sender_name', get_bloginfo('name'));
         $sender_email = get_option('fp_esperienze_gift_email_sender_email', get_option('admin_email'));
         
@@ -196,15 +197,35 @@ class VoucherManager {
             'From: ' . $sender_name . ' <' . $sender_email . '>'
         ];
         
+        // Validate email addresses before sending
+        if (!is_email($voucher_data['recipient_email'])) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("FP Esperienze: Invalid recipient email: " . $voucher_data['recipient_email']);
+            }
+            return false;
+        }
+        
+        if (!is_email($order->get_billing_email())) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("FP Esperienze: Invalid buyer email: " . $order->get_billing_email());
+            }
+            return false;
+        }
+        
         $attachments = [$pdf_path];
         
-        wp_mail(
+        // Send email to recipient with error handling
+        $recipient_sent = wp_mail(
             $voucher_data['recipient_email'],
             $recipient_subject,
             $recipient_message,
             $headers,
             $attachments
         );
+        
+        if (!$recipient_sent && defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("FP Esperienze: Failed to send voucher email to recipient: " . $voucher_data['recipient_email']);
+        }
         
         // Email to buyer (order customer)
         $buyer_subject = sprintf(
@@ -214,7 +235,7 @@ class VoucherManager {
         
         $buyer_message = $this->buildBuyerEmailContent($voucher_data, $order);
         
-        wp_mail(
+        $buyer_sent = wp_mail(
             $order->get_billing_email(),
             $buyer_subject,
             $buyer_message,
@@ -222,13 +243,21 @@ class VoucherManager {
             $attachments
         );
         
-        // Update sent timestamp
-        global $wpdb;
-        $wpdb->update(
-            $wpdb->prefix . 'fp_exp_vouchers',
-            ['sent_at' => current_time('mysql')],
-            ['id' => $voucher_data['id']]
-        );
+        if (!$buyer_sent && defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("FP Esperienze: Failed to send voucher confirmation email to buyer: " . $order->get_billing_email());
+        }
+        
+        // Update sent timestamp only if emails were successful
+        if ($recipient_sent && $buyer_sent) {
+            global $wpdb;
+            $wpdb->update(
+                $wpdb->prefix . 'fp_exp_vouchers',
+                ['sent_at' => current_time('mysql')],
+                ['id' => $voucher_data['id']]
+            );
+        }
+        
+        return $recipient_sent && $buyer_sent;
     }
     
     /**

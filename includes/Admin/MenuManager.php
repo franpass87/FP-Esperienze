@@ -3544,12 +3544,36 @@ class MenuManager {
                 $new_status = sanitize_text_field($_POST['new_status'] ?? '');
                 
                 if ($booking_id && $new_status) {
-                    // TODO: Implement status update
-                    add_action('admin_notices', function() {
-                        echo '<div class="notice notice-success is-dismissible"><p>' . 
-                             esc_html__('Booking status updated successfully.', 'fp-esperienze') . 
-                             '</p></div>';
-                    });
+                    // Get booking details first
+                    global $wpdb;
+                    $table_bookings = $wpdb->prefix . 'fp_bookings';
+                    $booking = $wpdb->get_row($wpdb->prepare(
+                        "SELECT order_id, order_item_id FROM {$table_bookings} WHERE id = %d",
+                        $booking_id
+                    ));
+                    
+                    if ($booking) {
+                        $booking_manager = new \FP\Esperienze\Booking\BookingManager();
+                        $success = $booking_manager->updateBookingStatus(
+                            $booking->order_id, 
+                            $booking->order_item_id, 
+                            $new_status
+                        );
+                        
+                        if ($success) {
+                            add_action('admin_notices', function() {
+                                echo '<div class="notice notice-success is-dismissible"><p>' . 
+                                     esc_html__('Booking status updated successfully.', 'fp-esperienze') . 
+                                     '</p></div>';
+                            });
+                        } else {
+                            add_action('admin_notices', function() {
+                                echo '<div class="notice notice-error is-dismissible"><p>' . 
+                                     esc_html__('Failed to update booking status.', 'fp-esperienze') . 
+                                     '</p></div>';
+                            });
+                        }
+                    }
                 }
                 break;
         }

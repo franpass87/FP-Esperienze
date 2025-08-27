@@ -105,41 +105,57 @@ class TrackingManager {
         
         if ($this->isGA4Enabled()) {
             $measurement_id = esc_js($this->settings['ga4_measurement_id']);
-            echo "\n<!-- GA4 Tracking -->\n";
-            echo "<script async src=\"https://www.googletagmanager.com/gtag/js?id={$measurement_id}\"></script>\n";
-            echo "<script>\n";
-            echo "window.dataLayer = window.dataLayer || [];\n";
-            echo "function gtag(){dataLayer.push(arguments);}\n";
-            echo "gtag('js', new Date());\n";
-            echo "gtag('config', '{$measurement_id}');\n";
-            echo "</script>\n";
+            
+            // Enqueue Google Analytics script properly
+            wp_enqueue_script(
+                'google-analytics-gtag',
+                "https://www.googletagmanager.com/gtag/js?id={$measurement_id}",
+                [],
+                null,
+                true
+            );
+            
+            // Add inline script for GA4 initialization
+            $ga4_init_script = "
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', '{$measurement_id}');
+            ";
+            wp_add_inline_script('google-analytics-gtag', $ga4_init_script);
         }
         
         if ($this->isMetaPixelEnabled()) {
             $pixel_id = esc_js($this->settings['meta_pixel_id']);
-            echo "\n<!-- Meta Pixel -->\n";
-            echo "<script>\n";
-            echo "!function(f,b,e,v,n,t,s)\n";
-            echo "{if(f.fbq)return;n=f.fbq=function(){n.callMethod?\n";
-            echo "n.callMethod.apply(n,arguments):n.queue.push(arguments)};\n";
-            echo "if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';\n";
-            echo "n.queue=[];t=b.createElement(e);t.async=!0;\n";
-            echo "t.src=v;s=b.getElementsByTagName(e)[0];\n";
-            echo "s.parentNode.insertBefore(t,s)}(window, document,'script',\n";
-            echo "'https://connect.facebook.net/en_US/fbevents.js');\n";
-            echo "fbq('init', '{$pixel_id}');\n";
-            echo "fbq('track', 'PageView');\n";
-            echo "</script>\n";
-            echo "<noscript><img height=\"1\" width=\"1\" style=\"display:none\" src=\"https://www.facebook.com/tr?id={$pixel_id}&ev=PageView&noscript=1\" /></noscript>\n";
+            
+            // Add Meta Pixel inline script  
+            $meta_pixel_script = "
+                !function(f,b,e,v,n,t,s)
+                {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+                n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+                if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+                n.queue=[];t=b.createElement(e);t.async=!0;
+                t.src=v;s=b.getElementsByTagName(e)[0];
+                s.parentNode.insertBefore(t,s)}(window, document,'script',
+                'https://connect.facebook.net/en_US/fbevents.js');
+                fbq('init', '{$pixel_id}');
+                fbq('track', 'PageView');
+            ";
+            wp_add_inline_script('fp-esperienze-tracking', $meta_pixel_script);
+            
+            // Add noscript fallback for Meta Pixel
+            add_action('wp_footer', function() use ($pixel_id) {
+                echo '<noscript><img height="1" width="1" style="display:none" src="' . 
+                     esc_url("https://www.facebook.com/tr?id={$pixel_id}&ev=PageView&noscript=1") . 
+                     '" /></noscript>' . "\n";
+            });
         }
         
         // Output tracking data for JavaScript
         $tracking_data = $this->getTrackingData();
         if (!empty($tracking_data)) {
-            echo "\n<!-- Tracking Data -->\n";
-            echo "<script>\n";
-            echo "window.fpTrackingData = " . wp_json_encode($tracking_data) . ";\n";
-            echo "</script>\n";
+            $tracking_script = "window.fpTrackingData = " . wp_json_encode($tracking_data) . ";";
+            wp_add_inline_script('fp-esperienze-tracking', $tracking_script);
         }
     }
     

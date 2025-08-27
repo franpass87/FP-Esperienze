@@ -154,8 +154,8 @@ class CacheManager {
             return; // Pre-building disabled
         }
         
-        // Get all experience products
-        $experience_products = get_posts([
+        // Get all experience products using WP_Query for better performance
+        $query = new \WP_Query([
             'post_type' => 'product',
             'meta_query' => [
                 [
@@ -164,8 +164,13 @@ class CacheManager {
                 ]
             ],
             'posts_per_page' => -1,
-            'fields' => 'ids'
+            'fields' => 'ids',
+            'no_found_rows' => true,
+            'update_post_meta_cache' => false,
+            'update_post_term_cache' => false,
         ]);
+        
+        $experience_products = $query->posts;
         
         if (empty($experience_products)) {
             return;
@@ -207,7 +212,7 @@ class CacheManager {
             }
         }
         
-        if ($prebuilt_count > 0) {
+        if ($prebuilt_count > 0 && defined('WP_DEBUG') && WP_DEBUG) {
             error_log("FP Cache: Pre-built {$prebuilt_count} availability caches for next {$days} days");
         }
     }
@@ -251,7 +256,9 @@ class CacheManager {
         
         $total_cleared = $result1 + $result2 + $result3 + $result4;
         
-        error_log("FP Cache: Cleared {$total_cleared} cache entries");
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("FP Cache: Cleared {$total_cleared} cache entries");
+        }
         
         return $total_cleared;
     }

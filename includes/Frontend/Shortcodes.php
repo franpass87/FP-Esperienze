@@ -318,7 +318,7 @@ class Shortcodes {
                     <?php if (in_array('mp', $enabled_filters)) : ?>
                         <div class="fp-filter-group">
                             <label for="fp_mp"><?php _e('Meeting Point', 'fp-esperienze'); ?></label>
-                            <select name="fp_mp" id="fp_mp" class="fp-filter-select">
+                            <select name="fp_mp" id="fp_mp" class="fp-filter-select" aria-label="<?php esc_attr_e('Filter by meeting point', 'fp-esperienze'); ?>">
                                 <option value=""><?php _e('All locations', 'fp-esperienze'); ?></option>
                                 <?php
                                 $meeting_points = \FP\Esperienze\Data\MeetingPointManager::getAllMeetingPoints();
@@ -334,7 +334,7 @@ class Shortcodes {
                     <?php if (in_array('lang', $enabled_filters)) : ?>
                         <div class="fp-filter-group">
                             <label for="fp_lang"><?php _e('Language', 'fp-esperienze'); ?></label>
-                            <select name="fp_lang" id="fp_lang" class="fp-filter-select">
+                            <select name="fp_lang" id="fp_lang" class="fp-filter-select" aria-label="<?php esc_attr_e('Filter by language', 'fp-esperienze'); ?>">
                                 <option value=""><?php _e('All languages', 'fp-esperienze'); ?></option>
                                 <?php
                                 $languages = $this->getAvailableLanguages();
@@ -350,7 +350,7 @@ class Shortcodes {
                     <?php if (in_array('duration', $enabled_filters)) : ?>
                         <div class="fp-filter-group">
                             <label for="fp_duration"><?php _e('Duration', 'fp-esperienze'); ?></label>
-                            <select name="fp_duration" id="fp_duration" class="fp-filter-select">
+                            <select name="fp_duration" id="fp_duration" class="fp-filter-select" aria-label="<?php esc_attr_e('Filter by duration', 'fp-esperienze'); ?>">
                                 <option value=""><?php _e('Any duration', 'fp-esperienze'); ?></option>
                                 <option value="<=90" <?php selected(isset($_GET['fp_duration']) ? sanitize_text_field($_GET['fp_duration']) : '', '<=90'); ?>><?php _e('Up to 1.5 hours', 'fp-esperienze'); ?></option>
                                 <option value="91-180" <?php selected(isset($_GET['fp_duration']) ? sanitize_text_field($_GET['fp_duration']) : '', '91-180'); ?>><?php _e('1.5 - 3 hours', 'fp-esperienze'); ?></option>
@@ -364,7 +364,8 @@ class Shortcodes {
                             <label for="fp_date"><?php _e('Available on', 'fp-esperienze'); ?></label>
                             <input type="date" name="fp_date" id="fp_date" class="fp-filter-date" 
                                    value="<?php echo esc_attr(isset($_GET['fp_date']) ? sanitize_text_field($_GET['fp_date']) : ''); ?>"
-                                   min="<?php echo esc_attr(date('Y-m-d')); ?>">
+                                   min="<?php echo esc_attr(date('Y-m-d')); ?>"
+                                   aria-label="<?php esc_attr_e('Filter by available date', 'fp-esperienze'); ?>">
                         </div>
                     <?php endif; ?>
 
