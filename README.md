@@ -2,6 +2,37 @@
 
 A WordPress + WooCommerce plugin for experience booking management by Francesco Passeri.
 
+## Installation
+
+### Prerequisites
+- WordPress >= 6.5
+- WooCommerce >= 8.0
+- PHP >= 8.1
+- Composer (for dependency management)
+
+### Steps
+
+1. **Clone or download the plugin:**
+   ```bash
+   git clone https://github.com/franpass87/FP-Esperienze.git
+   ```
+
+2. **Install composer dependencies:**
+   ```bash
+   cd FP-Esperienze
+   composer install --no-dev --optimize-autoloader
+   ```
+
+3. **Upload to WordPress:**
+   - Copy the plugin folder to `/wp-content/plugins/`
+   - Or upload as a ZIP file through WordPress admin
+
+4. **Activate the plugin:**
+   - Go to WordPress Admin > Plugins
+   - Find "FP Esperienze" and click "Activate"
+
+**Note:** If you see an error about missing dependencies, make sure you have run `composer install --no-dev` in the plugin directory.
+
 ## Features
 
 - **Experience Product Type**: Custom WooCommerce product type for bookable experiences
