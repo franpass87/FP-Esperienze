@@ -79,6 +79,9 @@ class Plugin {
         add_action('wp_enqueue_scripts', [$this, 'enqueueScripts']);
         add_action('admin_enqueue_scripts', [$this, 'enqueueAdminScripts']);
         
+        // Add filter to defer non-critical scripts
+        add_filter('script_loader_tag', [$this, 'deferNonCriticalScripts'], 10, 3);
+        
         // Initialize blocks
         add_action('init', [$this, 'initBlocks']);
         add_action('enqueue_block_editor_assets', [$this, 'enqueueBlockAssets']);
@@ -90,6 +93,12 @@ class Plugin {
     public function initComponents(): void {
         // Initialize capability manager first
         new CapabilityManager();
+        
+        // Initialize cache manager for performance
+        new CacheManager();
+        
+        // Initialize asset optimizer
+        AssetOptimizer::init();
         
         // Initialize experience product type
         new Experience();
@@ -164,26 +173,59 @@ class Plugin {
             return;
         }
 
+        // Enqueue CSS (minified if available)
+        $frontend_css_url = AssetOptimizer::getMinifiedAssetUrl('css', 'frontend');
+        if (!$frontend_css_url) {
+            $frontend_css_url = FP_ESPERIENZE_PLUGIN_URL . 'assets/css/frontend.css';
+        }
+        
         wp_enqueue_style(
             'fp-esperienze-frontend',
-            FP_ESPERIENZE_PLUGIN_URL . 'assets/css/frontend.css',
+            $frontend_css_url,
             [],
             FP_ESPERIENZE_VERSION
         );
 
-        wp_enqueue_script(
-            'fp-esperienze-frontend',
-            FP_ESPERIENZE_PLUGIN_URL . 'assets/js/frontend.js',
-            ['jquery'],
-            FP_ESPERIENZE_VERSION,
-            true
-        );
+        // Enqueue JS (minified if available)  
+        $frontend_js_url = AssetOptimizer::getMinifiedAssetUrl('js', 'frontend');
+        if (!$frontend_js_url) {
+            wp_enqueue_script(
+                'fp-esperienze-frontend',
+                FP_ESPERIENZE_PLUGIN_URL . 'assets/js/frontend.js',
+                ['jquery'],
+                FP_ESPERIENZE_VERSION,
+                true
+            );
+            
+            // Enqueue tracking script separately if not minified
+            wp_enqueue_script(
+                'fp-esperienze-tracking',
+                FP_ESPERIENZE_PLUGIN_URL . 'assets/js/tracking.js',
+                ['jquery'],
+                FP_ESPERIENZE_VERSION,
+                true
+            );
+        } else {
+            // Use minified combined version
+            wp_enqueue_script(
+                'fp-esperienze-frontend',
+                $frontend_js_url,
+                ['jquery'],
+                FP_ESPERIENZE_VERSION,
+                true
+            );
+        }
 
         // Enqueue booking widget JS only on single experience pages
         if (is_singular('product')) {
+            $booking_widget_url = AssetOptimizer::getMinifiedAssetUrl('js', 'booking-widget');
+            if (!$booking_widget_url) {
+                $booking_widget_url = FP_ESPERIENZE_PLUGIN_URL . 'assets/js/booking-widget.js';
+            }
+            
             wp_enqueue_script(
                 'fp-esperienze-booking-widget',
-                FP_ESPERIENZE_PLUGIN_URL . 'assets/js/booking-widget.js',
+                $booking_widget_url,
                 ['jquery', 'fp-esperienze-frontend'],
                 FP_ESPERIENZE_VERSION,
                 true
@@ -206,16 +248,28 @@ class Plugin {
      * Enqueue admin scripts and styles
      */
     public function enqueueAdminScripts(): void {
+        // Enqueue CSS (minified if available)
+        $admin_css_url = AssetOptimizer::getMinifiedAssetUrl('css', 'admin');
+        if (!$admin_css_url) {
+            $admin_css_url = FP_ESPERIENZE_PLUGIN_URL . 'assets/css/admin.css';
+        }
+        
         wp_enqueue_style(
             'fp-esperienze-admin',
-            FP_ESPERIENZE_PLUGIN_URL . 'assets/css/admin.css',
+            $admin_css_url,
             [],
             FP_ESPERIENZE_VERSION
         );
 
+        // Enqueue JS (minified if available)
+        $admin_js_url = AssetOptimizer::getMinifiedAssetUrl('js', 'admin');
+        if (!$admin_js_url) {
+            $admin_js_url = FP_ESPERIENZE_PLUGIN_URL . 'assets/js/admin.js';
+        }
+        
         wp_enqueue_script(
             'fp-esperienze-admin',
-            FP_ESPERIENZE_PLUGIN_URL . 'assets/js/admin.js',
+            $admin_js_url,
             ['jquery'],
             FP_ESPERIENZE_VERSION,
             true
@@ -240,9 +294,14 @@ class Plugin {
      * Enqueue block editor assets
      */
     public function enqueueBlockAssets(): void {
+        $archive_block_url = AssetOptimizer::getMinifiedAssetUrl('js', 'archive-block');
+        if (!$archive_block_url) {
+            $archive_block_url = FP_ESPERIENZE_PLUGIN_URL . 'assets/js/archive-block.js';
+        }
+        
         wp_enqueue_script(
             'fp-esperienze-archive-block',
-            FP_ESPERIENZE_PLUGIN_URL . 'assets/js/archive-block.js',
+            $archive_block_url,
             ['wp-blocks', 'wp-element', 'wp-editor', 'wp-components', 'wp-i18n'],
             FP_ESPERIENZE_VERSION,
             true
@@ -251,5 +310,27 @@ class Plugin {
         wp_localize_script('fp-esperienze-archive-block', 'fpEsperienzeBlock', [
             'pluginUrl' => FP_ESPERIENZE_PLUGIN_URL,
         ]);
+    }
+    
+    /**
+     * Defer non-critical scripts for better performance
+     *
+     * @param string $tag Script tag
+     * @param string $handle Script handle
+     * @param string $src Script source
+     * @return string
+     */
+    public function deferNonCriticalScripts(string $tag, string $handle, string $src): string {
+        // List of scripts to defer (non-critical)
+        $defer_scripts = [
+            'fp-esperienze-tracking',
+            'fp-esperienze-archive-block'
+        ];
+        
+        if (in_array($handle, $defer_scripts)) {
+            return str_replace(' src', ' defer src', $tag);
+        }
+        
+        return $tag;
     }
 }

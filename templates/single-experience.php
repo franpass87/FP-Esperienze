@@ -122,13 +122,16 @@ jQuery(document).ready(function($) {
             <?php if ($gallery_ids || $image_url) : ?>
                 <div class="fp-hero-gallery">
                     <div class="fp-main-image">
-                        <img src="<?php echo esc_url($image_url); ?>" alt="<?php echo esc_attr($product->get_name()); ?>" />
+                        <img src="<?php echo esc_url($image_url); ?>" 
+                             alt="<?php echo esc_attr($product->get_name()); ?>" 
+                             loading="lazy" />
                     </div>
                     <?php if ($gallery_ids) : ?>
                         <div class="fp-gallery-thumbs">
                             <?php foreach (array_slice($gallery_ids, 0, 4) as $gallery_id) : ?>
                                 <img src="<?php echo esc_url(wp_get_attachment_image_url($gallery_id, 'thumbnail')); ?>" 
-                                     alt="<?php echo esc_attr($product->get_name()); ?>" />
+                                     alt="<?php echo esc_attr($product->get_name()); ?>" 
+                                     loading="lazy" />
                             <?php endforeach; ?>
                         </div>
                     <?php endif; ?>
