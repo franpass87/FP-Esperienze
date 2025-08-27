@@ -91,6 +91,10 @@ class Plugin {
         // Initialize blocks
         add_action('init', [$this, 'initBlocks']);
         add_action('enqueue_block_editor_assets', [$this, 'enqueueBlockAssets']);
+        
+        // Initialize holds cleanup cron
+        add_action('init', [$this, 'initHoldsCron']);
+        add_action('fp_esperienze_cleanup_holds', [$this, 'cleanupExpiredHolds']);
     }
 
     /**
@@ -383,5 +387,42 @@ class Plugin {
         }
         
         return $tag;
+    }
+    
+    /**
+     * Initialize holds cleanup cron
+     */
+    public function initHoldsCron(): void {
+        if (!wp_next_scheduled('fp_esperienze_cleanup_holds')) {
+            wp_schedule_event(time(), 'fp_esperienze_every_5_minutes', 'fp_esperienze_cleanup_holds');
+        }
+        
+        // Add custom cron interval
+        add_filter('cron_schedules', [$this, 'addHoldsCronInterval']);
+    }
+    
+    /**
+     * Add custom cron interval for holds cleanup
+     *
+     * @param array $schedules Existing schedules
+     * @return array Modified schedules
+     */
+    public function addHoldsCronInterval($schedules): array {
+        $schedules['fp_esperienze_every_5_minutes'] = [
+            'interval' => 300, // 5 minutes
+            'display' => __('Every 5 Minutes (FP Esperienze)', 'fp-esperienze')
+        ];
+        
+        return $schedules;
+    }
+    
+    /**
+     * Cleanup expired holds
+     */
+    public function cleanupExpiredHolds(): void {
+        $count = \FP\Esperienze\Data\HoldManager::cleanupExpiredHolds();
+        if ($count > 0) {
+            error_log("FP Esperienze: Cleaned up {$count} expired holds");
+        }
     }
 }

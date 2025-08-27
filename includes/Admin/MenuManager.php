@@ -41,6 +41,7 @@ class MenuManager {
         add_action('wp_ajax_fp_cancel_booking', [$this, 'ajaxCancelBooking']);
         add_action('wp_ajax_fp_check_cancellation_rules', [$this, 'ajaxCheckCancellationRules']);
         add_action('wp_ajax_fp_test_webhook', [$this, 'ajaxTestWebhook']);
+        add_action('wp_ajax_fp_cleanup_expired_holds', [$this, 'ajaxCleanupExpiredHolds']);
     }
 
     /**
@@ -2484,6 +2485,10 @@ class MenuManager {
         $gift_terms = get_option('fp_esperienze_gift_terms', __('This voucher is valid for one experience booking. Please present the QR code when redeeming.', 'fp-esperienze'));
         $gift_secret = get_option('fp_esperienze_gift_secret_hmac', '');
         
+        // Get holds/booking settings
+        $enable_holds = get_option('fp_esperienze_enable_holds', 1);
+        $hold_duration = get_option('fp_esperienze_hold_duration_minutes', 15);
+        
         // Get integrations settings
         $integrations = get_option('fp_esperienze_integrations', []);
         $ga4_measurement_id = $integrations['ga4_measurement_id'] ?? '';
@@ -2525,6 +2530,7 @@ class MenuManager {
             
             <h2 class="nav-tab-wrapper">
                 <a href="<?php echo admin_url('admin.php?page=fp-esperienze-settings&tab=general'); ?>" class="nav-tab <?php echo $current_tab === 'general' ? 'nav-tab-active' : ''; ?>"><?php _e('General', 'fp-esperienze'); ?></a>
+                <a href="<?php echo admin_url('admin.php?page=fp-esperienze-settings&tab=booking'); ?>" class="nav-tab <?php echo $current_tab === 'booking' ? 'nav-tab-active' : ''; ?>"><?php _e('Booking', 'fp-esperienze'); ?></a>
                 <a href="<?php echo admin_url('admin.php?page=fp-esperienze-settings&tab=gift'); ?>" class="nav-tab <?php echo $current_tab === 'gift' ? 'nav-tab-active' : ''; ?>"><?php _e('Gift Vouchers', 'fp-esperienze'); ?></a>
                 <a href="<?php echo admin_url('admin.php?page=fp-esperienze-settings&tab=notifications'); ?>" class="nav-tab <?php echo $current_tab === 'notifications' ? 'nav-tab-active' : ''; ?>"><?php _e('Notifications', 'fp-esperienze'); ?></a>
                 <a href="<?php echo admin_url('admin.php?page=fp-esperienze-settings&tab=integrations'); ?>" class="nav-tab <?php echo $current_tab === 'integrations' ? 'nav-tab-active' : ''; ?>"><?php _e('Integrations', 'fp-esperienze'); ?></a>
@@ -2686,6 +2692,83 @@ class MenuManager {
                                         onclick="if(confirm('<?php esc_js_e('Are you sure? This will invalidate all existing QR codes!', 'fp-esperienze'); ?>')) { document.getElementById('regenerate_secret').value = '1'; }"><?php _e('Regenerate Secret', 'fp-esperienze'); ?></button>
                                 <input type="hidden" id="regenerate_secret" name="regenerate_secret" value="0" />
                                 <p class="description"><?php _e('Secret key used to sign QR codes for security. Regenerating will invalidate existing QR codes!', 'fp-esperienze'); ?></p>
+                            </td>
+                        </tr>
+                    </table>
+                    
+                    <?php submit_button(__('Save Settings', 'fp-esperienze')); ?>
+                </div>
+                <?php endif; ?>
+                
+                <?php if ($current_tab === 'booking') : ?>
+                <div class="tab-content">
+                    <h3><?php _e('Capacity Management', 'fp-esperienze'); ?></h3>
+                    <p><?php _e('Configure optimistic locking and capacity hold settings for better overbooking prevention.', 'fp-esperienze'); ?></p>
+                    
+                    <table class="form-table">
+                        <tr>
+                            <th scope="row">
+                                <label for="enable_holds"><?php _e('Enable Capacity Holds', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <input type="checkbox" 
+                                       id="enable_holds" 
+                                       name="enable_holds" 
+                                       value="1" 
+                                       <?php checked($enable_holds, 1); ?> />
+                                <p class="description"><?php _e('Enable optimistic locking system that temporarily reserves spots when users add experiences to cart. When disabled, atomic capacity checks are used instead.', 'fp-esperienze'); ?></p>
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row">
+                                <label for="hold_duration"><?php _e('Hold Duration (minutes)', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <input type="number" 
+                                       id="hold_duration" 
+                                       name="hold_duration" 
+                                       value="<?php echo esc_attr($hold_duration); ?>" 
+                                       min="5" 
+                                       max="60" 
+                                       class="small-text" />
+                                <p class="description"><?php _e('How long spots should be held in the cart before expiring. Recommended: 15 minutes.', 'fp-esperienze'); ?></p>
+                            </td>
+                        </tr>
+                    </table>
+                    
+                    <h3><?php _e('Hold Statistics', 'fp-esperienze'); ?></h3>
+                    <?php
+                    global $wpdb;
+                    $holds_table = $wpdb->prefix . 'fp_exp_holds';
+                    $active_holds = $wpdb->get_var("SELECT COUNT(*) FROM $holds_table WHERE expires_at > NOW()");
+                    $expired_holds = $wpdb->get_var("SELECT COUNT(*) FROM $holds_table WHERE expires_at <= NOW()");
+                    ?>
+                    <table class="form-table">
+                        <tr>
+                            <th scope="row"><?php _e('Active Holds', 'fp-esperienze'); ?></th>
+                            <td><strong><?php echo esc_html($active_holds ?: 0); ?></strong></td>
+                        </tr>
+                        <tr>
+                            <th scope="row"><?php _e('Expired Holds (to cleanup)', 'fp-esperienze'); ?></th>
+                            <td>
+                                <strong><?php echo esc_html($expired_holds ?: 0); ?></strong>
+                                <?php if ($expired_holds > 0) : ?>
+                                    <button type="button" class="button button-secondary" onclick="cleanupExpiredHolds()"><?php _e('Cleanup Now', 'fp-esperienze'); ?></button>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row"><?php _e('Next Cleanup', 'fp-esperienze'); ?></th>
+                            <td>
+                                <?php
+                                $next_cleanup = wp_next_scheduled('fp_esperienze_cleanup_holds');
+                                if ($next_cleanup) {
+                                    echo esc_html(date_i18n(get_option('date_format') . ' ' . get_option('time_format'), $next_cleanup));
+                                } else {
+                                    _e('Not scheduled', 'fp-esperienze');
+                                }
+                                ?>
                             </td>
                         </tr>
                     </table>
@@ -3277,6 +3360,37 @@ class MenuManager {
                 document.getElementById('webhook_secret').value = secret;
             }
         }
+        
+        function cleanupExpiredHolds() {
+            if (!confirm('<?php esc_js_e('Clean up expired holds now?', 'fp-esperienze'); ?>')) {
+                return;
+            }
+            
+            var button = event.target;
+            var originalText = button.textContent;
+            button.textContent = '<?php esc_js_e('Cleaning...', 'fp-esperienze'); ?>';
+            button.disabled = true;
+            
+            jQuery.post(ajaxurl, {
+                action: 'fp_cleanup_expired_holds',
+                nonce: '<?php echo wp_create_nonce('fp_cleanup_holds'); ?>'
+            }, function(response) {
+                button.textContent = originalText;
+                button.disabled = false;
+                
+                if (response.success) {
+                    alert('<?php esc_js_e('Cleanup completed!', 'fp-esperienze'); ?>\\n' + 
+                          '<?php esc_js_e('Cleaned up:', 'fp-esperienze'); ?> ' + response.data.count + ' <?php esc_js_e('holds', 'fp-esperienze'); ?>');
+                    location.reload(); // Refresh to update statistics
+                } else {
+                    alert('<?php esc_js_e('Cleanup failed:', 'fp-esperienze'); ?>\\n' + response.data.message);
+                }
+            }).fail(function() {
+                button.textContent = originalText;
+                button.disabled = false;
+                alert('<?php esc_js_e('Request failed. Please try again.', 'fp-esperienze'); ?>');
+            });
+        }
         </script>
         <?php
     }
@@ -3315,6 +3429,18 @@ class MenuManager {
                 $new_secret = bin2hex(random_bytes(32)); // 256-bit cryptographically secure key
                 update_option('fp_esperienze_gift_secret_hmac', $new_secret);
             }
+            
+        } elseif ($tab === 'booking') {
+            // Update booking/holds settings
+            $enable_holds = !empty($_POST['enable_holds']);
+            $hold_duration = absint($_POST['hold_duration'] ?? 15);
+            
+            // Validate hold duration
+            if ($hold_duration < 5) $hold_duration = 5;
+            if ($hold_duration > 60) $hold_duration = 60;
+            
+            update_option('fp_esperienze_enable_holds', $enable_holds);
+            update_option('fp_esperienze_hold_duration_minutes', $hold_duration);
             
         } elseif ($tab === 'integrations') {
             // Update integrations settings
@@ -3729,5 +3855,22 @@ class MenuManager {
         } else {
             wp_send_json_error($result);
         }
+    }
+    
+    /**
+     * AJAX handler: Cleanup expired holds
+     */
+    public function ajaxCleanupExpiredHolds(): void {
+        if (!CapabilityManager::canManageFPEsperienze()) {
+            wp_die('Insufficient permissions');
+        }
+        
+        if (!wp_verify_nonce($_POST['nonce'] ?? '', 'fp_cleanup_holds')) {
+            wp_die('Security check failed');
+        }
+        
+        $count = \FP\Esperienze\Data\HoldManager::cleanupExpiredHolds();
+        
+        wp_send_json_success(['count' => $count, 'message' => sprintf(__('Cleaned up %d expired holds', 'fp-esperienze'), $count)]);
     }
 }

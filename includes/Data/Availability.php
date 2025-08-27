@@ -92,7 +92,16 @@ class Availability {
             
             // Get existing bookings for this slot
             $booked_count = self::getBookedCount($product_id, $date, $schedule->start_time);
-            $available_spots = max(0, $capacity - $booked_count);
+            
+            // Get held capacity for this slot (if holds are enabled)
+            $held_count = 0;
+            if (HoldManager::isEnabled()) {
+                $slot_datetime_str = $date . ' ' . substr($schedule->start_time, 0, 5); // Y-m-d H:i format
+                $session_id = WC()->session ? WC()->session->get_customer_id() : '';
+                $held_count = HoldManager::getHeldQuantity($product_id, $slot_datetime_str, $session_id);
+            }
+            
+            $available_spots = max(0, $capacity - $booked_count - $held_count);
             
             $slots[] = [
                 'schedule_id'     => $schedule->id,
@@ -168,5 +177,16 @@ class Availability {
      */
     public static function getMeetingPoint(int $meeting_point_id): ?object {
         return MeetingPointManager::getMeetingPoint($meeting_point_id);
+    }
+    
+    /**
+     * Get slots for a specific date (alias for forDay for backward compatibility)
+     *
+     * @param int $product_id Product ID
+     * @param string $date Date in Y-m-d format
+     * @return array
+     */
+    public static function getSlotsForDate(int $product_id, string $date): array {
+        return self::forDay($product_id, $date);
     }
 }
