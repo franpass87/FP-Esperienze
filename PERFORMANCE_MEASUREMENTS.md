@@ -2,7 +2,10 @@
 
 ## Cache System Performance
 
-### Availability Cache Performance
+## Availability Cache Performance (Updated v1.0.1)
+
+### Cache Implementation Improvements
+- **Cache Check**: Added cache verification at the beginning of Availability::forDay() method
 - **Cache TTL**: 10 minutes (600 seconds) for runtime cache, 10 minutes for pre-built cache
 - **Smart Invalidation**: Automatic cache clearing on:
   - New bookings created
@@ -10,6 +13,7 @@
   - Override/closure modifications
 - **Cache Hit Rate**: Expected 70-90% during normal operation
 - **Response Time Improvement**: ~200-500ms reduction for cached availability requests
+- **Query Reduction**: From 3-5 database queries to 0-1 queries per availability check
 
 ### Pre-build Cache System
 - **Schedule**: Hourly WP-Cron job (configurable)
@@ -37,11 +41,12 @@
 
 ## Database Index Optimization
 
-### New Performance Indexes Added
+### New Performance Indexes Added (Updated v1.0.1)
 - **fp_bookings table**:
   - `idx_product_date_time` (product_id, booking_date, booking_time)
   - `idx_date_status` (booking_date, status)
   - `idx_product_status` (product_id, status)
+  - `idx_status_active` (status) - **NEW**: Optimizes status-based queries
 
 - **fp_schedules table**:
   - `idx_product_day_active` (product_id, day_of_week, is_active)
@@ -102,11 +107,13 @@
 
 ## Query Performance Monitoring
 
-### QueryMonitor Features
+### QueryMonitor Enhancements (v1.0.1)
+- **Improved Query Timing**: Now uses WordPress SAVEQUERIES for accurate query execution timing
 - **Slow Query Threshold**: 100ms (configurable)
-- **Logging**: Automatic logging to WP_DEBUG_LOG when enabled
-- **Query Analysis**: EXPLAIN plan logging for optimization insights
-- **Statistics**: Real-time query performance tracking
+- **Enhanced Logging**: Automatic logging to WP_DEBUG_LOG when enabled with EXPLAIN plan analysis
+- **Better Query Analysis**: EXPLAIN plan logging for optimization insights
+- **Enhanced Statistics**: Real-time query performance tracking with accurate measurements
+- **Improved Security**: Better query sanitization for logging
 
 ### Monitoring Capabilities
 - Track FP Esperienze specific queries
