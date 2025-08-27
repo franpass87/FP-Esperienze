@@ -2,6 +2,15 @@
 /**
  * Brevo v3 Integration Manager
  *
+ * Handles automatic customer subscription to Brevo email lists when orders
+ * containing experience products reach "processing" or "completed" status.
+ *
+ * Features:
+ * - Automatic contact creation/update via Brevo v3 API
+ * - Language-based list assignment (Italian/English)
+ * - Error logging without exposing customer PII
+ * - Toggle ON/OFF via admin settings
+ *
  * @package FP\Esperienze\Integrations
  */
 
@@ -131,7 +140,7 @@ class BrevoManager {
         
         // Fallback to site locale
         $locale = get_locale();
-        return str_starts_with($locale, 'it') ? 'it' : 'en';
+        return substr($locale, 0, 2) === 'it' ? 'it' : 'en';
     }
     
     /**
