@@ -307,6 +307,138 @@ jQuery(document).ready(function($) {
                         </div>
                     </div>
                 </section>
+                
+                <!-- Meeting Point Reviews -->
+                <?php if ($meeting_point && !empty($meeting_point->place_id)) : ?>
+                    <?php 
+                    // Load Google Places Manager
+                    $places_manager = new \FP\Esperienze\Integrations\GooglePlacesManager();
+                    $place_data = null;
+                    
+                    if ($places_manager->isEnabled()) {
+                        $place_data = $places_manager->getPlaceDetails($meeting_point->place_id);
+                    }
+                    ?>
+                    
+                    <?php if ($place_data && ($place_data['rating'] || !empty($place_data['reviews']))) : ?>
+                        <section class="fp-meeting-point-reviews">
+                            <h2><?php _e('Reviews', 'fp-esperienze'); ?></h2>
+                            
+                            <div class="fp-reviews-container">
+                                <!-- Rating Summary -->
+                                <?php if ($place_data['rating']) : ?>
+                                    <div class="fp-reviews-summary">
+                                        <div class="fp-rating-display">
+                                            <div class="fp-rating-stars" aria-label="<?php echo esc_attr(sprintf(__('%s out of 5 stars', 'fp-esperienze'), $place_data['rating'])); ?>">
+                                                <?php for ($i = 1; $i <= 5; $i++) : ?>
+                                                    <?php if ($i <= floor($place_data['rating'])) : ?>
+                                                        <span class="fp-star fp-star-full" aria-hidden="true">★</span>
+                                                    <?php elseif ($i - 0.5 <= $place_data['rating']) : ?>
+                                                        <span class="fp-star fp-star-half" aria-hidden="true">★</span>
+                                                    <?php else : ?>
+                                                        <span class="fp-star fp-star-empty" aria-hidden="true">☆</span>
+                                                    <?php endif; ?>
+                                                <?php endfor; ?>
+                                            </div>
+                                            <span class="fp-rating-value"><?php echo esc_html($place_data['rating']); ?></span>
+                                            <?php if ($place_data['user_ratings_total'] > 0) : ?>
+                                                <span class="fp-rating-count">
+                                                    (<?php echo esc_html(sprintf(_n('%d review', '%d reviews', $place_data['user_ratings_total'], 'fp-esperienze'), $place_data['user_ratings_total'])); ?>)
+                                                </span>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                <?php endif; ?>
+                                
+                                <!-- Individual Reviews -->
+                                <?php if (!empty($place_data['reviews'])) : ?>
+                                    <div class="fp-reviews-list">
+                                        <?php foreach ($place_data['reviews'] as $review) : ?>
+                                            <div class="fp-review-item">
+                                                <div class="fp-review-header">
+                                                    <div class="fp-review-author">
+                                                        <span class="fp-review-author-name"><?php echo esc_html($review['author_name']); ?></span>
+                                                        <?php if ($review['time']) : ?>
+                                                            <span class="fp-review-time"><?php echo esc_html($review['time']); ?></span>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                    <div class="fp-review-rating" aria-label="<?php echo esc_attr(sprintf(__('%d out of 5 stars', 'fp-esperienze'), $review['rating'])); ?>">
+                                                        <?php for ($i = 1; $i <= 5; $i++) : ?>
+                                                            <?php if ($i <= $review['rating']) : ?>
+                                                                <span class="fp-star fp-star-full" aria-hidden="true">★</span>
+                                                            <?php else : ?>
+                                                                <span class="fp-star fp-star-empty" aria-hidden="true">☆</span>
+                                                            <?php endif; ?>
+                                                        <?php endfor; ?>
+                                                    </div>
+                                                </div>
+                                                <?php if ($review['text']) : ?>
+                                                    <div class="fp-review-text">
+                                                        <p><?php echo esc_html($review['text']); ?></p>
+                                                    </div>
+                                                <?php endif; ?>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                <?php endif; ?>
+                                
+                                <!-- Google Disclosure -->
+                                <div class="fp-reviews-disclosure">
+                                    <p>
+                                        <?php _e('Reviews via Google', 'fp-esperienze'); ?>
+                                        <?php if (!empty($meeting_point->place_id)) : ?>
+                                            · <a href="<?php echo esc_url($places_manager->getMapsProfileUrl($meeting_point->place_id)); ?>" 
+                                                 target="_blank" 
+                                                 rel="noopener nofollow"
+                                                 class="fp-maps-profile-link">
+                                                <?php _e('View on Google Maps', 'fp-esperienze'); ?>
+                                            </a>
+                                        <?php endif; ?>
+                                    </p>
+                                </div>
+                            </div>
+                        </section>
+                    <?php elseif ($places_manager->isEnabled()) : ?>
+                        <!-- Fallback: Show only rating/count if available -->
+                        <?php if ($place_data && $place_data['rating']) : ?>
+                            <section class="fp-meeting-point-reviews fp-reviews-minimal">
+                                <h2><?php _e('Reviews', 'fp-esperienze'); ?></h2>
+                                <div class="fp-reviews-summary">
+                                    <div class="fp-rating-display">
+                                        <div class="fp-rating-stars" aria-label="<?php echo esc_attr(sprintf(__('%s out of 5 stars', 'fp-esperienze'), $place_data['rating'])); ?>">
+                                            <?php for ($i = 1; $i <= 5; $i++) : ?>
+                                                <?php if ($i <= floor($place_data['rating'])) : ?>
+                                                    <span class="fp-star fp-star-full" aria-hidden="true">★</span>
+                                                <?php elseif ($i - 0.5 <= $place_data['rating']) : ?>
+                                                    <span class="fp-star fp-star-half" aria-hidden="true">★</span>
+                                                <?php else : ?>
+                                                    <span class="fp-star fp-star-empty" aria-hidden="true">☆</span>
+                                                <?php endif; ?>
+                                            <?php endfor; ?>
+                                        </div>
+                                        <span class="fp-rating-value"><?php echo esc_html($place_data['rating']); ?></span>
+                                        <?php if ($place_data['user_ratings_total'] > 0) : ?>
+                                            <span class="fp-rating-count">
+                                                (<?php echo esc_html(sprintf(_n('%d review', '%d reviews', $place_data['user_ratings_total'], 'fp-esperienze'), $place_data['user_ratings_total'])); ?>)
+                                            </span>
+                                        <?php endif; ?>
+                                    </div>
+                                    <div class="fp-reviews-disclosure">
+                                        <p>
+                                            <?php _e('Reviews via Google', 'fp-esperienze'); ?>
+                                            · <a href="<?php echo esc_url($places_manager->getMapsProfileUrl($meeting_point->place_id)); ?>" 
+                                                 target="_blank" 
+                                                 rel="noopener nofollow"
+                                                 class="fp-maps-profile-link">
+                                                <?php _e('View on Google Maps', 'fp-esperienze'); ?>
+                                            </a>
+                                        </p>
+                                    </div>
+                                </div>
+                            </section>
+                        <?php endif; ?>
+                    <?php endif; ?>
+                <?php endif; ?>
                 <?php endif; ?>
 
                 <!-- FAQ Section -->

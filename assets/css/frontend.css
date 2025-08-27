@@ -1872,3 +1872,243 @@
         margin: 20px 0;
     }
 }
+
+/* ===== MEETING POINT REVIEWS STYLES ===== */
+
+.fp-meeting-point-reviews {
+    background: white;
+    border-radius: 12px;
+    padding: 32px;
+    margin: 32px 0;
+    border: 1px solid #e9ecef;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.fp-meeting-point-reviews h2 {
+    margin: 0 0 24px 0;
+    font-size: 1.8em;
+    font-weight: 700;
+    color: #1a1a1a;
+}
+
+.fp-reviews-container {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* Reviews Summary */
+.fp-reviews-summary {
+    padding-bottom: 24px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.fp-rating-display {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.fp-rating-stars {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.fp-star {
+    font-size: 18px;
+    line-height: 1;
+}
+
+.fp-star-full {
+    color: #ffa500;
+}
+
+.fp-star-half {
+    color: #ffa500;
+    position: relative;
+}
+
+.fp-star-half::after {
+    content: "☆";
+    position: absolute;
+    left: 50%;
+    color: #ddd;
+    z-index: -1;
+}
+
+.fp-star-empty {
+    color: #ddd;
+}
+
+.fp-rating-value {
+    font-size: 1.2em;
+    font-weight: 600;
+    color: #1a1a1a;
+}
+
+.fp-rating-count {
+    color: #666;
+    font-size: 0.95em;
+}
+
+/* Individual Reviews */
+.fp-reviews-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.fp-review-item {
+    padding: 20px;
+    background: #fafafa;
+    border-radius: 8px;
+    border: 1px solid #f0f0f0;
+}
+
+.fp-review-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+    gap: 16px;
+}
+
+.fp-review-author {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.fp-review-author-name {
+    font-weight: 600;
+    color: #1a1a1a;
+    font-size: 0.95em;
+}
+
+.fp-review-time {
+    color: #666;
+    font-size: 0.85em;
+}
+
+.fp-review-rating {
+    display: flex;
+    align-items: center;
+    gap: 1px;
+    flex-shrink: 0;
+}
+
+.fp-review-rating .fp-star {
+    font-size: 14px;
+}
+
+.fp-review-text {
+    line-height: 1.5;
+}
+
+.fp-review-text p {
+    margin: 0;
+    color: #333;
+    font-size: 0.95em;
+}
+
+/* Reviews Disclosure */
+.fp-reviews-disclosure {
+    padding-top: 16px;
+    border-top: 1px solid #f0f0f0;
+    text-align: center;
+}
+
+.fp-reviews-disclosure p {
+    margin: 0;
+    font-size: 0.85em;
+    color: #666;
+}
+
+.fp-maps-profile-link {
+    color: #ff6b35;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.fp-maps-profile-link:hover {
+    text-decoration: underline;
+}
+
+/* Minimal reviews variant (fallback) */
+.fp-reviews-minimal {
+    padding: 24px;
+}
+
+.fp-reviews-minimal .fp-reviews-summary {
+    border-bottom: none;
+    padding-bottom: 16px;
+}
+
+.fp-reviews-minimal .fp-reviews-disclosure {
+    border-top: none;
+    padding-top: 0;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 1024px) {
+    .fp-meeting-point-reviews {
+        padding: 24px;
+        margin: 24px 0;
+    }
+}
+
+@media (max-width: 768px) {
+    .fp-meeting-point-reviews {
+        padding: 20px;
+        margin: 20px 0;
+    }
+
+    .fp-meeting-point-reviews h2 {
+        font-size: 1.6em;
+        margin-bottom: 20px;
+    }
+
+    .fp-rating-display {
+        gap: 8px;
+    }
+
+    .fp-review-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .fp-review-item {
+        padding: 16px;
+    }
+
+    .fp-reviews-container {
+        gap: 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .fp-meeting-point-reviews {
+        padding: 16px;
+    }
+
+    .fp-reviews-minimal {
+        padding: 16px;
+    }
+
+    .fp-rating-display {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .fp-star {
+        font-size: 16px;
+    }
+
+    .fp-review-rating .fp-star {
+        font-size: 12px;
+    }
+}
