@@ -11,6 +11,7 @@ use FP\Esperienze\ProductType\Experience;
 use FP\Esperienze\Admin\MenuManager;
 use FP\Esperienze\Frontend\Shortcodes;
 use FP\Esperienze\Frontend\Templates;
+use FP\Esperienze\Blocks\ArchiveBlock;
 use FP\Esperienze\REST\AvailabilityAPI;
 use FP\Esperienze\REST\BookingsAPI;
 use FP\Esperienze\Booking\Cart_Hooks;
@@ -72,6 +73,10 @@ class Plugin {
         // Enqueue scripts and styles
         add_action('wp_enqueue_scripts', [$this, 'enqueueScripts']);
         add_action('admin_enqueue_scripts', [$this, 'enqueueAdminScripts']);
+        
+        // Initialize blocks
+        add_action('init', [$this, 'initBlocks']);
+        add_action('enqueue_block_editor_assets', [$this, 'enqueueBlockAssets']);
     }
 
     /**
@@ -200,6 +205,30 @@ class Plugin {
             'ajax_url' => admin_url('admin-ajax.php'),
             'rest_url' => get_rest_url(),
             'nonce' => wp_create_nonce('fp_esperienze_admin_nonce'),
+        ]);
+    }
+
+    /**
+     * Initialize Gutenberg blocks
+     */
+    public function initBlocks(): void {
+        new ArchiveBlock();
+    }
+
+    /**
+     * Enqueue block editor assets
+     */
+    public function enqueueBlockAssets(): void {
+        wp_enqueue_script(
+            'fp-esperienze-archive-block',
+            FP_ESPERIENZE_PLUGIN_URL . 'assets/js/archive-block.js',
+            ['wp-blocks', 'wp-element', 'wp-editor', 'wp-components', 'wp-i18n'],
+            FP_ESPERIENZE_VERSION,
+            true
+        );
+
+        wp_localize_script('fp-esperienze-archive-block', 'fpEsperienzeBlock', [
+            'pluginUrl' => FP_ESPERIENZE_PLUGIN_URL,
         ]);
     }
 }
