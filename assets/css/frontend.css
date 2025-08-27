@@ -28,6 +28,217 @@
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 }
 
+/* Archive Filters */
+.fp-archive-filters {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 32px;
+}
+
+.fp-filters-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.fp-filters-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.fp-filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.fp-filter-group label {
+    font-weight: 600;
+    color: #1a1a1a;
+    font-size: 14px;
+    margin: 0;
+}
+
+.fp-filter-select,
+.fp-filter-date {
+    padding: 10px 14px;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    background: white;
+    font-size: 14px;
+    transition: border-color 0.2s ease;
+}
+
+.fp-filter-select:focus,
+.fp-filter-date:focus {
+    outline: none;
+    border-color: #ff6b35;
+    box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+}
+
+.fp-filters-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.fp-filter-apply {
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.fp-btn-secondary {
+    background: #6c757d;
+    color: white;
+    text-decoration: none;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    transition: background-color 0.2s ease;
+}
+
+.fp-btn-secondary:hover {
+    background: #5a6268;
+    color: white;
+    text-decoration: none;
+}
+
+/* No Results */
+.fp-no-results {
+    text-align: center;
+    color: #666;
+    font-style: italic;
+    padding: 40px 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin: 20px 0;
+}
+
+/* Archive Pagination */
+.fp-archive-pagination {
+    margin: 40px 0 20px;
+    text-align: center;
+}
+
+.fp-pagination-list {
+    display: inline-flex;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    gap: 8px;
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 8px;
+}
+
+.fp-pagination-item {
+    margin: 0;
+}
+
+.fp-pagination-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    height: 40px;
+    padding: 0 12px;
+    text-decoration: none;
+    color: #666;
+    font-weight: 500;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    font-size: 14px;
+}
+
+.fp-pagination-link:hover {
+    background: #f8f9fa;
+    color: #333;
+    text-decoration: none;
+}
+
+.fp-pagination-current .fp-pagination-link {
+    background: #ff6b35;
+    color: white;
+    cursor: default;
+}
+
+.fp-pagination-current .fp-pagination-link:hover {
+    background: #ff6b35;
+    color: white;
+}
+
+.fp-pagination-dots .fp-pagination-link {
+    cursor: default;
+}
+
+.fp-pagination-dots .fp-pagination-link:hover {
+    background: transparent;
+    color: #666;
+}
+
+/* Experience Results */
+.fp-experience-results {
+    min-height: 300px;
+}
+
+/* Language Chips */
+.fp-experience-languages {
+    margin: 12px 0;
+}
+
+.fp-language-chip {
+    display: inline-block;
+    background: #e9ecef;
+    color: #495057;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    margin-right: 6px;
+    margin-bottom: 4px;
+}
+
+/* Skeleton Loader */
+.fp-skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+.fp-experience-card.fp-skeleton .fp-experience-image {
+    height: 200px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+}
+
+.fp-experience-card.fp-skeleton .fp-experience-title,
+.fp-experience-card.fp-skeleton .fp-experience-excerpt,
+.fp-experience-card.fp-skeleton .fp-experience-price {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+    color: transparent;
+    border-radius: 4px;
+    height: 1.2em;
+    margin-bottom: 8px;
+}
+
 /* Experience Card */
 .fp-experience-card {
     border: 1px solid #ddd;
@@ -1246,6 +1457,44 @@
     
     .fp-sticky-notice {
         display: block;
+    }
+
+    /* Archive filters mobile */
+    .fp-filters-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .fp-filters-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .fp-filter-apply,
+    .fp-btn-secondary {
+        width: 100%;
+        text-align: center;
+    }
+
+    /* Archive grid mobile */
+    .fp-experience-archive.columns-2 .fp-experience-grid,
+    .fp-experience-archive.columns-3 .fp-experience-grid,
+    .fp-experience-archive.columns-4 .fp-experience-grid {
+        grid-template-columns: 1fr;
+    }
+
+    /* Pagination mobile */
+    .fp-pagination-list {
+        flex-wrap: wrap;
+        gap: 4px;
+        padding: 4px;
+    }
+
+    .fp-pagination-link {
+        min-width: 36px;
+        height: 36px;
+        padding: 0 8px;
+        font-size: 13px;
     }
 }
 

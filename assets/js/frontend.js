@@ -58,6 +58,12 @@
                     }, 600);
                 }
             });
+
+            // Archive filters functionality
+            this.initArchiveFilters();
+
+            // Analytics tracking for experience cards
+            this.initAnalyticsTracking();
         },
 
         /**
@@ -432,6 +438,172 @@
             setTimeout(function() {
                 $('#fp-error-messages').fadeOut();
             }, 5000);
+        },
+
+        /**
+         * Initialize archive filters
+         */
+        initArchiveFilters: function() {
+            var self = this;
+
+            // Auto-submit filters on change (with debounce)
+            var filterTimeout;
+            $('#fp-filters-form select, #fp-filters-form input').on('change', function() {
+                clearTimeout(filterTimeout);
+                filterTimeout = setTimeout(function() {
+                    self.submitFilters();
+                }, 300);
+            });
+
+            // Prevent form submission and handle via AJAX for better UX
+            $('#fp-filters-form').on('submit', function(e) {
+                e.preventDefault();
+                self.submitFilters();
+            });
+
+            // Clear filters
+            $('.fp-filter-reset').on('click', function(e) {
+                e.preventDefault();
+                self.clearFilters();
+            });
+        },
+
+        /**
+         * Submit filters via URL update
+         */
+        submitFilters: function() {
+            var form = $('#fp-filters-form');
+            if (!form.length) return;
+
+            // Show loading state
+            this.showFilterLoading(true);
+
+            // Build query string
+            var params = new URLSearchParams();
+            
+            // Add filter values
+            form.find('select, input').each(function() {
+                var $field = $(this);
+                var value = $field.val();
+                if (value && value !== '') {
+                    params.set($field.attr('name'), value);
+                }
+            });
+
+            // Add hidden fields
+            form.find('input[type="hidden"]').each(function() {
+                var $field = $(this);
+                var value = $field.val();
+                if (value && value !== '') {
+                    params.set($field.attr('name'), value);
+                }
+            });
+
+            // Reset pagination
+            params.delete('paged');
+
+            // Update URL and reload
+            var newUrl = window.location.pathname + '?' + params.toString();
+            window.location.href = newUrl;
+        },
+
+        /**
+         * Clear all filters
+         */
+        clearFilters: function() {
+            // Build URL with only non-filter parameters
+            var params = new URLSearchParams(window.location.search);
+            var keepParams = new URLSearchParams();
+
+            // Keep only non-filter parameters
+            for (var [key, value] of params) {
+                if (!key.startsWith('fp_') && key !== 'paged') {
+                    keepParams.set(key, value);
+                }
+            }
+
+            var newUrl = window.location.pathname;
+            if (keepParams.toString()) {
+                newUrl += '?' + keepParams.toString();
+            }
+
+            window.location.href = newUrl;
+        },
+
+        /**
+         * Show/hide filter loading state
+         */
+        showFilterLoading: function(show) {
+            var $results = $('.fp-experience-results');
+            if (!$results.length) return;
+
+            if (show) {
+                $results.addClass('fp-loading');
+                // Optionally add skeleton cards
+                this.showSkeletonCards();
+            } else {
+                $results.removeClass('fp-loading');
+            }
+        },
+
+        /**
+         * Show skeleton loading cards
+         */
+        showSkeletonCards: function() {
+            var $grid = $('.fp-experience-grid');
+            if (!$grid.length) return;
+
+            var skeletonHtml = '';
+            for (var i = 0; i < 6; i++) {
+                skeletonHtml += '<div class="fp-experience-card fp-skeleton">' +
+                    '<div class="fp-experience-image"></div>' +
+                    '<div class="fp-experience-content">' +
+                    '<h3 class="fp-experience-title">Loading experience...</h3>' +
+                    '<div class="fp-experience-excerpt">Loading description...</div>' +
+                    '<div class="fp-experience-price">Loading price...</div>' +
+                    '</div></div>';
+            }
+
+            $grid.html(skeletonHtml);
+        },
+
+        /**
+         * Initialize analytics tracking
+         */
+        initAnalyticsTracking: function() {
+            // Track clicks on experience details buttons
+            $(document).on('click', '.fp-details-btn', function(e) {
+                var $btn = $(this);
+                var itemId = $btn.data('item-id');
+                var itemName = $btn.data('item-name');
+
+                // Push to dataLayer if available
+                if (typeof window.dataLayer !== 'undefined') {
+                    window.dataLayer.push({
+                        event: 'select_item',
+                        items: [{
+                            item_id: itemId,
+                            item_name: itemName,
+                            item_category: 'experience'
+                        }]
+                    });
+                }
+            });
+
+            // Track filter usage
+            $(document).on('change', '.fp-filter-select, .fp-filter-date', function() {
+                var $field = $(this);
+                var filterType = $field.attr('name');
+                var filterValue = $field.val();
+
+                if (typeof window.dataLayer !== 'undefined' && filterValue) {
+                    window.dataLayer.push({
+                        event: 'filter_experience',
+                        filter_type: filterType,
+                        filter_value: filterValue
+                    });
+                }
+            });
         }
     };
 

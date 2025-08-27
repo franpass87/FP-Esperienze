@@ -45,9 +45,117 @@ Display experiences on any page using:
 [fp_exp_archive]
 ```
 
-With options:
+#### Basic Options:
 ```
 [fp_exp_archive posts_per_page="12" columns="3" orderby="date" order="DESC"]
+```
+
+#### With Filters:
+```
+[fp_exp_archive filters="mp,lang,duration,date" per_page="9" order_by="price"]
+```
+
+#### Available Parameters:
+
+- `posts_per_page` / `per_page`: Number of experiences to display (default: 12)
+- `columns`: Number of columns in grid layout (1-4, default: 3)
+- `orderby` / `order_by`: Sort field - `date`, `name`, `price`, `duration` (default: date)
+- `order`: Sort direction - `ASC` or `DESC` (default: DESC)
+- `filters`: Comma-separated list of enabled filters:
+  - `mp`: Meeting Point filter
+  - `lang`: Language filter  
+  - `duration`: Duration range filter
+  - `date`: Date availability filter
+
+#### Filter Examples:
+
+**Language Filter:**
+Shows experiences available in specific languages based on `_fp_exp_langs` meta field.
+
+**Meeting Point Filter:**
+Filters by meeting point using select dropdown from available meeting points.
+
+**Duration Filter:**
+Range-based filtering:
+- "Up to 1.5 hours" (≤90 min)
+- "1.5 - 3 hours" (91-180 min)  
+- "More than 3 hours" (>180 min)
+
+**Date Availability Filter:**
+Shows only experiences with available slots on the selected date using real-time availability data with 5-minute caching.
+
+## Archivio (Shortcode + Block)
+
+### Shortcode Usage
+
+The `[fp_exp_archive]` shortcode provides a complete experience archive with optional filtering capabilities:
+
+```php
+// Basic usage
+[fp_exp_archive]
+
+// With all filters enabled
+[fp_exp_archive filters="mp,lang,duration,date" per_page="12" order_by="name" order="ASC"]
+
+// Meeting point and language filters only
+[fp_exp_archive filters="mp,lang" columns="2"]
+```
+
+### Gutenberg Block
+
+The "Experience Archive" block is available in the Widgets category and provides the same functionality as the shortcode with a visual interface:
+
+1. Add the "Experience Archive" block to any page/post
+2. Configure display settings in the Inspector:
+   - Posts per page (1-50)
+   - Columns (1-4)
+   - Order by (Date, Name, Price, Duration)
+   - Sort direction (ASC/DESC)
+3. Enable desired filters:
+   - Language Filter
+   - Meeting Point Filter
+   - Duration Filter
+   - Date Availability Filter
+
+### Features
+
+- **Responsive Grid Layout**: Automatically adapts to screen size
+- **Lazy Loading**: Images load as they come into view
+- **Real-time Filtering**: AJAX-powered filters with URL state
+- **Availability Caching**: Date-based availability cached for 5 minutes
+- **Pagination**: Automatic pagination for large result sets
+- **Analytics Integration**: Tracks filter usage and item selections
+- **Accessibility**: Proper ARIA labels and screen reader support
+- **Mobile Optimized**: Touch-friendly filters and responsive design
+
+### Performance
+
+- **Caching**: Availability queries cached with transients (5-minute TTL)
+- **Lazy Loading**: Images use `loading="lazy"` attribute
+- **Optimized Queries**: Prevents N+1 database queries
+- **Skeleton Loading**: Shows loading states during filter operations
+
+### Analytics Tracking
+
+The archive automatically pushes events to `dataLayer` for Google Analytics:
+
+```javascript
+// Item selection tracking
+dataLayer.push({
+  event: 'select_item',
+  items: [{
+    item_id: '123',
+    item_name: 'Experience Name',
+    item_category: 'experience'
+  }]
+});
+
+// Filter usage tracking  
+dataLayer.push({
+  event: 'filter_experience',
+  filter_type: 'fp_lang',
+  filter_value: 'English'
+});
 ```
 
 ### REST API
