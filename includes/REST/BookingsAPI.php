@@ -8,6 +8,7 @@
 namespace FP\Esperienze\REST;
 
 use FP\Esperienze\Booking\BookingManager;
+use FP\Esperienze\Core\CapabilityManager;
 
 defined('ABSPATH') || exit;
 
@@ -80,7 +81,7 @@ class BookingsAPI {
      * Check permissions for REST endpoints
      */
     public function checkPermissions(\WP_REST_Request $request): bool {
-        return current_user_can('manage_options');
+        return CapabilityManager::canManageFPEsperienze();
     }
     
     /**

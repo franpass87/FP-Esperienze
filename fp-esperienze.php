@@ -96,3 +96,8 @@ register_activation_hook(__FILE__, function() {
 register_deactivation_hook(__FILE__, function() {
     FP\Esperienze\Core\Installer::deactivate();
 });
+
+/**
+ * Uninstall hook
+ */
+register_uninstall_hook(__FILE__, [FP\Esperienze\Core\Installer::class, 'uninstall']);

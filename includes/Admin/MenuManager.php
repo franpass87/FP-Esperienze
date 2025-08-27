@@ -2151,7 +2151,7 @@ class MenuManager {
      */
     public function settingsPage(): void {
         // Handle form submissions
-        if ($_POST && current_user_can('manage_options')) {
+        if ($_POST && CapabilityManager::canManageFPEsperienze()) {
             $this->handleSettingsSubmission();
         }
         
@@ -2749,7 +2749,7 @@ class MenuManager {
      * Export bookings to CSV
      */
     private function exportBookingsCSV(): void {
-        if (!current_user_can('manage_options')) {
+        if (!CapabilityManager::canManageFPEsperienze()) {
             wp_die(__('Insufficient permissions.', 'fp-esperienze'));
         }
         
