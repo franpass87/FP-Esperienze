@@ -152,6 +152,7 @@ class Plugin {
     public function initFrontend(): void {
         new Shortcodes();
         new Templates();
+        new \FP\Esperienze\Frontend\SEOManager();
     }
 
     /**

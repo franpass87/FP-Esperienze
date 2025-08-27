@@ -16,6 +16,240 @@ A WordPress + WooCommerce plugin for experience booking management by Francesco 
 - **Frontend Templates**: GetYourGuide-style single experience pages
 - **Admin Dashboard**: Comprehensive management interface
 - **Advanced Reports**: KPI analytics, charts, UTM tracking, and webhook integrations
+- **SEO Enhancement**: Comprehensive structured data, social meta tags, and search optimization
+
+## SEO & Structured Data
+
+The plugin includes comprehensive SEO enhancements to improve search engine visibility and social media sharing of experience pages.
+
+### Enhanced Schema.org Markup
+
+Automatic structured data generation with intelligent schema type selection:
+
+#### Event Schema (Guided Experiences with Schedules)
+For experiences with defined schedules and specific times:
+
+```json
+{
+  "@context": "https://schema.org",
+  "@type": "Event",
+  "name": "Cooking Class in Tuscany",
+  "description": "Learn traditional Tuscan cooking techniques...",
+  "startDate": "2024-12-30T09:00:00+01:00",
+  "duration": "PT120M",
+  "eventStatus": "https://schema.org/EventScheduled",
+  "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+  "location": {
+    "@type": "Place",
+    "name": "Tuscan Cooking School",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "Via Roma 123, Florence, Italy"
+    },
+    "geo": {
+      "@type": "GeoCoordinates",
+      "latitude": 43.7696,
+      "longitude": 11.2558
+    }
+  },
+  "offers": [
+    {
+      "@type": "Offer",
+      "name": "Adult Price",
+      "price": 45.00,
+      "priceCurrency": "EUR",
+      "availability": "https://schema.org/InStock",
+      "validFrom": "2024-12-01T00:00:00Z"
+    },
+    {
+      "@type": "Offer", 
+      "name": "Child Price",
+      "price": 25.00,
+      "priceCurrency": "EUR",
+      "availability": "https://schema.org/InStock",
+      "validFrom": "2024-12-01T00:00:00Z"
+    }
+  ]
+}
+```
+
+#### Trip Schema (Tour Experiences)
+For tour-style experiences identified by categories or tags:
+
+```json
+{
+  "@context": "https://schema.org",
+  "@type": "Trip",
+  "name": "Florence Historical Walking Tour",
+  "description": "Discover the rich history of Florence...",
+  "duration": "PT180M",
+  "location": {
+    "@type": "Place",
+    "name": "Piazza della Signoria",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "Piazza della Signoria, Florence, Italy"
+    }
+  },
+  "offers": [
+    {
+      "@type": "Offer",
+      "price": 35.00,
+      "priceCurrency": "EUR",
+      "availability": "https://schema.org/InStock"
+    }
+  ]
+}
+```
+
+#### Product Schema (Standard Experiences)
+For general experiences without specific schedules:
+
+```json
+{
+  "@context": "https://schema.org",
+  "@type": "Product",
+  "name": "Wine Tasting Experience",
+  "description": "Sample the finest Tuscan wines...",
+  "brand": {
+    "@type": "Brand",
+    "name": "FP Esperienze"
+  },
+  "offers": [
+    {
+      "@type": "Offer",
+      "price": 60.00,
+      "priceCurrency": "EUR",
+      "availability": "https://schema.org/InStock"
+    }
+  ]
+}
+```
+
+### FAQ Schema Markup
+
+When FAQ data is available, automatic FAQPage schema generation:
+
+```json
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What should I bring?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Comfortable walking shoes and a camera."
+      }
+    },
+    {
+      "@type": "Question", 
+      "name": "Is this suitable for children?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes, children over 3 years old are welcome."
+      }
+    }
+  ]
+}
+```
+
+### Breadcrumb Navigation Schema
+
+Structured navigation hierarchy for better search understanding:
+
+```json
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "https://example.com"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Experiences",
+      "item": "https://example.com/shop"
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": "Cooking Class in Tuscany",
+      "item": "https://example.com/experience/cooking-class"
+    }
+  ]
+}
+```
+
+### Social Media Meta Tags
+
+#### Open Graph Tags
+Enhanced Facebook and LinkedIn sharing:
+
+```html
+<meta property="og:type" content="product" />
+<meta property="og:title" content="Cooking Class in Tuscany" />
+<meta property="og:description" content="Learn traditional Tuscan cooking..." />
+<meta property="og:image" content="https://example.com/image.jpg" />
+<meta property="og:url" content="https://example.com/experience/cooking-class" />
+<meta property="product:price:amount" content="45.00" />
+<meta property="product:price:currency" content="EUR" />
+```
+
+#### Twitter Cards
+Optimized Twitter sharing:
+
+```html
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Cooking Class in Tuscany" />
+<meta name="twitter:description" content="Learn traditional Tuscan cooking..." />
+<meta name="twitter:image" content="https://example.com/image.jpg" />
+```
+
+### SEO Settings Configuration
+
+Navigate to **FP Esperienze > SEO** to configure:
+
+- **Enhanced Schema.org**: Enable Event/Trip/Product schema selection
+- **FAQ Schema**: Auto-generate FAQPage markup when FAQ data exists
+- **Breadcrumb Schema**: Add navigation breadcrumbs
+- **Open Graph Tags**: Enable Facebook/LinkedIn meta tags
+- **Twitter Cards**: Enable Twitter sharing optimization
+
+### Schema Type Selection Logic
+
+The plugin intelligently selects the appropriate schema type:
+
+1. **Trip Schema**: Applied when experience has "tour" or "trip" in categories/tags
+2. **Event Schema**: Applied when experience has defined schedules and duration
+3. **Product Schema**: Default fallback for general experiences
+
+### Validation and Quality
+
+- **No Fake Ratings**: Schema markup excludes artificial review data
+- **Rich Results Compatible**: Tested with Google Rich Results Test
+- **Schema.org Compliant**: Validates against official schema.org standards
+- **Performance Optimized**: Minimal impact on page load times
+
+### Meeting Point Integration
+
+Location data automatically sourced from assigned meeting points:
+- Geographic coordinates for precise location
+- Full address information
+- Integration with Google Places reviews (when available)
+
+### Dynamic Pricing Integration
+
+Offer data reflects current pricing:
+- Adult and child pricing tiers
+- Currency information
+- Availability status
+- Valid date ranges
 
 ## Advanced Reports & Analytics
 
