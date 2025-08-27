@@ -129,6 +129,113 @@ Configure third-party integrations through **FP Esperienze → Settings → Inte
 
 All integration settings are stored securely and can be configured independently. Empty fields will disable the respective integrations.
 
+## Frontend Tracking
+
+The plugin includes comprehensive tracking for Google Analytics 4 and Meta Pixel with automatic event detection and proper eCommerce data structure.
+
+### GA4 Enhanced eCommerce Events
+
+When GA4 integration is enabled and configured, the following events are automatically tracked:
+
+#### view_item
+Triggered when a user loads a single experience page:
+```javascript
+{
+  "event": "view_item",
+  "ecommerce": {
+    "currency": "EUR",
+    "value": 50.00,
+    "items": [{
+      "item_id": "123",
+      "item_name": "Cooking Class in Tuscany",
+      "item_category": "Experience",
+      "price": 50.00,
+      "quantity": 1,
+      "slot_start": null,
+      "meeting_point_id": null,
+      "lang": ["English", "Italian"]
+    }]
+  }
+}
+```
+
+#### select_item
+Triggered when a user selects a time slot:
+```javascript
+{
+  "event": "select_item",
+  "item_list_name": "Available Time Slots",
+  "items": [{
+    "item_id": "123",
+    "item_name": "Cooking Class in Tuscany",
+    "item_category": "Experience",
+    "price": 50.00,
+    "quantity": 1,
+    "slot_start": "10:00",
+    "meeting_point_id": "1",
+    "lang": "English"
+  }]
+}
+```
+
+#### add_to_cart
+Triggered when experience is added to cart:
+```javascript
+{
+  "event": "add_to_cart",
+  "ecommerce": {
+    "currency": "EUR",
+    "value": 50.00,
+    "items": [{
+      "item_id": "123",
+      "item_name": "Cooking Class in Tuscany",
+      "item_category": "Experience",
+      "price": 50.00,
+      "quantity": 1,
+      "slot_start": "2024-12-15 10:00",
+      "meeting_point_id": "1",
+      "lang": "English"
+    }]
+  }
+}
+```
+
+#### begin_checkout, add_payment_info, purchase
+Standard WooCommerce funnel events with experience-specific data including slot times, meeting points, and language selections.
+
+### Meta Pixel Events
+
+When Meta Pixel integration is enabled, the following events are tracked:
+
+- **AddToCart**: When experience is added to cart
+- **InitiateCheckout**: When checkout process begins  
+- **Purchase**: When order is completed
+
+All Meta Pixel events include `event_id` for deduplication with Conversions API (when implemented).
+
+### Event Parameters
+
+**Custom Parameters for Experiences:**
+- `slot_start`: Selected time slot (null on initial view_item)
+- `meeting_point_id`: Selected meeting point ID (null on initial view_item)
+- `lang`: Selected language or available languages array
+
+**Standard eCommerce Parameters:**
+- `item_id`: Product ID
+- `item_name`: Product name
+- `item_category`: Always "Experience"
+- `price`: Base adult price
+- `quantity`: Always 1 for experiences
+- `currency`: Site currency
+- `value`: Total value
+
+### Implementation Details
+
+- **Conditional Loading**: Scripts only load on experience pages, cart, and checkout
+- **No GTM Dependency**: Uses native `dataLayer.push()` and `fbq()` calls
+- **Settings Integration**: Respects enable/disable toggles in admin settings
+- **Performance Optimized**: Tracking code only loads when integrations are configured and enabled
+
 ## Archivio (Shortcode + Block)
 
 ### Shortcode Usage

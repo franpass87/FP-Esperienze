@@ -17,6 +17,7 @@ use FP\Esperienze\REST\BookingsAPI;
 use FP\Esperienze\Booking\Cart_Hooks;
 use FP\Esperienze\Booking\BookingManager;
 use FP\Esperienze\Data\VoucherManager;
+use FP\Esperienze\Integrations\TrackingManager;
 
 defined('ABSPATH') || exit;
 
@@ -95,6 +96,9 @@ class Plugin {
         
         // Initialize voucher manager for gift vouchers
         new VoucherManager();
+        
+        // Initialize tracking manager for GA4 and Meta Pixel
+        new TrackingManager();
     }
 
     /**

@@ -295,20 +295,16 @@
          * Track slot selection for GA4
          */
         trackSlotSelection: function() {
-            if (typeof window.dataLayer !== 'undefined') {
-                window.dataLayer.push({
-                    'event': 'select_item',
-                    'item_list_name': 'Available Time Slots',
-                    'items': [{
-                        'item_id': $('#fp-product-id').val(),
-                        'item_name': document.title,
-                        'item_category': 'Experience',
-                        'item_variant': this.selectedSlot.start_time,
-                        'price': this.selectedSlot.adult_price
-                    }]
+            if (typeof window.FPTracking !== 'undefined' && this.selectedSlot) {
+                $(document).trigger('fp_track_select_item', {
+                    product_id: $('#fp-product-id').val(),
+                    product_name: document.title,
+                    price: this.selectedSlot.adult_price,
+                    slot_start: this.selectedSlot.start_time,
+                    meeting_point_id: $('#fp-meeting-point-id').val() || null,
+                    lang: $('#fp-language').val() || null
                 });
             }
-            // TODO: Implement actual GA4 tracking in Milestone D
         },
 
         /**
