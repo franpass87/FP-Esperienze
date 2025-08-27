@@ -28,6 +28,7 @@ class MenuManager {
         // Initialize Setup Wizard and System Status
         new SetupWizard();
         new SystemStatus();
+        new PerformanceSettings();
         
         // Handle setup wizard redirect
         add_action('admin_init', [$this, 'handleSetupWizardRedirect']);
@@ -106,6 +107,16 @@ class MenuManager {
             CapabilityManager::MANAGE_FP_ESPERIENZE,
             'fp-esperienze-closures',
             [$this, 'closuresPage']
+        );
+
+        // Performance submenu
+        add_submenu_page(
+            'fp-esperienze',
+            __('Performance', 'fp-esperienze'),
+            __('Performance', 'fp-esperienze'),
+            'manage_options', // Only administrators can access performance settings
+            'fp-esperienze-performance',
+            [$this, 'performancePage']
         );
 
         // Settings submenu
@@ -2844,5 +2855,13 @@ class MenuManager {
         ]);
         
         return $posts;
+    }
+    
+    /**
+     * Performance page
+     */
+    public function performancePage(): void {
+        $performance_settings = new PerformanceSettings();
+        $performance_settings->renderPage();
     }
 }
