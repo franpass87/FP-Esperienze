@@ -112,7 +112,9 @@ class VoucherManager {
         $result = $wpdb->insert($table_name, $voucher_data);
         
         if ($result === false) {
-            error_log('FP Esperienze: Failed to create voucher for order ' . $order->get_id());
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('FP Esperienze: Failed to create voucher for order ' . $order->get_id());
+            }
             return;
         }
         
@@ -140,7 +142,9 @@ class VoucherManager {
             }
             
         } catch (Exception $e) {
-            error_log('FP Esperienze: Failed to generate PDF for voucher ' . $voucher_code . ': ' . $e->getMessage());
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('FP Esperienze: Failed to generate PDF for voucher ' . $voucher_code . ': ' . $e->getMessage());
+            }
         }
     }
     

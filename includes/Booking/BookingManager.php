@@ -213,7 +213,9 @@ class BookingManager {
                 return $conversion_result['booking_id'];
             } else {
                 // Log hold conversion failure and fall through to direct creation
-                error_log("Hold conversion failed for order {$order_id}, item {$item_id}: " . $conversion_result['message']);
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log("Hold conversion failed for order {$order_id}, item {$item_id}: " . $conversion_result['message']);
+                }
             }
         }
         
@@ -224,7 +226,9 @@ class BookingManager {
         $result = $wpdb->insert($table_name, $complete_booking_data);
         
         if ($result === false) {
-            error_log("Failed to create booking for order {$order_id}, item {$item_id}: " . $wpdb->last_error);
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("Failed to create booking for order {$order_id}, item {$item_id}: " . $wpdb->last_error);
+            }
             return false;
         }
         

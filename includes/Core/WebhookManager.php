@@ -146,7 +146,9 @@ class WebhookManager {
     private function scheduleRetry(string $url, array $payload, string $event_id, int $attempt = 1): void {
         // Maximum 5 retry attempts
         if ($attempt > 5) {
-            error_log('FP Esperienze: Webhook failed after 5 attempts: ' . $event_id);
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('FP Esperienze: Webhook failed after 5 attempts: ' . $event_id);
+            }
             return;
         }
 
