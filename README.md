@@ -9,6 +9,7 @@ A WordPress + WooCommerce plugin for experience booking management by Francesco 
 - **Meeting Points**: GPS-enabled meeting points for experiences
 - **Extras**: Additional services and add-ons
 - **Gift Vouchers**: Complete gift system with PDF generation, QR codes, and email delivery
+- **Voucher Redemption**: Cart/checkout voucher redemption with HMAC validation (Phase 2)
 - **Vouchers**: PDF vouchers with QR codes (legacy system)
 - **REST API**: Real-time availability checking
 - **Frontend Templates**: GetYourGuide-style single experience pages
@@ -226,6 +227,53 @@ Use the included test script `test-gift-voucher.php` to verify:
 - Settings configuration
 - Upload directory permissions
 
+### Voucher Redemption (Phase 2)
+
+The plugin includes a comprehensive voucher redemption system allowing customers to redeem gift vouchers during the booking process:
+
+#### Frontend Redemption Form
+- "Have a voucher?" input field in the booking widget
+- Real-time voucher validation with clear success/error messaging
+- Support for voucher code entry with automatic formatting
+- Mobile-responsive design with proper accessibility
+
+#### Voucher Validation
+- HMAC SHA256 signature verification for QR code security
+- Product compatibility checking (voucher tied to specific experiences)
+- Expiration date validation with automatic status updates
+- Active/redeemed/expired status verification
+
+#### Discount Application
+Two voucher types are supported:
+- **Full Vouchers** (`TYPE=full`): Make the entire experience free while preserving extra charges
+- **Value Vouchers** (`TYPE=value`): Apply discount up to the voucher amount on base price only
+
+#### Cart Integration
+- Session-based voucher storage for cart persistence
+- Real-time price calculation with applied discounts
+- Clear voucher status display in cart item details
+- Automatic voucher removal if cart changes make it incompatible
+
+#### Order Processing
+- Automatic voucher redemption when orders are marked as "Completed"
+- Voucher rollback to "Active" status on order cancellation or refund
+- Order metadata tracking with voucher codes and IDs
+- Order notes for audit trail of voucher usage
+
+#### Security Features
+- AJAX requests protected with WordPress nonces
+- Input sanitization and validation
+- HMAC signature verification for QR code payloads
+- Protection against voucher manipulation attempts
+
+#### Testing
+Use the manual test suite in `MANUAL_TESTS_VOUCHER_REDEMPTION.md` to verify:
+- Frontend voucher application flow
+- Cart and checkout integration
+- Order processing and status changes
+- Security and validation features
+- Mobile responsiveness and browser compatibility
+
 ### Features
 
 - **Responsive Design**: Mobile-first approach with sticky booking widget
@@ -286,6 +334,69 @@ The plugin creates the following custom tables:
 - `fp_bookings` - Customer bookings
 - `fp_vouchers` - Legacy voucher system (backwards compatibility)
 - `fp_exp_vouchers` - Gift voucher system with recipient data and status tracking
+
+### Hooks and Filters
+
+The plugin provides several action hooks and filters for customization:
+
+#### Voucher Redemption Hooks
+
+**Actions:**
+- `fp_esperienze_voucher_applied` - Fired when a voucher is successfully applied to cart
+- `fp_esperienze_voucher_removed` - Fired when a voucher is removed from cart
+- `fp_esperienze_voucher_redeemed` - Fired when a voucher is marked as redeemed
+- `fp_esperienze_voucher_rollback` - Fired when a voucher redemption is rolled back
+
+**Filters:**
+- `fp_esperienze_voucher_validation` - Modify voucher validation results
+- `fp_esperienze_voucher_discount_amount` - Customize discount calculation
+- `fp_esperienze_voucher_apply_to_extras` - Control whether vouchers affect extras pricing
+
+#### Cart and Pricing Hooks
+
+**Actions:**
+- `fp_esperienze_before_price_calculation` - Before experience price calculation
+- `fp_esperienze_after_price_calculation` - After experience price calculation
+
+**Filters:**
+- `fp_esperienze_cart_item_price` - Modify calculated cart item price
+- `fp_esperienze_experience_base_price` - Modify base experience price
+- `fp_esperienze_extra_item_price` - Modify individual extra pricing
+
+#### Order Processing Hooks
+
+**Actions:**
+- `fp_esperienze_order_completed` - When experience order is completed
+- `fp_esperienze_order_cancelled` - When experience order is cancelled
+
+#### Example Usage
+
+```php
+// Customize voucher validation
+add_filter('fp_esperienze_voucher_validation', function($validation, $voucher_code, $product_id) {
+    // Add custom validation logic
+    if (custom_validation_check($voucher_code)) {
+        $validation['success'] = false;
+        $validation['message'] = 'Custom validation failed';
+    }
+    return $validation;
+}, 10, 3);
+
+// Modify voucher discount amount
+add_filter('fp_esperienze_voucher_discount_amount', function($amount, $voucher, $cart_item) {
+    // Apply additional business logic
+    if (is_special_customer()) {
+        $amount *= 1.1; // 10% bonus discount
+    }
+    return $amount;
+}, 10, 3);
+
+// Track voucher redemption
+add_action('fp_esperienze_voucher_redeemed', function($voucher_code, $order_id) {
+    // Send notification or update external system
+    wp_mail('admin@example.com', 'Voucher Redeemed', "Voucher $voucher_code used in order $order_id");
+}, 10, 2);
+```
 
 ## Author
 

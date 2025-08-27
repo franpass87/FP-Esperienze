@@ -64,6 +64,193 @@
 
             // Analytics tracking for experience cards
             this.initAnalyticsTracking();
+            
+            // Voucher functionality
+            this.initVoucherHandling();
+        },
+        
+        /**
+         * Initialize voucher handling
+         */
+        initVoucherHandling: function() {
+            var self = this;
+            
+            // Apply voucher button
+            $(document).on('click', '.fp-apply-voucher-btn', function(e) {
+                e.preventDefault();
+                
+                var $btn = $(this);
+                var $form = $btn.closest('.fp-voucher-form');
+                var $input = $form.find('.fp-voucher-code-input');
+                var voucherCode = $input.val().trim();
+                var productId = $form.data('product-id');
+                var cartItemKey = $form.data('cart-item-key');
+                
+                if (!voucherCode) {
+                    self.showVoucherMessage($form, 'error', 'Please enter a voucher code.');
+                    return;
+                }
+                
+                self.applyVoucher(voucherCode, productId, cartItemKey, $form);
+            });
+            
+            // Remove voucher button
+            $(document).on('click', '.fp-remove-voucher-btn', function(e) {
+                e.preventDefault();
+                
+                var $btn = $(this);
+                var $form = $btn.closest('.fp-voucher-form');
+                var cartItemKey = $form.data('cart-item-key');
+                
+                self.removeVoucher(cartItemKey, $form);
+            });
+            
+            // Enter key on voucher input
+            $(document).on('keypress', '.fp-voucher-code-input', function(e) {
+                if (e.which === 13) {
+                    e.preventDefault();
+                    $(this).siblings('.fp-apply-voucher-btn').click();
+                }
+            });
+        },
+        
+        /**
+         * Apply voucher
+         */
+        applyVoucher: function(voucherCode, productId, cartItemKey, $form) {
+            var self = this;
+            var $btn = $form.find('.fp-apply-voucher-btn');
+            var originalText = $btn.text();
+            
+            $btn.prop('disabled', true).text('Applying...');
+            self.clearVoucherMessage($form);
+            
+            $.ajax({
+                url: fp_esperienze_params.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'apply_voucher',
+                    nonce: fp_esperienze_params.voucher_nonce,
+                    voucher_code: voucherCode,
+                    product_id: productId,
+                    cart_item_key: cartItemKey
+                },
+                success: function(response) {
+                    if (response.success) {
+                        self.showVoucherMessage($form, 'success', response.data.message);
+                        self.updateVoucherUI($form, 'applied', {
+                            code: voucherCode,
+                            discount_info: response.data.discount_info
+                        });
+                        
+                        // Refresh cart totals
+                        if (typeof wc_cart_fragments_params !== 'undefined') {
+                            $(document.body).trigger('wc_fragment_refresh');
+                        }
+                    } else {
+                        self.showVoucherMessage($form, 'error', response.data.message);
+                    }
+                },
+                error: function() {
+                    self.showVoucherMessage($form, 'error', 'Something went wrong. Please try again.');
+                },
+                complete: function() {
+                    $btn.prop('disabled', false).text(originalText);
+                }
+            });
+        },
+        
+        /**
+         * Remove voucher
+         */
+        removeVoucher: function(cartItemKey, $form) {
+            var self = this;
+            var $btn = $form.find('.fp-remove-voucher-btn');
+            var originalText = $btn.text();
+            
+            $btn.prop('disabled', true).text('Removing...');
+            self.clearVoucherMessage($form);
+            
+            $.ajax({
+                url: fp_esperienze_params.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'remove_voucher',
+                    nonce: fp_esperienze_params.voucher_nonce,
+                    cart_item_key: cartItemKey
+                },
+                success: function(response) {
+                    if (response.success) {
+                        self.showVoucherMessage($form, 'success', response.data.message);
+                        self.updateVoucherUI($form, 'input', null);
+                        
+                        // Refresh cart totals
+                        if (typeof wc_cart_fragments_params !== 'undefined') {
+                            $(document.body).trigger('wc_fragment_refresh');
+                        }
+                    } else {
+                        self.showVoucherMessage($form, 'error', response.data.message);
+                    }
+                },
+                error: function() {
+                    self.showVoucherMessage($form, 'error', 'Something went wrong. Please try again.');
+                },
+                complete: function() {
+                    $btn.prop('disabled', false).text(originalText);
+                }
+            });
+        },
+        
+        /**
+         * Update voucher UI state
+         */
+        updateVoucherUI: function($form, state, data) {
+            var $input = $form.find('.fp-voucher-code-input');
+            var $applyBtn = $form.find('.fp-apply-voucher-btn');
+            var $removeBtn = $form.find('.fp-remove-voucher-btn');
+            var $status = $form.find('.fp-voucher-status');
+            
+            if (state === 'applied') {
+                $input.prop('readonly', true).val(data.code);
+                $applyBtn.hide();
+                $removeBtn.show();
+                
+                $status.html(
+                    '<span class="fp-voucher-applied">' +
+                    '<i class="dashicons dashicons-yes-alt"></i> ' +
+                    'Voucher applied: ' + data.discount_info.description +
+                    '</span>'
+                ).addClass('success').show();
+                
+            } else if (state === 'input') {
+                $input.prop('readonly', false).val('');
+                $applyBtn.show();
+                $removeBtn.hide();
+                $status.hide().removeClass('success error');
+            }
+        },
+        
+        /**
+         * Show voucher message
+         */
+        showVoucherMessage: function($form, type, message) {
+            var $message = $form.find('.fp-voucher-message');
+            if (!$message.length) {
+                $message = $('<div class="fp-voucher-message"></div>');
+                $form.append($message);
+            }
+            
+            $message.removeClass('success error')
+                    .addClass(type)
+                    .html('<p>' + message + '</p>')
+                    .show();
+        },
+        
+        /**
+         * Clear voucher message
+         */
+        clearVoucherMessage: function($form) {
+            $form.find('.fp-voucher-message').hide();
         },
 
         /**

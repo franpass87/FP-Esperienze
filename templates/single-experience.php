@@ -638,6 +638,39 @@ window.dataLayer.push(<?php echo wp_json_encode($ga4_view_item, JSON_UNESCAPED_S
                                 </div>
                             </div>
                         </div>
+                        
+                        <!-- Voucher Form -->
+                        <div class="fp-voucher-section">
+                            <div class="fp-voucher-form" data-product-id="<?php echo esc_attr($product_id); ?>" data-cart-item-key="">
+                                <div class="fp-voucher-header">
+                                    <h4><?php esc_html_e('Have a voucher?', 'fp-esperienze'); ?></h4>
+                                </div>
+                                
+                                <div class="fp-voucher-input-group">
+                                    <input 
+                                        type="text" 
+                                        class="fp-voucher-code-input" 
+                                        placeholder="<?php esc_attr_e('Enter voucher code', 'fp-esperienze'); ?>"
+                                    />
+                                    <button 
+                                        type="button" 
+                                        class="fp-apply-voucher-btn fp-btn fp-btn-secondary"
+                                    >
+                                        <?php esc_html_e('Apply', 'fp-esperienze'); ?>
+                                    </button>
+                                    <button 
+                                        type="button" 
+                                        class="fp-remove-voucher-btn fp-btn fp-btn-outline"
+                                        style="display:none"
+                                    >
+                                        <?php esc_html_e('Remove', 'fp-esperienze'); ?>
+                                    </button>
+                                </div>
+                                
+                                <div class="fp-voucher-status" style="display:none;"></div>
+                                <div class="fp-voucher-message" style="display:none;"></div>
+                            </div>
+                        </div>
 
                         <!-- Add to Cart Button -->
                         <button type="button" 
