@@ -16,6 +16,7 @@ use FP\Esperienze\REST\AvailabilityAPI;
 use FP\Esperienze\REST\BookingsAPI;
 use FP\Esperienze\Booking\Cart_Hooks;
 use FP\Esperienze\Booking\BookingManager;
+use FP\Esperienze\Data\VoucherManager;
 
 defined('ABSPATH') || exit;
 
@@ -91,6 +92,9 @@ class Plugin {
         
         // Initialize booking manager for order processing
         new BookingManager();
+        
+        // Initialize voucher manager for gift vouchers
+        new VoucherManager();
     }
 
     /**

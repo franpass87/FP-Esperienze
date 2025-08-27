@@ -157,7 +157,36 @@ class Installer {
             KEY status (status)
         ) $charset_collate;";
 
-        // Vouchers table
+        // Gift Vouchers table (new structure for gift experience feature)
+        $table_exp_vouchers = $wpdb->prefix . 'fp_exp_vouchers';
+        $sql_exp_vouchers = "CREATE TABLE $table_exp_vouchers (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            code varchar(12) NOT NULL,
+            product_id bigint(20) unsigned NOT NULL,
+            amount_type enum('full', 'value') NOT NULL DEFAULT 'full',
+            amount decimal(10,2) NOT NULL DEFAULT 0.00,
+            recipient_name varchar(255) NOT NULL,
+            recipient_email varchar(255) NOT NULL,
+            message text DEFAULT NULL,
+            expires_on date NOT NULL,
+            status enum('active', 'redeemed', 'expired', 'void') NOT NULL DEFAULT 'active',
+            pdf_path varchar(255) DEFAULT NULL,
+            order_id bigint(20) unsigned DEFAULT NULL,
+            order_item_id bigint(20) unsigned DEFAULT NULL,
+            sender_name varchar(255) DEFAULT NULL,
+            send_date date DEFAULT NULL,
+            sent_at datetime DEFAULT NULL,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY code (code),
+            KEY product_id (product_id),
+            KEY recipient_email (recipient_email),
+            KEY status (status),
+            KEY expires_on (expires_on),
+            KEY order_id (order_id)
+        ) $charset_collate;
+        
+        // Keep existing vouchers table for backward compatibility
         $table_vouchers = $wpdb->prefix . 'fp_vouchers';
         $sql_vouchers = "CREATE TABLE $table_vouchers (
             id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -184,6 +213,7 @@ class Installer {
         dbDelta($sql_schedules);
         dbDelta($sql_overrides);
         dbDelta($sql_bookings);
+        dbDelta($sql_exp_vouchers);
         dbDelta($sql_vouchers);
     }
 
@@ -197,6 +227,14 @@ class Installer {
             'fp_esperienze_default_capacity' => 10,
             'fp_esperienze_booking_cutoff_hours' => 2,
             'fp_esperienze_confirmation_email' => 1,
+            // Gift voucher settings
+            'fp_esperienze_gift_default_exp_months' => 12,
+            'fp_esperienze_gift_pdf_logo' => '',
+            'fp_esperienze_gift_pdf_brand_color' => '#ff6b35',
+            'fp_esperienze_gift_email_sender_name' => get_bloginfo('name'),
+            'fp_esperienze_gift_email_sender_email' => get_option('admin_email'),
+            'fp_esperienze_gift_secret_hmac' => wp_generate_password(32, false),
+            'fp_esperienze_gift_terms' => __('This voucher is valid for one experience booking. Please present the QR code when redeeming.', 'fp-esperienze'),
         ];
 
         foreach ($default_options as $option_name => $option_value) {

@@ -200,6 +200,21 @@
                 self.updateTotal();
                 self.validateForm();
             });
+            
+            // Gift form toggle
+            $('#fp-gift-toggle').on('change', function() {
+                if ($(this).is(':checked')) {
+                    $('#fp-gift-form').slideDown(300);
+                } else {
+                    $('#fp-gift-form').slideUp(300);
+                }
+                self.validateForm();
+            });
+            
+            // Gift form validation
+            $('.fp-required-field').on('input blur', function() {
+                self.validateForm();
+            });
         },
 
         /**
@@ -366,6 +381,22 @@
                 }
             });
             
+            // Check gift form validation if gift is selected
+            if ($('#fp-gift-toggle').is(':checked')) {
+                var recipientName = $('#fp-gift-recipient-name').val().trim();
+                var recipientEmail = $('#fp-gift-recipient-email').val().trim();
+                
+                if (!recipientName || !recipientEmail) {
+                    isValid = false;
+                }
+                
+                // Basic email validation
+                var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (recipientEmail && !emailRegex.test(recipientEmail)) {
+                    isValid = false;
+                }
+            }
+            
             $('#fp-add-to-cart').prop('disabled', !isValid);
         },
 
@@ -395,6 +426,9 @@
                 }
             });
             
+            // Collect gift data
+            var isGift = $('#fp-gift-toggle').is(':checked');
+            
             // Create form data
             var formData = new FormData();
             formData.append('add-to-cart', productId);
@@ -405,6 +439,16 @@
             formData.append('fp_qty_adult', adultQty);
             formData.append('fp_qty_child', childQty);
             formData.append('fp_extras', JSON.stringify(extras));
+            
+            // Add gift data if this is a gift purchase
+            if (isGift) {
+                formData.append('fp_is_gift', '1');
+                formData.append('fp_gift_sender_name', $('#fp-gift-sender-name').val() || '');
+                formData.append('fp_gift_recipient_name', $('#fp-gift-recipient-name').val() || '');
+                formData.append('fp_gift_recipient_email', $('#fp-gift-recipient-email').val() || '');
+                formData.append('fp_gift_message', $('#fp-gift-message').val() || '');
+                formData.append('fp_gift_send_date', $('#fp-gift-send-date').val() || '');
+            }
             
             fetch(window.location.href, {
                 method: 'POST',

@@ -1525,3 +1525,170 @@
         gap: 8px;
     }
 }
+
+/* ===== GIFT FORM STYLES ===== */
+
+.fp-gift-section {
+    margin: 24px 0;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 2px solid #e9ecef;
+}
+
+.fp-gift-toggle {
+    margin-bottom: 16px;
+}
+
+.fp-toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    font-weight: 500;
+    color: #1a1a1a;
+    font-size: 16px;
+}
+
+.fp-gift-checkbox {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.fp-toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 28px;
+    background: #ccc;
+    border-radius: 14px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.fp-toggle-switch::before {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 24px;
+    height: 24px;
+    background: white;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.fp-gift-checkbox:checked + .fp-toggle-switch {
+    background: #ff6b35;
+}
+
+.fp-gift-checkbox:checked + .fp-toggle-switch::before {
+    transform: translateX(22px);
+}
+
+.fp-toggle-text {
+    user-select: none;
+}
+
+.fp-gift-form {
+    background: white;
+    border-radius: 8px;
+    padding: 24px;
+    border: 1px solid #e9ecef;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.fp-gift-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.fp-field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.fp-field-group.fp-field-full {
+    grid-column: 1 / -1;
+}
+
+.fp-field-group label {
+    font-weight: 600;
+    color: #1a1a1a;
+    font-size: 14px;
+    margin: 0;
+}
+
+.fp-required-asterisk {
+    color: #dc3545;
+    margin-left: 4px;
+}
+
+.fp-input {
+    padding: 12px 16px;
+    border: 2px solid #e9ecef;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: border-color 0.2s ease;
+    background: white;
+}
+
+.fp-input:focus {
+    outline: none;
+    border-color: #ff6b35;
+    box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+}
+
+.fp-input.fp-required-field:invalid {
+    border-color: #dc3545;
+}
+
+.fp-textarea {
+    padding: 12px 16px;
+    border: 2px solid #e9ecef;
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 80px;
+    transition: border-color 0.2s ease;
+    background: white;
+}
+
+.fp-textarea:focus {
+    outline: none;
+    border-color: #ff6b35;
+    box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+}
+
+.fp-field-help {
+    font-size: 12px;
+    color: #666;
+    margin-top: 4px;
+    line-height: 1.3;
+}
+
+/* Gift form mobile responsiveness */
+@media (max-width: 768px) {
+    .fp-gift-form-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    
+    .fp-gift-form {
+        padding: 20px;
+    }
+    
+    .fp-gift-section {
+        padding: 16px;
+        margin: 20px 0;
+    }
+    
+    .fp-toggle-label {
+        font-size: 15px;
+    }
+}
