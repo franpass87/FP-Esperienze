@@ -8,6 +8,7 @@
 namespace FP\Esperienze\Booking;
 
 use FP\Esperienze\Data\ExtraManager;
+use FP\Esperienze\Data\VoucherManager;
 
 defined('ABSPATH') || exit;
 
@@ -25,6 +26,15 @@ class Cart_Hooks {
         add_filter('woocommerce_get_item_data', [$this, 'displayExperienceCartData'], 10, 2);
         add_action('woocommerce_checkout_create_order_line_item', [$this, 'addExperienceOrderItemMeta'], 10, 4);
         add_action('woocommerce_before_calculate_totals', [$this, 'calculateExperiencePrice'], 10, 1);
+        
+        // Voucher redemption hooks
+        add_action('wp_ajax_apply_voucher', [$this, 'applyVoucher']);
+        add_action('wp_ajax_nopriv_apply_voucher', [$this, 'applyVoucher']);
+        add_action('wp_ajax_remove_voucher', [$this, 'removeVoucher']);
+        add_action('wp_ajax_nopriv_remove_voucher', [$this, 'removeVoucher']);
+        add_action('woocommerce_order_status_completed', [$this, 'processVoucherRedemption'], 20, 1);
+        add_action('woocommerce_order_status_cancelled', [$this, 'rollbackVoucherRedemption'], 10, 1);
+        add_action('woocommerce_order_status_refunded', [$this, 'rollbackVoucherRedemption'], 10, 1);
     }
 
     /**
@@ -276,6 +286,31 @@ class Cart_Hooks {
                 ];
             }
         }
+        
+        // Display voucher information
+        $cart_item_key = null;
+        foreach (WC()->cart->get_cart() as $key => $item) {
+            if ($item === $cart_item) {
+                $cart_item_key = $key;
+                break;
+            }
+        }
+        
+        if ($cart_item_key) {
+            $applied_voucher = $this->getAppliedVoucher($cart_item_key);
+            if ($applied_voucher) {
+                $item_data[] = [
+                    'key'   => __('Voucher Applied', 'fp-esperienze'),
+                    'value' => sprintf(
+                        '<span class="fp-voucher-applied">%s <small>(%s)</small></span>',
+                        esc_html($applied_voucher['code']),
+                        $applied_voucher['amount_type'] === 'full' 
+                            ? __('Full discount', 'fp-esperienze')
+                            : sprintf(__('Up to %s', 'fp-esperienze'), wc_price($applied_voucher['amount']))
+                    ),
+                ];
+            }
+        }
 
         return $item_data;
     }
@@ -345,6 +380,14 @@ class Cart_Hooks {
             
             $item->add_meta_data(__('Send Date', 'fp-esperienze'), $gift_data['send_date']);
         }
+        
+        // Save voucher meta data if applied
+        $applied_voucher = $this->getAppliedVoucher($cart_item_key);
+        if ($applied_voucher) {
+            $item->add_meta_data('_fp_voucher_code', $applied_voucher['code']);
+            $item->add_meta_data('_fp_voucher_id', $applied_voucher['voucher_id']);
+            $item->add_meta_data(__('Voucher Applied', 'fp-esperienze'), $applied_voucher['code']);
+        }
     }
 
     /**
@@ -397,7 +440,224 @@ class Cart_Hooks {
 
             // Set the new price
             $total_price = $base_total + $extras_total;
+            
+            // Check if voucher is applied to this cart item
+            $applied_voucher = $this->getAppliedVoucher($cart_item_key);
+            if ($applied_voucher) {
+                $validation = VoucherManager::validateVoucherForRedemption(
+                    $applied_voucher['code'], 
+                    $product->get_id()
+                );
+                
+                if ($validation['success']) {
+                    $voucher = $validation['voucher'];
+                    
+                    if ($voucher['amount_type'] === 'full') {
+                        // Full voucher: make base product free, keep extras
+                        $total_price = $extras_total;
+                    } else {
+                        // Value voucher: apply discount up to voucher amount on base price only
+                        $discount = min($base_total, floatval($voucher['amount']));
+                        $total_price = max(0, $base_total - $discount) + $extras_total;
+                    }
+                }
+            }
+            
             $product->set_price($total_price);
         }
+    }
+    
+    /**
+     * Apply voucher to cart
+     */
+    public function applyVoucher() {
+        check_ajax_referer('fp_voucher_nonce', 'nonce');
+        
+        $voucher_code = sanitize_text_field($_POST['voucher_code'] ?? '');
+        $product_id = absint($_POST['product_id'] ?? 0);
+        $cart_item_key = sanitize_text_field($_POST['cart_item_key'] ?? '');
+        
+        if (empty($voucher_code)) {
+            wp_send_json_error(['message' => __('Please enter a voucher code.', 'fp-esperienze')]);
+        }
+        
+        // Validate voucher
+        $validation = VoucherManager::validateVoucherForRedemption($voucher_code, $product_id);
+        
+        if (!$validation['success']) {
+            wp_send_json_error(['message' => $validation['message']]);
+        }
+        
+        // Store voucher in session
+        $this->storeAppliedVoucher($cart_item_key, [
+            'code' => $voucher_code,
+            'voucher_id' => $validation['voucher']['id'],
+            'product_id' => $product_id,
+            'amount_type' => $validation['voucher']['amount_type'],
+            'amount' => $validation['voucher']['amount']
+        ]);
+        
+        // Calculate new totals
+        WC()->cart->calculate_totals();
+        
+        wp_send_json_success([
+            'message' => __('Voucher applied successfully!', 'fp-esperienze'),
+            'voucher_code' => $voucher_code,
+            'discount_info' => $this->getVoucherDiscountInfo($validation['voucher'])
+        ]);
+    }
+    
+    /**
+     * Remove voucher from cart
+     */
+    public function removeVoucher() {
+        check_ajax_referer('fp_voucher_nonce', 'nonce');
+        
+        $cart_item_key = sanitize_text_field($_POST['cart_item_key'] ?? '');
+        
+        if (empty($cart_item_key)) {
+            wp_send_json_error(['message' => __('Invalid cart item.', 'fp-esperienze')]);
+        }
+        
+        // Remove voucher from session
+        $this->removeAppliedVoucher($cart_item_key);
+        
+        // Recalculate totals
+        WC()->cart->calculate_totals();
+        
+        wp_send_json_success([
+            'message' => __('Voucher removed successfully.', 'fp-esperienze')
+        ]);
+    }
+    
+    /**
+     * Process voucher redemption on order completion
+     *
+     * @param int $order_id Order ID
+     */
+    public function processVoucherRedemption($order_id) {
+        $order = wc_get_order($order_id);
+        if (!$order) {
+            return;
+        }
+        
+        foreach ($order->get_items() as $item_id => $item) {
+            $voucher_code = $item->get_meta('_fp_voucher_code');
+            if ($voucher_code) {
+                VoucherManager::redeemVoucher($voucher_code);
+                
+                // Add order note
+                $order->add_order_note(sprintf(
+                    __('Voucher %s redeemed for this order.', 'fp-esperienze'),
+                    $voucher_code
+                ));
+            }
+        }
+    }
+    
+    /**
+     * Rollback voucher redemption on order cancellation/refund
+     *
+     * @param int $order_id Order ID
+     */
+    public function rollbackVoucherRedemption($order_id) {
+        $order = wc_get_order($order_id);
+        if (!$order) {
+            return;
+        }
+        
+        foreach ($order->get_items() as $item_id => $item) {
+            $voucher_code = $item->get_meta('_fp_voucher_code');
+            if ($voucher_code) {
+                if (VoucherManager::rollbackVoucherRedemption($voucher_code)) {
+                    // Add order note
+                    $order->add_order_note(sprintf(
+                        __('Voucher %s restored to active status due to order cancellation/refund.', 'fp-esperienze'),
+                        $voucher_code
+                    ));
+                }
+            }
+        }
+    }
+    
+    /**
+     * Store applied voucher in session
+     *
+     * @param string $cart_item_key Cart item key
+     * @param array $voucher_data Voucher data
+     */
+    private function storeAppliedVoucher($cart_item_key, $voucher_data) {
+        $session_key = 'fp_applied_vouchers';
+        $applied_vouchers = WC()->session->get($session_key, []);
+        $applied_vouchers[$cart_item_key] = $voucher_data;
+        WC()->session->set($session_key, $applied_vouchers);
+    }
+    
+    /**
+     * Get applied voucher for cart item
+     *
+     * @param string $cart_item_key Cart item key
+     * @return array|null Voucher data or null
+     */
+    private function getAppliedVoucher($cart_item_key) {
+        $session_key = 'fp_applied_vouchers';
+        $applied_vouchers = WC()->session->get($session_key, []);
+        return $applied_vouchers[$cart_item_key] ?? null;
+    }
+    
+    /**
+     * Remove applied voucher from session
+     *
+     * @param string $cart_item_key Cart item key
+     */
+    private function removeAppliedVoucher($cart_item_key) {
+        $session_key = 'fp_applied_vouchers';
+        $applied_vouchers = WC()->session->get($session_key, []);
+        unset($applied_vouchers[$cart_item_key]);
+        WC()->session->set($session_key, $applied_vouchers);
+    }
+    
+    /**
+     * Get voucher discount information
+     *
+     * @param array $voucher Voucher data
+     * @return array Discount information
+     */
+    private function getVoucherDiscountInfo($voucher) {
+        if ($voucher['amount_type'] === 'full') {
+            return [
+                'type' => 'full',
+                'description' => __('Full experience discount', 'fp-esperienze')
+            ];
+        } else {
+            return [
+                'type' => 'value',
+                'amount' => wc_price($voucher['amount']),
+                'description' => sprintf(
+                    __('Discount up to %s', 'fp-esperienze'),
+                    wc_price($voucher['amount'])
+                )
+            ];
+        }
+    }
+    
+    /**
+     * Render voucher form template
+     *
+     * @param string $cart_item_key Cart item key
+     * @param int $product_id Product ID
+     * @param array|null $applied_voucher Applied voucher data
+     * @return string HTML output
+     */
+    public function renderVoucherForm($cart_item_key, $product_id, $applied_voucher = null) {
+        ob_start();
+        
+        // Load template file
+        $template_path = FP_ESPERIENZE_PLUGIN_DIR . 'templates/voucher-form.php';
+        if (file_exists($template_path)) {
+            include $template_path;
+        }
+        
+        return ob_get_clean();
     }
 }

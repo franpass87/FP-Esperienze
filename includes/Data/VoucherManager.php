@@ -415,4 +415,124 @@ class VoucherManager {
         
         return $result !== false;
     }
+    
+    /**
+     * Validate voucher for redemption
+     *
+     * @param string $code Voucher code
+     * @param int $product_id Product ID to validate against
+     * @param string $payload Optional QR code payload for HMAC validation
+     * @return array Validation result with success status and voucher data
+     */
+    public static function validateVoucherForRedemption($code, $product_id = null, $payload = null) {
+        $result = [
+            'success' => false,
+            'message' => '',
+            'voucher' => null,
+            'discount_amount' => 0,
+            'discount_type' => 'none'
+        ];
+        
+        // Get voucher by code
+        $voucher = self::getVoucherByCode($code);
+        if (!$voucher) {
+            $result['message'] = __('Invalid voucher code.', 'fp-esperienze');
+            return $result;
+        }
+        
+        // Check voucher status
+        if ($voucher['status'] !== 'active') {
+            switch ($voucher['status']) {
+                case 'redeemed':
+                    $result['message'] = __('This voucher has already been used.', 'fp-esperienze');
+                    break;
+                case 'expired':
+                    $result['message'] = __('This voucher has expired.', 'fp-esperienze');
+                    break;
+                case 'void':
+                    $result['message'] = __('This voucher has been voided.', 'fp-esperienze');
+                    break;
+                default:
+                    $result['message'] = __('This voucher is not valid.', 'fp-esperienze');
+            }
+            return $result;
+        }
+        
+        // Check expiration
+        if (strtotime($voucher['expires_on']) < time()) {
+            global $wpdb;
+            $table_name = $wpdb->prefix . 'fp_exp_vouchers';
+            $wpdb->update(
+                $table_name,
+                ['status' => 'expired'],
+                ['id' => $voucher['id']]
+            );
+            $result['message'] = __('This voucher has expired.', 'fp-esperienze');
+            return $result;
+        }
+        
+        // Validate HMAC signature if payload provided
+        if ($payload) {
+            $verification = \FP\Esperienze\PDF\Qr::verifyPayload($payload);
+            if (!$verification) {
+                $result['message'] = __('Invalid voucher signature.', 'fp-esperienze');
+                return $result;
+            }
+            
+            // Verify code matches
+            if ($verification['VC'] !== $code) {
+                $result['message'] = __('Voucher code mismatch.', 'fp-esperienze');
+                return $result;
+            }
+        }
+        
+        // Check product compatibility
+        if ($product_id && $voucher['product_id'] && $voucher['product_id'] != $product_id) {
+            $product = wc_get_product($voucher['product_id']);
+            $product_name = $product ? $product->get_name() : __('Unknown Product', 'fp-esperienze');
+            $result['message'] = sprintf(
+                __('This voucher is only valid for "%s".', 'fp-esperienze'),
+                $product_name
+            );
+            return $result;
+        }
+        
+        // Determine discount type and amount
+        $discount_type = $voucher['amount_type'] === 'full' ? 'percentage' : 'fixed_cart';
+        $discount_amount = $voucher['amount_type'] === 'full' ? 100 : floatval($voucher['amount']);
+        
+        $result['success'] = true;
+        $result['voucher'] = $voucher;
+        $result['discount_amount'] = $discount_amount;
+        $result['discount_type'] = $discount_type;
+        $result['message'] = __('Voucher is valid and ready to apply.', 'fp-esperienze');
+        
+        return $result;
+    }
+    
+    /**
+     * Rollback voucher redemption (for cancelled/refunded orders)
+     *
+     * @param string $code Voucher code
+     * @return bool Success status
+     */
+    public static function rollbackVoucherRedemption($code) {
+        global $wpdb;
+        
+        $table_name = $wpdb->prefix . 'fp_exp_vouchers';
+        
+        $voucher = self::getVoucherByCode($code);
+        if (!$voucher || $voucher['status'] !== 'redeemed') {
+            return false;
+        }
+        
+        // Mark as active again
+        $result = $wpdb->update(
+            $table_name,
+            ['status' => 'active'],
+            ['id' => $voucher['id']]
+        );
+        
+        return $result !== false;
+    }
 }
