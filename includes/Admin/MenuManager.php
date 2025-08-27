@@ -358,16 +358,13 @@ class MenuManager {
                 
                 // Initialize calendar if not already done
                 if (!window.fpCalendarInitialized) {
-                    initializeCalendar();
+                    if (typeof FPEsperienzeAdmin !== 'undefined') {
+                        FPEsperienzeAdmin.initBookingsCalendar();
+                    }
                     window.fpCalendarInitialized = true;
                 }
             });
         });
-        
-        function initializeCalendar() {
-            // Calendar will be implemented with FullCalendar in next step
-            jQuery('#fp-calendar').html('<div style="text-align: center; padding: 50px; color: #666;"><?php _e("Calendar view will be implemented with FullCalendar library", "fp-esperienze"); ?></div>');
-        }
         </script>
         <?php
     }
