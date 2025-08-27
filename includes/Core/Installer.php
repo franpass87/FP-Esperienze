@@ -50,12 +50,14 @@ class Installer {
             id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
             name varchar(255) NOT NULL,
             address text NOT NULL,
-            latitude decimal(10,8) DEFAULT NULL,
-            longitude decimal(11,8) DEFAULT NULL,
-            instructions text DEFAULT NULL,
+            lat decimal(10,8) DEFAULT NULL,
+            lng decimal(11,8) DEFAULT NULL,
+            place_id varchar(255) DEFAULT NULL,
+            note text DEFAULT NULL,
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            PRIMARY KEY (id)
+            PRIMARY KEY (id),
+            KEY place_id (place_id)
         ) $charset_collate;";
 
         // Extras table

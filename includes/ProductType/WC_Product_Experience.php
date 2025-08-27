@@ -115,6 +115,6 @@ class WC_Product_Experience extends WC_Product {
      * @return int Meeting point ID
      */
     public function get_default_meeting_point() {
-        return (int) get_post_meta($this->get_id(), '_experience_default_meeting_point', true);
+        return (int) get_post_meta($this->get_id(), '_fp_exp_meeting_point_id', true);
     }
 }
