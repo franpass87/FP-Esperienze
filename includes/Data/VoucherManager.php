@@ -443,7 +443,7 @@ class VoucherManager {
      * @param string $payload Optional QR code payload for HMAC validation
      * @return array Validation result with success status and voucher data
      */
-    public static function validateVoucherForRedemption($code, $product_id = null, $payload = null) {
+    public static function validateVoucherForRedemption(string $code, ?int $product_id = null, ?string $payload = null) {
         $result = [
             'success' => false,
             'message' => '',

@@ -892,7 +892,7 @@ class Experience {
      * @param object|null $rule Rule object
      * @return string HTML template
      */
-    private function getPricingRuleRowTemplate($index, $rule = null): string {
+    private function getPricingRuleRowTemplate(mixed $index, ?object $rule = null): string {
         ob_start();
         ?>
         <div class="fp-pricing-rule-row" data-index="<?php echo esc_attr($index); ?>" style="border: 1px solid #ccc; padding: 15px; margin-bottom: 10px;">

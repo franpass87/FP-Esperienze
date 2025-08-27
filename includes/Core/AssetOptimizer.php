@@ -23,6 +23,10 @@ class AssetOptimizer {
      * Initialize optimizer
      */
     public static function init(): void {
+        if (!defined('FP_ESPERIENZE_PLUGIN_DIR')) {
+            return; // Constants not yet available, skip initialization
+        }
+        
         self::$assets_dir = FP_ESPERIENZE_PLUGIN_DIR . 'assets/';
         
         // Generate minified files if they don't exist or source files are newer

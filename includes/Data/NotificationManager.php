@@ -134,7 +134,7 @@ class NotificationManager {
      * @param object|null $meeting_point Meeting point data
      * @return string Email content
      */
-    private function buildStaffNotificationContent($booking, $product, $order, $meeting_point = null): string {
+    private function buildStaffNotificationContent(object $booking, \WC_Product $product, \WC_Order $order, ?object $meeting_point = null): string {
         $site_name = get_bloginfo('name');
         $product_name = $product->get_name();
         $customer_name = $order->get_billing_first_name() . ' ' . $order->get_billing_last_name();

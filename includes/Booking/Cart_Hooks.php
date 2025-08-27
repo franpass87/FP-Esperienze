@@ -749,7 +749,7 @@ class Cart_Hooks {
      * @param array|null $applied_voucher Applied voucher data
      * @return string HTML output
      */
-    public function renderVoucherForm($cart_item_key, $product_id, $applied_voucher = null) {
+    public function renderVoucherForm(string $cart_item_key, int $product_id, ?array $applied_voucher = null) {
         ob_start();
         
         // Load template file

@@ -22,7 +22,7 @@ class ICSGenerator {
      * @param object|null $meeting_point Meeting point data
      * @return string ICS calendar content
      */
-    public static function generateBookingICS($booking, $product = null, $meeting_point = null): string {
+    public static function generateBookingICS(object $booking, ?object $product = null, ?object $meeting_point = null): string {
         // Get product if not provided
         if (!$product && $booking->product_id) {
             $product = wc_get_product($booking->product_id);
