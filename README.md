@@ -15,6 +15,67 @@ A WordPress + WooCommerce plugin for experience booking management by Francesco 
 - **REST API**: Real-time availability checking
 - **Frontend Templates**: GetYourGuide-style single experience pages
 - **Admin Dashboard**: Comprehensive management interface
+- **Advanced Reports**: KPI analytics, charts, UTM tracking, and webhook integrations
+
+## Advanced Reports & Analytics
+
+The plugin includes a comprehensive reporting system for analyzing booking performance and revenue metrics.
+
+### KPI Dashboard
+
+Real-time key performance indicators including:
+- **Total Revenue**: Aggregated booking revenue with currency formatting
+- **Seats Sold**: Total participants (adults + children) across all bookings
+- **Total Bookings**: Count of confirmed and completed bookings
+- **Average Booking Value**: Revenue per booking calculation
+- **Load Factors**: Capacity utilization by experience, meeting point, and time slot
+
+### Interactive Charts
+
+Visual analytics with Chart.js integration:
+- **Revenue & Seats Trends**: Dual-axis charts showing revenue and seat sales over time
+- **Period Views**: Switch between daily, weekly, and monthly groupings
+- **Top 10 Experiences**: Revenue-ranked experience performance list
+- **UTM Source Conversions**: Traffic source analysis with conversion metrics
+
+### Data Export
+
+Flexible export options for detailed analysis:
+- **CSV Export**: Spreadsheet-compatible format with summary data, top experiences, UTM conversions, and load factors
+- **JSON Export**: Machine-readable format for integration with external analytics tools
+- **Filtered Exports**: Apply date range, product, meeting point, and language filters
+- **Timestamped Files**: Automatic filename generation with export timestamp
+
+### UTM Campaign Tracking
+
+Conversion analysis from order metadata:
+- **Source Attribution**: Track bookings by UTM source (Google, Facebook, Direct, etc.)
+- **Revenue by Source**: Calculate total revenue and average order value per traffic source
+- **Conversion Rates**: Analyze which marketing channels drive the most valuable bookings
+
+### Webhook Integrations
+
+Real-time event notifications for external systems:
+- **Booking Events**: Configurable webhooks for new bookings, cancellations, and reschedules
+- **Retry Logic**: Exponential backoff retry policy (up to 5 attempts)
+- **Security**: HMAC-SHA256 payload signing with configurable secrets
+- **GDPR Compliance**: Optional PII exclusion for privacy protection
+- **Event Deduplication**: Unique event IDs prevent duplicate processing
+
+### Access & Security
+
+- **Capability-Based Access**: Requires `manage_fp_esperienze` capability
+- **AJAX Security**: Nonce validation for all dynamic requests  
+- **PII Protection**: Configurable personal information hiding in reports and webhooks
+- **Data Sanitization**: All inputs sanitized and validated
+
+### Technical Features
+
+- **Real-time Updates**: AJAX-powered dashboard updates without page refresh
+- **Responsive Design**: Mobile-friendly interface with CSS Grid layout
+- **Performance Optimized**: Efficient database queries with proper indexing
+- **CDN Integration**: Chart.js loaded from CDN for better performance
+- **Cache Friendly**: Designed to work with WordPress object caching
 
 ## Dynamic Pricing
 

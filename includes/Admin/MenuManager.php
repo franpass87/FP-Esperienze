@@ -39,6 +39,7 @@ class MenuManager {
         add_action('wp_ajax_fp_reschedule_booking', [$this, 'ajaxRescheduleBooking']);
         add_action('wp_ajax_fp_cancel_booking', [$this, 'ajaxCancelBooking']);
         add_action('wp_ajax_fp_check_cancellation_rules', [$this, 'ajaxCheckCancellationRules']);
+        add_action('wp_ajax_fp_test_webhook', [$this, 'ajaxTestWebhook']);
     }
 
     /**
@@ -2507,6 +2508,13 @@ class MenuManager {
         $staff_notifications_enabled = !empty($notifications['staff_notifications_enabled']);
         $ics_attachment_enabled = !empty($notifications['ics_attachment_enabled'] ?? true);
         
+        // Get webhook settings
+        $webhook_new_booking = get_option('fp_esperienze_webhook_new_booking', '');
+        $webhook_cancellation = get_option('fp_esperienze_webhook_cancellation', '');
+        $webhook_reschedule = get_option('fp_esperienze_webhook_reschedule', '');
+        $webhook_secret = get_option('fp_esperienze_webhook_secret', '');
+        $webhook_hide_pii = get_option('fp_esperienze_webhook_hide_pii', false);
+        
         ?>
         <div class="wrap">
             <h1><?php _e('FP Esperienze Settings', 'fp-esperienze'); ?></h1>
@@ -2515,6 +2523,7 @@ class MenuManager {
                 <a href="<?php echo admin_url('admin.php?page=fp-esperienze-settings&tab=gift'); ?>" class="nav-tab <?php echo $current_tab === 'gift' ? 'nav-tab-active' : ''; ?>"><?php _e('Gift Vouchers', 'fp-esperienze'); ?></a>
                 <a href="<?php echo admin_url('admin.php?page=fp-esperienze-settings&tab=notifications'); ?>" class="nav-tab <?php echo $current_tab === 'notifications' ? 'nav-tab-active' : ''; ?>"><?php _e('Notifications', 'fp-esperienze'); ?></a>
                 <a href="<?php echo admin_url('admin.php?page=fp-esperienze-settings&tab=integrations'); ?>" class="nav-tab <?php echo $current_tab === 'integrations' ? 'nav-tab-active' : ''; ?>"><?php _e('Integrations', 'fp-esperienze'); ?></a>
+                <a href="<?php echo admin_url('admin.php?page=fp-esperienze-settings&tab=webhooks'); ?>" class="nav-tab <?php echo $current_tab === 'webhooks' ? 'nav-tab-active' : ''; ?>"><?php _e('Webhooks', 'fp-esperienze'); ?></a>
             </h2>
             
             <form method="post" action="">
@@ -3035,6 +3044,118 @@ class MenuManager {
                 </div>
                 
                 <?php endif; ?>
+                
+                <?php if ($current_tab === 'webhooks') : ?>
+                <div class="tab-content">
+                    <h3><?php _e('Webhook Configuration', 'fp-esperienze'); ?></h3>
+                    <p><?php _e('Configure webhook URLs to receive real-time notifications about booking events.', 'fp-esperienze'); ?></p>
+                    
+                    <table class="form-table">
+                        <tr>
+                            <th scope="row">
+                                <label for="webhook_new_booking"><?php _e('New Booking URL', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <input type="url" 
+                                       id="webhook_new_booking" 
+                                       name="webhook_new_booking" 
+                                       value="<?php echo esc_attr($webhook_new_booking); ?>" 
+                                       class="regular-text" />
+                                <button type="button" class="button" onclick="testWebhook('webhook_new_booking')"><?php _e('Test', 'fp-esperienze'); ?></button>
+                                <p class="description"><?php _e('Webhook URL called when a new booking is created.', 'fp-esperienze'); ?></p>
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row">
+                                <label for="webhook_cancellation"><?php _e('Cancellation URL', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <input type="url" 
+                                       id="webhook_cancellation" 
+                                       name="webhook_cancellation" 
+                                       value="<?php echo esc_attr($webhook_cancellation); ?>" 
+                                       class="regular-text" />
+                                <button type="button" class="button" onclick="testWebhook('webhook_cancellation')"><?php _e('Test', 'fp-esperienze'); ?></button>
+                                <p class="description"><?php _e('Webhook URL called when a booking is cancelled.', 'fp-esperienze'); ?></p>
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row">
+                                <label for="webhook_reschedule"><?php _e('Reschedule URL', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <input type="url" 
+                                       id="webhook_reschedule" 
+                                       name="webhook_reschedule" 
+                                       value="<?php echo esc_attr($webhook_reschedule); ?>" 
+                                       class="regular-text" />
+                                <button type="button" class="button" onclick="testWebhook('webhook_reschedule')"><?php _e('Test', 'fp-esperienze'); ?></button>
+                                <p class="description"><?php _e('Webhook URL called when a booking is rescheduled.', 'fp-esperienze'); ?></p>
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row">
+                                <label for="webhook_secret"><?php _e('Webhook Secret', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <input type="text" 
+                                       id="webhook_secret" 
+                                       name="webhook_secret" 
+                                       value="<?php echo esc_attr($webhook_secret); ?>" 
+                                       class="regular-text" />
+                                <button type="button" class="button" onclick="generateWebhookSecret()"><?php _e('Generate New', 'fp-esperienze'); ?></button>
+                                <p class="description"><?php _e('Secret key used to sign webhook payloads with HMAC-SHA256. Use X-FP-Signature header to verify authenticity.', 'fp-esperienze'); ?></p>
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row">
+                                <label for="webhook_hide_pii"><?php _e('Hide Personal Information', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <input type="checkbox" 
+                                       id="webhook_hide_pii" 
+                                       name="webhook_hide_pii" 
+                                       value="1" 
+                                       <?php checked($webhook_hide_pii); ?> />
+                                <label for="webhook_hide_pii"><?php _e('Exclude customer notes and personal data from webhook payloads', 'fp-esperienze'); ?></label>
+                                <p class="description"><?php _e('Enable for GDPR compliance when sending data to third-party services.', 'fp-esperienze'); ?></p>
+                            </td>
+                        </tr>
+                    </table>
+                    
+                    <h3><?php _e('Webhook Payload Format', 'fp-esperienze'); ?></h3>
+                    <p><?php _e('Webhooks send JSON payloads with the following structure:', 'fp-esperienze'); ?></p>
+                    <pre style="background: #f9f9f9; padding: 15px; border: 1px solid #ddd; overflow-x: auto;"><code>{
+  "event": "booking_created|booking_cancelled|booking_rescheduled",
+  "booking_id": 123,
+  "timestamp": "2024-01-15T10:30:00+00:00",
+  "event_id": "unique_event_identifier_for_deduplication",
+  "data": {
+    "booking_id": 123,
+    "order_id": 456,
+    "product_id": 789,
+    "booking_date": "2024-01-20",
+    "booking_time": "10:00:00",
+    "adults": 2,
+    "children": 1,
+    "status": "confirmed",
+    "meeting_point_id": 1,
+    "created_at": "2024-01-15T10:30:00",
+    "updated_at": "2024-01-15T10:30:00"
+  }
+}</code></pre>
+                    
+                    <h3><?php _e('Retry Policy', 'fp-esperienze'); ?></h3>
+                    <p><?php _e('Failed webhooks are retried up to 5 times with exponential backoff: 2, 4, 8, 16, 32 minutes.', 'fp-esperienze'); ?></p>
+                    
+                    <?php submit_button(__('Save Webhook Settings', 'fp-esperienze')); ?>
+                </div>
+                
+                <?php endif; ?>
             </form>
         </div>
         
@@ -3054,6 +3175,50 @@ class MenuManager {
             });
             
             frame.open();
+        }
+        
+        function testWebhook(inputId) {
+            var url = document.getElementById(inputId).value;
+            if (!url) {
+                alert('<?php esc_js_e('Please enter a webhook URL first.', 'fp-esperienze'); ?>');
+                return;
+            }
+            
+            var button = event.target;
+            var originalText = button.textContent;
+            button.textContent = '<?php esc_js_e('Testing...', 'fp-esperienze'); ?>';
+            button.disabled = true;
+            
+            jQuery.post(ajaxurl, {
+                action: 'fp_test_webhook',
+                webhook_url: url,
+                nonce: '<?php echo wp_create_nonce('fp_test_webhook'); ?>'
+            }, function(response) {
+                button.textContent = originalText;
+                button.disabled = false;
+                
+                if (response.success) {
+                    alert('<?php esc_js_e('Webhook test successful!', 'fp-esperienze'); ?>\\n' + 
+                          '<?php esc_js_e('Status:', 'fp-esperienze'); ?> ' + response.data.status_code);
+                } else {
+                    alert('<?php esc_js_e('Webhook test failed:', 'fp-esperienze'); ?>\\n' + response.data.message);
+                }
+            }).fail(function() {
+                button.textContent = originalText;
+                button.disabled = false;
+                alert('<?php esc_js_e('Request failed. Please try again.', 'fp-esperienze'); ?>');
+            });
+        }
+        
+        function generateWebhookSecret() {
+            if (confirm('<?php esc_js_e('Generate a new webhook secret? This will invalidate the current secret.', 'fp-esperienze'); ?>')) {
+                var secret = '';
+                var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+                for (var i = 0; i < 32; i++) {
+                    secret += characters.charAt(Math.floor(Math.random() * characters.length));
+                }
+                document.getElementById('webhook_secret').value = secret;
+            }
         }
         </script>
         <?php
@@ -3148,6 +3313,20 @@ class MenuManager {
             
             // Store notification settings
             update_option('fp_esperienze_notifications', $notifications);
+            
+        } elseif ($tab === 'webhooks') {
+            // Update webhook settings
+            $webhook_settings = [
+                'fp_esperienze_webhook_new_booking' => esc_url_raw($_POST['webhook_new_booking'] ?? ''),
+                'fp_esperienze_webhook_cancellation' => esc_url_raw($_POST['webhook_cancellation'] ?? ''),
+                'fp_esperienze_webhook_reschedule' => esc_url_raw($_POST['webhook_reschedule'] ?? ''),
+                'fp_esperienze_webhook_secret' => sanitize_text_field($_POST['webhook_secret'] ?? ''),
+                'fp_esperienze_webhook_hide_pii' => !empty($_POST['webhook_hide_pii']),
+            ];
+            
+            foreach ($webhook_settings as $key => $value) {
+                update_option($key, $value);
+            }
         }
         
         add_action('admin_notices', function() {
@@ -3461,5 +3640,32 @@ class MenuManager {
         do_action('fp_esperienze_booking_cancelled', $booking->product_id, $booking->booking_date);
         
         wp_send_json_success(['message' => __('Booking cancelled successfully.', 'fp-esperienze')]);
+    }
+    
+    /**
+     * AJAX handler: Test webhook
+     */
+    public function ajaxTestWebhook(): void {
+        if (!CapabilityManager::canManageFPEsperienze()) {
+            wp_die('Insufficient permissions');
+        }
+        
+        if (!wp_verify_nonce($_POST['nonce'] ?? '', 'fp_test_webhook')) {
+            wp_die('Security check failed');
+        }
+        
+        $webhook_url = esc_url_raw($_POST['webhook_url'] ?? '');
+        
+        if (!$webhook_url) {
+            wp_send_json_error(['message' => __('Invalid webhook URL.', 'fp-esperienze')]);
+        }
+        
+        $result = \FP\Esperienze\Core\WebhookManager::testWebhook($webhook_url);
+        
+        if ($result['success']) {
+            wp_send_json_success($result);
+        } else {
+            wp_send_json_error($result);
+        }
     }
 }
