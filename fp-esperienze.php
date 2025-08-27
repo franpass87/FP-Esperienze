@@ -60,8 +60,22 @@ if (!in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get
     return;
 }
 
+// Check for Composer autoloader
+$autoloader_path = FP_ESPERIENZE_PLUGIN_DIR . 'vendor/autoload.php';
+if (!file_exists($autoloader_path)) {
+    add_action('admin_notices', function() {
+        echo '<div class="notice notice-error"><p>' . 
+             sprintf(
+                 esc_html__('FP Esperienze requires composer dependencies to be installed. Please run %s in the plugin directory.', 'fp-esperienze'),
+                 '<code>composer install --no-dev</code>'
+             ) . 
+             '</p></div>';
+    });
+    return;
+}
+
 // Autoloader
-require_once FP_ESPERIENZE_PLUGIN_DIR . 'vendor/autoload.php';
+require_once $autoloader_path;
 
 /**
  * Initialize the plugin
