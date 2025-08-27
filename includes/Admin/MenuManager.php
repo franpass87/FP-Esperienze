@@ -151,11 +151,224 @@ class MenuManager {
      * Bookings page
      */
     public function bookingsPage(): void {
+        // Handle form submissions
+        if ($_POST && isset($_POST['action'])) {
+            $this->handleBookingsActions();
+        }
+        
+        // Handle CSV export
+        if (isset($_GET['action']) && $_GET['action'] === 'export_csv') {
+            $this->exportBookingsCSV();
+            return;
+        }
+        
+        // Get current filters
+        $filters = [
+            'status' => sanitize_text_field($_GET['status'] ?? ''),
+            'product_id' => absint($_GET['product_id'] ?? 0),
+            'date_from' => sanitize_text_field($_GET['date_from'] ?? ''),
+            'date_to' => sanitize_text_field($_GET['date_to'] ?? ''),
+        ];
+        
+        // Remove empty filters
+        $filters = array_filter($filters);
+        
+        // Get bookings
+        $bookings = \FP\Esperienze\Booking\BookingManager::getBookings($filters);
+        
+        // Get experience products for filter dropdown
+        $experience_products = $this->getExperienceProducts();
+        
         ?>
         <div class="wrap">
             <h1><?php _e('Bookings Management', 'fp-esperienze'); ?></h1>
-            <p><?php _e('Booking management functionality will be implemented in future updates.', 'fp-esperienze'); ?></p>
+            
+            <!-- Filters -->
+            <div class="fp-bookings-filters">
+                <form method="GET" action="">
+                    <input type="hidden" name="page" value="fp-esperienze-bookings">
+                    
+                    <div class="filter-row">
+                        <select name="status">
+                            <option value=""><?php _e('All Statuses', 'fp-esperienze'); ?></option>
+                            <option value="confirmed" <?php selected($_GET['status'] ?? '', 'confirmed'); ?>><?php _e('Confirmed', 'fp-esperienze'); ?></option>
+                            <option value="cancelled" <?php selected($_GET['status'] ?? '', 'cancelled'); ?>><?php _e('Cancelled', 'fp-esperienze'); ?></option>
+                            <option value="refunded" <?php selected($_GET['status'] ?? '', 'refunded'); ?>><?php _e('Refunded', 'fp-esperienze'); ?></option>
+                        </select>
+                        
+                        <select name="product_id">
+                            <option value=""><?php _e('All Products', 'fp-esperienze'); ?></option>
+                            <?php foreach ($experience_products as $product) : ?>
+                                <option value="<?php echo esc_attr($product->ID); ?>" <?php selected($_GET['product_id'] ?? '', $product->ID); ?>>
+                                    <?php echo esc_html($product->post_title); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        
+                        <input type="date" name="date_from" value="<?php echo esc_attr($_GET['date_from'] ?? ''); ?>" placeholder="<?php _e('From Date', 'fp-esperienze'); ?>">
+                        <input type="date" name="date_to" value="<?php echo esc_attr($_GET['date_to'] ?? ''); ?>" placeholder="<?php _e('To Date', 'fp-esperienze'); ?>">
+                        
+                        <input type="submit" class="button" value="<?php _e('Filter', 'fp-esperienze'); ?>">
+                        <a href="<?php echo admin_url('admin.php?page=fp-esperienze-bookings'); ?>" class="button"><?php _e('Clear', 'fp-esperienze'); ?></a>
+                        <a href="<?php echo add_query_arg(array_merge($_GET, ['action' => 'export_csv']), admin_url('admin.php')); ?>" class="button button-secondary"><?php _e('Export CSV', 'fp-esperienze'); ?></a>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Calendar View Toggle -->
+            <div class="fp-view-toggle">
+                <button id="fp-list-view" class="button button-primary"><?php _e('List View', 'fp-esperienze'); ?></button>
+                <button id="fp-calendar-view" class="button"><?php _e('Calendar View', 'fp-esperienze'); ?></button>
+            </div>
+            
+            <!-- List View -->
+            <div id="fp-bookings-list" class="fp-bookings-content">
+                <?php if (empty($bookings)) : ?>
+                    <div class="notice notice-info">
+                        <p><?php _e('No bookings found matching your criteria.', 'fp-esperienze'); ?></p>
+                    </div>
+                <?php else : ?>
+                    <table class="wp-list-table widefat fixed striped">
+                        <thead>
+                            <tr>
+                                <th><?php _e('ID', 'fp-esperienze'); ?></th>
+                                <th><?php _e('Order', 'fp-esperienze'); ?></th>
+                                <th><?php _e('Product', 'fp-esperienze'); ?></th>
+                                <th><?php _e('Date & Time', 'fp-esperienze'); ?></th>
+                                <th><?php _e('Participants', 'fp-esperienze'); ?></th>
+                                <th><?php _e('Status', 'fp-esperienze'); ?></th>
+                                <th><?php _e('Meeting Point', 'fp-esperienze'); ?></th>
+                                <th><?php _e('Created', 'fp-esperienze'); ?></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($bookings as $booking) : ?>
+                                <tr>
+                                    <td><?php echo esc_html($booking->id); ?></td>
+                                    <td>
+                                        <a href="<?php echo esc_url(admin_url('post.php?post=' . $booking->order_id . '&action=edit')); ?>">
+                                            #<?php echo esc_html($booking->order_id); ?>
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <?php 
+                                        $product = wc_get_product($booking->product_id);
+                                        echo $product ? esc_html($product->get_name()) : __('Product not found', 'fp-esperienze');
+                                        ?>
+                                    </td>
+                                    <td>
+                                        <?php 
+                                        echo esc_html(date_i18n(get_option('date_format'), strtotime($booking->booking_date))); 
+                                        echo '<br>';
+                                        echo esc_html(date_i18n(get_option('time_format'), strtotime($booking->booking_time)));
+                                        ?>
+                                    </td>
+                                    <td>
+                                        <?php 
+                                        $total = $booking->adults + $booking->children;
+                                        printf(__('%d total (%d adults, %d children)', 'fp-esperienze'), $total, $booking->adults, $booking->children);
+                                        ?>
+                                    </td>
+                                    <td>
+                                        <span class="booking-status status-<?php echo esc_attr($booking->status); ?>">
+                                            <?php echo esc_html(ucfirst($booking->status)); ?>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <?php 
+                                        if ($booking->meeting_point_id) {
+                                            $mp = \FP\Esperienze\Data\MeetingPointManager::getMeetingPoint($booking->meeting_point_id);
+                                            echo $mp ? esc_html($mp->name) : __('Not found', 'fp-esperienze');
+                                        } else {
+                                            echo __('Not set', 'fp-esperienze');
+                                        }
+                                        ?>
+                                    </td>
+                                    <td><?php echo esc_html(date_i18n(get_option('date_format') . ' ' . get_option('time_format'), strtotime($booking->created_at))); ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                <?php endif; ?>
+            </div>
+            
+            <!-- Calendar View -->
+            <div id="fp-bookings-calendar" class="fp-bookings-content" style="display: none;">
+                <div id="fp-calendar"></div>
+            </div>
         </div>
+        
+        <style>
+        .fp-bookings-filters {
+            background: #fff;
+            padding: 15px;
+            margin: 15px 0;
+            border: 1px solid #ccd0d4;
+        }
+        .filter-row > * {
+            margin-right: 10px;
+            margin-bottom: 5px;
+        }
+        .fp-view-toggle {
+            margin: 15px 0;
+        }
+        .fp-view-toggle .button {
+            margin-right: 5px;
+        }
+        .booking-status {
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .status-confirmed {
+            background: #46b450;
+            color: white;
+        }
+        .status-cancelled {
+            background: #dc3232;
+            color: white;
+        }
+        .status-refunded {
+            background: #ffb900;
+            color: black;
+        }
+        #fp-calendar {
+            height: 600px;
+            margin-top: 20px;
+        }
+        </style>
+        
+        <script>
+        jQuery(document).ready(function($) {
+            // View toggle
+            $('#fp-list-view').click(function() {
+                $(this).addClass('button-primary').removeClass('button-secondary');
+                $('#fp-calendar-view').removeClass('button-primary').addClass('button-secondary');
+                $('#fp-bookings-list').show();
+                $('#fp-bookings-calendar').hide();
+            });
+            
+            $('#fp-calendar-view').click(function() {
+                $(this).addClass('button-primary').removeClass('button-secondary');
+                $('#fp-list-view').removeClass('button-primary').addClass('button-secondary');
+                $('#fp-bookings-list').hide();
+                $('#fp-bookings-calendar').show();
+                
+                // Initialize calendar if not already done
+                if (!window.fpCalendarInitialized) {
+                    initializeCalendar();
+                    window.fpCalendarInitialized = true;
+                }
+            });
+        });
+        
+        function initializeCalendar() {
+            // Calendar will be implemented with FullCalendar in next step
+            jQuery('#fp-calendar').html('<div style="text-align: center; padding: 50px; color: #666;"><?php _e("Calendar view will be implemented with FullCalendar library", "fp-esperienze"); ?></div>');
+        }
+        </script>
         <?php
     }
 
@@ -1118,5 +1331,137 @@ class MenuManager {
             <p><?php _e('Settings functionality will be implemented in future updates.', 'fp-esperienze'); ?></p>
         </div>
         <?php
+    }
+    
+    /**
+     * Handle bookings actions
+     */
+    private function handleBookingsActions(): void {
+        if (!current_user_can('manage_options')) {
+            return;
+        }
+        
+        if (!wp_verify_nonce($_POST['fp_booking_nonce'] ?? '', 'fp_booking_action')) {
+            return;
+        }
+        
+        $action = sanitize_text_field($_POST['action'] ?? '');
+        
+        switch ($action) {
+            case 'update_status':
+                $booking_id = absint($_POST['booking_id'] ?? 0);
+                $new_status = sanitize_text_field($_POST['new_status'] ?? '');
+                
+                if ($booking_id && $new_status) {
+                    // TODO: Implement status update
+                    add_action('admin_notices', function() {
+                        echo '<div class="notice notice-success is-dismissible"><p>' . 
+                             esc_html__('Booking status updated successfully.', 'fp-esperienze') . 
+                             '</p></div>';
+                    });
+                }
+                break;
+        }
+    }
+    
+    /**
+     * Export bookings to CSV
+     */
+    private function exportBookingsCSV(): void {
+        if (!current_user_can('manage_options')) {
+            wp_die(__('Insufficient permissions.', 'fp-esperienze'));
+        }
+        
+        // Get current filters
+        $filters = [
+            'status' => sanitize_text_field($_GET['status'] ?? ''),
+            'product_id' => absint($_GET['product_id'] ?? 0),
+            'date_from' => sanitize_text_field($_GET['date_from'] ?? ''),
+            'date_to' => sanitize_text_field($_GET['date_to'] ?? ''),
+        ];
+        
+        // Remove empty filters
+        $filters = array_filter($filters);
+        
+        // Get bookings
+        $bookings = \FP\Esperienze\Booking\BookingManager::getBookings($filters);
+        
+        // Set headers for CSV download
+        $filename = 'bookings-' . date('Y-m-d-H-i-s') . '.csv';
+        header('Content-Type: text/csv');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+        
+        // Output CSV
+        $output = fopen('php://output', 'w');
+        
+        // CSV headers
+        fputcsv($output, [
+            __('Booking ID', 'fp-esperienze'),
+            __('Order ID', 'fp-esperienze'),
+            __('Product', 'fp-esperienze'),
+            __('Date', 'fp-esperienze'),
+            __('Time', 'fp-esperienze'),
+            __('Adults', 'fp-esperienze'),
+            __('Children', 'fp-esperienze'),
+            __('Total Participants', 'fp-esperienze'),
+            __('Status', 'fp-esperienze'),
+            __('Meeting Point', 'fp-esperienze'),
+            __('Customer Notes', 'fp-esperienze'),
+            __('Admin Notes', 'fp-esperienze'),
+            __('Created', 'fp-esperienze'),
+        ]);
+        
+        // CSV data
+        foreach ($bookings as $booking) {
+            $product = wc_get_product($booking->product_id);
+            $product_name = $product ? $product->get_name() : __('Product not found', 'fp-esperienze');
+            
+            $meeting_point_name = '';
+            if ($booking->meeting_point_id) {
+                $mp = \FP\Esperienze\Data\MeetingPointManager::getMeetingPoint($booking->meeting_point_id);
+                $meeting_point_name = $mp ? $mp->name : __('Not found', 'fp-esperienze');
+            }
+            
+            fputcsv($output, [
+                $booking->id,
+                $booking->order_id,
+                $product_name,
+                $booking->booking_date,
+                $booking->booking_time,
+                $booking->adults,
+                $booking->children,
+                $booking->adults + $booking->children,
+                ucfirst($booking->status),
+                $meeting_point_name,
+                $booking->customer_notes,
+                $booking->admin_notes,
+                $booking->created_at,
+            ]);
+        }
+        
+        fclose($output);
+        exit;
+    }
+    
+    /**
+     * Get experience products for filter dropdown
+     */
+    private function getExperienceProducts(): array {
+        $posts = get_posts([
+            'post_type' => 'product',
+            'meta_query' => [
+                [
+                    'key' => '_fp_experience_enabled',
+                    'value' => 'yes',
+                    'compare' => '='
+                ]
+            ],
+            'posts_per_page' => -1,
+            'post_status' => 'publish'
+        ]);
+        
+        return $posts;
     }
 }

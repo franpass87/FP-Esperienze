@@ -13,6 +13,7 @@ use FP\Esperienze\Frontend\Shortcodes;
 use FP\Esperienze\Frontend\Templates;
 use FP\Esperienze\REST\AvailabilityAPI;
 use FP\Esperienze\Booking\Cart_Hooks;
+use FP\Esperienze\Booking\BookingManager;
 
 defined('ABSPATH') || exit;
 
@@ -81,6 +82,9 @@ class Plugin {
         
         // Initialize cart hooks for experience bookings
         new Cart_Hooks();
+        
+        // Initialize booking manager for order processing
+        new BookingManager();
     }
 
     /**
