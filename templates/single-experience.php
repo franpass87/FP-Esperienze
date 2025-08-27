@@ -49,28 +49,6 @@ if ($languages) {
     $language_chips = array_map('trim', explode(',', $languages));
 }
 
-// Schema.org JSON-LD
-$schema_data = [
-    '@context' => 'https://schema.org',
-    '@type' => 'Product',
-    'name' => $product->get_name(),
-    'description' => wp_strip_all_tags($product->get_description()),
-    'brand' => [
-        '@type' => 'Brand',
-        'name' => 'FP Esperienze'
-    ],
-    'offers' => [
-        '@type' => 'Offer',
-        'price' => $adult_price ?: 0,
-        'priceCurrency' => get_woocommerce_currency(),
-        'availability' => 'https://schema.org/InStock'
-    ]
-];
-
-if ($image_url) {
-    $schema_data['image'] = $image_url;
-}
-
 // GA4 view_item event
 $ga4_view_item = [
     'event' => 'view_item',
@@ -92,11 +70,6 @@ $ga4_view_item = [
     ]
 ];
 ?>
-
-<!-- Schema.org JSON-LD -->
-<script type="application/ld+json">
-<?php echo wp_json_encode($schema_data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>
-</script>
 
 <!-- GA4 View Item Event -->
 <script>

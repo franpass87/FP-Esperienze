@@ -30,6 +30,7 @@ class MenuManager {
         new SystemStatus();
         new PerformanceSettings();
         new ReportsManager();
+        new SEOSettings();
         
         // Handle setup wizard redirect
         add_action('admin_init', [$this, 'handleSetupWizardRedirect']);
