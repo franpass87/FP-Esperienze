@@ -115,14 +115,19 @@ class QueryMonitor {
             $caller
         );
         
-        error_log($log_message);
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log($log_message);
+        }
         
         // Also log EXPLAIN plan for optimization insights
         global $wpdb;
         if (strpos(strtoupper(trim($query)), 'SELECT') === 0) {
-            $explain = $wpdb->get_results("EXPLAIN " . $query, ARRAY_A);
-            if ($explain) {
-                error_log("[FP Esperienze] Query Plan: " . json_encode($explain));
+            // Basic safety check: ensure query doesn't contain potential malicious content
+            if (!preg_match('/[;\'"\\\\]/', $query)) {
+                $explain = $wpdb->get_results("EXPLAIN " . $query, ARRAY_A);
+                if ($explain && defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log("[FP Esperienze] Query Plan: " . wp_json_encode($explain));
+                }
             }
         }
     }
@@ -184,7 +189,9 @@ class QueryMonitor {
             self::$query_stats['total_time']
         );
         
-        error_log($log_message);
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log($log_message);
+        }
     }
     
     /**

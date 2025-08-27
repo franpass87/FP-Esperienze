@@ -206,12 +206,16 @@ class BookingManager {
                 do_action('fp_esperienze_booking_created', $booking_data['product_id'], $booking_data['booking_date']);
                 
                 // Log success
-                error_log("Created booking #{$conversion_result['booking_id']} from hold for order #{$order_id}, item #{$item_id}");
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log("Created booking #{$conversion_result['booking_id']} from hold for order #{$order_id}, item #{$item_id}");
+                }
                 
                 return $conversion_result['booking_id'];
             } else {
                 // Log hold conversion failure and fall through to direct creation
-                error_log("Hold conversion failed for order {$order_id}, item {$item_id}: " . $conversion_result['message']);
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log("Hold conversion failed for order {$order_id}, item {$item_id}: " . $conversion_result['message']);
+                }
             }
         }
         
@@ -222,7 +226,9 @@ class BookingManager {
         $result = $wpdb->insert($table_name, $complete_booking_data);
         
         if ($result === false) {
-            error_log("Failed to create booking for order {$order_id}, item {$item_id}: " . $wpdb->last_error);
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("Failed to create booking for order {$order_id}, item {$item_id}: " . $wpdb->last_error);
+            }
             return false;
         }
         
@@ -232,7 +238,9 @@ class BookingManager {
         do_action('fp_esperienze_booking_created', $booking_data['product_id'], $booking_data['booking_date']);
         
         // Log success
-        error_log("Created booking #{$booking_id} for order #{$order_id}, item #{$item_id}");
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("Created booking #{$booking_id} for order #{$order_id}, item #{$item_id}");
+        }
         
         return $booking_id;
     }
@@ -245,7 +253,7 @@ class BookingManager {
      * @param string $status New status
      * @return bool Success
      */
-    private function updateBookingStatus(int $order_id, int $item_id, string $status): bool {
+    public function updateBookingStatus(int $order_id, int $item_id, string $status): bool {
         global $wpdb;
         
         $table_name = $wpdb->prefix . 'fp_bookings';
@@ -548,7 +556,11 @@ class BookingManager {
             $booking_id
         );
         
-        wp_mail($to, $subject, $message);
+        $mail_sent = wp_mail($to, $subject, $message);
+        
+        if (!$mail_sent && defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("Failed to send booking reschedule notification to: {$to}");
+        }
     }
 
     /**

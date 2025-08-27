@@ -23,6 +23,10 @@ class AssetOptimizer {
      * Initialize optimizer
      */
     public static function init(): void {
+        if (!defined('FP_ESPERIENZE_PLUGIN_DIR')) {
+            return; // Constants not yet available, skip initialization
+        }
+        
         self::$assets_dir = FP_ESPERIENZE_PLUGIN_DIR . 'assets/';
         
         // Generate minified files if they don't exist or source files are newer
@@ -156,7 +160,7 @@ class AssetOptimizer {
         
         $result = file_put_contents($output_path, $minified_css);
         
-        if ($result !== false) {
+        if ($result !== false && defined('WP_DEBUG') && WP_DEBUG) {
             error_log("FP Assets: Generated minified CSS: " . basename($output_path));
         }
         
@@ -192,7 +196,7 @@ class AssetOptimizer {
         
         $result = file_put_contents($output_path, $minified_js);
         
-        if ($result !== false) {
+        if ($result !== false && defined('WP_DEBUG') && WP_DEBUG) {
             error_log("FP Assets: Generated minified JS: " . basename($output_path));
         }
         
@@ -298,7 +302,9 @@ class AssetOptimizer {
             }
         }
         
-        error_log("FP Assets: Cleared all minified files");
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("FP Assets: Cleared all minified files");
+        }
     }
     
     /**

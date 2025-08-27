@@ -130,7 +130,9 @@ class CacheManager {
         delete_transient($archive_cache_key);
         
         // Log cache invalidation
-        error_log("FP Cache: Invalidated availability cache for product {$product_id} on {$date}");
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("FP Cache: Invalidated availability cache for product {$product_id} on {$date}");
+        }
     }
     
     /**
@@ -154,8 +156,8 @@ class CacheManager {
             return; // Pre-building disabled
         }
         
-        // Get all experience products
-        $experience_products = get_posts([
+        // Get all experience products using WP_Query for better performance
+        $query = new \WP_Query([
             'post_type' => 'product',
             'meta_query' => [
                 [
@@ -164,8 +166,13 @@ class CacheManager {
                 ]
             ],
             'posts_per_page' => -1,
-            'fields' => 'ids'
+            'fields' => 'ids',
+            'no_found_rows' => true,
+            'update_post_meta_cache' => false,
+            'update_post_term_cache' => false,
         ]);
+        
+        $experience_products = $query->posts;
         
         if (empty($experience_products)) {
             return;
@@ -207,7 +214,7 @@ class CacheManager {
             }
         }
         
-        if ($prebuilt_count > 0) {
+        if ($prebuilt_count > 0 && defined('WP_DEBUG') && WP_DEBUG) {
             error_log("FP Cache: Pre-built {$prebuilt_count} availability caches for next {$days} days");
         }
     }
@@ -232,26 +239,32 @@ class CacheManager {
         global $wpdb;
         
         // Clear availability caches
-        $result1 = $wpdb->query(
-            "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_fp_availability_%'"
-        );
+        $result1 = $wpdb->query($wpdb->prepare(
+            "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
+            '_transient_fp_availability_%'
+        ));
         
-        $result2 = $wpdb->query(
-            "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_fp_availability_%'"
-        );
+        $result2 = $wpdb->query($wpdb->prepare(
+            "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
+            '_transient_timeout_fp_availability_%'
+        ));
         
         // Clear archive caches
-        $result3 = $wpdb->query(
-            "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_fp_available_products_%'"
-        );
+        $result3 = $wpdb->query($wpdb->prepare(
+            "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
+            '_transient_fp_available_products_%'
+        ));
         
-        $result4 = $wpdb->query(
-            "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_fp_available_products_%'"
-        );
+        $result4 = $wpdb->query($wpdb->prepare(
+            "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
+            '_transient_timeout_fp_available_products_%'
+        ));
         
         $total_cleared = $result1 + $result2 + $result3 + $result4;
         
-        error_log("FP Cache: Cleared {$total_cleared} cache entries");
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("FP Cache: Cleared {$total_cleared} cache entries");
+        }
         
         return $total_cleared;
     }
@@ -264,13 +277,15 @@ class CacheManager {
     public static function getCacheStats(): array {
         global $wpdb;
         
-        $availability_caches = $wpdb->get_var(
-            "SELECT COUNT(*) FROM {$wpdb->options} WHERE option_name LIKE '_transient_fp_availability_%'"
-        );
+        $availability_caches = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM {$wpdb->options} WHERE option_name LIKE %s",
+            '_transient_fp_availability_%'
+        ));
         
-        $archive_caches = $wpdb->get_var(
-            "SELECT COUNT(*) FROM {$wpdb->options} WHERE option_name LIKE '_transient_fp_available_products_%'"
-        );
+        $archive_caches = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM {$wpdb->options} WHERE option_name LIKE %s",
+            '_transient_fp_available_products_%'
+        ));
         
         return [
             'availability_caches' => (int) $availability_caches,

@@ -249,7 +249,7 @@ class Shortcodes {
         }
 
         // Get all experience products with optimized query
-        $all_products = get_posts([
+        $query = new \WP_Query([
             'post_type'      => 'product',
             'post_status'    => 'publish',
             'posts_per_page' => -1,
@@ -260,8 +260,13 @@ class Shortcodes {
                     'value'   => 'experience',
                     'compare' => '='
                 ]
-            ]
+            ],
+            'no_found_rows' => true,
+            'update_post_meta_cache' => false,
+            'update_post_term_cache' => false
         ]);
+        
+        $all_products = $query->posts;
 
         if (empty($all_products)) {
             set_transient($cache_key, [], 5 * MINUTE_IN_SECONDS);
@@ -318,7 +323,7 @@ class Shortcodes {
                     <?php if (in_array('mp', $enabled_filters)) : ?>
                         <div class="fp-filter-group">
                             <label for="fp_mp"><?php _e('Meeting Point', 'fp-esperienze'); ?></label>
-                            <select name="fp_mp" id="fp_mp" class="fp-filter-select">
+                            <select name="fp_mp" id="fp_mp" class="fp-filter-select" aria-label="<?php esc_attr_e('Filter by meeting point', 'fp-esperienze'); ?>">
                                 <option value=""><?php _e('All locations', 'fp-esperienze'); ?></option>
                                 <?php
                                 $meeting_points = \FP\Esperienze\Data\MeetingPointManager::getAllMeetingPoints();
@@ -334,7 +339,7 @@ class Shortcodes {
                     <?php if (in_array('lang', $enabled_filters)) : ?>
                         <div class="fp-filter-group">
                             <label for="fp_lang"><?php _e('Language', 'fp-esperienze'); ?></label>
-                            <select name="fp_lang" id="fp_lang" class="fp-filter-select">
+                            <select name="fp_lang" id="fp_lang" class="fp-filter-select" aria-label="<?php esc_attr_e('Filter by language', 'fp-esperienze'); ?>">
                                 <option value=""><?php _e('All languages', 'fp-esperienze'); ?></option>
                                 <?php
                                 $languages = $this->getAvailableLanguages();
@@ -350,7 +355,7 @@ class Shortcodes {
                     <?php if (in_array('duration', $enabled_filters)) : ?>
                         <div class="fp-filter-group">
                             <label for="fp_duration"><?php _e('Duration', 'fp-esperienze'); ?></label>
-                            <select name="fp_duration" id="fp_duration" class="fp-filter-select">
+                            <select name="fp_duration" id="fp_duration" class="fp-filter-select" aria-label="<?php esc_attr_e('Filter by duration', 'fp-esperienze'); ?>">
                                 <option value=""><?php _e('Any duration', 'fp-esperienze'); ?></option>
                                 <option value="<=90" <?php selected(isset($_GET['fp_duration']) ? sanitize_text_field($_GET['fp_duration']) : '', '<=90'); ?>><?php _e('Up to 1.5 hours', 'fp-esperienze'); ?></option>
                                 <option value="91-180" <?php selected(isset($_GET['fp_duration']) ? sanitize_text_field($_GET['fp_duration']) : '', '91-180'); ?>><?php _e('1.5 - 3 hours', 'fp-esperienze'); ?></option>
@@ -364,7 +369,8 @@ class Shortcodes {
                             <label for="fp_date"><?php _e('Available on', 'fp-esperienze'); ?></label>
                             <input type="date" name="fp_date" id="fp_date" class="fp-filter-date" 
                                    value="<?php echo esc_attr(isset($_GET['fp_date']) ? sanitize_text_field($_GET['fp_date']) : ''); ?>"
-                                   min="<?php echo esc_attr(date('Y-m-d')); ?>">
+                                   min="<?php echo esc_attr(date('Y-m-d')); ?>"
+                                   aria-label="<?php esc_attr_e('Filter by available date', 'fp-esperienze'); ?>">
                         </div>
                     <?php endif; ?>
 
@@ -453,12 +459,12 @@ class Shortcodes {
                 <?php for ($i = 1; $i <= $max_pages; $i++) : ?>
                     <?php if ($i == $current_page) : ?>
                         <li class="fp-pagination-item fp-pagination-current">
-                            <span class="fp-pagination-link"><?php echo $i; ?></span>
+                            <span class="fp-pagination-link"><?php echo esc_html($i); ?></span>
                         </li>
                     <?php elseif ($i <= 3 || $i > $max_pages - 3 || abs($i - $current_page) <= 2) : ?>
                         <li class="fp-pagination-item">
                             <a href="<?php echo esc_url($this->getPaginationUrl($i)); ?>" class="fp-pagination-link">
-                                <?php echo $i; ?>
+                                <?php echo esc_html($i); ?>
                             </a>
                         </li>
                     <?php elseif ($i == 4 || $i == $max_pages - 3) : ?>

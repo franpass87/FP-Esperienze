@@ -77,12 +77,12 @@ $ga4_view_item = [
 jQuery(document).ready(function($) {
     if (typeof window.FPTracking !== 'undefined') {
         $(document).trigger('fp_track_view_item', {
-            product_id: <?php echo json_encode($product_id); ?>,
-            product_name: <?php echo json_encode($product->get_name()); ?>,
-            price: <?php echo json_encode($adult_price ?: 0); ?>,
+            product_id: <?php echo wp_json_encode($product_id); ?>,
+            product_name: <?php echo wp_json_encode($product->get_name()); ?>,
+            price: <?php echo wp_json_encode($adult_price ?: 0); ?>,
             slot_start: null,
             meeting_point_id: null,
-            lang: <?php echo json_encode($language_chips); ?>
+            lang: <?php echo wp_json_encode($language_chips); ?>
         });
     }
 });

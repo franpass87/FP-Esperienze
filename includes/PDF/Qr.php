@@ -227,6 +227,8 @@ class Qr {
         
         return $new_kid;
     }
+    
+    /**
      * @param string $voucher_code Voucher code
      * @return string Redemption URL
      */

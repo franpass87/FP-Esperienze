@@ -24,6 +24,7 @@ $has_voucher = !empty($applied_voucher);
             type="text" 
             class="fp-voucher-code-input" 
             placeholder="<?php esc_attr_e('Enter voucher code', 'fp-esperienze'); ?>"
+            aria-label="<?php esc_attr_e('Voucher code input', 'fp-esperienze'); ?>"
             value="<?php echo $has_voucher ? esc_attr($applied_voucher['code']) : ''; ?>"
             <?php echo $has_voucher ? 'readonly' : ''; ?>
         />

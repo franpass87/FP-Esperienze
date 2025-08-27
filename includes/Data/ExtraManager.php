@@ -23,9 +23,9 @@ class ExtraManager {
     public static function getAllExtras(bool $active_only = false): array {
         global $wpdb;
         
-        $table_name = $wpdb->prefix . 'fp_extras';
+        $table_name = esc_sql($wpdb->prefix . 'fp_extras');
         $where_clause = $active_only ? "WHERE is_active = 1" : "";
-        $results = $wpdb->get_results("SELECT * FROM $table_name $where_clause ORDER BY name ASC");
+        $results = $wpdb->get_results("SELECT * FROM `{$table_name}` {$where_clause} ORDER BY name ASC");
         
         return $results ?: [];
     }

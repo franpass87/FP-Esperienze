@@ -318,7 +318,7 @@ class SystemStatus {
         $missing_tables = [];
         foreach ($required_tables as $table) {
             $full_table_name = $wpdb->prefix . $table;
-            if ($wpdb->get_var("SHOW TABLES LIKE '$full_table_name'") !== $full_table_name) {
+            if ($wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $full_table_name)) !== $full_table_name) {
                 $missing_tables[] = $table;
             }
         }
@@ -476,8 +476,8 @@ class SystemStatus {
             <table class="fp-status-table">
                 <?php foreach ($tables as $name => $table) : ?>
                     <?php 
-                    $exists = $wpdb->get_var("SHOW TABLES LIKE '$table'") === $table;
-                    $count = $exists ? $wpdb->get_var("SELECT COUNT(*) FROM $table") : 0;
+                    $exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table)) === $table;
+                    $count = $exists ? $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM `{$table}`")) : 0;
                     ?>
                     <tr>
                         <th><?php echo esc_html($name); ?></th>

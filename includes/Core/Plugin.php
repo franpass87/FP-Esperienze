@@ -445,7 +445,7 @@ class Plugin {
      */
     public function cleanupExpiredHolds(): void {
         $count = \FP\Esperienze\Data\HoldManager::cleanupExpiredHolds();
-        if ($count > 0) {
+        if ($count > 0 && defined('WP_DEBUG') && WP_DEBUG) {
             error_log("FP Esperienze: Cleaned up {$count} expired holds");
         }
     }
