@@ -263,6 +263,8 @@ class BrevoManager {
             !empty($context) ? wp_json_encode($context) : ''
         );
         
-        error_log($log_message);
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log($log_message);
+        }
     }
 }

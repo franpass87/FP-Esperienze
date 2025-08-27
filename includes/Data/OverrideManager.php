@@ -172,7 +172,7 @@ class OverrideManager {
         global $wpdb;
         
         // Get all experience products
-        $experience_products = get_posts([
+        $query = new \WP_Query([
             'post_type' => 'product',
             'post_status' => 'publish',
             'meta_query' => [
@@ -182,8 +182,13 @@ class OverrideManager {
                 ]
             ],
             'posts_per_page' => -1,
-            'fields' => 'ids'
+            'fields' => 'ids',
+            'no_found_rows' => true,
+            'update_post_meta_cache' => false,
+            'update_post_term_cache' => false
         ]);
+        
+        $experience_products = $query->posts;
         
         if (empty($experience_products)) {
             return false;

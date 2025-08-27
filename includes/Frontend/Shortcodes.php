@@ -249,7 +249,7 @@ class Shortcodes {
         }
 
         // Get all experience products with optimized query
-        $all_products = get_posts([
+        $query = new \WP_Query([
             'post_type'      => 'product',
             'post_status'    => 'publish',
             'posts_per_page' => -1,
@@ -260,8 +260,13 @@ class Shortcodes {
                     'value'   => 'experience',
                     'compare' => '='
                 ]
-            ]
+            ],
+            'no_found_rows' => true,
+            'update_post_meta_cache' => false,
+            'update_post_term_cache' => false
         ]);
+        
+        $all_products = $query->posts;
 
         if (empty($all_products)) {
             set_transient($cache_key, [], 5 * MINUTE_IN_SECONDS);

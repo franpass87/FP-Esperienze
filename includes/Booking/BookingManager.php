@@ -206,7 +206,9 @@ class BookingManager {
                 do_action('fp_esperienze_booking_created', $booking_data['product_id'], $booking_data['booking_date']);
                 
                 // Log success
-                error_log("Created booking #{$conversion_result['booking_id']} from hold for order #{$order_id}, item #{$item_id}");
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log("Created booking #{$conversion_result['booking_id']} from hold for order #{$order_id}, item #{$item_id}");
+                }
                 
                 return $conversion_result['booking_id'];
             } else {
@@ -232,7 +234,9 @@ class BookingManager {
         do_action('fp_esperienze_booking_created', $booking_data['product_id'], $booking_data['booking_date']);
         
         // Log success
-        error_log("Created booking #{$booking_id} for order #{$order_id}, item #{$item_id}");
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("Created booking #{$booking_id} for order #{$order_id}, item #{$item_id}");
+        }
         
         return $booking_id;
     }
@@ -548,7 +552,11 @@ class BookingManager {
             $booking_id
         );
         
-        wp_mail($to, $subject, $message);
+        $mail_sent = wp_mail($to, $subject, $message);
+        
+        if (!$mail_sent && defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("Failed to send booking reschedule notification to: {$to}");
+        }
     }
 
     /**

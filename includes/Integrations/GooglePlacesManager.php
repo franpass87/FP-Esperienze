@@ -288,10 +288,12 @@ class GooglePlacesManager {
             return !in_array($key, ['api_key', 'email', 'name'], true);
         }, ARRAY_FILTER_USE_KEY);
         
-        error_log(sprintf(
-            '[FP Esperienze - Google Places] %s: %s',
-            $message,
-            wp_json_encode($safe_context)
-        ));
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log(sprintf(
+                '[FP Esperienze - Google Places] %s: %s',
+                $message,
+                wp_json_encode($safe_context)
+            ));
+        }
     }
 }

@@ -147,7 +147,7 @@ class I18nManager {
             case 'polylang':
                 if (function_exists('pll_get_posts_ids')) {
                     // Get all experience posts in current language
-                    $experience_posts = get_posts([
+                    $query = new \WP_Query([
                         'post_type' => 'product',
                         'post_status' => 'publish',
                         'meta_query' => [
@@ -157,8 +157,13 @@ class I18nManager {
                             ]
                         ],
                         'posts_per_page' => -1,
-                        'fields' => 'ids'
+                        'fields' => 'ids',
+                        'no_found_rows' => true,
+                        'update_post_meta_cache' => false,
+                        'update_post_term_cache' => false
                     ]);
+                    
+                    $experience_posts = $query->posts;
                     
                     $translated_ids = [];
                     foreach ($experience_posts as $post_id) {

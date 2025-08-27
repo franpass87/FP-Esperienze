@@ -1421,7 +1421,8 @@ class MenuManager {
         if (!empty($query_params)) {
             $total_items = $wpdb->get_var($wpdb->prepare($total_query, ...$query_params));
         } else {
-            $total_items = $wpdb->get_var($total_query);
+            // Use prepared statement even when no parameters to ensure security
+            $total_items = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$wpdb->prefix}fp_exp_vouchers WHERE 1=1"));
         }
         
         // Get vouchers
@@ -1913,7 +1914,9 @@ class MenuManager {
             });
             
         } catch (Exception $e) {
-            error_log('FP Esperienze: Failed to resend voucher email: ' . $e->getMessage());
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('FP Esperienze: Failed to resend voucher email: ' . $e->getMessage());
+            }
             add_action('admin_notices', function() {
                 echo '<div class="notice notice-error is-dismissible"><p>' . 
                      esc_html__('Failed to resend voucher email.', 'fp-esperienze') . 
@@ -2105,13 +2108,15 @@ class MenuManager {
         
         // For now, we'll use WordPress's built-in logging
         // In a production environment, you might want a dedicated audit table
-        error_log(sprintf(
-            'FP Esperienze Voucher Action: ID=%d, Action=%s, User=%s, Description=%s',
-            $voucher_id,
-            $action,
-            $user_info,
-            $description
-        ));
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log(sprintf(
+                'FP Esperienze Voucher Action: ID=%d, Action=%s, User=%s, Description=%s',
+                $voucher_id,
+                $action,
+                $user_info,
+                $description
+            ));
+        }
         
         // Also add to order notes if voucher is associated with an order
         $voucher = $wpdb->get_row($wpdb->prepare(
@@ -2741,8 +2746,8 @@ class MenuManager {
                     <?php
                     global $wpdb;
                     $holds_table = $wpdb->prefix . 'fp_exp_holds';
-                    $active_holds = $wpdb->get_var("SELECT COUNT(*) FROM `" . esc_sql($holds_table) . "` WHERE expires_at > NOW()");
-                    $expired_holds = $wpdb->get_var("SELECT COUNT(*) FROM `" . esc_sql($holds_table) . "` WHERE expires_at <= NOW()");
+                    $active_holds = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM `{$holds_table}` WHERE expires_at > NOW()"));
+                    $expired_holds = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM `{$holds_table}` WHERE expires_at <= NOW()"));
                     ?>
                     <table class="form-table">
                         <tr>
@@ -3664,7 +3669,7 @@ class MenuManager {
      * Get experience products for filter dropdown
      */
     private function getExperienceProducts(): array {
-        $posts = get_posts([
+        $query = new \WP_Query([
             'post_type' => 'product',
             'meta_query' => [
                 [
@@ -3674,10 +3679,13 @@ class MenuManager {
                 ]
             ],
             'posts_per_page' => -1,
-            'post_status' => 'publish'
+            'post_status' => 'publish',
+            'no_found_rows' => true,
+            'update_post_meta_cache' => false,
+            'update_post_term_cache' => false
         ]);
         
-        return $posts;
+        return $query->posts;
     }
     
     /**

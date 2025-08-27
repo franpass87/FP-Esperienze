@@ -50,6 +50,26 @@ if (version_compare(PHP_VERSION, '8.1', '<')) {
     return;
 }
 
+// Check WooCommerce dependency
+if (!class_exists('WooCommerce')) {
+    add_action('admin_notices', function() {
+        echo '<div class="notice notice-error"><p>' . 
+             esc_html__('FP Esperienze requires WooCommerce to be installed and activated.', 'fp-esperienze') . 
+             '</p></div>';
+    });
+    return;
+}
+
+// Check WooCommerce version
+if (defined('WC_VERSION') && version_compare(WC_VERSION, '8.0', '<')) {
+    add_action('admin_notices', function() {
+        echo '<div class="notice notice-error"><p>' . 
+             esc_html__('FP Esperienze requires WooCommerce 8.0 or higher.', 'fp-esperienze') . 
+             '</p></div>';
+    });
+    return;
+}
+
 // Check if WooCommerce is active
 if (!in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_option('active_plugins')))) {
     add_action('admin_notices', function() {

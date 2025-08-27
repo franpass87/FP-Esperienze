@@ -477,7 +477,7 @@ class SystemStatus {
                 <?php foreach ($tables as $name => $table) : ?>
                     <?php 
                     $exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table)) === $table;
-                    $count = $exists ? $wpdb->get_var("SELECT COUNT(*) FROM `" . esc_sql($table) . "`") : 0;
+                    $count = $exists ? $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM `{$table}`")) : 0;
                     ?>
                     <tr>
                         <th><?php echo esc_html($name); ?></th>

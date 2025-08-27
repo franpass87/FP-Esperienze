@@ -117,12 +117,17 @@ class NotificationManager {
         ];
         
         // Send to each staff email
+        $sent_count = 0;
         foreach ($emails as $email) {
-            wp_mail($email, $subject, $message, $headers);
+            if (wp_mail($email, $subject, $message, $headers)) {
+                $sent_count++;
+            }
         }
         
         // Log the notification
-        error_log("Staff notification sent for booking #{$booking->id} to " . count($emails) . " recipients");
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("Staff notification sent for booking #{$booking->id} to {$sent_count}/" . count($emails) . " recipients");
+        }
     }
     
     /**
