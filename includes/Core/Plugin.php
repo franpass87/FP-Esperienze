@@ -292,10 +292,10 @@ class Plugin {
         );
         
         // Localize script with admin data
-        wp_localize_script('fp-esperienze-admin', 'fp_esperienze_admin', [
+        wp_localize_script('fp-esperienze-admin', 'fpAdminData', [
             'ajax_url' => admin_url('admin-ajax.php'),
             'rest_url' => get_rest_url(),
-            'nonce' => wp_create_nonce('fp_esperienze_admin_nonce'),
+            'nonce' => wp_create_nonce('fp_admin_nonce'),
         ]);
     }
 

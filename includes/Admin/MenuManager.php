@@ -32,6 +32,10 @@ class MenuManager {
         
         // Handle setup wizard redirect
         add_action('admin_init', [$this, 'handleSetupWizardRedirect']);
+        
+        // AJAX handlers for booking management
+        add_action('wp_ajax_fp_get_available_slots', [$this, 'getAvailableSlots']);
+        add_action('wp_ajax_fp_calculate_refund_preview', [$this, 'calculateRefundPreview']);
     }
 
     /**
@@ -288,6 +292,7 @@ class MenuManager {
                                 <th><?php _e('Status', 'fp-esperienze'); ?></th>
                                 <th><?php _e('Meeting Point', 'fp-esperienze'); ?></th>
                                 <th><?php _e('Created', 'fp-esperienze'); ?></th>
+                                <th><?php _e('Actions', 'fp-esperienze'); ?></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -334,6 +339,23 @@ class MenuManager {
                                         ?>
                                     </td>
                                     <td><?php echo esc_html(date_i18n(get_option('date_format') . ' ' . get_option('time_format'), strtotime($booking->created_at))); ?></td>
+                                    <td>
+                                        <?php if ($booking->status !== 'cancelled' && $booking->status !== 'refunded') : ?>
+                                            <button type="button" class="button button-small fp-reschedule-booking" 
+                                                    data-booking-id="<?php echo esc_attr($booking->id); ?>"
+                                                    data-product-id="<?php echo esc_attr($booking->product_id); ?>"
+                                                    data-current-date="<?php echo esc_attr($booking->booking_date); ?>"
+                                                    data-current-time="<?php echo esc_attr($booking->booking_time); ?>">
+                                                <?php _e('Reschedule', 'fp-esperienze'); ?>
+                                            </button>
+                                            <button type="button" class="button button-small fp-cancel-booking" 
+                                                    data-booking-id="<?php echo esc_attr($booking->id); ?>">
+                                                <?php _e('Cancel', 'fp-esperienze'); ?>
+                                            </button>
+                                        <?php else : ?>
+                                            <span class="description"><?php _e('No actions available', 'fp-esperienze'); ?></span>
+                                        <?php endif; ?>
+                                    </td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>
@@ -344,6 +366,68 @@ class MenuManager {
             <!-- Calendar View -->
             <div id="fp-bookings-calendar" class="fp-bookings-content" style="display: none;">
                 <div id="fp-calendar"></div>
+            </div>
+            
+            <!-- Reschedule Modal -->
+            <div id="fp-reschedule-modal" class="fp-modal" style="display: none;">
+                <div class="fp-modal-content">
+                    <h3><?php _e('Reschedule Booking', 'fp-esperienze'); ?></h3>
+                    <form id="fp-reschedule-form" method="post">
+                        <?php wp_nonce_field('fp_booking_action', 'fp_booking_nonce'); ?>
+                        <input type="hidden" name="action" value="reschedule_booking">
+                        <input type="hidden" name="booking_id" id="fp-reschedule-booking-id">
+                        <input type="hidden" name="product_id" id="fp-reschedule-product-id">
+                        
+                        <div class="fp-form-row">
+                            <label for="fp-reschedule-date"><?php _e('New Date:', 'fp-esperienze'); ?></label>
+                            <input type="date" id="fp-reschedule-date" name="new_date" required min="<?php echo date('Y-m-d'); ?>">
+                        </div>
+                        
+                        <div class="fp-form-row">
+                            <label for="fp-reschedule-time"><?php _e('New Time:', 'fp-esperienze'); ?></label>
+                            <select id="fp-reschedule-time" name="new_time" required>
+                                <option value=""><?php _e('Select a date first', 'fp-esperienze'); ?></option>
+                            </select>
+                        </div>
+                        
+                        <div class="fp-current-slot">
+                            <strong><?php _e('Current Booking:', 'fp-esperienze'); ?></strong>
+                            <span id="fp-current-slot-info"></span>
+                        </div>
+                        
+                        <div class="fp-modal-actions">
+                            <button type="submit" class="button button-primary"><?php _e('Reschedule', 'fp-esperienze'); ?></button>
+                            <button type="button" class="button fp-modal-close"><?php _e('Cancel', 'fp-esperienze'); ?></button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Cancel Modal -->
+            <div id="fp-cancel-modal" class="fp-modal" style="display: none;">
+                <div class="fp-modal-content">
+                    <h3><?php _e('Cancel Booking', 'fp-esperienze'); ?></h3>
+                    <form id="fp-cancel-form" method="post">
+                        <?php wp_nonce_field('fp_booking_action', 'fp_booking_nonce'); ?>
+                        <input type="hidden" name="action" value="cancel_booking">
+                        <input type="hidden" name="booking_id" id="fp-cancel-booking-id">
+                        
+                        <div class="fp-form-row">
+                            <label for="fp-cancellation-reason"><?php _e('Cancellation Reason:', 'fp-esperienze'); ?></label>
+                            <textarea id="fp-cancellation-reason" name="cancellation_reason" rows="4" class="large-text"></textarea>
+                        </div>
+                        
+                        <div id="fp-refund-calculation" class="fp-refund-info">
+                            <p><strong><?php _e('Refund Information:', 'fp-esperienze'); ?></strong></p>
+                            <div id="fp-refund-details"></div>
+                        </div>
+                        
+                        <div class="fp-modal-actions">
+                            <button type="submit" class="button button-primary"><?php _e('Confirm Cancellation', 'fp-esperienze'); ?></button>
+                            <button type="button" class="button fp-modal-close"><?php _e('Cancel', 'fp-esperienze'); ?></button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
         
@@ -378,6 +462,74 @@ class MenuManager {
         .status-cancelled {
             background: #dc3232;
             color: white;
+        }
+        .status-refunded {
+            background: #ffb900;
+            color: white;
+        }
+        
+        /* Modal Styles */
+        .fp-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 100000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .fp-modal-content {
+            background: #fff;
+            padding: 20px;
+            border-radius: 4px;
+            min-width: 400px;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .fp-modal-content h3 {
+            margin-top: 0;
+        }
+        .fp-form-row {
+            margin-bottom: 15px;
+        }
+        .fp-form-row label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .fp-form-row input,
+        .fp-form-row select,
+        .fp-form-row textarea {
+            width: 100%;
+        }
+        .fp-current-slot {
+            background: #f0f0f1;
+            padding: 10px;
+            border-left: 4px solid #00a0d2;
+            margin: 15px 0;
+        }
+        .fp-refund-info {
+            background: #fff2e0;
+            padding: 10px;
+            border-left: 4px solid #ffb900;
+            margin: 15px 0;
+        }
+        .fp-modal-actions {
+            text-align: right;
+            margin-top: 20px;
+        }
+        .fp-modal-actions .button {
+            margin-left: 10px;
+        }
+        .fp-reschedule-booking,
+        .fp-cancel-booking {
+            margin-right: 5px;
+        }
+        </style>
         }
         .status-refunded {
             background: #ffb900;
@@ -2884,6 +3036,64 @@ class MenuManager {
                     });
                 }
                 break;
+                
+            case 'reschedule_booking':
+                $booking_id = absint($_POST['booking_id'] ?? 0);
+                $new_date = sanitize_text_field($_POST['new_date'] ?? '');
+                $new_time = sanitize_text_field($_POST['new_time'] ?? '');
+                
+                if ($booking_id && $new_date && $new_time) {
+                    $result = \FP\Esperienze\Booking\BookingManager::rescheduleBooking($booking_id, $new_date, $new_time);
+                    
+                    if ($result['success']) {
+                        add_action('admin_notices', function() use ($result) {
+                            echo '<div class="notice notice-success is-dismissible"><p>' . 
+                                 esc_html($result['message']) . 
+                                 '</p></div>';
+                        });
+                    } else {
+                        add_action('admin_notices', function() use ($result) {
+                            echo '<div class="notice notice-error is-dismissible"><p>' . 
+                                 esc_html($result['message']) . 
+                                 '</p></div>';
+                        });
+                    }
+                }
+                break;
+                
+            case 'cancel_booking':
+                $booking_id = absint($_POST['booking_id'] ?? 0);
+                $reason = sanitize_textarea_field($_POST['cancellation_reason'] ?? '');
+                
+                if ($booking_id) {
+                    $result = \FP\Esperienze\Booking\BookingManager::cancelBooking($booking_id, $reason);
+                    
+                    if ($result['success']) {
+                        $message = $result['message'];
+                        if (isset($result['refund_info'])) {
+                            $refund_info = $result['refund_info'];
+                            $message .= ' ' . sprintf(
+                                __('Refund: %s (%.1f%%) - %s', 'fp-esperienze'),
+                                wc_price($refund_info['refund_amount']),
+                                $refund_info['refund_percentage'],
+                                $refund_info['reason']
+                            );
+                        }
+                        
+                        add_action('admin_notices', function() use ($message) {
+                            echo '<div class="notice notice-success is-dismissible"><p>' . 
+                                 $message . 
+                                 '</p></div>';
+                        });
+                    } else {
+                        add_action('admin_notices', function() use ($result) {
+                            echo '<div class="notice notice-error is-dismissible"><p>' . 
+                                 esc_html($result['message']) . 
+                                 '</p></div>';
+                        });
+                    }
+                }
+                break;
         }
     }
     
@@ -2994,5 +3204,78 @@ class MenuManager {
     public function performancePage(): void {
         $performance_settings = new PerformanceSettings();
         $performance_settings->renderPage();
+    }
+
+    /**
+     * AJAX handler to get available slots for reschedule
+     */
+    public function getAvailableSlots(): void {
+        // Check permissions
+        if (!CapabilityManager::canManageFPEsperienze()) {
+            wp_send_json_error(['message' => __('Insufficient permissions.', 'fp-esperienze')]);
+        }
+
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'] ?? '', 'fp_admin_nonce')) {
+            wp_send_json_error(['message' => __('Security check failed.', 'fp-esperienze')]);
+        }
+
+        $product_id = absint($_POST['product_id'] ?? 0);
+        $date = sanitize_text_field($_POST['date'] ?? '');
+
+        if (!$product_id || !$date) {
+            wp_send_json_error(['message' => __('Missing required parameters.', 'fp-esperienze')]);
+        }
+
+        // Get available slots
+        $slots = \FP\Esperienze\Data\Availability::getAvailableSlots($product_id, $date);
+
+        wp_send_json_success($slots);
+    }
+
+    /**
+     * AJAX handler to calculate refund preview
+     */
+    public function calculateRefundPreview(): void {
+        // Check permissions
+        if (!CapabilityManager::canManageFPEsperienze()) {
+            wp_send_json_error(['message' => __('Insufficient permissions.', 'fp-esperienze')]);
+        }
+
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'] ?? '', 'fp_admin_nonce')) {
+            wp_send_json_error(['message' => __('Security check failed.', 'fp-esperienze')]);
+        }
+
+        $booking_id = absint($_POST['booking_id'] ?? 0);
+
+        if (!$booking_id) {
+            wp_send_json_error(['message' => __('Missing booking ID.', 'fp-esperienze')]);
+        }
+
+        // Get booking
+        $booking = \FP\Esperienze\Booking\BookingManager::getBooking($booking_id);
+        if (!$booking) {
+            wp_send_json_error(['message' => __('Booking not found.', 'fp-esperienze')]);
+        }
+
+        // Get product
+        $product = wc_get_product($booking->product_id);
+        if (!$product || $product->get_type() !== 'experience') {
+            wp_send_json_error(['message' => __('Invalid experience product.', 'fp-esperienze')]);
+        }
+
+        // Calculate refund preview
+        $refund_info = \FP\Esperienze\Booking\BookingManager::calculateRefund($booking, $product);
+
+        // Format the response
+        $response = [
+            'amount' => $refund_info['refund_amount'],
+            'formatted_amount' => wc_price($refund_info['refund_amount']),
+            'percentage' => $refund_info['refund_percentage'],
+            'reason' => $refund_info['reason']
+        ];
+
+        wp_send_json_success($response);
     }
 }

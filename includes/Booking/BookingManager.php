@@ -307,4 +307,309 @@ class BookingManager {
             $wpdb->prepare("SELECT * FROM {$table_name} WHERE id = %d", $booking_id)
         );
     }
+
+    /**
+     * Reschedule a booking to a new date/time slot
+     *
+     * @param int $booking_id Booking ID
+     * @param string $new_date New date (YYYY-MM-DD)
+     * @param string $new_time New time (HH:MM)
+     * @return array Result with success status and message
+     */
+    public static function rescheduleBooking(int $booking_id, string $new_date, string $new_time): array {
+        global $wpdb;
+        
+        // Get current booking
+        $booking = self::getBooking($booking_id);
+        if (!$booking) {
+            return [
+                'success' => false,
+                'message' => __('Booking not found.', 'fp-esperienze')
+            ];
+        }
+
+        // Get product
+        $product = wc_get_product($booking->product_id);
+        if (!$product || $product->get_type() !== 'experience') {
+            return [
+                'success' => false,
+                'message' => __('Invalid experience product.', 'fp-esperienze')
+            ];
+        }
+
+        // Validate new slot format
+        $new_datetime = \DateTime::createFromFormat('Y-m-d H:i', $new_date . ' ' . $new_time);
+        if (!$new_datetime) {
+            return [
+                'success' => false,
+                'message' => __('Invalid date/time format.', 'fp-esperienze')
+            ];
+        }
+
+        // Check cutoff time
+        $cutoff_minutes = $product->get_cutoff_minutes();
+        $cutoff_time = new \DateTime();
+        $cutoff_time->add(new \DateInterval('PT' . $cutoff_minutes . 'M'));
+
+        if ($new_datetime <= $cutoff_time) {
+            return [
+                'success' => false,
+                'message' => sprintf(
+                    __('This time slot is too close to departure. Please select at least %d minutes in advance.', 'fp-esperienze'),
+                    $cutoff_minutes
+                )
+            ];
+        }
+
+        // Check slot availability
+        $availability = \FP\Esperienze\Data\Availability::getAvailableSlots($booking->product_id, $new_date);
+        $slot_available = false;
+        $required_spots = $booking->adults + $booking->children;
+
+        foreach ($availability as $slot) {
+            if ($slot['start_time'] === $new_time && $slot['available'] >= $required_spots) {
+                $slot_available = true;
+                break;
+            }
+        }
+
+        if (!$slot_available) {
+            return [
+                'success' => false,
+                'message' => __('Selected time slot is not available or does not have enough capacity.', 'fp-esperienze')
+            ];
+        }
+
+        // Update booking
+        $table_name = $wpdb->prefix . 'fp_bookings';
+        $result = $wpdb->update(
+            $table_name,
+            [
+                'booking_date' => $new_date,
+                'booking_time' => $new_time,
+                'updated_at' => current_time('mysql')
+            ],
+            ['id' => $booking_id],
+            ['%s', '%s', '%s'],
+            ['%d']
+        );
+
+        if ($result === false) {
+            return [
+                'success' => false,
+                'message' => __('Failed to update booking.', 'fp-esperienze')
+            ];
+        }
+
+        // Trigger cache invalidation for both old and new dates
+        do_action('fp_esperienze_booking_rescheduled', $booking->product_id, $booking->booking_date, $new_date);
+
+        // Send confirmation email
+        self::sendRescheduleConfirmationEmail($booking_id, $booking->booking_date, $new_date, $new_time);
+
+        return [
+            'success' => true,
+            'message' => __('Booking rescheduled successfully.', 'fp-esperienze')
+        ];
+    }
+
+    /**
+     * Cancel a booking with refund calculation based on cancellation policy
+     *
+     * @param int $booking_id Booking ID
+     * @param string $reason Cancellation reason
+     * @return array Result with success status, message, and refund info
+     */
+    public static function cancelBooking(int $booking_id, string $reason = ''): array {
+        global $wpdb;
+        
+        // Get current booking
+        $booking = self::getBooking($booking_id);
+        if (!$booking) {
+            return [
+                'success' => false,
+                'message' => __('Booking not found.', 'fp-esperienze')
+            ];
+        }
+
+        if ($booking->status === 'cancelled') {
+            return [
+                'success' => false,
+                'message' => __('Booking is already cancelled.', 'fp-esperienze')
+            ];
+        }
+
+        // Get product and cancellation policy
+        $product = wc_get_product($booking->product_id);
+        if (!$product || $product->get_type() !== 'experience') {
+            return [
+                'success' => false,
+                'message' => __('Invalid experience product.', 'fp-esperienze')
+            ];
+        }
+
+        // Calculate refund based on cancellation policy
+        $refund_info = self::calculateRefund($booking, $product);
+
+        // Update booking status
+        $table_name = $wpdb->prefix . 'fp_bookings';
+        $result = $wpdb->update(
+            $table_name,
+            [
+                'status' => 'cancelled',
+                'admin_notes' => $reason,
+                'updated_at' => current_time('mysql')
+            ],
+            ['id' => $booking_id],
+            ['%s', '%s', '%s'],
+            ['%d']
+        );
+
+        if ($result === false) {
+            return [
+                'success' => false,
+                'message' => __('Failed to cancel booking.', 'fp-esperienze')
+            ];
+        }
+
+        // Trigger cache invalidation
+        do_action('fp_esperienze_booking_cancelled', $booking->product_id, $booking->booking_date);
+
+        return [
+            'success' => true,
+            'message' => __('Booking cancelled successfully.', 'fp-esperienze'),
+            'refund_info' => $refund_info
+        ];
+    }
+
+    /**
+     * Calculate refund amount based on cancellation policy
+     *
+     * @param object $booking Booking object
+     * @param WC_Product_Experience $product Product object
+     * @return array Refund calculation details
+     */
+    public static function calculateRefund($booking, $product): array {
+        // Get order to calculate refund amount
+        $order = wc_get_order($booking->order_id);
+        if (!$order) {
+            return [
+                'refund_amount' => 0,
+                'refund_percentage' => 0,
+                'reason' => __('Order not found', 'fp-esperienze')
+            ];
+        }
+
+        // Get order item
+        $order_item = $order->get_item($booking->order_item_id);
+        if (!$order_item) {
+            return [
+                'refund_amount' => 0,
+                'refund_percentage' => 0,
+                'reason' => __('Order item not found', 'fp-esperienze')
+            ];
+        }
+
+        $item_total = $order_item->get_total();
+        
+        // Calculate time until experience
+        $booking_datetime = new \DateTime($booking->booking_date . ' ' . $booking->booking_time);
+        $now = new \DateTime();
+        $minutes_until_experience = ($booking_datetime->getTimestamp() - $now->getTimestamp()) / 60;
+
+        // Check if experience has already passed (no-show)
+        if ($minutes_until_experience < 0) {
+            $no_show_policy = $product->get_no_show_policy();
+            switch ($no_show_policy) {
+                case 'full_refund':
+                    return [
+                        'refund_amount' => $item_total,
+                        'refund_percentage' => 100,
+                        'reason' => __('Full refund - No-show policy', 'fp-esperienze')
+                    ];
+                case 'partial_refund':
+                    $refund_amount = $item_total * 0.5; // 50% refund for no-show
+                    return [
+                        'refund_amount' => $refund_amount,
+                        'refund_percentage' => 50,
+                        'reason' => __('Partial refund - No-show policy', 'fp-esperienze')
+                    ];
+                default: // no_refund
+                    return [
+                        'refund_amount' => 0,
+                        'refund_percentage' => 0,
+                        'reason' => __('No refund - No-show policy', 'fp-esperienze')
+                    ];
+            }
+        }
+
+        // Check free cancellation period
+        $free_cancel_minutes = $product->get_free_cancel_until_minutes();
+        if ($minutes_until_experience >= $free_cancel_minutes) {
+            return [
+                'refund_amount' => $item_total,
+                'refund_percentage' => 100,
+                'reason' => __('Full refund - Free cancellation period', 'fp-esperienze')
+            ];
+        }
+
+        // Apply cancellation fee
+        $fee_percentage = $product->get_cancellation_fee_percentage();
+        $refund_percentage = max(0, 100 - $fee_percentage);
+        $refund_amount = $item_total * ($refund_percentage / 100);
+
+        return [
+            'refund_amount' => $refund_amount,
+            'refund_percentage' => $refund_percentage,
+            'reason' => sprintf(
+                __('Refund with %s%% cancellation fee', 'fp-esperienze'),
+                $fee_percentage
+            )
+        ];
+    }
+
+    /**
+     * Send reschedule confirmation email
+     *
+     * @param int $booking_id Booking ID
+     * @param string $old_date Old date
+     * @param string $new_date New date  
+     * @param string $new_time New time
+     */
+    private static function sendRescheduleConfirmationEmail(int $booking_id, string $old_date, string $new_date, string $new_time): void {
+        $booking = self::getBooking($booking_id);
+        if (!$booking) {
+            return;
+        }
+
+        $order = wc_get_order($booking->order_id);
+        if (!$order) {
+            return;
+        }
+
+        $product = wc_get_product($booking->product_id);
+        if (!$product) {
+            return;
+        }
+
+        // Prepare email data
+        $to = $order->get_billing_email();
+        $subject = sprintf(
+            __('Your %s booking has been rescheduled', 'fp-esperienze'),
+            $product->get_name()
+        );
+
+        $message = sprintf(
+            __('Your booking has been successfully rescheduled from %s to %s at %s.', 'fp-esperienze'),
+            date_i18n(get_option('date_format'), strtotime($old_date)),
+            date_i18n(get_option('date_format'), strtotime($new_date)),
+            date_i18n(get_option('time_format'), strtotime($new_time))
+        );
+
+        // Send email
+        wp_mail($to, $subject, $message);
+        
+        // Trigger action for custom email handling
+        do_action('fp_esperienze_reschedule_email_sent', $booking_id, $to, $subject, $message);
+    }
 }

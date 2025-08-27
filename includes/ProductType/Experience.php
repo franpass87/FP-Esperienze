@@ -174,6 +174,68 @@ class Experience {
             ?>
             
             <div class="options_group">
+                <h4><?php _e('Cancellation Policy', 'fp-esperienze'); ?></h4>
+                
+                <?php
+                // Cutoff time for bookings
+                woocommerce_wp_text_input([
+                    'id'          => '_fp_exp_cutoff_minutes',
+                    'label'       => __('Booking Cutoff Time (minutes)', 'fp-esperienze'),
+                    'placeholder' => '120',
+                    'desc_tip'    => true,
+                    'description' => __('Minutes before experience when booking/changes are no longer allowed', 'fp-esperienze'),
+                    'type'        => 'number',
+                    'custom_attributes' => [
+                        'step' => '1',
+                        'min'  => '0'
+                    ]
+                ]);
+
+                // Free cancellation time
+                woocommerce_wp_text_input([
+                    'id'          => '_fp_exp_free_cancel_until_minutes',
+                    'label'       => __('Free Cancellation Until (minutes)', 'fp-esperienze'),
+                    'placeholder' => '1440',
+                    'desc_tip'    => true,
+                    'description' => __('Minutes before experience when cancellation is free (default: 1440 = 24 hours)', 'fp-esperienze'),
+                    'type'        => 'number',
+                    'custom_attributes' => [
+                        'step' => '1',
+                        'min'  => '0'
+                    ]
+                ]);
+
+                // Cancellation fee percentage
+                woocommerce_wp_text_input([
+                    'id'          => '_fp_exp_cancellation_fee_percentage',
+                    'label'       => __('Cancellation Fee (%)', 'fp-esperienze'),
+                    'placeholder' => '0',
+                    'desc_tip'    => true,
+                    'description' => __('Percentage fee charged for cancellations after free cancellation period', 'fp-esperienze'),
+                    'type'        => 'number',
+                    'custom_attributes' => [
+                        'step' => '0.01',
+                        'min'  => '0',
+                        'max'  => '100'
+                    ]
+                ]);
+
+                // No-show policy
+                woocommerce_wp_select([
+                    'id'          => '_fp_exp_no_show_policy',
+                    'label'       => __('No-Show Policy', 'fp-esperienze'),
+                    'options'     => [
+                        'no_refund'     => __('No Refund', 'fp-esperienze'),
+                        'partial_refund' => __('Partial Refund', 'fp-esperienze'),
+                        'full_refund'   => __('Full Refund', 'fp-esperienze')
+                    ],
+                    'desc_tip'    => true,
+                    'description' => __('Policy for customers who do not show up for their experience', 'fp-esperienze')
+                ]);
+                ?>
+            </div>
+            
+            <div class="options_group">
                 <h4><?php _e('Schedules', 'fp-esperienze'); ?></h4>
                 <div id="fp-schedules-container">
                     <?php $this->renderSchedulesSection($post->ID); ?>
@@ -424,7 +486,11 @@ class Experience {
             '_experience_adult_tax_class',
             '_experience_child_tax_class',
             '_experience_languages',
-            '_fp_exp_meeting_point_id'
+            '_fp_exp_meeting_point_id',
+            '_fp_exp_cutoff_minutes',
+            '_fp_exp_free_cancel_until_minutes',
+            '_fp_exp_cancellation_fee_percentage',
+            '_fp_exp_no_show_policy'
         ];
 
         foreach ($fields as $field) {

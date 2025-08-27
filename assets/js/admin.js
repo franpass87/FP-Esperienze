@@ -60,6 +60,9 @@
             
             // Override management
             this.bindOverrideEvents();
+            
+            // Booking management
+            this.bindBookingManagement();
         },
         
         /**
@@ -269,6 +272,132 @@
                 '</div>');
             
             container.append(row);
+        },
+
+        /**
+         * Bind booking management events
+         */
+        bindBookingManagement: function() {
+            var self = this;
+            
+            // Reschedule booking
+            $(document).on('click', '.fp-reschedule-booking', function(e) {
+                e.preventDefault();
+                var $btn = $(this);
+                var bookingId = $btn.data('booking-id');
+                var productId = $btn.data('product-id');
+                var currentDate = $btn.data('current-date');
+                var currentTime = $btn.data('current-time');
+                
+                self.openRescheduleModal(bookingId, productId, currentDate, currentTime);
+            });
+            
+            // Cancel booking
+            $(document).on('click', '.fp-cancel-booking', function(e) {
+                e.preventDefault();
+                var bookingId = $(this).data('booking-id');
+                self.openCancelModal(bookingId);
+            });
+            
+            // Close modals
+            $(document).on('click', '.fp-modal-close', function(e) {
+                e.preventDefault();
+                $('.fp-modal').hide();
+            });
+            
+            // Date change for reschedule
+            $(document).on('change', '#fp-reschedule-date', function() {
+                var date = $(this).val();
+                var productId = $('#fp-reschedule-product-id').val();
+                if (date && productId) {
+                    self.loadAvailableSlots(productId, date);
+                }
+            });
+        },
+
+        /**
+         * Open reschedule modal
+         */
+        openRescheduleModal: function(bookingId, productId, currentDate, currentTime) {
+            $('#fp-reschedule-booking-id').val(bookingId);
+            $('#fp-reschedule-product-id').val(productId);
+            $('#fp-current-slot-info').text(currentDate + ' at ' + currentTime);
+            $('#fp-reschedule-date').val('').trigger('change');
+            $('#fp-reschedule-time').html('<option value="">Select a date first</option>');
+            $('#fp-reschedule-modal').show();
+        },
+
+        /**
+         * Open cancel modal
+         */
+        openCancelModal: function(bookingId) {
+            $('#fp-cancel-booking-id').val(bookingId);
+            $('#fp-cancellation-reason').val('');
+            this.calculateRefundPreview(bookingId);
+            $('#fp-cancel-modal').show();
+        },
+
+        /**
+         * Load available slots for reschedule
+         */
+        loadAvailableSlots: function(productId, date) {
+            var $timeSelect = $('#fp-reschedule-time');
+            $timeSelect.html('<option value="">Loading...</option>');
+            
+            $.ajax({
+                url: ajaxurl,
+                type: 'POST',
+                data: {
+                    action: 'fp_get_available_slots',
+                    product_id: productId,
+                    date: date,
+                    nonce: fpAdminData.nonce
+                },
+                success: function(response) {
+                    if (response.success) {
+                        var options = '<option value="">Select time slot</option>';
+                        $.each(response.data, function(index, slot) {
+                            if (slot.is_available) {
+                                options += '<option value="' + slot.start_time + '">' + 
+                                         slot.start_time + ' - ' + slot.end_time + 
+                                         ' (' + slot.available + ' spots available)</option>';
+                            }
+                        });
+                        $timeSelect.html(options);
+                    } else {
+                        $timeSelect.html('<option value="">No slots available</option>');
+                    }
+                },
+                error: function() {
+                    $timeSelect.html('<option value="">Error loading slots</option>');
+                }
+            });
+        },
+
+        /**
+         * Calculate refund preview
+         */
+        calculateRefundPreview: function(bookingId) {
+            $.ajax({
+                url: ajaxurl,
+                type: 'POST',
+                data: {
+                    action: 'fp_calculate_refund_preview',
+                    booking_id: bookingId,
+                    nonce: fpAdminData.nonce
+                },
+                success: function(response) {
+                    if (response.success) {
+                        var refund = response.data;
+                        var html = '<p><strong>Refund Amount:</strong> ' + refund.formatted_amount + '</p>' +
+                                  '<p><strong>Refund Percentage:</strong> ' + refund.percentage + '%</p>' +
+                                  '<p><strong>Reason:</strong> ' + refund.reason + '</p>';
+                        $('#fp-refund-details').html(html);
+                    } else {
+                        $('#fp-refund-details').html('<p>Unable to calculate refund preview.</p>');
+                    }
+                }
+            });
         }
     };
 
