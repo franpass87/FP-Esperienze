@@ -115,6 +115,20 @@ Configure third-party integrations through **FP Esperienze → Settings → Inte
 - **List ID (Italian)**: Brevo list ID for Italian customers
 - **List ID (English)**: Brevo list ID for English customers
 
+#### Subscription Flow by Language
+
+When an order reaches "processing" or "completed" status with experience products:
+
+1. **Customer Data Extraction**: Name, email, and language are retrieved from the order
+2. **Contact Creation/Update**: Customer is created or updated in Brevo via `POST /v3/contacts`
+3. **List Subscription**: Customer is automatically added to the appropriate language list:
+   - Italian customers → List ID (Italian)
+   - English customers → List ID (English)
+4. **Language Detection**: Order language is determined from experience items or site locale
+5. **Error Handling**: Failed API calls are logged without exposing sensitive customer data
+
+The integration activates only when API key and at least one list ID are configured.
+
 ### Google Places API
 
 - **API Key**: Google Places API key for retrieving reviews and location data
