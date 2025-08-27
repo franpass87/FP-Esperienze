@@ -1,5 +1,13 @@
 /* FP Esperienze Frontend Styles - GetYourGuide Style */
 
+/* CSS Custom Properties for consistent colors and accessibility */
+:root {
+    --fp-brand-orange: #ff6b35; /* Original for backgrounds and borders */
+    --fp-brand-orange-text: #b24a25; /* Darker variant for text - meets AA contrast */
+    --fp-text-gray: #555; /* Improved from #666 for better contrast */
+    --fp-text-light-gray: #666; /* Improved from #999 for better contrast */
+}
+
 /* Reset and base styles */
 .fp-experience-single * {
     box-sizing: border-box;
@@ -412,7 +420,7 @@
 
 .fp-price-amount {
     font-weight: 700;
-    color: #ff6b35;
+    color: var(--fp-brand-orange-text); /* Improved contrast for AA compliance */
     font-size: 1.2em;
 }
 
@@ -661,7 +669,7 @@
 }
 
 .fp-map-unavailable {
-    color: #999;
+    color: #666; /* Improved contrast for AA compliance */
 }
 
 /* FAQ Section */
@@ -816,7 +824,7 @@
 .fp-booking-price .fp-price-amount {
     font-size: 1.5em;
     font-weight: 700;
-    color: #ff6b35;
+    color: var(--fp-brand-orange-text); /* Improved contrast for AA compliance */
 }
 
 .fp-per-person {
@@ -958,7 +966,7 @@
 
 .fp-slot-price {
     font-weight: 600;
-    color: #ff6b35;
+    color: var(--fp-brand-orange-text); /* Improved contrast for AA compliance */
     margin-bottom: 2px;
 }
 
@@ -1106,7 +1114,7 @@
 
 .fp-extra-price {
     font-size: 14px;
-    color: #ff6b35;
+    color: var(--fp-brand-orange-text); /* Improved contrast for AA compliance */
     font-weight: 600;
 }
 
@@ -1153,12 +1161,8 @@
     transition: all 0.2s ease;
 }
 
-.fp-extra-checkbox:hover .checkmark {
-    border-color: #ff6b35;
-}
-
 .fp-extra-checkbox input:focus ~ .checkmark {
-    outline: 2px solid #ff6b35;
+    outline: 2px solid var(--fp-brand-orange);
     outline-offset: 2px;
     /* Enhanced focus state for better accessibility */
 }
