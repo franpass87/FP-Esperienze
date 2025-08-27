@@ -14,9 +14,11 @@ use FP\Esperienze\Frontend\Templates;
 use FP\Esperienze\Blocks\ArchiveBlock;
 use FP\Esperienze\REST\AvailabilityAPI;
 use FP\Esperienze\REST\BookingsAPI;
+use FP\Esperienze\REST\ICSAPI;
 use FP\Esperienze\Booking\Cart_Hooks;
 use FP\Esperienze\Booking\BookingManager;
 use FP\Esperienze\Data\VoucherManager;
+use FP\Esperienze\Data\NotificationManager;
 use FP\Esperienze\Integrations\TrackingManager;
 use FP\Esperienze\Integrations\BrevoManager;
 use FP\Esperienze\Integrations\GooglePlacesManager;
@@ -112,6 +114,9 @@ class Plugin {
         // Initialize voucher manager for gift vouchers
         new VoucherManager();
         
+        // Initialize notification manager for ICS and staff emails
+        new NotificationManager();
+        
         // Initialize tracking manager for GA4 and Meta Pixel
         new TrackingManager();
         
@@ -143,6 +148,7 @@ class Plugin {
     public function initREST(): void {
         new AvailabilityAPI();
         new BookingsAPI();
+        new ICSAPI();
     }
 
     /**

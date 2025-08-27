@@ -1,0 +1,17 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//FP Esperienze//Experience Booking//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:booking-12345@fp-esperienze.test
+DTSTAMP:20250827T125013Z
+DTSTART:20240915T080000Z
+DTEND:20240915T100000Z
+SUMMARY:Test Experience Tour (3 pax)
+DESCRIPTION:Test Experience Tour\nParticipants: 2 adults, 1 children\nNotes: Please call us when you arrive.\nBooking ID: 12345
+LOCATION:Central Meeting Point, 123 Main Street, Test City
+STATUS:CONFIRMED
+SEQUENCE:0
+END:VEVENT
+END:VCALENDAR

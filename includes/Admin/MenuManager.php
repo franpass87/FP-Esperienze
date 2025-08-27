@@ -2200,12 +2200,19 @@ class MenuManager {
         $consent_cookie_name = $integrations['consent_cookie_name'] ?? 'marketing_consent';
         $consent_js_function = $integrations['consent_js_function'] ?? '';
         
+        // Get notification settings
+        $notifications = get_option('fp_esperienze_notifications', []);
+        $staff_emails = $notifications['staff_emails'] ?? '';
+        $staff_notifications_enabled = !empty($notifications['staff_notifications_enabled']);
+        $ics_attachment_enabled = !empty($notifications['ics_attachment_enabled'] ?? true);
+        
         ?>
         <div class="wrap">
             <h1><?php _e('FP Esperienze Settings', 'fp-esperienze'); ?></h1>
             
             <h2 class="nav-tab-wrapper">
                 <a href="<?php echo admin_url('admin.php?page=fp-esperienze-settings&tab=gift'); ?>" class="nav-tab <?php echo $current_tab === 'gift' ? 'nav-tab-active' : ''; ?>"><?php _e('Gift Vouchers', 'fp-esperienze'); ?></a>
+                <a href="<?php echo admin_url('admin.php?page=fp-esperienze-settings&tab=notifications'); ?>" class="nav-tab <?php echo $current_tab === 'notifications' ? 'nav-tab-active' : ''; ?>"><?php _e('Notifications', 'fp-esperienze'); ?></a>
                 <a href="<?php echo admin_url('admin.php?page=fp-esperienze-settings&tab=integrations'); ?>" class="nav-tab <?php echo $current_tab === 'integrations' ? 'nav-tab-active' : ''; ?>"><?php _e('Integrations', 'fp-esperienze'); ?></a>
             </h2>
             
@@ -2636,6 +2643,96 @@ class MenuManager {
                     
                     <?php submit_button(__('Save Integrations', 'fp-esperienze')); ?>
                 </div>
+                
+                <?php elseif ($current_tab === 'notifications') : ?>
+                <div class="tab-content">
+                    <h3><?php _e('Booking Notifications', 'fp-esperienze'); ?></h3>
+                    
+                    <table class="form-table">
+                        <tr>
+                            <th scope="row">
+                                <label for="staff_notifications_enabled"><?php _e('Staff Notifications', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <label>
+                                    <input type="checkbox" 
+                                           id="staff_notifications_enabled" 
+                                           name="staff_notifications_enabled" 
+                                           value="1" 
+                                           <?php checked($staff_notifications_enabled); ?> />
+                                    <?php _e('Send email notifications to staff when new bookings are made', 'fp-esperienze'); ?>
+                                </label>
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row">
+                                <label for="staff_emails"><?php _e('Staff Email Addresses', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <textarea id="staff_emails" 
+                                          name="staff_emails" 
+                                          rows="5" 
+                                          class="large-text" 
+                                          placeholder="admin@example.com&#10;manager@example.com&#10;staff@example.com"><?php echo esc_textarea($staff_emails); ?></textarea>
+                                <p class="description">
+                                    <?php _e('Enter one email address per line. These emails will receive notifications when new bookings are created.', 'fp-esperienze'); ?>
+                                </p>
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row">
+                                <label for="ics_attachment_enabled"><?php _e('ICS Calendar Attachments', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <label>
+                                    <input type="checkbox" 
+                                           id="ics_attachment_enabled" 
+                                           name="ics_attachment_enabled" 
+                                           value="1" 
+                                           <?php checked($ics_attachment_enabled); ?> />
+                                    <?php _e('Attach ICS calendar files to order completion emails', 'fp-esperienze'); ?>
+                                </label>
+                                <p class="description">
+                                    <?php _e('When enabled, customers will receive an ICS calendar file attachment with their booking details in order confirmation emails.', 'fp-esperienze'); ?>
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
+                    
+                    <h3><?php _e('ICS Calendar Endpoints', 'fp-esperienze'); ?></h3>
+                    <p><?php _e('The following REST API endpoints are available for calendar integration:', 'fp-esperienze'); ?></p>
+                    
+                    <table class="form-table">
+                        <tr>
+                            <th scope="row"><?php _e('Product Calendar', 'fp-esperienze'); ?></th>
+                            <td>
+                                <code><?php echo esc_html(rest_url('fp-esperienze/v1/ics/product/{product_id}')); ?></code>
+                                <p class="description"><?php _e('Public endpoint to get calendar of available slots for a specific experience product.', 'fp-esperienze'); ?></p>
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row"><?php _e('User Bookings Calendar', 'fp-esperienze'); ?></th>
+                            <td>
+                                <code><?php echo esc_html(rest_url('fp-esperienze/v1/ics/user/{user_id}')); ?></code>
+                                <p class="description"><?php _e('Private endpoint (requires authentication) to get calendar of user\'s confirmed bookings.', 'fp-esperienze'); ?></p>
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row"><?php _e('Single Booking Calendar', 'fp-esperienze'); ?></th>
+                            <td>
+                                <code><?php echo esc_html(rest_url('fp-esperienze/v1/ics/booking/{booking_id}?token={token}')); ?></code>
+                                <p class="description"><?php _e('Public endpoint with token-based access to get calendar for a specific booking. Tokens are generated automatically and included in booking emails.', 'fp-esperienze'); ?></p>
+                            </td>
+                        </tr>
+                    </table>
+                    
+                    <?php submit_button(__('Save Notification Settings', 'fp-esperienze')); ?>
+                </div>
+                
                 <?php endif; ?>
             </form>
         </div>
@@ -2716,6 +2813,40 @@ class MenuManager {
             
             // Store all integrations in a single option
             update_option('fp_esperienze_integrations', $integrations);
+            
+        } elseif ($tab === 'notifications') {
+            // Update notification settings
+            $notifications = [
+                'staff_notifications_enabled' => !empty($_POST['staff_notifications_enabled']),
+                'staff_emails' => sanitize_textarea_field($_POST['staff_emails'] ?? ''),
+                'ics_attachment_enabled' => !empty($_POST['ics_attachment_enabled']),
+            ];
+            
+            // Validate staff emails
+            if (!empty($notifications['staff_emails'])) {
+                $email_lines = explode("\n", $notifications['staff_emails']);
+                $valid_emails = [];
+                
+                foreach ($email_lines as $email) {
+                    $email = trim($email);
+                    if (!empty($email)) {
+                        if (is_email($email)) {
+                            $valid_emails[] = $email;
+                        } else {
+                            add_action('admin_notices', function() use ($email) {
+                                echo '<div class="notice notice-error"><p>' . 
+                                     sprintf(esc_html__('Invalid email address: %s', 'fp-esperienze'), esc_html($email)) . 
+                                     '</p></div>';
+                            });
+                        }
+                    }
+                }
+                
+                $notifications['staff_emails'] = implode("\n", $valid_emails);
+            }
+            
+            // Store notification settings
+            update_option('fp_esperienze_notifications', $notifications);
         }
         
         add_action('admin_notices', function() {
