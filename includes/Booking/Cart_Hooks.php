@@ -49,6 +49,14 @@ class Cart_Hooks {
         $qty_adult = absint($_POST['fp_qty_adult'] ?? 0);
         $qty_child = absint($_POST['fp_qty_child'] ?? 0);
         $extras_json = sanitize_text_field($_POST['fp_extras'] ?? '');
+        
+        // Get gift data from POST
+        $is_gift = !empty($_POST['fp_is_gift']);
+        $gift_sender_name = sanitize_text_field($_POST['fp_gift_sender_name'] ?? '');
+        $gift_recipient_name = sanitize_text_field($_POST['fp_gift_recipient_name'] ?? '');
+        $gift_recipient_email = sanitize_email($_POST['fp_gift_recipient_email'] ?? '');
+        $gift_message = sanitize_textarea_field($_POST['fp_gift_message'] ?? '');
+        $gift_send_date = sanitize_text_field($_POST['fp_gift_send_date'] ?? '');
 
         if ($slot_start) {
             $extras = [];
@@ -69,6 +77,18 @@ class Cart_Hooks {
                 'qty_child' => $qty_child,
                 'extras' => $extras,
             ];
+            
+            // Add gift data if this is a gift purchase
+            if ($is_gift) {
+                $cart_item_data['fp_gift'] = [
+                    'is_gift' => true,
+                    'sender_name' => $gift_sender_name,
+                    'recipient_name' => $gift_recipient_name,
+                    'recipient_email' => $gift_recipient_email,
+                    'message' => $gift_message,
+                    'send_date' => $gift_send_date ?: 'immediate',
+                ];
+            }
         }
 
         return $cart_item_data;
@@ -96,6 +116,11 @@ class Cart_Hooks {
         $slot_start = sanitize_text_field($_POST['fp_slot_start'] ?? '');
         $qty_adult = absint($_POST['fp_qty_adult'] ?? 0);
         $qty_child = absint($_POST['fp_qty_child'] ?? 0);
+        
+        // Get gift data
+        $is_gift = !empty($_POST['fp_is_gift']);
+        $gift_recipient_name = sanitize_text_field($_POST['fp_gift_recipient_name'] ?? '');
+        $gift_recipient_email = sanitize_email($_POST['fp_gift_recipient_email'] ?? '');
 
         // Validate required fields
         if (empty($slot_start)) {
@@ -106,6 +131,19 @@ class Cart_Hooks {
         if ($qty_adult <= 0 && $qty_child <= 0) {
             wc_add_notice(__('Please select at least one participant.', 'fp-esperienze'), 'error');
             return false;
+        }
+        
+        // Validate gift fields if this is a gift purchase
+        if ($is_gift) {
+            if (empty($gift_recipient_name)) {
+                wc_add_notice(__('Please enter the recipient name for gift purchase.', 'fp-esperienze'), 'error');
+                return false;
+            }
+            
+            if (empty($gift_recipient_email) || !is_email($gift_recipient_email)) {
+                wc_add_notice(__('Please enter a valid recipient email for gift purchase.', 'fp-esperienze'), 'error');
+                return false;
+            }
         }
 
         // Validate slot format (YYYY-MM-DD HH:MM)
@@ -210,6 +248,35 @@ class Cart_Hooks {
             }
         }
 
+        // Display gift information
+        if (isset($cart_item['fp_gift']) && $cart_item['fp_gift']['is_gift']) {
+            $gift_data = $cart_item['fp_gift'];
+            
+            $item_data[] = [
+                'key'   => __('Gift Purchase', 'fp-esperienze'),
+                'value' => __('Yes', 'fp-esperienze'),
+            ];
+            
+            $item_data[] = [
+                'key'   => __('Recipient', 'fp-esperienze'),
+                'value' => esc_html($gift_data['recipient_name']),
+            ];
+            
+            if (!empty($gift_data['sender_name'])) {
+                $item_data[] = [
+                    'key'   => __('From', 'fp-esperienze'),
+                    'value' => esc_html($gift_data['sender_name']),
+                ];
+            }
+            
+            if ($gift_data['send_date'] !== 'immediate') {
+                $item_data[] = [
+                    'key'   => __('Send Date', 'fp-esperienze'),
+                    'value' => esc_html(date_i18n(get_option('date_format'), strtotime($gift_data['send_date']))),
+                ];
+            }
+        }
+
         return $item_data;
     }
 
@@ -258,6 +325,25 @@ class Cart_Hooks {
                     }
                 }
             }
+        }
+        
+        // Save gift meta data
+        if (isset($values['fp_gift']) && $values['fp_gift']['is_gift']) {
+            $gift_data = $values['fp_gift'];
+            
+            $item->add_meta_data(__('Gift Purchase', 'fp-esperienze'), __('Yes', 'fp-esperienze'));
+            $item->add_meta_data(__('Recipient Name', 'fp-esperienze'), $gift_data['recipient_name']);
+            $item->add_meta_data(__('Recipient Email', 'fp-esperienze'), $gift_data['recipient_email']);
+            
+            if (!empty($gift_data['sender_name'])) {
+                $item->add_meta_data(__('Sender Name', 'fp-esperienze'), $gift_data['sender_name']);
+            }
+            
+            if (!empty($gift_data['message'])) {
+                $item->add_meta_data(__('Gift Message', 'fp-esperienze'), $gift_data['message']);
+            }
+            
+            $item->add_meta_data(__('Send Date', 'fp-esperienze'), $gift_data['send_date']);
         }
     }
 

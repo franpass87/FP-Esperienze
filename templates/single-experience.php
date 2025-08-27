@@ -555,6 +555,77 @@ window.dataLayer.push(<?php echo wp_json_encode($ga4_view_item, JSON_UNESCAPED_S
                         </div>
                         <?php endif; ?>
 
+                        <!-- Gift Experience Section -->
+                        <div class="fp-gift-section">
+                            <div class="fp-gift-toggle">
+                                <label class="fp-toggle-label">
+                                    <input type="checkbox" id="fp-gift-toggle" class="fp-gift-checkbox">
+                                    <span class="fp-toggle-switch"></span>
+                                    <span class="fp-toggle-text"><?php _e('Gift this experience', 'fp-esperienze'); ?></span>
+                                </label>
+                            </div>
+                            
+                            <div id="fp-gift-form" class="fp-gift-form" style="display: none;">
+                                <div class="fp-gift-form-grid">
+                                    <div class="fp-field-group">
+                                        <label for="fp-gift-sender-name"><?php _e('Your name (optional)', 'fp-esperienze'); ?></label>
+                                        <input type="text" 
+                                               id="fp-gift-sender-name" 
+                                               name="fp_gift_sender_name"
+                                               class="fp-input" 
+                                               placeholder="<?php esc_attr_e('Your name', 'fp-esperienze'); ?>">
+                                    </div>
+                                    
+                                    <div class="fp-field-group fp-required">
+                                        <label for="fp-gift-recipient-name">
+                                            <?php _e('Recipient name', 'fp-esperienze'); ?> 
+                                            <span class="fp-required-asterisk">*</span>
+                                        </label>
+                                        <input type="text" 
+                                               id="fp-gift-recipient-name" 
+                                               name="fp_gift_recipient_name"
+                                               class="fp-input fp-required-field" 
+                                               placeholder="<?php esc_attr_e('Recipient name', 'fp-esperienze'); ?>"
+                                               required>
+                                    </div>
+                                    
+                                    <div class="fp-field-group fp-required">
+                                        <label for="fp-gift-recipient-email">
+                                            <?php _e('Recipient email', 'fp-esperienze'); ?> 
+                                            <span class="fp-required-asterisk">*</span>
+                                        </label>
+                                        <input type="email" 
+                                               id="fp-gift-recipient-email" 
+                                               name="fp_gift_recipient_email"
+                                               class="fp-input fp-required-field" 
+                                               placeholder="<?php esc_attr_e('recipient@example.com', 'fp-esperienze'); ?>"
+                                               required>
+                                    </div>
+                                    
+                                    <div class="fp-field-group">
+                                        <label for="fp-gift-send-date"><?php _e('Send date (optional)', 'fp-esperienze'); ?></label>
+                                        <input type="date" 
+                                               id="fp-gift-send-date" 
+                                               name="fp_gift_send_date"
+                                               class="fp-input" 
+                                               min="<?php echo esc_attr(date('Y-m-d')); ?>">
+                                        <small class="fp-field-help">
+                                            <?php _e('Leave empty to send immediately', 'fp-esperienze'); ?>
+                                        </small>
+                                    </div>
+                                    
+                                    <div class="fp-field-group fp-field-full">
+                                        <label for="fp-gift-message"><?php _e('Personal message (optional)', 'fp-esperienze'); ?></label>
+                                        <textarea id="fp-gift-message" 
+                                                  name="fp_gift_message"
+                                                  class="fp-textarea" 
+                                                  rows="3"
+                                                  placeholder="<?php esc_attr_e('Write a personal message...', 'fp-esperienze'); ?>"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Total Price -->
                         <div class="fp-total-price">
                             <div class="fp-price-breakdown">

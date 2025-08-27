@@ -1322,12 +1322,191 @@ class MenuManager {
      * Settings page
      */
     public function settingsPage(): void {
+        // Handle form submissions
+        if ($_POST && current_user_can('manage_options')) {
+            $this->handleSettingsSubmission();
+        }
+        
+        // Get current settings
+        $gift_exp_months = get_option('fp_esperienze_gift_default_exp_months', 12);
+        $gift_logo = get_option('fp_esperienze_gift_pdf_logo', '');
+        $gift_brand_color = get_option('fp_esperienze_gift_pdf_brand_color', '#ff6b35');
+        $gift_sender_name = get_option('fp_esperienze_gift_email_sender_name', get_bloginfo('name'));
+        $gift_sender_email = get_option('fp_esperienze_gift_email_sender_email', get_option('admin_email'));
+        $gift_terms = get_option('fp_esperienze_gift_terms', __('This voucher is valid for one experience booking. Please present the QR code when redeeming.', 'fp-esperienze'));
+        $gift_secret = get_option('fp_esperienze_gift_secret_hmac', '');
+        
         ?>
         <div class="wrap">
             <h1><?php _e('FP Esperienze Settings', 'fp-esperienze'); ?></h1>
-            <p><?php _e('Settings functionality will be implemented in future updates.', 'fp-esperienze'); ?></p>
+            
+            <form method="post" action="">
+                <?php wp_nonce_field('fp_settings_nonce', 'fp_settings_nonce'); ?>
+                
+                <h2 class="nav-tab-wrapper">
+                    <span class="nav-tab nav-tab-active"><?php _e('Gift Vouchers', 'fp-esperienze'); ?></span>
+                </h2>
+                
+                <div class="tab-content">
+                    <table class="form-table">
+                        <tr>
+                            <th scope="row">
+                                <label for="gift_default_exp_months"><?php _e('Default Expiration (months)', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <input type="number" 
+                                       id="gift_default_exp_months" 
+                                       name="gift_default_exp_months" 
+                                       value="<?php echo esc_attr($gift_exp_months); ?>" 
+                                       min="1" 
+                                       max="60" 
+                                       class="small-text" />
+                                <p class="description"><?php _e('How many months gift vouchers should be valid for by default.', 'fp-esperienze'); ?></p>
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row">
+                                <label for="gift_pdf_logo"><?php _e('PDF Logo URL', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <input type="url" 
+                                       id="gift_pdf_logo" 
+                                       name="gift_pdf_logo" 
+                                       value="<?php echo esc_attr($gift_logo); ?>" 
+                                       class="regular-text" />
+                                <button type="button" class="button" onclick="selectMediaFile('gift_pdf_logo')"><?php _e('Select Image', 'fp-esperienze'); ?></button>
+                                <p class="description"><?php _e('Logo to display on gift voucher PDFs.', 'fp-esperienze'); ?></p>
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row">
+                                <label for="gift_pdf_brand_color"><?php _e('Brand Color', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <input type="color" 
+                                       id="gift_pdf_brand_color" 
+                                       name="gift_pdf_brand_color" 
+                                       value="<?php echo esc_attr($gift_brand_color); ?>" />
+                                <p class="description"><?php _e('Primary color for gift voucher PDFs.', 'fp-esperienze'); ?></p>
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row">
+                                <label for="gift_email_sender_name"><?php _e('Email Sender Name', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <input type="text" 
+                                       id="gift_email_sender_name" 
+                                       name="gift_email_sender_name" 
+                                       value="<?php echo esc_attr($gift_sender_name); ?>" 
+                                       class="regular-text" />
+                                <p class="description"><?php _e('Name used in the "From" field of gift voucher emails.', 'fp-esperienze'); ?></p>
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row">
+                                <label for="gift_email_sender_email"><?php _e('Email Sender Address', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <input type="email" 
+                                       id="gift_email_sender_email" 
+                                       name="gift_email_sender_email" 
+                                       value="<?php echo esc_attr($gift_sender_email); ?>" 
+                                       class="regular-text" />
+                                <p class="description"><?php _e('Email address used in the "From" field of gift voucher emails.', 'fp-esperienze'); ?></p>
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row">
+                                <label for="gift_terms"><?php _e('Terms & Conditions', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <textarea id="gift_terms" 
+                                          name="gift_terms" 
+                                          rows="4" 
+                                          class="large-text"><?php echo esc_textarea($gift_terms); ?></textarea>
+                                <p class="description"><?php _e('Terms and conditions text displayed on gift voucher PDFs.', 'fp-esperienze'); ?></p>
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row">
+                                <label for="gift_secret_hmac"><?php _e('HMAC Secret Key', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <code style="background: #f1f1f1; padding: 8px; display: block; margin-bottom: 8px; word-break: break-all;"><?php echo esc_html(substr($gift_secret, 0, 10) . '...' . substr($gift_secret, -10)); ?></code>
+                                <button type="button" 
+                                        class="button" 
+                                        onclick="if(confirm('<?php esc_js_e('Are you sure? This will invalidate all existing QR codes!', 'fp-esperienze'); ?>')) { document.getElementById('regenerate_secret').value = '1'; }"><?php _e('Regenerate Secret', 'fp-esperienze'); ?></button>
+                                <input type="hidden" id="regenerate_secret" name="regenerate_secret" value="0" />
+                                <p class="description"><?php _e('Secret key used to sign QR codes for security. Regenerating will invalidate existing QR codes!', 'fp-esperienze'); ?></p>
+                            </td>
+                        </tr>
+                    </table>
+                    
+                    <?php submit_button(__('Save Settings', 'fp-esperienze')); ?>
+                </div>
+            </form>
         </div>
+        
+        <script>
+        function selectMediaFile(inputId) {
+            var frame = wp.media({
+                title: '<?php esc_js_e('Select Logo', 'fp-esperienze'); ?>',
+                button: {
+                    text: '<?php esc_js_e('Use This Image', 'fp-esperienze'); ?>'
+                },
+                multiple: false
+            });
+            
+            frame.on('select', function() {
+                var attachment = frame.state().get('selection').first().toJSON();
+                document.getElementById(inputId).value = attachment.url;
+            });
+            
+            frame.open();
+        }
+        </script>
         <?php
+    }
+    
+    /**
+     * Handle settings form submission
+     */
+    private function handleSettingsSubmission(): void {
+        if (!wp_verify_nonce($_POST['fp_settings_nonce'] ?? '', 'fp_settings_nonce')) {
+            wp_die(__('Security check failed.', 'fp-esperienze'));
+        }
+        
+        // Update gift settings
+        $settings = [
+            'fp_esperienze_gift_default_exp_months' => absint($_POST['gift_default_exp_months'] ?? 12),
+            'fp_esperienze_gift_pdf_logo' => esc_url_raw($_POST['gift_pdf_logo'] ?? ''),
+            'fp_esperienze_gift_pdf_brand_color' => sanitize_hex_color($_POST['gift_pdf_brand_color'] ?? '#ff6b35'),
+            'fp_esperienze_gift_email_sender_name' => sanitize_text_field($_POST['gift_email_sender_name'] ?? ''),
+            'fp_esperienze_gift_email_sender_email' => sanitize_email($_POST['gift_email_sender_email'] ?? ''),
+            'fp_esperienze_gift_terms' => sanitize_textarea_field($_POST['gift_terms'] ?? ''),
+        ];
+        
+        foreach ($settings as $key => $value) {
+            update_option($key, $value);
+        }
+        
+        // Regenerate HMAC secret if requested
+        if (!empty($_POST['regenerate_secret'])) {
+            update_option('fp_esperienze_gift_secret_hmac', wp_generate_password(32, false));
+        }
+        
+        add_action('admin_notices', function() {
+            echo '<div class="notice notice-success is-dismissible"><p>' . 
+                 esc_html__('Settings saved successfully!', 'fp-esperienze') . 
+                 '</p></div>';
+        });
     }
     
     /**
