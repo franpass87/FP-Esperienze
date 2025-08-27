@@ -371,10 +371,20 @@ class Shortcodes {
 
     /**
      * Get available languages from experience products
+     * Uses multilingual plugin when available, falls back to product meta
      *
      * @return array
      */
     private function getAvailableLanguages(): array {
+        // Use multilingual plugin languages if available
+        if (\FP\Esperienze\Core\I18nManager::isMultilingualActive()) {
+            $available_languages = \FP\Esperienze\Core\I18nManager::getAvailableLanguages();
+            if (!empty($available_languages)) {
+                return $available_languages;
+            }
+        }
+
+        // Fallback to experience product meta (for legacy setups)
         global $wpdb;
 
         $results = $wpdb->get_col("
