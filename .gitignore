@@ -43,3 +43,6 @@ error_log
 
 # PHPStorm
 .phpstorm.meta.php
+
+# Test files (should be removed in production)
+test-*.php
