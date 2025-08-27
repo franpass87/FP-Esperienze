@@ -11,6 +11,7 @@ use FP\Esperienze\Data\ScheduleManager;
 use FP\Esperienze\Data\OverrideManager;
 use FP\Esperienze\Data\MeetingPointManager;
 use FP\Esperienze\Data\ExtraManager;
+use FP\Esperienze\Data\DynamicPricingManager;
 
 defined('ABSPATH') || exit;
 
@@ -61,6 +62,11 @@ class Experience {
         $tabs['experience'] = [
             'label'  => __('Experience', 'fp-esperienze'),
             'target' => 'experience_product_data',
+            'class'  => ['show_if_experience'],
+        ];
+        $tabs['dynamic_pricing'] = [
+            'label'  => __('Dynamic Pricing', 'fp-esperienze'),
+            'target' => 'dynamic_pricing_product_data',
             'class'  => ['show_if_experience'],
         ];
         return $tabs;
@@ -265,6 +271,10 @@ class Experience {
             </div>
 
             ?>
+        </div>
+        
+        <div id="dynamic_pricing_product_data" class="panel woocommerce_options_panel">
+            <?php $this->renderDynamicPricingPanel($post->ID); ?>
         </div>
         <?php
     }
@@ -509,6 +519,35 @@ class Experience {
         
         // Save extras
         $this->saveExtras($post_id);
+        
+        // Save dynamic pricing rules
+        $this->savePricingRules($post_id);
+    }
+    
+    /**
+     * Save dynamic pricing rules
+     *
+     * @param int $product_id Product ID
+     */
+    private function savePricingRules(int $product_id): void {
+        if (!isset($_POST['pricing_rules']) || !is_array($_POST['pricing_rules'])) {
+            return;
+        }
+        
+        // First, delete all existing rules for this product
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'fp_dynamic_pricing_rules';
+        $wpdb->delete($table_name, ['product_id' => $product_id], ['%d']);
+        
+        // Save new rules
+        foreach ($_POST['pricing_rules'] as $rule_data) {
+            if (empty($rule_data['rule_name']) || empty($rule_data['rule_type'])) {
+                continue;
+            }
+            
+            $rule_data['product_id'] = $product_id;
+            DynamicPricingManager::saveRule($rule_data);
+        }
     }
     
     /**
@@ -619,5 +658,270 @@ class Experience {
      */
     private function getMeetingPoints(): array {
         return MeetingPointManager::getMeetingPointsForSelect();
+    }
+    
+    /**
+     * Render dynamic pricing panel
+     *
+     * @param int $product_id Product ID
+     */
+    private function renderDynamicPricingPanel(int $product_id): void {
+        $rules = DynamicPricingManager::getProductRules($product_id, false);
+        wp_nonce_field('fp_pricing_nonce', 'fp_pricing_nonce');
+        ?>
+        
+        <div class="options_group">
+            <h4><?php _e('Dynamic Pricing Rules', 'fp-esperienze'); ?></h4>
+            
+            <div id="fp-pricing-rules-container">
+                <?php foreach ($rules as $index => $rule) {
+                    $this->renderPricingRuleRow($rule, $index);
+                } ?>
+            </div>
+            
+            <button type="button" id="fp-add-pricing-rule" class="button">
+                <?php _e('Add Pricing Rule', 'fp-esperienze'); ?>
+            </button>
+        </div>
+        
+        <div class="options_group">
+            <h4><?php _e('Pricing Preview', 'fp-esperienze'); ?></h4>
+            
+            <div class="fp-pricing-preview">
+                <div class="fp-preview-inputs">
+                    <div>
+                        <label><?php _e('Booking Date', 'fp-esperienze'); ?></label>
+                        <input type="date" id="fp-preview-booking-date" value="<?php echo date('Y-m-d'); ?>">
+                    </div>
+                    <div>
+                        <label><?php _e('Purchase Date', 'fp-esperienze'); ?></label>
+                        <input type="date" id="fp-preview-purchase-date" value="<?php echo date('Y-m-d'); ?>">
+                    </div>
+                    <div>
+                        <label><?php _e('Adults', 'fp-esperienze'); ?></label>
+                        <input type="number" id="fp-preview-qty-adult" value="2" min="0">
+                    </div>
+                    <div>
+                        <label><?php _e('Children', 'fp-esperienze'); ?></label>
+                        <input type="number" id="fp-preview-qty-child" value="0" min="0">
+                    </div>
+                    <div>
+                        <button type="button" id="fp-preview-calculate" class="button">
+                            <?php _e('Calculate', 'fp-esperienze'); ?>
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="fp-preview-results" style="margin-top: 15px;"></div>
+            </div>
+        </div>
+        
+        <script type="text/javascript">
+            jQuery(document).ready(function($) {
+                var ruleIndex = <?php echo count($rules); ?>;
+                
+                // Add pricing rule
+                $('#fp-add-pricing-rule').click(function() {
+                    var html = '<?php echo addslashes($this->getPricingRuleRowTemplate('PLACEHOLDER_INDEX')); ?>';
+                    html = html.replace(/PLACEHOLDER_INDEX/g, ruleIndex);
+                    $('#fp-pricing-rules-container').append(html);
+                    ruleIndex++;
+                });
+                
+                // Remove pricing rule
+                $(document).on('click', '.fp-remove-pricing-rule', function() {
+                    $(this).closest('.fp-pricing-rule-row').remove();
+                });
+                
+                // Preview calculation
+                $('#fp-preview-calculate').click(function() {
+                    var data = {
+                        action: 'fp_preview_pricing',
+                        product_id: <?php echo $product_id; ?>,
+                        booking_date: $('#fp-preview-booking-date').val(),
+                        purchase_date: $('#fp-preview-purchase-date').val(),
+                        qty_adult: $('#fp-preview-qty-adult').val(),
+                        qty_child: $('#fp-preview-qty-child').val(),
+                        nonce: $('#fp_pricing_nonce').val()
+                    };
+                    
+                    $.post(ajaxurl, data, function(response) {
+                        if (response.success) {
+                            var result = response.data;
+                            var html = '<h5><?php _e("Price Breakdown", "fp-esperienze"); ?></h5>';
+                            
+                            html += '<table class="widefat">';
+                            html += '<tr><td><?php _e("Base Adult Price", "fp-esperienze"); ?></td><td>' + result.base_prices.adult + ' <?php echo get_woocommerce_currency_symbol(); ?></td></tr>';
+                            html += '<tr><td><?php _e("Base Child Price", "fp-esperienze"); ?></td><td>' + result.base_prices.child + ' <?php echo get_woocommerce_currency_symbol(); ?></td></tr>';
+                            html += '<tr><td><?php _e("Final Adult Price", "fp-esperienze"); ?></td><td>' + result.final_prices.adult + ' <?php echo get_woocommerce_currency_symbol(); ?></td></tr>';
+                            html += '<tr><td><?php _e("Final Child Price", "fp-esperienze"); ?></td><td>' + result.final_prices.child + ' <?php echo get_woocommerce_currency_symbol(); ?></td></tr>';
+                            html += '<tr><td><strong><?php _e("Total Base", "fp-esperienze"); ?></strong></td><td><strong>' + result.total.base + ' <?php echo get_woocommerce_currency_symbol(); ?></strong></td></tr>';
+                            html += '<tr><td><strong><?php _e("Total Final", "fp-esperienze"); ?></strong></td><td><strong>' + result.total.final + ' <?php echo get_woocommerce_currency_symbol(); ?></strong></td></tr>';
+                            html += '</table>';
+                            
+                            if (result.applied_rules.adult.length > 0 || result.applied_rules.child.length > 0) {
+                                html += '<h5><?php _e("Applied Rules", "fp-esperienze"); ?></h5>';
+                                // Add applied rules details here
+                            }
+                            
+                            $('#fp-preview-results').html(html);
+                        } else {
+                            $('#fp-preview-results').html('<div class="notice notice-error"><p>' + response.data.message + '</p></div>');
+                        }
+                    });
+                });
+                
+                // Rule type change handler
+                $(document).on('change', '.fp-rule-type', function() {
+                    var ruleType = $(this).val();
+                    var container = $(this).closest('.fp-pricing-rule-row');
+                    
+                    // Hide all conditional fields first
+                    container.find('.fp-rule-field').hide();
+                    
+                    // Show relevant fields based on rule type
+                    switch(ruleType) {
+                        case 'seasonal':
+                            container.find('.fp-field-dates').show();
+                            break;
+                        case 'weekend_weekday':
+                            container.find('.fp-field-applies-to').show();
+                            break;
+                        case 'early_bird':
+                            container.find('.fp-field-days-before').show();
+                            break;
+                        case 'group':
+                            container.find('.fp-field-min-participants').show();
+                            break;
+                    }
+                });
+                
+                // Trigger change event for existing rules
+                $('.fp-rule-type').trigger('change');
+            });
+        </script>
+        
+        <?php
+    }
+    
+    /**
+     * Render a single pricing rule row
+     *
+     * @param object $rule Rule object
+     * @param int $index Row index
+     */
+    private function renderPricingRuleRow($rule, int $index): void {
+        echo $this->getPricingRuleRowTemplate($index, $rule);
+    }
+    
+    /**
+     * Get pricing rule row template
+     *
+     * @param mixed $index Row index or placeholder
+     * @param object|null $rule Rule object
+     * @return string HTML template
+     */
+    private function getPricingRuleRowTemplate($index, $rule = null): string {
+        ob_start();
+        ?>
+        <div class="fp-pricing-rule-row" data-index="<?php echo esc_attr($index); ?>" style="border: 1px solid #ccc; padding: 15px; margin-bottom: 10px;">
+            <input type="hidden" name="pricing_rules[<?php echo esc_attr($index); ?>][id]" value="<?php echo esc_attr($rule->id ?? ''); ?>">
+            
+            <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
+                <div>
+                    <label><?php _e('Rule Name', 'fp-esperienze'); ?></label>
+                    <input type="text" name="pricing_rules[<?php echo esc_attr($index); ?>][rule_name]" 
+                           value="<?php echo esc_attr($rule->rule_name ?? ''); ?>" 
+                           placeholder="<?php _e('Rule Name', 'fp-esperienze'); ?>" required style="width: 200px;">
+                </div>
+                
+                <div>
+                    <label><?php _e('Type', 'fp-esperienze'); ?></label>
+                    <select name="pricing_rules[<?php echo esc_attr($index); ?>][rule_type]" class="fp-rule-type" required>
+                        <option value=""><?php _e('Select Type', 'fp-esperienze'); ?></option>
+                        <option value="seasonal" <?php selected($rule->rule_type ?? '', 'seasonal'); ?>><?php _e('Seasonal', 'fp-esperienze'); ?></option>
+                        <option value="weekend_weekday" <?php selected($rule->rule_type ?? '', 'weekend_weekday'); ?>><?php _e('Weekend/Weekday', 'fp-esperienze'); ?></option>
+                        <option value="early_bird" <?php selected($rule->rule_type ?? '', 'early_bird'); ?>><?php _e('Early Bird', 'fp-esperienze'); ?></option>
+                        <option value="group" <?php selected($rule->rule_type ?? '', 'group'); ?>><?php _e('Group Discount', 'fp-esperienze'); ?></option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label><?php _e('Priority', 'fp-esperienze'); ?></label>
+                    <input type="number" name="pricing_rules[<?php echo esc_attr($index); ?>][priority]" 
+                           value="<?php echo esc_attr($rule->priority ?? 0); ?>" 
+                           min="0" step="1" style="width: 80px;">
+                </div>
+                
+                <div>
+                    <label>
+                        <input type="checkbox" name="pricing_rules[<?php echo esc_attr($index); ?>][is_active]" 
+                               value="1" <?php checked($rule->is_active ?? 1, 1); ?>>
+                        <?php _e('Active', 'fp-esperienze'); ?>
+                    </label>
+                </div>
+                
+                <button type="button" class="button fp-remove-pricing-rule"><?php _e('Remove', 'fp-esperienze'); ?></button>
+            </div>
+            
+            <!-- Rule-specific fields -->
+            <div class="fp-rule-field fp-field-dates" style="display: none; margin-bottom: 10px;">
+                <label><?php _e('Date Range', 'fp-esperienze'); ?></label>
+                <input type="date" name="pricing_rules[<?php echo esc_attr($index); ?>][date_start]" 
+                       value="<?php echo esc_attr($rule->date_start ?? ''); ?>" placeholder="<?php _e('Start Date', 'fp-esperienze'); ?>">
+                <input type="date" name="pricing_rules[<?php echo esc_attr($index); ?>][date_end]" 
+                       value="<?php echo esc_attr($rule->date_end ?? ''); ?>" placeholder="<?php _e('End Date', 'fp-esperienze'); ?>">
+            </div>
+            
+            <div class="fp-rule-field fp-field-applies-to" style="display: none; margin-bottom: 10px;">
+                <label><?php _e('Applies To', 'fp-esperienze'); ?></label>
+                <select name="pricing_rules[<?php echo esc_attr($index); ?>][applies_to]">
+                    <option value=""><?php _e('Select...', 'fp-esperienze'); ?></option>
+                    <option value="weekend" <?php selected($rule->applies_to ?? '', 'weekend'); ?>><?php _e('Weekend', 'fp-esperienze'); ?></option>
+                    <option value="weekday" <?php selected($rule->applies_to ?? '', 'weekday'); ?>><?php _e('Weekday', 'fp-esperienze'); ?></option>
+                </select>
+            </div>
+            
+            <div class="fp-rule-field fp-field-days-before" style="display: none; margin-bottom: 10px;">
+                <label><?php _e('Days Before', 'fp-esperienze'); ?></label>
+                <input type="number" name="pricing_rules[<?php echo esc_attr($index); ?>][days_before]" 
+                       value="<?php echo esc_attr($rule->days_before ?? ''); ?>" 
+                       placeholder="<?php _e('Days', 'fp-esperienze'); ?>" min="1">
+            </div>
+            
+            <div class="fp-rule-field fp-field-min-participants" style="display: none; margin-bottom: 10px;">
+                <label><?php _e('Minimum Participants', 'fp-esperienze'); ?></label>
+                <input type="number" name="pricing_rules[<?php echo esc_attr($index); ?>][min_participants]" 
+                       value="<?php echo esc_attr($rule->min_participants ?? ''); ?>" 
+                       placeholder="<?php _e('Min Participants', 'fp-esperienze'); ?>" min="1">
+            </div>
+            
+            <!-- Adjustment fields -->
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <div>
+                    <label><?php _e('Adjustment Type', 'fp-esperienze'); ?></label>
+                    <select name="pricing_rules[<?php echo esc_attr($index); ?>][adjustment_type]">
+                        <option value="percentage" <?php selected($rule->adjustment_type ?? 'percentage', 'percentage'); ?>><?php _e('Percentage (%)', 'fp-esperienze'); ?></option>
+                        <option value="fixed_amount" <?php selected($rule->adjustment_type ?? 'percentage', 'fixed_amount'); ?>><?php _e('Fixed Amount', 'fp-esperienze'); ?></option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label><?php _e('Adult Adjustment', 'fp-esperienze'); ?></label>
+                    <input type="number" name="pricing_rules[<?php echo esc_attr($index); ?>][adult_adjustment]" 
+                           value="<?php echo esc_attr($rule->adult_adjustment ?? 0); ?>" 
+                           step="0.01" style="width: 100px;">
+                </div>
+                
+                <div>
+                    <label><?php _e('Child Adjustment', 'fp-esperienze'); ?></label>
+                    <input type="number" name="pricing_rules[<?php echo esc_attr($index); ?>][child_adjustment]" 
+                           value="<?php echo esc_attr($rule->child_adjustment ?? 0); ?>" 
+                           step="0.01" style="width: 100px;">
+                </div>
+            </div>
+        </div>
+        <?php
+        return ob_get_clean();
     }
 }

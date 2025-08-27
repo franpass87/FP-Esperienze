@@ -220,6 +220,32 @@ class Installer {
             KEY is_used (is_used)
         ) $charset_collate;";
 
+        // Dynamic Pricing Rules table
+        $table_dynamic_pricing = $wpdb->prefix . 'fp_dynamic_pricing_rules';
+        $sql_dynamic_pricing = "CREATE TABLE $table_dynamic_pricing (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            product_id bigint(20) unsigned NOT NULL,
+            rule_type enum('seasonal', 'weekend_weekday', 'early_bird', 'group') NOT NULL,
+            rule_name varchar(255) NOT NULL,
+            is_active tinyint(1) NOT NULL DEFAULT 1,
+            priority int(11) NOT NULL DEFAULT 0,
+            date_start date DEFAULT NULL,
+            date_end date DEFAULT NULL,
+            applies_to enum('weekend', 'weekday') DEFAULT NULL,
+            days_before int(11) DEFAULT NULL,
+            min_participants int(11) DEFAULT NULL,
+            adjustment_type enum('percentage', 'fixed_amount') NOT NULL DEFAULT 'percentage',
+            adult_adjustment decimal(10,2) NOT NULL DEFAULT 0.00,
+            child_adjustment decimal(10,2) NOT NULL DEFAULT 0.00,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY product_id (product_id),
+            KEY rule_type (rule_type),
+            KEY is_active (is_active),
+            KEY priority (priority)
+        ) $charset_collate;";
+
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         
         dbDelta($sql_meeting_points);
@@ -230,6 +256,7 @@ class Installer {
         dbDelta($sql_bookings);
         dbDelta($sql_exp_vouchers);
         dbDelta($sql_vouchers);
+        dbDelta($sql_dynamic_pricing);
     }
 
     /**
