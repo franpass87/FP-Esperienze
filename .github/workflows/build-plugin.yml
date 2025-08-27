@@ -1,0 +1,110 @@
+name: Build FP Esperienze Plugin
+
+on:
+  push:
+    branches: [ "main" ]
+    tags:
+      - "v*"         # es: v1.0.1
+  workflow_dispatch:
+
+permissions:
+  contents: write   # serve per creare release sui tag
+  actions: read
+
+jobs:
+  build:
+    name: Build plugin package
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+            php-version: '8.1'
+            coverage: none
+            tools: composer
+            extensions: mbstring, intl, json, xml, curl, zip
+
+      - name: Validate composer.json / composer.lock
+        run: composer validate --no-check-publish
+
+      - name: Install production dependencies
+        run: composer install --no-dev --prefer-dist --optimize-autoloader
+
+      - name: Determine plugin version
+        id: get_version
+        shell: bash
+        run: |
+          # Estrae il numero versione dal file principale
+            if [[ ! -f "fp-esperienze.php" ]]; then
+              echo "File principale fp-esperienze.php non trovato"; exit 1;
+            fi
+            VERSION=$(grep -i "^[[:space:]]*\\*\\s*Version:" fp-esperienze.php | head -1 | sed -E 's/.*Version:[[:space:]]*//')
+            if [[ -z "$VERSION" ]]; then
+              echo "Version non trovata nell'header"; exit 1;
+            fi
+            SLUG="fp-esperienze"
+            ZIP_NAME="${SLUG}-v${VERSION}.zip"
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            echo "slug=$SLUG" >> $GITHUB_OUTPUT
+            echo "zip_name=$ZIP_NAME" >> $GITHUB_OUTPUT
+            echo "Rilevata versione: $VERSION"
+
+      - name: Prepare build directory
+        run: |
+          set -e
+          SLUG="${{ steps.get_version.outputs.slug }}"
+          mkdir build
+          mkdir "build/${SLUG}"
+
+          # Copia file necessari (adatta se hai altre cartelle tipo assets/, languages/, src/, inc/, templates/, ecc.)
+          rsync -av \
+            --exclude=".git" \
+            --exclude=".github" \
+            --exclude="tests" \
+            --exclude="node_modules" \
+            --exclude="*.md" \
+            --exclude="composer.json" \
+            --exclude="composer.lock" \
+            ./ "build/${SLUG}/"
+
+          # MA dobbiamo includere composer.json e lock se ti servono per trasparenza (facoltativo)
+          cp composer.json composer.lock "build/${SLUG}/" || true
+
+          # Assicura che vendor sia presente
+          if [ ! -d vendor ]; then
+            echo "Cartella vendor mancante!"; exit 1;
+          fi
+          # Copia vendor
+          rsync -av vendor "build/${SLUG}/"
+
+          echo "Contenuto finale:"
+          find "build/${SLUG}" -maxdepth 4 -type f | head -50
+
+      - name: Create zip
+        working-directory: build
+        run: |
+          ZIP_NAME="${{ steps.get_version.outputs.zip_name }}"
+          SLUG="${{ steps.get_version.outputs.slug }}"
+          zip -rq "$ZIP_NAME" "$SLUG"
+          ls -lh "$ZIP_NAME"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.get_version.outputs.zip_name }}
+          path: build/${{ steps.get_version.outputs.zip_name }}
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Create GitHub Release (only on tag)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/${{ steps.get_version.outputs.zip_name }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
