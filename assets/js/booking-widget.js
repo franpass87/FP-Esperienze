@@ -250,7 +250,7 @@
                     $('#fp-loading').hide();
                 },
                 error: function(xhr, status, error) {
-                    var errorMsg = fp_booking_widget_i18n.error_failed_load_availability || 'Failed to load availability.';
+                    var errorMsg = fp_booking_widget_i18n.error_failed_load_availability;
                     if (xhr.responseJSON && xhr.responseJSON.message) {
                         errorMsg = xhr.responseJSON.message;
                     }

@@ -1,13 +1,13 @@
-# SOME DESCRIPTIVE TITLE.
-# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# FP Esperienze Language Template
+# Copyright (C) 2024 Francesco Passeri
 # This file is distributed under the same license as the FP Esperienze package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+# Francesco Passeri <francesco@francescopasseri.com>, 2024.
 #
 #, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: FP Esperienze 1.0.0\n"
-"Report-Msgid-Bugs-To: \n"
+"Report-Msgid-Bugs-To: https://github.com/franpass87/FP-Esperienze/issues\n"
 "POT-Creation-Date: 2025-08-27 10:39+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"

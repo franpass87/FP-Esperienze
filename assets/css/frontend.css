@@ -669,7 +669,7 @@
 }
 
 .fp-map-unavailable {
-    color: #666; /* Improved contrast for AA compliance */
+    color: #555; /* Improved contrast for AA compliance */
 }
 
 /* FAQ Section */
