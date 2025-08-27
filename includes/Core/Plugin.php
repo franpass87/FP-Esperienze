@@ -18,6 +18,7 @@ use FP\Esperienze\Booking\Cart_Hooks;
 use FP\Esperienze\Booking\BookingManager;
 use FP\Esperienze\Data\VoucherManager;
 use FP\Esperienze\Integrations\TrackingManager;
+use FP\Esperienze\Integrations\BrevoManager;
 
 defined('ABSPATH') || exit;
 
@@ -99,6 +100,9 @@ class Plugin {
         
         // Initialize tracking manager for GA4 and Meta Pixel
         new TrackingManager();
+        
+        // Initialize Brevo manager for email marketing
+        new BrevoManager();
     }
 
     /**
