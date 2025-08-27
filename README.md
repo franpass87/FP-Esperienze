@@ -90,6 +90,45 @@ Range-based filtering:
 **Date Availability Filter:**
 Shows only experiences with available slots on the selected date using real-time availability data with 5-minute caching.
 
+## Integrations Settings
+
+Configure third-party integrations through **FP Esperienze → Settings → Integrations**.
+
+### Google Analytics 4
+
+- **Measurement ID**: Your GA4 Measurement ID (format: G-XXXXXXXXXX)
+- **Enhanced eCommerce**: Enable purchase event tracking and conversion data for better analytics (recommended)
+
+### Google Ads
+
+- **Conversion ID**: Your Google Ads Conversion ID (format: AW-XXXXXXXXXX)
+- Configure conversion actions in your Google Ads dashboard to track bookings and purchases
+
+### Meta Pixel (Facebook)
+
+- **Pixel ID**: Your Meta (Facebook) Pixel ID number
+- **Conversions API**: Enable server-side tracking and event deduplication (placeholder for future implementation)
+
+### Brevo (Email Marketing)
+
+- **API Key v3**: Your Brevo API key for email list management
+- **List ID (Italian)**: Brevo list ID for Italian customers
+- **List ID (English)**: Brevo list ID for English customers
+
+### Google Places API
+
+- **API Key**: Google Places API key for retrieving reviews and location data
+- **Display Reviews**: Show Google reviews on Meeting Point pages
+- **Reviews Limit**: Maximum number of reviews to display (1-10)
+- **Cache TTL**: How long to cache Google Places data (5-1440 minutes)
+
+### Google Business Profile API (Optional)
+
+- **Coming Soon**: OAuth integration for Google Business Profile management
+- **Requirements**: Must be verified owner of the Google Business Profile
+
+All integration settings are stored securely and can be configured independently. Empty fields will disable the respective integrations.
+
 ## Archivio (Shortcode + Block)
 
 ### Shortcode Usage

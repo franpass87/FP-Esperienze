@@ -2114,6 +2114,9 @@ class MenuManager {
             $this->handleSettingsSubmission();
         }
         
+        // Get current tab
+        $current_tab = sanitize_text_field($_GET['tab'] ?? 'gift');
+        
         // Get current settings
         $gift_exp_months = get_option('fp_esperienze_gift_default_exp_months', 12);
         $gift_logo = get_option('fp_esperienze_gift_pdf_logo', '');
@@ -2123,17 +2126,35 @@ class MenuManager {
         $gift_terms = get_option('fp_esperienze_gift_terms', __('This voucher is valid for one experience booking. Please present the QR code when redeeming.', 'fp-esperienze'));
         $gift_secret = get_option('fp_esperienze_gift_secret_hmac', '');
         
+        // Get integrations settings
+        $integrations = get_option('fp_esperienze_integrations', []);
+        $ga4_measurement_id = $integrations['ga4_measurement_id'] ?? '';
+        $ga4_ecommerce = !empty($integrations['ga4_ecommerce']);
+        $gads_conversion_id = $integrations['gads_conversion_id'] ?? '';
+        $meta_pixel_id = $integrations['meta_pixel_id'] ?? '';
+        $meta_capi_enabled = !empty($integrations['meta_capi_enabled']);
+        $brevo_api_key = $integrations['brevo_api_key'] ?? '';
+        $brevo_list_id_it = $integrations['brevo_list_id_it'] ?? '';
+        $brevo_list_id_en = $integrations['brevo_list_id_en'] ?? '';
+        $gplaces_api_key = $integrations['gplaces_api_key'] ?? '';
+        $gplaces_reviews_enabled = !empty($integrations['gplaces_reviews_enabled']);
+        $gplaces_reviews_limit = absint($integrations['gplaces_reviews_limit'] ?? 5);
+        $gplaces_cache_ttl = absint($integrations['gplaces_cache_ttl'] ?? 60);
+        
         ?>
         <div class="wrap">
             <h1><?php _e('FP Esperienze Settings', 'fp-esperienze'); ?></h1>
             
+            <h2 class="nav-tab-wrapper">
+                <a href="<?php echo admin_url('admin.php?page=fp-esperienze-settings&tab=gift'); ?>" class="nav-tab <?php echo $current_tab === 'gift' ? 'nav-tab-active' : ''; ?>"><?php _e('Gift Vouchers', 'fp-esperienze'); ?></a>
+                <a href="<?php echo admin_url('admin.php?page=fp-esperienze-settings&tab=integrations'); ?>" class="nav-tab <?php echo $current_tab === 'integrations' ? 'nav-tab-active' : ''; ?>"><?php _e('Integrations', 'fp-esperienze'); ?></a>
+            </h2>
+            
             <form method="post" action="">
                 <?php wp_nonce_field('fp_settings_nonce', 'fp_settings_nonce'); ?>
+                <input type="hidden" name="settings_tab" value="<?php echo esc_attr($current_tab); ?>" />
                 
-                <h2 class="nav-tab-wrapper">
-                    <span class="nav-tab nav-tab-active"><?php _e('Gift Vouchers', 'fp-esperienze'); ?></span>
-                </h2>
-                
+                <?php if ($current_tab === 'gift') : ?>
                 <div class="tab-content">
                     <table class="form-table">
                         <tr>
@@ -2238,6 +2259,244 @@ class MenuManager {
                     
                     <?php submit_button(__('Save Settings', 'fp-esperienze')); ?>
                 </div>
+                <?php endif; ?>
+                
+                <?php if ($current_tab === 'integrations') : ?>
+                <div class="tab-content">
+                    <table class="form-table">
+                        <!-- GA4 Section -->
+                        <tr>
+                            <th colspan="2"><h3><?php _e('Google Analytics 4', 'fp-esperienze'); ?></h3></th>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row">
+                                <label for="ga4_measurement_id"><?php _e('Measurement ID', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <input type="text" 
+                                       id="ga4_measurement_id" 
+                                       name="ga4_measurement_id" 
+                                       value="<?php echo esc_attr($ga4_measurement_id); ?>" 
+                                       placeholder="G-XXXXXXXXXX"
+                                       class="regular-text" />
+                                <p class="description"><?php _e('Your Google Analytics 4 Measurement ID (starts with G-).', 'fp-esperienze'); ?></p>
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row">
+                                <label for="ga4_ecommerce"><?php _e('Enhanced eCommerce', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <label>
+                                    <input type="checkbox" 
+                                           id="ga4_ecommerce" 
+                                           name="ga4_ecommerce" 
+                                           value="1" 
+                                           <?php checked($ga4_ecommerce); ?> />
+                                    <?php _e('Enable enhanced eCommerce tracking (recommended)', 'fp-esperienze'); ?>
+                                </label>
+                                <p class="description"><?php _e('Track purchase events and conversion data for better analytics.', 'fp-esperienze'); ?></p>
+                            </td>
+                        </tr>
+                        
+                        <!-- Google Ads Section -->
+                        <tr>
+                            <th colspan="2"><h3><?php _e('Google Ads', 'fp-esperienze'); ?></h3></th>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row">
+                                <label for="gads_conversion_id"><?php _e('Conversion ID', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <input type="text" 
+                                       id="gads_conversion_id" 
+                                       name="gads_conversion_id" 
+                                       value="<?php echo esc_attr($gads_conversion_id); ?>" 
+                                       placeholder="AW-XXXXXXXXXX"
+                                       class="regular-text" />
+                                <p class="description"><?php _e('Your Google Ads Conversion ID (starts with AW-). Configure conversion actions in Google Ads dashboard.', 'fp-esperienze'); ?></p>
+                            </td>
+                        </tr>
+                        
+                        <!-- Meta Pixel Section -->
+                        <tr>
+                            <th colspan="2"><h3><?php _e('Meta Pixel (Facebook)', 'fp-esperienze'); ?></h3></th>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row">
+                                <label for="meta_pixel_id"><?php _e('Pixel ID', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <input type="text" 
+                                       id="meta_pixel_id" 
+                                       name="meta_pixel_id" 
+                                       value="<?php echo esc_attr($meta_pixel_id); ?>" 
+                                       placeholder="123456789012345"
+                                       class="regular-text" />
+                                <p class="description"><?php _e('Your Meta (Facebook) Pixel ID number.', 'fp-esperienze'); ?></p>
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row">
+                                <label for="meta_capi_enabled"><?php _e('Conversions API', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <label>
+                                    <input type="checkbox" 
+                                           id="meta_capi_enabled" 
+                                           name="meta_capi_enabled" 
+                                           value="1" 
+                                           <?php checked($meta_capi_enabled); ?> />
+                                    <?php _e('Enable Conversions API and event deduplication (placeholder)', 'fp-esperienze'); ?>
+                                </label>
+                                <p class="description"><?php _e('Advanced feature for server-side tracking and better data accuracy. Implementation coming in future version.', 'fp-esperienze'); ?></p>
+                            </td>
+                        </tr>
+                        
+                        <!-- Brevo Section -->
+                        <tr>
+                            <th colspan="2"><h3><?php _e('Brevo (Email Marketing)', 'fp-esperienze'); ?></h3></th>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row">
+                                <label for="brevo_api_key"><?php _e('API Key v3', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <input type="password" 
+                                       id="brevo_api_key" 
+                                       name="brevo_api_key" 
+                                       value="<?php echo esc_attr($brevo_api_key); ?>" 
+                                       class="regular-text" />
+                                <p class="description"><?php _e('Your Brevo API key v3 for email list management.', 'fp-esperienze'); ?></p>
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row">
+                                <label for="brevo_list_id_it"><?php _e('List ID (Italian)', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <input type="number" 
+                                       id="brevo_list_id_it" 
+                                       name="brevo_list_id_it" 
+                                       value="<?php echo esc_attr($brevo_list_id_it); ?>" 
+                                       class="small-text" />
+                                <p class="description"><?php _e('Brevo list ID for Italian customers.', 'fp-esperienze'); ?></p>
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row">
+                                <label for="brevo_list_id_en"><?php _e('List ID (English)', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <input type="number" 
+                                       id="brevo_list_id_en" 
+                                       name="brevo_list_id_en" 
+                                       value="<?php echo esc_attr($brevo_list_id_en); ?>" 
+                                       class="small-text" />
+                                <p class="description"><?php _e('Brevo list ID for English customers.', 'fp-esperienze'); ?></p>
+                            </td>
+                        </tr>
+                        
+                        <!-- Google Places Section -->
+                        <tr>
+                            <th colspan="2"><h3><?php _e('Google Places API', 'fp-esperienze'); ?></h3></th>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row">
+                                <label for="gplaces_api_key"><?php _e('API Key', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <input type="text" 
+                                       id="gplaces_api_key" 
+                                       name="gplaces_api_key" 
+                                       value="<?php echo esc_attr($gplaces_api_key); ?>" 
+                                       class="regular-text" />
+                                <p class="description"><?php _e('Google Places API key for retrieving reviews and location data.', 'fp-esperienze'); ?></p>
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row">
+                                <label for="gplaces_reviews_enabled"><?php _e('Display Reviews', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <label>
+                                    <input type="checkbox" 
+                                           id="gplaces_reviews_enabled" 
+                                           name="gplaces_reviews_enabled" 
+                                           value="1" 
+                                           <?php checked($gplaces_reviews_enabled); ?> />
+                                    <?php _e('Show Google reviews on Meeting Point pages', 'fp-esperienze'); ?>
+                                </label>
+                                <p class="description"><?php _e('Display Google reviews for meeting points when available.', 'fp-esperienze'); ?></p>
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row">
+                                <label for="gplaces_reviews_limit"><?php _e('Reviews Limit', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <input type="number" 
+                                       id="gplaces_reviews_limit" 
+                                       name="gplaces_reviews_limit" 
+                                       value="<?php echo esc_attr($gplaces_reviews_limit); ?>" 
+                                       min="1" 
+                                       max="10" 
+                                       class="small-text" />
+                                <p class="description"><?php _e('Maximum number of reviews to display (1-10).', 'fp-esperienze'); ?></p>
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row">
+                                <label for="gplaces_cache_ttl"><?php _e('Cache TTL (minutes)', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <input type="number" 
+                                       id="gplaces_cache_ttl" 
+                                       name="gplaces_cache_ttl" 
+                                       value="<?php echo esc_attr($gplaces_cache_ttl); ?>" 
+                                       min="5" 
+                                       max="1440" 
+                                       class="small-text" />
+                                <p class="description"><?php _e('How long to cache Google Places data (5-1440 minutes).', 'fp-esperienze'); ?></p>
+                            </td>
+                        </tr>
+                        
+                        <!-- Google Business Profile Section -->
+                        <tr>
+                            <th colspan="2"><h3><?php _e('Google Business Profile API (Optional)', 'fp-esperienze'); ?></h3></th>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row">
+                                <label><?php _e('OAuth Credentials', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <p class="description">
+                                    <strong><?php _e('Coming Soon:', 'fp-esperienze'); ?></strong> 
+                                    <?php _e('OAuth integration for Google Business Profile management. Requires business owner permissions.', 'fp-esperienze'); ?>
+                                </p>
+                                <p class="description">
+                                    <?php _e('Note: You must be the verified owner of the Google Business Profile to use this feature.', 'fp-esperienze'); ?>
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
+                    
+                    <?php submit_button(__('Save Integrations', 'fp-esperienze')); ?>
+                </div>
+                <?php endif; ?>
             </form>
         </div>
         
@@ -2270,23 +2529,47 @@ class MenuManager {
             wp_die(__('Security check failed.', 'fp-esperienze'));
         }
         
-        // Update gift settings
-        $settings = [
-            'fp_esperienze_gift_default_exp_months' => absint($_POST['gift_default_exp_months'] ?? 12),
-            'fp_esperienze_gift_pdf_logo' => esc_url_raw($_POST['gift_pdf_logo'] ?? ''),
-            'fp_esperienze_gift_pdf_brand_color' => sanitize_hex_color($_POST['gift_pdf_brand_color'] ?? '#ff6b35'),
-            'fp_esperienze_gift_email_sender_name' => sanitize_text_field($_POST['gift_email_sender_name'] ?? ''),
-            'fp_esperienze_gift_email_sender_email' => sanitize_email($_POST['gift_email_sender_email'] ?? ''),
-            'fp_esperienze_gift_terms' => sanitize_textarea_field($_POST['gift_terms'] ?? ''),
-        ];
+        $tab = sanitize_text_field($_POST['settings_tab'] ?? 'gift');
         
-        foreach ($settings as $key => $value) {
-            update_option($key, $value);
-        }
-        
-        // Regenerate HMAC secret if requested
-        if (!empty($_POST['regenerate_secret'])) {
-            update_option('fp_esperienze_gift_secret_hmac', wp_generate_password(32, false));
+        if ($tab === 'gift') {
+            // Update gift settings
+            $settings = [
+                'fp_esperienze_gift_default_exp_months' => absint($_POST['gift_default_exp_months'] ?? 12),
+                'fp_esperienze_gift_pdf_logo' => esc_url_raw($_POST['gift_pdf_logo'] ?? ''),
+                'fp_esperienze_gift_pdf_brand_color' => sanitize_hex_color($_POST['gift_pdf_brand_color'] ?? '#ff6b35'),
+                'fp_esperienze_gift_email_sender_name' => sanitize_text_field($_POST['gift_email_sender_name'] ?? ''),
+                'fp_esperienze_gift_email_sender_email' => sanitize_email($_POST['gift_email_sender_email'] ?? ''),
+                'fp_esperienze_gift_terms' => sanitize_textarea_field($_POST['gift_terms'] ?? ''),
+            ];
+            
+            foreach ($settings as $key => $value) {
+                update_option($key, $value);
+            }
+            
+            // Regenerate HMAC secret if requested
+            if (!empty($_POST['regenerate_secret'])) {
+                update_option('fp_esperienze_gift_secret_hmac', wp_generate_password(32, false));
+            }
+            
+        } elseif ($tab === 'integrations') {
+            // Update integrations settings
+            $integrations = [
+                'ga4_measurement_id' => sanitize_text_field($_POST['ga4_measurement_id'] ?? ''),
+                'ga4_ecommerce' => !empty($_POST['ga4_ecommerce']),
+                'gads_conversion_id' => sanitize_text_field($_POST['gads_conversion_id'] ?? ''),
+                'meta_pixel_id' => sanitize_text_field($_POST['meta_pixel_id'] ?? ''),
+                'meta_capi_enabled' => !empty($_POST['meta_capi_enabled']),
+                'brevo_api_key' => sanitize_text_field($_POST['brevo_api_key'] ?? ''),
+                'brevo_list_id_it' => absint($_POST['brevo_list_id_it'] ?? 0),
+                'brevo_list_id_en' => absint($_POST['brevo_list_id_en'] ?? 0),
+                'gplaces_api_key' => sanitize_text_field($_POST['gplaces_api_key'] ?? ''),
+                'gplaces_reviews_enabled' => !empty($_POST['gplaces_reviews_enabled']),
+                'gplaces_reviews_limit' => max(1, min(10, absint($_POST['gplaces_reviews_limit'] ?? 5))),
+                'gplaces_cache_ttl' => max(5, min(1440, absint($_POST['gplaces_cache_ttl'] ?? 60))),
+            ];
+            
+            // Store all integrations in a single option
+            update_option('fp_esperienze_integrations', $integrations);
         }
         
         add_action('admin_notices', function() {
