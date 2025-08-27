@@ -31,7 +31,7 @@ def check_css_contrast():
     
     return has_variables and not has_old_colors, {
         'has_css_variables': has_variables,
-        'has_old_colors': has_old_colors
+        'no_old_colors': not has_old_colors  # Better naming for display
     }
 
 def check_aria_attributes():

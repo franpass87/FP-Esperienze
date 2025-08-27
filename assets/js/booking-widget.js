@@ -32,6 +32,7 @@
             this.bindEvents();
             this.initStickyWidget();
             this.initAccessibility();
+            this.enhanceTimeSlotKeyboardNavigation();
             this.initData();
             this.updateTotal();
         },
@@ -230,8 +231,11 @@
             var self = this;
             var productId = $('#fp-product-id').val();
             
+            // Announce loading to screen readers
+            this.announceToScreenReader(fp_booking_widget_i18n.loading_availability);
+            
             $('#fp-loading').show();
-            $('#fp-time-slots').html('<p class="fp-slots-placeholder">' + 'Loading available times...' + '</p>');
+            $('#fp-time-slots').html('<p class="fp-slots-placeholder">' + fp_booking_widget_i18n.loading_availability + '</p>');
             $('#fp-error-messages').empty();
             
             var restUrl = (typeof fp_esperienze_params !== 'undefined' && fp_esperienze_params.rest_url) 
@@ -248,6 +252,14 @@
                 success: function(response) {
                     self.displayTimeSlots(response.slots);
                     $('#fp-loading').hide();
+                    
+                    // Announce completion to screen readers
+                    var slotsCount = response.slots ? response.slots.length : 0;
+                    if (slotsCount > 0) {
+                        self.announceToScreenReader(slotsCount + ' time slots available');
+                    } else {
+                        self.announceToScreenReader(fp_booking_widget_i18n.error_no_availability);
+                    }
                 },
                 error: function(xhr, status, error) {
                     var errorMsg = fp_booking_widget_i18n.error_failed_load_availability;
@@ -268,16 +280,19 @@
             var html = '';
             
             if (!slots || slots.length === 0) {
-                html = '<p class="fp-no-slots">No availability for this date.</p>';
+                html = '<p class="fp-no-slots">' + fp_booking_widget_i18n.error_no_availability + '</p>';
             } else {
-                slots.forEach(function(slot) {
+                slots.forEach(function(slot, index) {
                     var availableClass = slot.is_available ? 'available' : 'unavailable';
                     var availableText = slot.is_available ? 
-                        slot.available + ' spots left' : 
-                        'Sold out';
+                        slot.available + ' ' + fp_booking_widget_i18n.spots_left : 
+                        fp_booking_widget_i18n.sold_out;
                     var availableColorClass = slot.is_available ? 'fp-slot-available' : 'fp-slot-unavailable';
                     
                     html += '<div class="fp-time-slot ' + availableClass + '" ' +
+                           'role="radio" ' +
+                           'aria-checked="false" ' +
+                           'tabindex="' + (index === 0 ? '0' : '-1') + '" ' +
                            'data-start-time="' + slot.start_time + '" ' +
                            'data-adult-price="' + slot.adult_price + '" ' +
                            'data-child-price="' + slot.child_price + '" ' +
@@ -484,6 +499,92 @@
          */
         showError: function(message) {
             var $errorContainer = $('#fp-error-messages');
+            $errorContainer.html('<div class="fp-error">' + message + '</div>');
+            
+            // Announce error to screen readers
+            this.announceToScreenReader(message);
+        },
+
+        /**
+         * Announce message to screen readers
+         */
+        announceToScreenReader: function(message) {
+            // Use existing aria-live region for announcements
+            var $announcer = $('#fp-error-messages');
+            if ($announcer.length) {
+                // Temporarily set the message and clear it
+                $announcer.attr('aria-live', 'polite').text(message);
+                setTimeout(function() {
+                    if ($announcer.text() === message) {
+                        $announcer.text('');
+                    }
+                }, 1000);
+            }
+        },
+
+        /**
+         * Improve time slot keyboard navigation
+         */
+        enhanceTimeSlotKeyboardNavigation: function() {
+            $(document).on('keydown', '.fp-time-slot', function(e) {
+                var $slots = $('.fp-time-slot[role="radio"]');
+                var currentIndex = $slots.index(this);
+                var $target = null;
+
+                switch(e.key) {
+                    case 'ArrowDown':
+                    case 'ArrowRight':
+                        e.preventDefault();
+                        $target = $slots.eq((currentIndex + 1) % $slots.length);
+                        break;
+                    case 'ArrowUp':  
+                    case 'ArrowLeft':
+                        e.preventDefault();
+                        $target = $slots.eq(currentIndex === 0 ? $slots.length - 1 : currentIndex - 1);
+                        break;
+                    case 'Enter':
+                    case ' ':
+                        e.preventDefault();
+                        if (!$(this).hasClass('unavailable')) {
+                            $(this).click();
+                        }
+                        return;
+                }
+
+                if ($target && $target.length) {
+                    // Update tabindex
+                    $slots.attr('tabindex', '-1');
+                    $target.attr('tabindex', '0').focus();
+                }
+            });
+
+            // Handle time slot selection 
+            $(document).on('click', '.fp-time-slot:not(.unavailable)', function() {
+                var self = window.FPBookingWidget;
+                
+                // Update aria-checked states
+                $('.fp-time-slot[role="radio"]').attr('aria-checked', 'false');
+                $(this).attr('aria-checked', 'true');
+                
+                $('.fp-time-slot').removeClass('selected');
+                $(this).addClass('selected');
+                
+                self.selectedSlot = {
+                    start_time: $(this).data('start-time'),
+                    adult_price: $(this).data('adult-price'),
+                    child_price: $(this).data('child-price'),
+                    available: $(this).data('available')
+                };
+                
+                $('#fp-selected-slot').val(self.selectedDate + ' ' + self.selectedSlot.start_time);
+                self.updateTotal();
+                self.validateForm();
+                
+                // Announce selection to screen readers
+                var slotText = $(this).find('.fp-slot-time').text();
+                self.announceToScreenReader('Selected time slot: ' + slotText);
+            });
+        }
             $errorContainer.html('<div class="fp-error-message">' + message + '</div>');
             
             // Auto-hide after 5 seconds
