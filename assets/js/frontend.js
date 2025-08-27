@@ -116,6 +116,51 @@
             $('#fp-add-to-cart').on('click', function() {
                 self.addToCart();
             });
+            
+            // Extras handlers
+            $(document).on('change', '.fp-extra-toggle', function() {
+                var $extra = $(this).closest('.fp-extra-item');
+                var $quantityDiv = $extra.find('.fp-extra-quantity');
+                var $quantityInput = $extra.find('.fp-extra-qty-input');
+                
+                if ($(this).is(':checked')) {
+                    $quantityDiv.removeClass('fp-extra-quantity-hidden');
+                    $quantityInput.val(1);
+                } else {
+                    $quantityDiv.addClass('fp-extra-quantity-hidden');
+                    $quantityInput.val(0);
+                }
+                
+                self.updateTotal();
+                self.validateForm();
+            });
+            
+            $(document).on('click', '.fp-extra-qty-plus, .fp-extra-qty-minus', function() {
+                var $input = $(this).siblings('.fp-extra-qty-input');
+                var currentVal = parseInt($input.val()) || 0;
+                var isPlus = $(this).hasClass('fp-extra-qty-plus');
+                var max = parseInt($input.attr('max')) || 1;
+                var min = parseInt($input.attr('min')) || 0;
+                
+                if (isPlus && currentVal < max) {
+                    $input.val(currentVal + 1);
+                } else if (!isPlus && currentVal > min) {
+                    $input.val(currentVal - 1);
+                }
+                
+                // Update checkbox state if quantity goes to 0
+                var $checkbox = $(this).closest('.fp-extra-item').find('.fp-extra-toggle');
+                if (parseInt($input.val()) > 0) {
+                    $checkbox.prop('checked', true);
+                    $(this).closest('.fp-extra-item').find('.fp-extra-quantity').removeClass('fp-extra-quantity-hidden');
+                } else {
+                    $checkbox.prop('checked', false);
+                    $(this).closest('.fp-extra-item').find('.fp-extra-quantity').addClass('fp-extra-quantity-hidden');
+                }
+                
+                self.updateTotal();
+                self.validateForm();
+            });
         },
 
         /**
@@ -204,10 +249,11 @@
         updateTotal: function() {
             var adultQty = parseInt($('#fp-qty-adult').val()) || 0;
             var childQty = parseInt($('#fp-qty-child').val()) || 0;
+            var totalParticipants = adultQty + childQty;
             
             var adultTotal = adultQty * this.adultPrice;
             var childTotal = childQty * this.childPrice;
-            var total = adultTotal + childTotal;
+            var baseTotal = adultTotal + childTotal;
             
             var detailsHtml = '';
             if (adultQty > 0) {
@@ -216,6 +262,32 @@
             if (childQty > 0) {
                 detailsHtml += '<div>' + childQty + ' Child' + (childQty > 1 ? 'ren' : '') + ': €' + childTotal.toFixed(2) + '</div>';
             }
+            
+            // Calculate extras
+            var extrasTotal = 0;
+            $('.fp-extra-item').each(function() {
+                var $extra = $(this);
+                var extraQty = parseInt($extra.find('.fp-extra-qty-input').val()) || 0;
+                
+                if (extraQty > 0) {
+                    var extraPrice = parseFloat($extra.data('price')) || 0;
+                    var billingType = $extra.data('billing-type');
+                    var extraName = $extra.find('strong').first().text();
+                    
+                    var extraItemTotal = 0;
+                    if (billingType === 'per_person') {
+                        extraItemTotal = extraPrice * extraQty * totalParticipants;
+                        detailsHtml += '<div>' + extraName + ' (' + extraQty + ' × ' + totalParticipants + ' people): €' + extraItemTotal.toFixed(2) + '</div>';
+                    } else {
+                        extraItemTotal = extraPrice * extraQty;
+                        detailsHtml += '<div>' + extraName + ' (' + extraQty + '): €' + extraItemTotal.toFixed(2) + '</div>';
+                    }
+                    
+                    extrasTotal += extraItemTotal;
+                }
+            });
+            
+            var total = baseTotal + extrasTotal;
             
             $('#fp-price-details').html(detailsHtml);
             $('#fp-total-amount').text('€' + total.toFixed(2));
@@ -244,6 +316,17 @@
                 isValid = false;
             }
             
+            // Check required extras
+            $('.fp-extra-item').each(function() {
+                var $extra = $(this);
+                var isRequired = $extra.data('is-required') == '1';
+                var extraQty = parseInt($extra.find('.fp-extra-qty-input').val()) || 0;
+                
+                if (isRequired && extraQty === 0) {
+                    isValid = false;
+                }
+            });
+            
             $('#fp-add-to-cart').prop('disabled', !isValid);
         },
 
@@ -261,6 +344,18 @@
             
             $('#fp-add-to-cart').prop('disabled', true).text('Adding...');
             
+            // Collect extras data
+            var extras = {};
+            $('.fp-extra-item').each(function() {
+                var $extra = $(this);
+                var extraId = $extra.data('extra-id');
+                var extraQty = parseInt($extra.find('.fp-extra-qty-input').val()) || 0;
+                
+                if (extraQty > 0) {
+                    extras[extraId] = extraQty;
+                }
+            });
+            
             // Create form data
             var formData = new FormData();
             formData.append('add-to-cart', productId);
@@ -270,6 +365,7 @@
             formData.append('fp_lang', language);
             formData.append('fp_qty_adult', adultQty);
             formData.append('fp_qty_child', childQty);
+            formData.append('fp_extras', JSON.stringify(extras));
             
             fetch(window.location.href, {
                 method: 'POST',

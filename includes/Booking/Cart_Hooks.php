@@ -7,6 +7,8 @@
 
 namespace FP\Esperienze\Booking;
 
+use FP\Esperienze\Data\ExtraManager;
+
 defined('ABSPATH') || exit;
 
 /**
@@ -22,6 +24,7 @@ class Cart_Hooks {
         add_filter('woocommerce_add_to_cart_validation', [$this, 'validateExperienceBooking'], 10, 6);
         add_filter('woocommerce_get_item_data', [$this, 'displayExperienceCartData'], 10, 2);
         add_action('woocommerce_checkout_create_order_line_item', [$this, 'addExperienceOrderItemMeta'], 10, 4);
+        add_action('woocommerce_before_calculate_totals', [$this, 'calculateExperiencePrice'], 10, 1);
     }
 
     /**
@@ -45,14 +48,26 @@ class Cart_Hooks {
         $lang = sanitize_text_field($_POST['fp_lang'] ?? '');
         $qty_adult = absint($_POST['fp_qty_adult'] ?? 0);
         $qty_child = absint($_POST['fp_qty_child'] ?? 0);
+        $extras_json = sanitize_text_field($_POST['fp_extras'] ?? '');
 
         if ($slot_start) {
+            $extras = [];
+            if (!empty($extras_json)) {
+                $extras_data = json_decode($extras_json, true);
+                if (is_array($extras_data)) {
+                    foreach ($extras_data as $extra_id => $quantity) {
+                        $extras[absint($extra_id)] = absint($quantity);
+                    }
+                }
+            }
+
             $cart_item_data['fp_experience'] = [
                 'slot_start' => $slot_start,
                 'meeting_point_id' => $meeting_point_id,
                 'lang' => $lang,
                 'qty_adult' => $qty_adult,
                 'qty_child' => $qty_child,
+                'extras' => $extras,
             ];
         }
 
@@ -180,6 +195,21 @@ class Cart_Hooks {
             ];
         }
 
+        // Display extras
+        if (!empty($experience_data['extras']) && is_array($experience_data['extras'])) {
+            foreach ($experience_data['extras'] as $extra_id => $quantity) {
+                if ($quantity > 0) {
+                    $extra = ExtraManager::getExtra($extra_id);
+                    if ($extra) {
+                        $item_data[] = [
+                            'key'   => esc_html($extra->name),
+                            'value' => sprintf(__('Qty: %d', 'fp-esperienze'), $quantity),
+                        ];
+                    }
+                }
+            }
+        }
+
         return $item_data;
     }
 
@@ -216,6 +246,72 @@ class Cart_Hooks {
 
         if (!empty($experience_data['qty_child'])) {
             $item->add_meta_data(__('Children', 'fp-esperienze'), $experience_data['qty_child']);
+        }
+
+        // Save extras to order item meta
+        if (!empty($experience_data['extras']) && is_array($experience_data['extras'])) {
+            foreach ($experience_data['extras'] as $extra_id => $quantity) {
+                if ($quantity > 0) {
+                    $extra = ExtraManager::getExtra($extra_id);
+                    if ($extra) {
+                        $item->add_meta_data($extra->name, sprintf(__('Qty: %d', 'fp-esperienze'), $quantity));
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Calculate experience price including extras
+     *
+     * @param \WC_Cart $cart Cart object
+     */
+    public function calculateExperiencePrice($cart) {
+        if (is_admin() && !defined('DOING_AJAX')) {
+            return;
+        }
+
+        foreach ($cart->get_cart() as $cart_item_key => $cart_item) {
+            if (!isset($cart_item['fp_experience'])) {
+                continue;
+            }
+
+            $product = $cart_item['data'];
+            if ($product->get_type() !== 'experience') {
+                continue;
+            }
+
+            $experience_data = $cart_item['fp_experience'];
+            $qty_adult = $experience_data['qty_adult'] ?? 0;
+            $qty_child = $experience_data['qty_child'] ?? 0;
+            $total_participants = $qty_adult + $qty_child;
+
+            // Calculate base price (adults + children)
+            $adult_price = floatval(get_post_meta($product->get_id(), '_experience_adult_price', true) ?: 0);
+            $child_price = floatval(get_post_meta($product->get_id(), '_experience_child_price', true) ?: 0);
+            
+            $base_total = ($qty_adult * $adult_price) + ($qty_child * $child_price);
+
+            // Calculate extras price
+            $extras_total = 0;
+            if (!empty($experience_data['extras']) && is_array($experience_data['extras'])) {
+                foreach ($experience_data['extras'] as $extra_id => $quantity) {
+                    if ($quantity > 0) {
+                        $extra = ExtraManager::getExtra($extra_id);
+                        if ($extra && $extra->is_active) {
+                            if ($extra->billing_type === 'per_person') {
+                                $extras_total += $extra->price * $quantity * $total_participants;
+                            } else {
+                                $extras_total += $extra->price * $quantity;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Set the new price
+            $total_price = $base_total + $extras_total;
+            $product->set_price($total_price);
         }
     }
 }

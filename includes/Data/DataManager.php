@@ -55,4 +55,13 @@ class DataManager {
     public static function availability(): string {
         return Availability::class;
     }
+    
+    /**
+     * Get extra manager instance
+     *
+     * @return ExtraManager
+     */
+    public static function extras(): string {
+        return ExtraManager::class;
+    }
 }

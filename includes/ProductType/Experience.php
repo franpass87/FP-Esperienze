@@ -10,6 +10,7 @@ namespace FP\Esperienze\ProductType;
 use FP\Esperienze\Data\ScheduleManager;
 use FP\Esperienze\Data\OverrideManager;
 use FP\Esperienze\Data\MeetingPointManager;
+use FP\Esperienze\Data\ExtraManager;
 
 defined('ABSPATH') || exit;
 
@@ -172,6 +173,13 @@ class Experience {
                     <?php _e('Add Override', 'fp-esperienze'); ?>
                 </button>
             </div>
+            
+            <div class="options_group">
+                <h4><?php _e('Extras', 'fp-esperienze'); ?></h4>
+                <div id="fp-extras-container">
+                    <?php $this->renderExtrasSection($post->ID); ?>
+                </div>
+            </div>
 
             ?>
         </div>
@@ -316,6 +324,68 @@ class Experience {
     }
 
     /**
+     * Render extras section
+     *
+     * @param int $product_id Product ID
+     */
+    private function renderExtrasSection(int $product_id): void {
+        $all_extras = ExtraManager::getAllExtras(true); // Only active extras
+        $product_extras = ExtraManager::getProductExtras($product_id, false); // Include inactive for editing
+        $selected_extra_ids = array_column($product_extras, 'id');
+        
+        ?>
+        <div class="fp-extras-selection">
+            <p><?php _e('Select which extras are available for this experience:', 'fp-esperienze'); ?></p>
+            
+            <?php if (empty($all_extras)) : ?>
+                <p class="description">
+                    <?php 
+                    printf(
+                        __('No extras available. <a href="%s">Create some extras</a> first.', 'fp-esperienze'),
+                        admin_url('admin.php?page=fp-esperienze-extras')
+                    ); 
+                    ?>
+                </p>
+            <?php else : ?>
+                <div class="fp-available-extras">
+                    <?php foreach ($all_extras as $extra) : ?>
+                        <label class="fp-extra-checkbox">
+                            <input type="checkbox" 
+                                   name="fp_product_extras[]" 
+                                   value="<?php echo esc_attr($extra->id); ?>"
+                                   <?php checked(in_array($extra->id, $selected_extra_ids)); ?>>
+                            <strong><?php echo esc_html($extra->name); ?></strong>
+                            (<?php echo wc_price($extra->price); ?> 
+                            <?php echo esc_html($extra->billing_type === 'per_person' ? __('per person', 'fp-esperienze') : __('per booking', 'fp-esperienze')); ?>)
+                            <?php if ($extra->description) : ?>
+                                <br><span class="description"><?php echo esc_html($extra->description); ?></span>
+                            <?php endif; ?>
+                        </label><br>
+                    <?php endforeach; ?>
+                </div>
+                
+                <style>
+                .fp-extra-checkbox {
+                    display: block;
+                    margin: 8px 0;
+                    padding: 8px;
+                    border: 1px solid #ddd;
+                    border-radius: 4px;
+                    background: #f9f9f9;
+                }
+                .fp-extra-checkbox:hover {
+                    background: #f0f0f0;
+                }
+                .fp-extra-checkbox input {
+                    margin-right: 8px;
+                }
+                </style>
+            <?php endif; ?>
+        </div>
+        <?php
+    }
+
+    /**
      * Save product data
      *
      * @param int $post_id Post ID
@@ -347,6 +417,9 @@ class Experience {
         
         // Save overrides
         $this->saveOverrides($post_id);
+        
+        // Save extras
+        $this->saveExtras($post_id);
     }
     
     /**
@@ -438,6 +511,16 @@ class Experience {
             
             OverrideManager::saveOverride($data);
         }
+    }
+
+    /**
+     * Save extras
+     *
+     * @param int $product_id Product ID
+     */
+    private function saveExtras(int $product_id): void {
+        $selected_extras = isset($_POST['fp_product_extras']) ? array_map('absint', $_POST['fp_product_extras']) : [];
+        ExtraManager::updateProductExtras($product_id, $selected_extras);
     }
 
     /**

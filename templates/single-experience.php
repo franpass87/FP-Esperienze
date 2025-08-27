@@ -268,6 +268,67 @@ if ($meeting_point_id) {
                             <?php endif; ?>
                         </div>
 
+                        <?php
+                        // Get extras for this product
+                        $extras = \FP\Esperienze\Data\ExtraManager::getProductExtras($product->get_id(), true);
+                        if (!empty($extras)) :
+                        ?>
+                        <!-- Extras Selection -->
+                        <div class="fp-form-field">
+                            <label><?php _e('Add Extras', 'fp-esperienze'); ?></label>
+                            <div class="fp-extras-list">
+                                <?php foreach ($extras as $extra) : ?>
+                                    <div class="fp-extra-item" data-extra-id="<?php echo esc_attr($extra->id); ?>" 
+                                         data-price="<?php echo esc_attr($extra->price); ?>"
+                                         data-billing-type="<?php echo esc_attr($extra->billing_type); ?>"
+                                         data-max-quantity="<?php echo esc_attr($extra->max_quantity); ?>"
+                                         data-is-required="<?php echo esc_attr($extra->is_required); ?>">
+                                        <div class="fp-extra-header">
+                                            <div class="fp-extra-info">
+                                                <strong><?php echo esc_html($extra->name); ?></strong>
+                                                <span class="fp-extra-price">
+                                                    <?php echo wc_price($extra->price); ?>
+                                                    <?php if ($extra->billing_type === 'per_person') : ?>
+                                                        <small><?php _e('per person', 'fp-esperienze'); ?></small>
+                                                    <?php else : ?>
+                                                        <small><?php _e('per booking', 'fp-esperienze'); ?></small>
+                                                    <?php endif; ?>
+                                                </span>
+                                            </div>
+                                            <?php if (!$extra->is_required) : ?>
+                                                <label class="fp-extra-checkbox">
+                                                    <input type="checkbox" class="fp-extra-toggle" value="1" />
+                                                    <span class="checkmark"></span>
+                                                </label>
+                                            <?php endif; ?>
+                                        </div>
+                                        
+                                        <?php if ($extra->description) : ?>
+                                            <p class="fp-extra-description"><?php echo esc_html($extra->description); ?></p>
+                                        <?php endif; ?>
+                                        
+                                        <?php if ($extra->max_quantity > 1) : ?>
+                                            <div class="fp-extra-quantity <?php echo $extra->is_required ? 'fp-required' : 'fp-extra-quantity-hidden'; ?>">
+                                                <label><?php _e('Quantity', 'fp-esperienze'); ?>:</label>
+                                                <div class="fp-quantity-controls">
+                                                    <button type="button" class="fp-qty-btn fp-qty-minus fp-extra-qty-minus">−</button>
+                                                    <input type="number" class="fp-qty-input fp-extra-qty-input" 
+                                                           value="<?php echo $extra->is_required ? '1' : '0'; ?>" 
+                                                           min="<?php echo $extra->is_required ? '1' : '0'; ?>" 
+                                                           max="<?php echo esc_attr($extra->max_quantity); ?>" readonly />
+                                                    <button type="button" class="fp-qty-btn fp-qty-plus fp-extra-qty-plus">+</button>
+                                                </div>
+                                            </div>
+                                        <?php else : ?>
+                                            <input type="hidden" class="fp-extra-qty-input" 
+                                                   value="<?php echo $extra->is_required ? '1' : '0'; ?>" />
+                                        <?php endif; ?>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                        <?php endif; ?>
+
                         <!-- Total Price -->
                         <div class="fp-total-price">
                             <div class="fp-price-breakdown">
