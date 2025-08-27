@@ -9,6 +9,7 @@ namespace FP\Esperienze\Admin;
 
 use FP\Esperienze\Data\OverrideManager;
 use FP\Esperienze\Data\MeetingPointManager;
+use FP\Esperienze\Data\ExtraManager;
 
 defined('ABSPATH') || exit;
 
@@ -526,11 +527,270 @@ class MenuManager {
      * Extras page
      */
     public function extrasPage(): void {
+        // Handle form submissions
+        if ($_POST) {
+            $this->handleExtrasActions();
+        }
+        
+        $extras = ExtraManager::getAllExtras();
+        $tax_classes = ExtraManager::getTaxClasses();
+        
         ?>
         <div class="wrap">
             <h1><?php _e('Extras Management', 'fp-esperienze'); ?></h1>
-            <p><?php _e('Extras management functionality will be implemented in future updates.', 'fp-esperienze'); ?></p>
+            
+            <div class="fp-extras-form">
+                <h2><?php _e('Add New Extra', 'fp-esperienze'); ?></h2>
+                <form method="post">
+                    <?php wp_nonce_field('fp_extra_action', 'fp_extra_nonce'); ?>
+                    <input type="hidden" name="action" value="create">
+                    
+                    <table class="form-table">
+                        <tr>
+                            <th scope="row">
+                                <label for="extra_name"><?php _e('Name', 'fp-esperienze'); ?> *</label>
+                            </th>
+                            <td>
+                                <input type="text" id="extra_name" name="extra_name" class="regular-text" required>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row">
+                                <label for="extra_description"><?php _e('Description', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <textarea id="extra_description" name="extra_description" class="large-text" rows="3"></textarea>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row">
+                                <label for="extra_price"><?php _e('Price', 'fp-esperienze'); ?> *</label>
+                            </th>
+                            <td>
+                                <input type="number" id="extra_price" name="extra_price" step="0.01" min="0" class="small-text" required>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row">
+                                <label for="extra_billing_type"><?php _e('Billing Type', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <select id="extra_billing_type" name="extra_billing_type">
+                                    <option value="per_person"><?php _e('Per Person', 'fp-esperienze'); ?></option>
+                                    <option value="per_booking"><?php _e('Per Booking', 'fp-esperienze'); ?></option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row">
+                                <label for="extra_tax_class"><?php _e('Tax Class', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <select id="extra_tax_class" name="extra_tax_class">
+                                    <?php foreach ($tax_classes as $value => $label) : ?>
+                                        <option value="<?php echo esc_attr($value); ?>"><?php echo esc_html($label); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row">
+                                <label for="extra_max_quantity"><?php _e('Max Quantity', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <input type="number" id="extra_max_quantity" name="extra_max_quantity" min="1" value="1" class="small-text">
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row">
+                                <label for="extra_is_required"><?php _e('Required', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <input type="checkbox" id="extra_is_required" name="extra_is_required" value="1">
+                                <span class="description"><?php _e('Check if this extra is required for booking', 'fp-esperienze'); ?></span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row">
+                                <label for="extra_is_active"><?php _e('Active', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <input type="checkbox" id="extra_is_active" name="extra_is_active" value="1" checked>
+                                <span class="description"><?php _e('Check to make this extra available for selection', 'fp-esperienze'); ?></span>
+                            </td>
+                        </tr>
+                    </table>
+                    
+                    <?php submit_button(__('Add Extra', 'fp-esperienze')); ?>
+                </form>
+            </div>
+            
+            <h2><?php _e('Existing Extras', 'fp-esperienze'); ?></h2>
+            <table class="wp-list-table widefat fixed striped">
+                <thead>
+                    <tr>
+                        <th><?php _e('Name', 'fp-esperienze'); ?></th>
+                        <th><?php _e('Description', 'fp-esperienze'); ?></th>
+                        <th><?php _e('Price', 'fp-esperienze'); ?></th>
+                        <th><?php _e('Billing Type', 'fp-esperienze'); ?></th>
+                        <th><?php _e('Tax Class', 'fp-esperienze'); ?></th>
+                        <th><?php _e('Max Qty', 'fp-esperienze'); ?></th>
+                        <th><?php _e('Required', 'fp-esperienze'); ?></th>
+                        <th><?php _e('Active', 'fp-esperienze'); ?></th>
+                        <th><?php _e('Actions', 'fp-esperienze'); ?></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (empty($extras)) : ?>
+                        <tr>
+                            <td colspan="9"><?php _e('No extras found.', 'fp-esperienze'); ?></td>
+                        </tr>
+                    <?php else : ?>
+                        <?php foreach ($extras as $extra) : ?>
+                            <tr>
+                                <td><strong><?php echo esc_html($extra->name); ?></strong></td>
+                                <td><?php echo esc_html(wp_trim_words($extra->description, 10)); ?></td>
+                                <td><?php echo wc_price($extra->price); ?></td>
+                                <td><?php echo esc_html($extra->billing_type === 'per_person' ? __('Per Person', 'fp-esperienze') : __('Per Booking', 'fp-esperienze')); ?></td>
+                                <td><?php echo esc_html($tax_classes[$extra->tax_class] ?? __('Standard', 'fp-esperienze')); ?></td>
+                                <td><?php echo esc_html($extra->max_quantity); ?></td>
+                                <td><?php echo $extra->is_required ? '✓' : '—'; ?></td>
+                                <td><?php echo $extra->is_active ? '✓' : '—'; ?></td>
+                                <td>
+                                    <button type="button" class="button button-small fp-edit-extra" 
+                                            data-id="<?php echo esc_attr($extra->id); ?>"
+                                            data-name="<?php echo esc_attr($extra->name); ?>"
+                                            data-description="<?php echo esc_attr($extra->description); ?>"
+                                            data-price="<?php echo esc_attr($extra->price); ?>"
+                                            data-billing-type="<?php echo esc_attr($extra->billing_type); ?>"
+                                            data-tax-class="<?php echo esc_attr($extra->tax_class); ?>"
+                                            data-max-quantity="<?php echo esc_attr($extra->max_quantity); ?>"
+                                            data-is-required="<?php echo esc_attr($extra->is_required); ?>"
+                                            data-is-active="<?php echo esc_attr($extra->is_active); ?>">
+                                        <?php _e('Edit', 'fp-esperienze'); ?>
+                                    </button>
+                                    <form method="post" style="display: inline-block;" onsubmit="return confirm('<?php esc_attr_e('Are you sure you want to delete this extra?', 'fp-esperienze'); ?>');">
+                                        <?php wp_nonce_field('fp_extra_action', 'fp_extra_nonce'); ?>
+                                        <input type="hidden" name="action" value="delete">
+                                        <input type="hidden" name="extra_id" value="<?php echo esc_attr($extra->id); ?>">
+                                        <input type="submit" class="button button-small button-link-delete" value="<?php esc_attr_e('Delete', 'fp-esperienze'); ?>">
+                                    </form>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </tbody>
+            </table>
         </div>
+        
+        <!-- Edit Extra Modal -->
+        <div id="fp-edit-extra-modal" style="display: none;">
+            <form method="post" id="fp-edit-extra-form">
+                <?php wp_nonce_field('fp_extra_action', 'fp_extra_nonce'); ?>
+                <input type="hidden" name="action" value="update">
+                <input type="hidden" name="extra_id" id="edit_extra_id">
+                
+                <table class="form-table">
+                    <tr>
+                        <th scope="row">
+                            <label for="edit_extra_name"><?php _e('Name', 'fp-esperienze'); ?> *</label>
+                        </th>
+                        <td>
+                            <input type="text" id="edit_extra_name" name="extra_name" class="regular-text" required>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <label for="edit_extra_description"><?php _e('Description', 'fp-esperienze'); ?></label>
+                        </th>
+                        <td>
+                            <textarea id="edit_extra_description" name="extra_description" class="large-text" rows="3"></textarea>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <label for="edit_extra_price"><?php _e('Price', 'fp-esperienze'); ?> *</label>
+                        </th>
+                        <td>
+                            <input type="number" id="edit_extra_price" name="extra_price" step="0.01" min="0" class="small-text" required>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <label for="edit_extra_billing_type"><?php _e('Billing Type', 'fp-esperienze'); ?></label>
+                        </th>
+                        <td>
+                            <select id="edit_extra_billing_type" name="extra_billing_type">
+                                <option value="per_person"><?php _e('Per Person', 'fp-esperienze'); ?></option>
+                                <option value="per_booking"><?php _e('Per Booking', 'fp-esperienze'); ?></option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <label for="edit_extra_tax_class"><?php _e('Tax Class', 'fp-esperienze'); ?></label>
+                        </th>
+                        <td>
+                            <select id="edit_extra_tax_class" name="extra_tax_class">
+                                <?php foreach ($tax_classes as $value => $label) : ?>
+                                    <option value="<?php echo esc_attr($value); ?>"><?php echo esc_html($label); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <label for="edit_extra_max_quantity"><?php _e('Max Quantity', 'fp-esperienze'); ?></label>
+                        </th>
+                        <td>
+                            <input type="number" id="edit_extra_max_quantity" name="extra_max_quantity" min="1" class="small-text">
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <label for="edit_extra_is_required"><?php _e('Required', 'fp-esperienze'); ?></label>
+                        </th>
+                        <td>
+                            <input type="checkbox" id="edit_extra_is_required" name="extra_is_required" value="1">
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <label for="edit_extra_is_active"><?php _e('Active', 'fp-esperienze'); ?></label>
+                        </th>
+                        <td>
+                            <input type="checkbox" id="edit_extra_is_active" name="extra_is_active" value="1">
+                        </td>
+                    </tr>
+                </table>
+            </form>
+        </div>
+        
+        <script>
+        jQuery(document).ready(function($) {
+            // Edit extra functionality
+            $('.fp-edit-extra').click(function() {
+                var data = $(this).data();
+                $('#edit_extra_id').val(data.id);
+                $('#edit_extra_name').val(data.name);
+                $('#edit_extra_description').val(data.description);
+                $('#edit_extra_price').val(data.price);
+                $('#edit_extra_billing_type').val(data.billingType);
+                $('#edit_extra_tax_class').val(data.taxClass);
+                $('#edit_extra_max_quantity').val(data.maxQuantity);
+                $('#edit_extra_is_required').prop('checked', data.isRequired == '1');
+                $('#edit_extra_is_active').prop('checked', data.isActive == '1');
+                
+                // Show modal using WordPress thickbox
+                tb_show('<?php esc_js_e('Edit Extra', 'fp-esperienze'); ?>', '#TB_inline?inlineId=fp-edit-extra-modal&width=600&height=500');
+            });
+            
+            // Submit edit form
+            $('#fp-edit-extra-form').submit(function() {
+                tb_remove();
+            });
+        });
+        </script>
         <?php
     }
 
@@ -632,6 +892,160 @@ class MenuManager {
             </div>
         </div>
         <?php
+    }
+    
+    /**
+     * Handle extras actions
+     */
+    private function handleExtrasActions(): void {
+        if (!isset($_POST['fp_extra_nonce']) || !wp_verify_nonce($_POST['fp_extra_nonce'], 'fp_extra_action')) {
+            wp_die(__('Security check failed.', 'fp-esperienze'));
+        }
+        
+        if (!current_user_can('manage_woocommerce')) {
+            wp_die(__('You do not have permission to perform this action.', 'fp-esperienze'));
+        }
+        
+        $action = sanitize_text_field($_POST['action'] ?? '');
+        
+        switch ($action) {
+            case 'create':
+                $this->createExtra();
+                break;
+                
+            case 'update':
+                $this->updateExtra();
+                break;
+                
+            case 'delete':
+                $this->deleteExtra();
+                break;
+        }
+    }
+    
+    /**
+     * Create new extra
+     */
+    private function createExtra(): void {
+        $data = [
+            'name' => sanitize_text_field($_POST['extra_name'] ?? ''),
+            'description' => sanitize_textarea_field($_POST['extra_description'] ?? ''),
+            'price' => floatval($_POST['extra_price'] ?? 0),
+            'billing_type' => in_array($_POST['extra_billing_type'] ?? '', ['per_person', 'per_booking']) ? $_POST['extra_billing_type'] : 'per_person',
+            'tax_class' => sanitize_text_field($_POST['extra_tax_class'] ?? ''),
+            'max_quantity' => absint($_POST['extra_max_quantity'] ?? 1),
+            'is_required' => isset($_POST['extra_is_required']) ? 1 : 0,
+            'is_active' => isset($_POST['extra_is_active']) ? 1 : 0
+        ];
+        
+        if (empty($data['name'])) {
+            add_action('admin_notices', function() {
+                echo '<div class="notice notice-error is-dismissible"><p>' . 
+                     esc_html__('Extra name is required.', 'fp-esperienze') . 
+                     '</p></div>';
+            });
+            return;
+        }
+        
+        $result = ExtraManager::createExtra($data);
+        
+        if ($result) {
+            add_action('admin_notices', function() {
+                echo '<div class="notice notice-success is-dismissible"><p>' . 
+                     esc_html__('Extra created successfully.', 'fp-esperienze') . 
+                     '</p></div>';
+            });
+        } else {
+            add_action('admin_notices', function() {
+                echo '<div class="notice notice-error is-dismissible"><p>' . 
+                     esc_html__('Failed to create extra.', 'fp-esperienze') . 
+                     '</p></div>';
+            });
+        }
+    }
+    
+    /**
+     * Update extra
+     */
+    private function updateExtra(): void {
+        $id = absint($_POST['extra_id'] ?? 0);
+        
+        if (!$id) {
+            add_action('admin_notices', function() {
+                echo '<div class="notice notice-error is-dismissible"><p>' . 
+                     esc_html__('Invalid extra ID.', 'fp-esperienze') . 
+                     '</p></div>';
+            });
+            return;
+        }
+        
+        $data = [
+            'name' => sanitize_text_field($_POST['extra_name'] ?? ''),
+            'description' => sanitize_textarea_field($_POST['extra_description'] ?? ''),
+            'price' => floatval($_POST['extra_price'] ?? 0),
+            'billing_type' => in_array($_POST['extra_billing_type'] ?? '', ['per_person', 'per_booking']) ? $_POST['extra_billing_type'] : 'per_person',
+            'tax_class' => sanitize_text_field($_POST['extra_tax_class'] ?? ''),
+            'max_quantity' => absint($_POST['extra_max_quantity'] ?? 1),
+            'is_required' => isset($_POST['extra_is_required']) ? 1 : 0,
+            'is_active' => isset($_POST['extra_is_active']) ? 1 : 0
+        ];
+        
+        if (empty($data['name'])) {
+            add_action('admin_notices', function() {
+                echo '<div class="notice notice-error is-dismissible"><p>' . 
+                     esc_html__('Extra name is required.', 'fp-esperienze') . 
+                     '</p></div>';
+            });
+            return;
+        }
+        
+        $result = ExtraManager::updateExtra($id, $data);
+        
+        if ($result) {
+            add_action('admin_notices', function() {
+                echo '<div class="notice notice-success is-dismissible"><p>' . 
+                     esc_html__('Extra updated successfully.', 'fp-esperienze') . 
+                     '</p></div>';
+            });
+        } else {
+            add_action('admin_notices', function() {
+                echo '<div class="notice notice-error is-dismissible"><p>' . 
+                     esc_html__('Failed to update extra.', 'fp-esperienze') . 
+                     '</p></div>';
+            });
+        }
+    }
+    
+    /**
+     * Delete extra
+     */
+    private function deleteExtra(): void {
+        $id = absint($_POST['extra_id'] ?? 0);
+        
+        if (!$id) {
+            add_action('admin_notices', function() {
+                echo '<div class="notice notice-error is-dismissible"><p>' . 
+                     esc_html__('Invalid extra ID.', 'fp-esperienze') . 
+                     '</p></div>';
+            });
+            return;
+        }
+        
+        $result = ExtraManager::deleteExtra($id);
+        
+        if ($result) {
+            add_action('admin_notices', function() {
+                echo '<div class="notice notice-success is-dismissible"><p>' . 
+                     esc_html__('Extra deleted successfully.', 'fp-esperienze') . 
+                     '</p></div>';
+            });
+        } else {
+            add_action('admin_notices', function() {
+                echo '<div class="notice notice-error is-dismissible"><p>' . 
+                     esc_html__('Cannot delete extra. It may be in use by products.', 'fp-esperienze') . 
+                     '</p></div>';
+            });
+        }
     }
     
     /**

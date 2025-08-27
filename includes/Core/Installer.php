@@ -67,11 +67,30 @@ class Installer {
             name varchar(255) NOT NULL,
             description text DEFAULT NULL,
             price decimal(10,2) NOT NULL DEFAULT 0.00,
+            billing_type enum('per_person', 'per_booking') NOT NULL DEFAULT 'per_person',
+            tax_class varchar(50) DEFAULT '',
             is_required tinyint(1) NOT NULL DEFAULT 0,
             max_quantity int(11) NOT NULL DEFAULT 1,
+            is_active tinyint(1) NOT NULL DEFAULT 1,
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            PRIMARY KEY (id)
+            PRIMARY KEY (id),
+            KEY is_active (is_active),
+            KEY billing_type (billing_type)
+        ) $charset_collate;";
+
+        // Product-Extras association table
+        $table_product_extras = $wpdb->prefix . 'fp_product_extras';
+        $sql_product_extras = "CREATE TABLE $table_product_extras (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            product_id bigint(20) unsigned NOT NULL,
+            extra_id bigint(20) unsigned NOT NULL,
+            sort_order int(11) NOT NULL DEFAULT 0,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY product_id (product_id),
+            KEY extra_id (extra_id),
+            UNIQUE KEY product_extra (product_id, extra_id)
         ) $charset_collate;";
 
         // Schedules table
@@ -161,6 +180,7 @@ class Installer {
         
         dbDelta($sql_meeting_points);
         dbDelta($sql_extras);
+        dbDelta($sql_product_extras);
         dbDelta($sql_schedules);
         dbDelta($sql_overrides);
         dbDelta($sql_bookings);
