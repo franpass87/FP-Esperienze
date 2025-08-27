@@ -122,14 +122,41 @@ Test comprehensive pricing and tax functionality including WooCommerce tax class
 **Steps:**
 1. Create experience (€100) + extras (€30)
 2. Apply WooCommerce coupon "SAVE10" (10% off)
-3. Try to apply FP Esperienze voucher (full discount)
-4. Check behavior
+3. Try to apply FP Esperienze full voucher
+4. Check behavior and messaging
 
 **Expected Results:**
-- [ ] Either vouchers are mutually exclusive (preferred)
-- [ ] Or proper calculation order is maintained
-- [ ] Clear messaging about voucher compatibility
-- [ ] No double discounting occurs
+- [ ] Error message: "Full discount vouchers cannot be combined with other coupons"
+- [ ] Voucher application is blocked
+- [ ] Existing coupon remains active
+- [ ] Clear user guidance provided
+
+#### Test 8b: Voucher + Coupon Compatibility (Reverse Order)
+**Steps:**
+1. Create experience (€100) + extras (€30)
+2. Apply FP Esperienze full voucher first
+3. Try to apply WooCommerce coupon "SAVE10"
+4. Check behavior and messaging
+
+**Expected Results:**
+- [ ] Notice message: "Full discount vouchers cannot be combined with coupon..."
+- [ ] Full voucher is automatically removed
+- [ ] WooCommerce coupon is applied successfully
+- [ ] User is informed about the change
+
+#### Test 8c: Value Voucher + Coupon Compatibility
+**Steps:**
+1. Create experience (€100) + extras (€30)
+2. Apply WooCommerce coupon "SAVE10" (10% off = €90 + €30 = €120)
+3. Apply FP Esperienze value voucher (€20 off)
+4. Check calculation order and final price
+
+**Expected Results:**
+- [ ] Value vouchers can stack with WooCommerce coupons
+- [ ] Coupon applies first: €100 → €90
+- [ ] Voucher applies to discounted base price: €90 → €70
+- [ ] Final total: €70 + €30 extras = €100
+- [ ] OR defined calculation order is followed consistently
 
 ### Voucher Value Calculation Tests
 
@@ -238,7 +265,9 @@ Test comprehensive pricing and tax functionality including WooCommerce tax class
 | Test 5 - Tax Included | ⏳ Pending | |
 | Test 6 - Tax Excluded | ⏳ Pending | |
 | Test 7 - Coupon + Extras | ⏳ Pending | |
-| Test 8 - Coupon + Voucher | ⏳ Pending | |
+| Test 8 - Coupon + Full Voucher | ⏳ Pending | |
+| Test 8b - Voucher + Coupon | ⏳ Pending | |
+| Test 8c - Value Voucher + Coupon | ⏳ Pending | |
 | Test 9 - Full Voucher Tax | ⏳ Pending | |
 | Test 10 - Value Voucher Tax | ⏳ Pending | |
 | Test 11 - Zero Tax Rate | ⏳ Pending | |
