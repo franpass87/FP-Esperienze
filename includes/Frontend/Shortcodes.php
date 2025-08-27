@@ -240,14 +240,15 @@ class Shortcodes {
      * @return array Array of product IDs
      */
     private function getAvailableProductsForDate(string $date): array {
-        $cache_key = 'fp_exp_available_products_' . $date;
+        // Use shared cache key that matches CacheManager pattern
+        $cache_key = 'fp_available_products_' . $date;
         $cached_result = get_transient($cache_key);
         
         if ($cached_result !== false) {
             return $cached_result;
         }
 
-        // Get all experience products
+        // Get all experience products with optimized query
         $all_products = get_posts([
             'post_type'      => 'product',
             'post_status'    => 'publish',
@@ -262,23 +263,43 @@ class Shortcodes {
             ]
         ]);
 
+        if (empty($all_products)) {
+            set_transient($cache_key, [], 5 * MINUTE_IN_SECONDS);
+            return [];
+        }
+
         $available_products = [];
         
-        foreach ($all_products as $product_id) {
-            $slots = \FP\Esperienze\Data\Availability::forDay($product_id, $date);
-            if (!empty($slots)) {
-                // Check if any slot has availability
-                foreach ($slots as $slot) {
-                    if ($slot['is_available']) {
-                        $available_products[] = $product_id;
-                        break;
+        // Batch process availability checks for better performance
+        $batch_size = 10; // Process 10 products at a time
+        $total_products = count($all_products);
+        
+        for ($i = 0; $i < $total_products; $i += $batch_size) {
+            $batch = array_slice($all_products, $i, $batch_size);
+            
+            foreach ($batch as $product_id) {
+                // Use the cached availability check from Availability::forDay
+                $slots = \FP\Esperienze\Data\Availability::forDay($product_id, $date);
+                
+                if (!empty($slots)) {
+                    // Check if any slot has availability
+                    foreach ($slots as $slot) {
+                        if ($slot['is_available'] && $slot['available'] > 0) {
+                            $available_products[] = $product_id;
+                            break;
+                        }
                     }
                 }
             }
+            
+            // Small delay between batches to prevent server overload
+            if ($i + $batch_size < $total_products) {
+                usleep(1000); // 1ms pause
+            }
         }
 
-        // Cache for 5 minutes
-        set_transient($cache_key, $available_products, 5 * MINUTE_IN_SECONDS);
+        // Cache for 10 minutes (same as availability cache TTL)
+        set_transient($cache_key, $available_products, 10 * MINUTE_IN_SECONDS);
         
         return $available_products;
     }

@@ -9,6 +9,7 @@ namespace FP\Esperienze\Data;
 
 use DateTime;
 use DateTimeZone;
+use FP\Esperienze\Core\CacheManager;
 
 defined('ABSPATH') || exit;
 
@@ -117,6 +118,16 @@ class Availability {
                 'meeting_point_id' => $schedule->meeting_point_id,
             ];
         }
+        
+        // Cache the result before returning
+        $cache_data = [
+            'product_id' => $product_id,
+            'date' => $date,
+            'slots' => $slots,
+            'total_slots' => count($slots),
+            '_cached_at' => time(),
+        ];
+        CacheManager::setAvailabilityCache($product_id, $date, $cache_data);
         
         return $slots;
     }
