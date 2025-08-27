@@ -184,11 +184,18 @@ class SetupWizard {
      * Process basic settings (Step 1)
      */
     private function processBasicSettings(): void {
+        // Auto-detect language from WordPress locale if not provided
+        $wp_locale = get_locale();
+        $default_lang = 'en';
+        if (strpos($wp_locale, 'it') === 0) {
+            $default_lang = 'it';
+        }
+        
         $settings = [
             'fp_esperienze_currency' => sanitize_text_field($_POST['currency'] ?? get_woocommerce_currency()),
             'fp_esperienze_default_duration' => absint($_POST['default_duration'] ?? 60),
             'fp_esperienze_default_capacity' => absint($_POST['default_capacity'] ?? 10),
-            'fp_esperienze_default_language' => sanitize_text_field($_POST['default_language'] ?? 'en'),
+            'fp_esperienze_default_language' => sanitize_text_field($_POST['default_language'] ?? $default_lang),
         ];
 
         foreach ($settings as $key => $value) {
@@ -363,7 +370,14 @@ class SetupWizard {
         $currency = get_option('fp_esperienze_currency', get_woocommerce_currency());
         $duration = get_option('fp_esperienze_default_duration', 60);
         $capacity = get_option('fp_esperienze_default_capacity', 10);
-        $language = get_option('fp_esperienze_default_language', 'en');
+        
+        // Auto-detect language from WordPress locale
+        $wp_locale = get_locale();
+        $default_lang = 'en';
+        if (strpos($wp_locale, 'it') === 0) {
+            $default_lang = 'it';
+        }
+        $language = get_option('fp_esperienze_default_language', $default_lang);
         $timezone = get_option('timezone_string', '');
 
         ?>
