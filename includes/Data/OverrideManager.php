@@ -90,6 +90,11 @@ class OverrideManager {
                 ['%d']
             );
             
+            if ($result !== false) {
+                // Trigger cache invalidation
+                do_action('fp_esperienze_override_saved', $product_id, $date);
+            }
+            
             return $result !== false ? $existing->id : false;
         } else {
             // Create new override
@@ -98,6 +103,11 @@ class OverrideManager {
                 $override_data,
                 ['%d', '%s', '%d', '%d', '%s', '%s']
             );
+            
+            if ($result) {
+                // Trigger cache invalidation
+                do_action('fp_esperienze_override_saved', $product_id, $date);
+            }
             
             return $result ? $wpdb->insert_id : false;
         }
@@ -122,6 +132,11 @@ class OverrideManager {
             ], 
             ['%d', '%s']
         );
+        
+        if ($result !== false) {
+            // Trigger cache invalidation
+            do_action('fp_esperienze_override_deleted', $product_id, $date);
+        }
         
         return $result !== false;
     }

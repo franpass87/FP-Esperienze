@@ -190,6 +190,9 @@ class BookingManager {
         
         $booking_id = $wpdb->insert_id;
         
+        // Trigger cache invalidation
+        do_action('fp_esperienze_booking_created', $booking_data['product_id'], $booking_data['booking_date']);
+        
         // Log success
         error_log("Created booking #{$booking_id} for order #{$order_id}, item #{$item_id}");
         
@@ -209,6 +212,13 @@ class BookingManager {
         
         $table_name = $wpdb->prefix . 'fp_bookings';
         
+        // Get booking data before update for cache invalidation
+        $booking = $wpdb->get_row($wpdb->prepare(
+            "SELECT product_id, booking_date FROM $table_name WHERE order_id = %d AND order_item_id = %d",
+            $order_id,
+            $item_id
+        ));
+        
         $result = $wpdb->update(
             $table_name,
             ['status' => $status, 'updated_at' => current_time('mysql')],
@@ -216,6 +226,15 @@ class BookingManager {
             ['%s', '%s'],
             ['%d', '%d']
         );
+        
+        if ($result !== false && $booking) {
+            // Trigger cache invalidation based on status
+            if ($status === 'cancelled') {
+                do_action('fp_esperienze_booking_cancelled', $booking->product_id, $booking->booking_date);
+            } elseif ($status === 'refunded') {
+                do_action('fp_esperienze_booking_refunded', $booking->product_id, $booking->booking_date);
+            }
+        }
         
         return $result !== false;
     }
