@@ -64,12 +64,10 @@ class GooglePlacesManager {
         
         $url = self::API_BASE_URL . '/' . urlencode($place_id);
         
-        $body = [
-            'fields' => 'rating,userRatingCount,reviews.authorAttribution.displayName,reviews.rating,reviews.text.text,reviews.relativePublishTimeDescription',
-            'maxResultCount' => $reviews_limit
-        ];
+        // Field mask for the specific data we want
+        $field_mask = 'rating,userRatingCount,reviews.authorAttribution.displayName,reviews.rating,reviews.text.text,reviews.relativePublishTimeDescription';
         
-        $response = $this->makeApiRequest('GET', $url, $body, $api_key);
+        $response = $this->makeApiRequest('GET', $url, [], $api_key, $field_mask);
         
         if (is_wp_error($response)) {
             $this->logError('Places API request failed', [
@@ -236,18 +234,23 @@ class GooglePlacesManager {
      * @param string $url API endpoint URL
      * @param array $params Request parameters
      * @param string $api_key API key
+     * @param string $field_mask Field mask for the request
      * @return array|\WP_Error Response or error
      */
-    private function makeApiRequest(string $method, string $url, array $params = [], string $api_key = ''): array|\WP_Error {
+    private function makeApiRequest(string $method, string $url, array $params = [], string $api_key = '', string $field_mask = ''): array|\WP_Error {
         $args = [
             'method' => $method,
             'headers' => [
                 'Content-Type' => 'application/json',
                 'X-Goog-Api-Key' => $api_key,
-                'X-Goog-FieldMask' => $params['fields'] ?? ''
             ],
             'timeout' => 30,
         ];
+        
+        // Add field mask header if provided
+        if (!empty($field_mask)) {
+            $args['headers']['X-Goog-FieldMask'] = $field_mask;
+        }
         
         if ($method === 'POST' && !empty($params)) {
             $args['body'] = wp_json_encode($params);

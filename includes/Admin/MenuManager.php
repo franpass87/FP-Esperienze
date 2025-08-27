@@ -2140,6 +2140,8 @@ class MenuManager {
         $gplaces_reviews_enabled = !empty($integrations['gplaces_reviews_enabled']);
         $gplaces_reviews_limit = absint($integrations['gplaces_reviews_limit'] ?? 5);
         $gplaces_cache_ttl = absint($integrations['gplaces_cache_ttl'] ?? 60);
+        $gbp_client_id = $integrations['gbp_client_id'] ?? '';
+        $gbp_client_secret = $integrations['gbp_client_secret'] ?? '';
         
         ?>
         <div class="wrap">
@@ -2480,15 +2482,44 @@ class MenuManager {
                         
                         <tr>
                             <th scope="row">
-                                <label><?php _e('OAuth Credentials', 'fp-esperienze'); ?></label>
+                                <label for="gbp_client_id"><?php _e('OAuth Client ID', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <input type="text" 
+                                       id="gbp_client_id" 
+                                       name="gbp_client_id" 
+                                       value="<?php echo esc_attr($gbp_client_id); ?>" 
+                                       class="regular-text" 
+                                       placeholder="<?php esc_attr_e('Coming soon - OAuth integration', 'fp-esperienze'); ?>" 
+                                       disabled />
+                                <p class="description"><?php _e('Google OAuth Client ID for Business Profile access (placeholder for future implementation).', 'fp-esperienze'); ?></p>
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row">
+                                <label for="gbp_client_secret"><?php _e('OAuth Client Secret', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <input type="password" 
+                                       id="gbp_client_secret" 
+                                       name="gbp_client_secret" 
+                                       value="<?php echo esc_attr($gbp_client_secret); ?>" 
+                                       class="regular-text" 
+                                       placeholder="<?php esc_attr_e('Coming soon - OAuth integration', 'fp-esperienze'); ?>" 
+                                       disabled />
+                                <p class="description"><?php _e('Google OAuth Client Secret (keep secure) - placeholder for future implementation.', 'fp-esperienze'); ?></p>
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row">
+                                <label><?php _e('Requirements', 'fp-esperienze'); ?></label>
                             </th>
                             <td>
                                 <p class="description">
-                                    <strong><?php _e('Coming Soon:', 'fp-esperienze'); ?></strong> 
-                                    <?php _e('OAuth integration for Google Business Profile management. Requires business owner permissions.', 'fp-esperienze'); ?>
-                                </p>
-                                <p class="description">
-                                    <?php _e('Note: You must be the verified owner of the Google Business Profile to use this feature.', 'fp-esperienze'); ?>
+                                    <strong><?php _e('Note:', 'fp-esperienze'); ?></strong> 
+                                    <?php _e('You must be the verified owner of the Google Business Profile to use this feature. OAuth integration will be implemented in a future version.', 'fp-esperienze'); ?>
                                 </p>
                             </td>
                         </tr>
@@ -2566,6 +2597,8 @@ class MenuManager {
                 'gplaces_reviews_enabled' => !empty($_POST['gplaces_reviews_enabled']),
                 'gplaces_reviews_limit' => max(1, min(10, absint($_POST['gplaces_reviews_limit'] ?? 5))),
                 'gplaces_cache_ttl' => max(5, min(1440, absint($_POST['gplaces_cache_ttl'] ?? 60))),
+                'gbp_client_id' => sanitize_text_field($_POST['gbp_client_id'] ?? ''),
+                'gbp_client_secret' => sanitize_text_field($_POST['gbp_client_secret'] ?? ''),
             ];
             
             // Store all integrations in a single option
