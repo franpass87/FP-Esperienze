@@ -307,4 +307,262 @@ class BookingManager {
             $wpdb->prepare("SELECT * FROM {$table_name} WHERE id = %d", $booking_id)
         );
     }
+
+    /**
+     * Reschedule a booking to a new date/time slot
+     *
+     * @param int $booking_id Booking ID
+     * @param string $new_date New date (Y-m-d format)
+     * @param string $new_time New time (H:i:s format)
+     * @param string $admin_notes Optional admin notes
+     * @return array Result with success/error info
+     */
+    public static function rescheduleBooking(int $booking_id, string $new_date, string $new_time, string $admin_notes = ''): array {
+        global $wpdb;
+        
+        $table_name = $wpdb->prefix . 'fp_bookings';
+        
+        // Get current booking
+        $booking = self::getBooking($booking_id);
+        if (!$booking) {
+            return [
+                'success' => false,
+                'message' => __('Booking not found.', 'fp-esperienze')
+            ];
+        }
+        
+        // Validate the booking can be rescheduled
+        if ($booking->status !== 'confirmed') {
+            return [
+                'success' => false,
+                'message' => __('Only confirmed bookings can be rescheduled.', 'fp-esperienze')
+            ];
+        }
+        
+        // Check cutoff time for new slot
+        $cutoff_check = self::validateCutoffTime($booking->product_id, $new_date, $new_time);
+        if (!$cutoff_check['valid']) {
+            return [
+                'success' => false,
+                'message' => $cutoff_check['message']
+            ];
+        }
+        
+        // Check capacity for new slot
+        $capacity_check = self::validateCapacity($booking->product_id, $new_date, $new_time, $booking->adults + $booking->children);
+        if (!$capacity_check['valid']) {
+            return [
+                'success' => false,
+                'message' => $capacity_check['message']
+            ];
+        }
+        
+        // Store old date/time for cache invalidation
+        $old_date = $booking->booking_date;
+        $old_time = $booking->booking_time;
+        
+        // Update booking
+        $result = $wpdb->update(
+            $table_name,
+            [
+                'booking_date' => $new_date,
+                'booking_time' => $new_time,
+                'admin_notes' => $admin_notes,
+                'updated_at' => current_time('mysql')
+            ],
+            ['id' => $booking_id],
+            ['%s', '%s', '%s', '%s'],
+            ['%d']
+        );
+        
+        if ($result === false) {
+            return [
+                'success' => false,
+                'message' => __('Failed to update booking.', 'fp-esperienze')
+            ];
+        }
+        
+        // Trigger cache invalidation for both old and new slots
+        do_action('fp_esperienze_booking_rescheduled', $booking->product_id, $old_date, $new_date);
+        
+        // Send email notification
+        self::sendRescheduleNotification($booking_id, $old_date, $old_time, $new_date, $new_time);
+        
+        return [
+            'success' => true,
+            'message' => __('Booking rescheduled successfully.', 'fp-esperienze')
+        ];
+    }
+
+    /**
+     * Validate cutoff time for a slot
+     *
+     * @param int $product_id Product ID
+     * @param string $date Date (Y-m-d format)
+     * @param string $time Time (H:i:s format)
+     * @return array Validation result
+     */
+    private static function validateCutoffTime(int $product_id, string $date, string $time): array {
+        $cutoff_minutes = get_post_meta($product_id, '_fp_exp_cutoff_minutes', true) ?: 120;
+        
+        $slot_datetime = \DateTime::createFromFormat('Y-m-d H:i:s', $date . ' ' . $time);
+        if (!$slot_datetime) {
+            return [
+                'valid' => false,
+                'message' => __('Invalid date/time format.', 'fp-esperienze')
+            ];
+        }
+        
+        $cutoff_time = new \DateTime();
+        $cutoff_time->add(new \DateInterval('PT' . $cutoff_minutes . 'M'));
+        
+        if ($slot_datetime <= $cutoff_time) {
+            return [
+                'valid' => false,
+                'message' => sprintf(
+                    __('This time slot is too close to departure. Please book at least %d minutes in advance.', 'fp-esperienze'),
+                    $cutoff_minutes
+                )
+            ];
+        }
+        
+        return ['valid' => true];
+    }
+
+    /**
+     * Validate capacity for a slot
+     *
+     * @param int $product_id Product ID
+     * @param string $date Date (Y-m-d format)
+     * @param string $time Time (H:i:s format)
+     * @param int $participants Number of participants needed
+     * @return array Validation result
+     */
+    private static function validateCapacity(int $product_id, string $date, string $time, int $participants): array {
+        // Get slots for the date to check capacity
+        $slots = \FP\Esperienze\Data\Availability::getSlotsForDate($product_id, $date);
+        
+        // Find the specific slot
+        $target_slot = null;
+        foreach ($slots as $slot) {
+            if ($slot['start_time'] === substr($time, 0, 5)) { // Compare H:i format
+                $target_slot = $slot;
+                break;
+            }
+        }
+        
+        if (!$target_slot) {
+            return [
+                'valid' => false,
+                'message' => __('Time slot not available.', 'fp-esperienze')
+            ];
+        }
+        
+        if ($target_slot['available'] < $participants) {
+            return [
+                'valid' => false,
+                'message' => sprintf(
+                    __('Not enough capacity. Only %d spots available.', 'fp-esperienze'),
+                    $target_slot['available']
+                )
+            ];
+        }
+        
+        return ['valid' => true];
+    }
+
+    /**
+     * Send reschedule notification email
+     *
+     * @param int $booking_id Booking ID
+     * @param string $old_date Old date
+     * @param string $old_time Old time
+     * @param string $new_date New date
+     * @param string $new_time New time
+     */
+    private static function sendRescheduleNotification(int $booking_id, string $old_date, string $old_time, string $new_date, string $new_time): void {
+        $booking = self::getBooking($booking_id);
+        if (!$booking) {
+            return;
+        }
+        
+        $order = wc_get_order($booking->order_id);
+        if (!$order) {
+            return;
+        }
+        
+        $product = wc_get_product($booking->product_id);
+        if (!$product) {
+            return;
+        }
+        
+        $to = $order->get_billing_email();
+        $subject = sprintf(__('Booking Rescheduled - %s', 'fp-esperienze'), $product->get_name());
+        
+        $message = sprintf(
+            __('Your booking has been rescheduled:\n\nProduct: %s\nOriginal Date: %s at %s\nNew Date: %s at %s\n\nOrder: #%d\nBooking ID: %d', 'fp-esperienze'),
+            $product->get_name(),
+            date_i18n(get_option('date_format'), strtotime($old_date)),
+            date_i18n(get_option('time_format'), strtotime($old_time)),
+            date_i18n(get_option('date_format'), strtotime($new_date)),
+            date_i18n(get_option('time_format'), strtotime($new_time)),
+            $booking->order_id,
+            $booking_id
+        );
+        
+        wp_mail($to, $subject, $message);
+    }
+
+    /**
+     * Check if booking can be cancelled based on cancellation rules
+     *
+     * @param int $booking_id Booking ID
+     * @return array Result with cancellation info
+     */
+    public static function checkCancellationRules(int $booking_id): array {
+        $booking = self::getBooking($booking_id);
+        if (!$booking) {
+            return [
+                'can_cancel' => false,
+                'message' => __('Booking not found.', 'fp-esperienze')
+            ];
+        }
+        
+        if ($booking->status !== 'confirmed') {
+            return [
+                'can_cancel' => false,
+                'message' => __('Only confirmed bookings can be cancelled.', 'fp-esperienze')
+            ];
+        }
+        
+        // Get cancellation rules
+        $free_cancel_until = get_post_meta($booking->product_id, '_fp_exp_free_cancel_until_minutes', true) ?: 1440;
+        $cancel_fee_percent = get_post_meta($booking->product_id, '_fp_exp_cancel_fee_percent', true) ?: 0;
+        
+        // Calculate booking datetime
+        $booking_datetime = \DateTime::createFromFormat('Y-m-d H:i:s', $booking->booking_date . ' ' . $booking->booking_time);
+        if (!$booking_datetime) {
+            return [
+                'can_cancel' => false,
+                'message' => __('Invalid booking date/time.', 'fp-esperienze')
+            ];
+        }
+        
+        // Calculate free cancellation deadline
+        $free_cancel_deadline = clone $booking_datetime;
+        $free_cancel_deadline->sub(new \DateInterval('PT' . $free_cancel_until . 'M'));
+        
+        $now = new \DateTime();
+        $is_free_cancellation = $now <= $free_cancel_deadline;
+        
+        return [
+            'can_cancel' => true,
+            'is_free' => $is_free_cancellation,
+            'fee_percent' => $cancel_fee_percent,
+            'deadline' => $free_cancel_deadline,
+            'message' => $is_free_cancellation 
+                ? __('Free cancellation available.', 'fp-esperienze')
+                : sprintf(__('Cancellation fee: %s%%', 'fp-esperienze'), $cancel_fee_percent)
+        ];
+    }
 }

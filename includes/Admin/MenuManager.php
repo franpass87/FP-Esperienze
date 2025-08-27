@@ -32,6 +32,12 @@ class MenuManager {
         
         // Handle setup wizard redirect
         add_action('admin_init', [$this, 'handleSetupWizardRedirect']);
+        
+        // AJAX handlers for booking actions
+        add_action('wp_ajax_fp_get_available_slots', [$this, 'ajaxGetAvailableSlots']);
+        add_action('wp_ajax_fp_reschedule_booking', [$this, 'ajaxRescheduleBooking']);
+        add_action('wp_ajax_fp_cancel_booking', [$this, 'ajaxCancelBooking']);
+        add_action('wp_ajax_fp_check_cancellation_rules', [$this, 'ajaxCheckCancellationRules']);
     }
 
     /**
@@ -288,6 +294,7 @@ class MenuManager {
                                 <th><?php _e('Status', 'fp-esperienze'); ?></th>
                                 <th><?php _e('Meeting Point', 'fp-esperienze'); ?></th>
                                 <th><?php _e('Created', 'fp-esperienze'); ?></th>
+                                <th><?php _e('Actions', 'fp-esperienze'); ?></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -334,6 +341,18 @@ class MenuManager {
                                         ?>
                                     </td>
                                     <td><?php echo esc_html(date_i18n(get_option('date_format') . ' ' . get_option('time_format'), strtotime($booking->created_at))); ?></td>
+                                    <td>
+                                        <?php if ($booking->status === 'confirmed') : ?>
+                                            <button type="button" class="button button-small fp-reschedule-booking" data-booking-id="<?php echo esc_attr($booking->id); ?>" data-product-id="<?php echo esc_attr($booking->product_id); ?>" data-current-date="<?php echo esc_attr($booking->booking_date); ?>" data-current-time="<?php echo esc_attr($booking->booking_time); ?>">
+                                                <?php _e('Reschedule', 'fp-esperienze'); ?>
+                                            </button>
+                                            <button type="button" class="button button-small fp-cancel-booking" data-booking-id="<?php echo esc_attr($booking->id); ?>">
+                                                <?php _e('Cancel', 'fp-esperienze'); ?>
+                                            </button>
+                                        <?php else : ?>
+                                            <span class="description"><?php _e('No actions available', 'fp-esperienze'); ?></span>
+                                        <?php endif; ?>
+                                    </td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>
@@ -344,6 +363,64 @@ class MenuManager {
             <!-- Calendar View -->
             <div id="fp-bookings-calendar" class="fp-bookings-content" style="display: none;">
                 <div id="fp-calendar"></div>
+            </div>
+            
+            <!-- Reschedule Modal -->
+            <div id="fp-reschedule-modal" style="display: none;">
+                <div class="fp-modal-content">
+                    <span class="fp-modal-close">&times;</span>
+                    <h3><?php _e('Reschedule Booking', 'fp-esperienze'); ?></h3>
+                    <form id="fp-reschedule-form">
+                        <?php wp_nonce_field('fp_reschedule_booking', 'fp_reschedule_nonce'); ?>
+                        <input type="hidden" id="reschedule-booking-id" name="booking_id" value="">
+                        <input type="hidden" id="reschedule-product-id" name="product_id" value="">
+                        
+                        <p>
+                            <label for="reschedule-date"><?php _e('New Date:', 'fp-esperienze'); ?></label>
+                            <input type="date" id="reschedule-date" name="new_date" required>
+                        </p>
+                        
+                        <p>
+                            <label for="reschedule-time"><?php _e('New Time Slot:', 'fp-esperienze'); ?></label>
+                            <select id="reschedule-time" name="new_time" required>
+                                <option value=""><?php _e('Select time slot', 'fp-esperienze'); ?></option>
+                            </select>
+                        </p>
+                        
+                        <p>
+                            <label for="reschedule-notes"><?php _e('Admin Notes:', 'fp-esperienze'); ?></label>
+                            <textarea id="reschedule-notes" name="admin_notes" rows="3" placeholder="<?php _e('Optional notes about the reschedule...', 'fp-esperienze'); ?>"></textarea>
+                        </p>
+                        
+                        <p>
+                            <button type="submit" class="button button-primary"><?php _e('Reschedule Booking', 'fp-esperienze'); ?></button>
+                            <button type="button" class="button fp-modal-close"><?php _e('Cancel', 'fp-esperienze'); ?></button>
+                        </p>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Cancel Modal -->
+            <div id="fp-cancel-modal" style="display: none;">
+                <div class="fp-modal-content">
+                    <span class="fp-modal-close">&times;</span>
+                    <h3><?php _e('Cancel Booking', 'fp-esperienze'); ?></h3>
+                    <div id="fp-cancel-info"></div>
+                    <form id="fp-cancel-form" style="display: none;">
+                        <?php wp_nonce_field('fp_cancel_booking', 'fp_cancel_nonce'); ?>
+                        <input type="hidden" id="cancel-booking-id" name="booking_id" value="">
+                        
+                        <p>
+                            <label for="cancel-reason"><?php _e('Cancellation Reason:', 'fp-esperienze'); ?></label>
+                            <textarea id="cancel-reason" name="cancel_reason" rows="3" placeholder="<?php _e('Reason for cancellation...', 'fp-esperienze'); ?>"></textarea>
+                        </p>
+                        
+                        <p>
+                            <button type="submit" class="button button-primary"><?php _e('Confirm Cancellation', 'fp-esperienze'); ?></button>
+                            <button type="button" class="button fp-modal-close"><?php _e('Cancel', 'fp-esperienze'); ?></button>
+                        </p>
+                    </form>
+                </div>
             </div>
         </div>
         
@@ -387,6 +464,58 @@ class MenuManager {
             height: 600px;
             margin-top: 20px;
         }
+        
+        /* Modal Styles */
+        #fp-reschedule-modal, #fp-cancel-modal {
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .fp-modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 600px;
+            max-width: 90%;
+            border-radius: 5px;
+            position: relative;
+        }
+        
+        .fp-modal-close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            position: absolute;
+            right: 10px;
+            top: 10px;
+        }
+        
+        .fp-modal-close:hover,
+        .fp-modal-close:focus {
+            color: black;
+        }
+        
+        .fp-modal-content label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+        }
+        
+        .fp-modal-content input,
+        .fp-modal-content select,
+        .fp-modal-content textarea {
+            width: 100%;
+            padding: 5px;
+            margin-bottom: 10px;
+        }
         </style>
         
         <script>
@@ -411,6 +540,167 @@ class MenuManager {
                         FPEsperienzeAdmin.initBookingsCalendar();
                     }
                     window.fpCalendarInitialized = true;
+                }
+            });
+            
+            // Reschedule booking
+            $('.fp-reschedule-booking').click(function() {
+                var bookingId = $(this).data('booking-id');
+                var productId = $(this).data('product-id');
+                var currentDate = $(this).data('current-date');
+                var currentTime = $(this).data('current-time');
+                
+                $('#reschedule-booking-id').val(bookingId);
+                $('#reschedule-product-id').val(productId);
+                $('#reschedule-date').val(currentDate);
+                
+                // Clear previous time slots
+                $('#reschedule-time').html('<option value=""><?php _e('Select time slot', 'fp-esperienze'); ?></option>');
+                
+                $('#fp-reschedule-modal').show();
+            });
+            
+            // Load time slots when date changes
+            $('#reschedule-date').change(function() {
+                var date = $(this).val();
+                var productId = $('#reschedule-product-id').val();
+                
+                if (!date || !productId) return;
+                
+                // Load available slots for the selected date
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'fp_get_available_slots',
+                        product_id: productId,
+                        date: date,
+                        nonce: '<?php echo wp_create_nonce('fp_get_slots'); ?>'
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            var timeSelect = $('#reschedule-time');
+                            timeSelect.html('<option value=""><?php _e('Select time slot', 'fp-esperienze'); ?></option>');
+                            
+                            $.each(response.data.slots, function(index, slot) {
+                                if (slot.is_available) {
+                                    timeSelect.append('<option value="' + slot.start_time + '">' + 
+                                        slot.start_time + ' - ' + slot.end_time + 
+                                        ' (' + slot.available + ' <?php _e('spots available', 'fp-esperienze'); ?>)</option>');
+                                }
+                            });
+                        } else {
+                            alert(response.data.message || '<?php _e('Error loading time slots', 'fp-esperienze'); ?>');
+                        }
+                    },
+                    error: function() {
+                        alert('<?php _e('Error loading time slots', 'fp-esperienze'); ?>');
+                    }
+                });
+            });
+            
+            // Handle reschedule form submission
+            $('#fp-reschedule-form').submit(function(e) {
+                e.preventDefault();
+                
+                var formData = $(this).serialize();
+                formData += '&action=fp_reschedule_booking';
+                
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: formData,
+                    success: function(response) {
+                        if (response.success) {
+                            alert(response.data.message);
+                            location.reload();
+                        } else {
+                            alert(response.data.message || '<?php _e('Error rescheduling booking', 'fp-esperienze'); ?>');
+                        }
+                    },
+                    error: function() {
+                        alert('<?php _e('Error rescheduling booking', 'fp-esperienze'); ?>');
+                    }
+                });
+            });
+            
+            // Cancel booking
+            $('.fp-cancel-booking').click(function() {
+                var bookingId = $(this).data('booking-id');
+                $('#cancel-booking-id').val(bookingId);
+                
+                // Check cancellation rules
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'fp_check_cancellation_rules',
+                        booking_id: bookingId,
+                        nonce: '<?php echo wp_create_nonce('fp_check_cancel'); ?>'
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            var info = '<p>' + response.data.message + '</p>';
+                            if (!response.data.can_cancel) {
+                                info += '<p><strong><?php _e('This booking cannot be cancelled.', 'fp-esperienze'); ?></strong></p>';
+                                $('#fp-cancel-form').hide();
+                            } else {
+                                $('#fp-cancel-form').show();
+                            }
+                            $('#fp-cancel-info').html(info);
+                        } else {
+                            $('#fp-cancel-info').html('<p><strong><?php _e('Error checking cancellation rules.', 'fp-esperienze'); ?></strong></p>');
+                            $('#fp-cancel-form').hide();
+                        }
+                        $('#fp-cancel-modal').show();
+                    },
+                    error: function() {
+                        alert('<?php _e('Error checking cancellation rules', 'fp-esperienze'); ?>');
+                    }
+                });
+            });
+            
+            // Handle cancel form submission
+            $('#fp-cancel-form').submit(function(e) {
+                e.preventDefault();
+                
+                if (!confirm('<?php _e('Are you sure you want to cancel this booking?', 'fp-esperienze'); ?>')) {
+                    return;
+                }
+                
+                var formData = $(this).serialize();
+                formData += '&action=fp_cancel_booking';
+                
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: formData,
+                    success: function(response) {
+                        if (response.success) {
+                            alert(response.data.message);
+                            location.reload();
+                        } else {
+                            alert(response.data.message || '<?php _e('Error cancelling booking', 'fp-esperienze'); ?>');
+                        }
+                    },
+                    error: function() {
+                        alert('<?php _e('Error cancelling booking', 'fp-esperienze'); ?>');
+                    }
+                });
+            });
+            
+            // Close modals
+            $('.fp-modal-close').click(function() {
+                $(this).closest('[id$="-modal"]').hide();
+            });
+            
+            // Close modals when clicking outside
+            $(window).click(function(event) {
+                if ($(event.target).is('#fp-reschedule-modal')) {
+                    $('#fp-reschedule-modal').hide();
+                }
+                if ($(event.target).is('#fp-cancel-modal')) {
+                    $('#fp-cancel-modal').hide();
                 }
             });
         });
@@ -2994,5 +3284,135 @@ class MenuManager {
     public function performancePage(): void {
         $performance_settings = new PerformanceSettings();
         $performance_settings->renderPage();
+    }
+    
+    /**
+     * AJAX handler: Get available slots for a date
+     */
+    public function ajaxGetAvailableSlots(): void {
+        if (!CapabilityManager::canManageFPEsperienze()) {
+            wp_die('Insufficient permissions');
+        }
+        
+        if (!wp_verify_nonce($_POST['nonce'] ?? '', 'fp_get_slots')) {
+            wp_die('Security check failed');
+        }
+        
+        $product_id = absint($_POST['product_id'] ?? 0);
+        $date = sanitize_text_field($_POST['date'] ?? '');
+        
+        if (!$product_id || !$date) {
+            wp_send_json_error(['message' => __('Invalid parameters.', 'fp-esperienze')]);
+        }
+        
+        $slots = \FP\Esperienze\Data\Availability::getSlotsForDate($product_id, $date);
+        
+        wp_send_json_success(['slots' => $slots]);
+    }
+    
+    /**
+     * AJAX handler: Reschedule booking
+     */
+    public function ajaxRescheduleBooking(): void {
+        if (!CapabilityManager::canManageFPEsperienze()) {
+            wp_die('Insufficient permissions');
+        }
+        
+        if (!wp_verify_nonce($_POST['fp_reschedule_nonce'] ?? '', 'fp_reschedule_booking')) {
+            wp_die('Security check failed');
+        }
+        
+        $booking_id = absint($_POST['booking_id'] ?? 0);
+        $new_date = sanitize_text_field($_POST['new_date'] ?? '');
+        $new_time = sanitize_text_field($_POST['new_time'] ?? '') . ':00'; // Add seconds
+        $admin_notes = sanitize_textarea_field($_POST['admin_notes'] ?? '');
+        
+        if (!$booking_id || !$new_date || !$new_time) {
+            wp_send_json_error(['message' => __('Invalid parameters.', 'fp-esperienze')]);
+        }
+        
+        $result = \FP\Esperienze\Booking\BookingManager::rescheduleBooking($booking_id, $new_date, $new_time, $admin_notes);
+        
+        if ($result['success']) {
+            wp_send_json_success(['message' => $result['message']]);
+        } else {
+            wp_send_json_error(['message' => $result['message']]);
+        }
+    }
+    
+    /**
+     * AJAX handler: Check cancellation rules
+     */
+    public function ajaxCheckCancellationRules(): void {
+        if (!CapabilityManager::canManageFPEsperienze()) {
+            wp_die('Insufficient permissions');
+        }
+        
+        if (!wp_verify_nonce($_POST['nonce'] ?? '', 'fp_check_cancel')) {
+            wp_die('Security check failed');
+        }
+        
+        $booking_id = absint($_POST['booking_id'] ?? 0);
+        
+        if (!$booking_id) {
+            wp_send_json_error(['message' => __('Invalid booking ID.', 'fp-esperienze')]);
+        }
+        
+        $result = \FP\Esperienze\Booking\BookingManager::checkCancellationRules($booking_id);
+        
+        wp_send_json_success($result);
+    }
+    
+    /**
+     * AJAX handler: Cancel booking
+     */
+    public function ajaxCancelBooking(): void {
+        if (!CapabilityManager::canManageFPEsperienze()) {
+            wp_die('Insufficient permissions');
+        }
+        
+        if (!wp_verify_nonce($_POST['fp_cancel_nonce'] ?? '', 'fp_cancel_booking')) {
+            wp_die('Security check failed');
+        }
+        
+        $booking_id = absint($_POST['booking_id'] ?? 0);
+        $cancel_reason = sanitize_textarea_field($_POST['cancel_reason'] ?? '');
+        
+        if (!$booking_id) {
+            wp_send_json_error(['message' => __('Invalid booking ID.', 'fp-esperienze')]);
+        }
+        
+        // Update booking status to cancelled
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'fp_bookings';
+        
+        $booking = \FP\Esperienze\Booking\BookingManager::getBooking($booking_id);
+        if (!$booking) {
+            wp_send_json_error(['message' => __('Booking not found.', 'fp-esperienze')]);
+        }
+        
+        $admin_notes = $booking->admin_notes ? $booking->admin_notes . "\n" : '';
+        $admin_notes .= sprintf(__('Cancelled by admin. Reason: %s', 'fp-esperienze'), $cancel_reason);
+        
+        $result = $wpdb->update(
+            $table_name,
+            [
+                'status' => 'cancelled',
+                'admin_notes' => $admin_notes,
+                'updated_at' => current_time('mysql')
+            ],
+            ['id' => $booking_id],
+            ['%s', '%s', '%s'],
+            ['%d']
+        );
+        
+        if ($result === false) {
+            wp_send_json_error(['message' => __('Failed to cancel booking.', 'fp-esperienze')]);
+        }
+        
+        // Trigger cache invalidation
+        do_action('fp_esperienze_booking_cancelled', $booking->product_id, $booking->booking_date);
+        
+        wp_send_json_success(['message' => __('Booking cancelled successfully.', 'fp-esperienze')]);
     }
 }
