@@ -24,8 +24,15 @@ class ExtraManager {
         global $wpdb;
         
         $table_name = esc_sql($wpdb->prefix . 'fp_extras');
-        $where_clause = $active_only ? "WHERE is_active = 1" : "";
-        $results = $wpdb->get_results("SELECT * FROM `{$table_name}` {$where_clause} ORDER BY name ASC");
+        
+        if ($active_only) {
+            $results = $wpdb->get_results($wpdb->prepare(
+                "SELECT * FROM `{$table_name}` WHERE is_active = %d ORDER BY name ASC",
+                1
+            ));
+        } else {
+            $results = $wpdb->get_results("SELECT * FROM `{$table_name}` ORDER BY name ASC");
+        }
         
         return $results ?: [];
     }
