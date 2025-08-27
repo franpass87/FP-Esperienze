@@ -145,7 +145,7 @@ class VoucherManager {
     }
     
     /**
-     * Generate unique voucher code
+     * Generate unique voucher code using cryptographically secure random_bytes
      *
      * @return string Voucher code
      */
@@ -155,9 +155,11 @@ class VoucherManager {
         $table_name = $wpdb->prefix . 'fp_exp_vouchers';
         
         do {
-            // Generate 10-character alphanumeric code
-            $code = strtoupper(wp_generate_password(10, false));
-            // Remove confusing characters
+            // Generate 12-character code using random_bytes for better security
+            $bytes = random_bytes(9); // 9 bytes = 12 base32 chars
+            $code = strtoupper(substr(str_replace(['=', '/', '+'], ['', '', ''], base64_encode($bytes)), 0, 12));
+            
+            // Remove confusing characters for better readability
             $code = str_replace(['0', 'O', 'I', '1'], ['9', 'P', 'J', '2'], $code);
             
             // Check uniqueness
@@ -377,6 +379,23 @@ class VoucherManager {
         return $wpdb->get_row($wpdb->prepare(
             "SELECT * FROM $table_name WHERE code = %s",
             $code
+        ), ARRAY_A);
+    }
+    
+    /**
+     * Get voucher by ID
+     *
+     * @param int $id Voucher ID
+     * @return array|null Voucher data
+     */
+    public static function getVoucherById($id) {
+        global $wpdb;
+        
+        $table_name = $wpdb->prefix . 'fp_exp_vouchers';
+        
+        return $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM $table_name WHERE id = %d",
+            $id
         ), ARRAY_A);
     }
     
