@@ -8,7 +8,8 @@ A WordPress + WooCommerce plugin for experience booking management by Francesco 
 - **Booking Management**: Complete booking system with slots, schedules, and capacity management
 - **Meeting Points**: GPS-enabled meeting points for experiences
 - **Extras**: Additional services and add-ons
-- **Vouchers**: PDF vouchers with QR codes
+- **Gift Vouchers**: Complete gift system with PDF generation, QR codes, and email delivery
+- **Vouchers**: PDF vouchers with QR codes (legacy system)
 - **REST API**: Real-time availability checking
 - **Frontend Templates**: GetYourGuide-style single experience pages
 - **Admin Dashboard**: Comprehensive management interface
@@ -18,6 +19,10 @@ A WordPress + WooCommerce plugin for experience booking management by Francesco 
 - PHP >= 8.1
 - WordPress >= 6.5
 - WooCommerce >= 8.0
+
+### Dependencies
+- `dompdf/dompdf` ^2.0 - PDF generation for vouchers
+- `chillerlan/php-qrcode` ^4.3 - QR code generation for vouchers
 
 ## Installation
 
@@ -177,6 +182,50 @@ The plugin provides a GetYourGuide-style single experience template with the fol
 4. **Content Sections**: Description, what's included/excluded, meeting point, FAQ, reviews
 5. **Social Proof**: Shows "Only X spots left" when availability is low (≤5 spots)
 
+### Gift Experience Feature
+
+The plugin includes a comprehensive gift voucher system allowing customers to purchase experiences as gifts:
+
+#### Frontend Gift Form
+- Toggle-enabled gift form on experience product pages
+- Required fields: recipient name and email
+- Optional fields: sender name, personal message, send date
+- Form validation with immediate feedback
+
+#### Voucher Generation
+- Automatic voucher creation when gift orders are completed
+- Unique 10-12 character alphanumeric codes
+- PDF generation with customizable branding and QR codes
+- HMAC-SHA256 signed QR codes for security
+
+#### Email Delivery
+- Immediate or scheduled email delivery to recipients
+- Professional email templates with voucher details
+- PDF attachment with QR code for redemption
+- Confirmation emails sent to purchasers
+
+#### Admin Management
+- Voucher management interface with filtering and search
+- Configurable expiration periods (default 12 months)
+- Customizable PDF branding (logo, colors, terms)
+- Voucher status tracking (active, redeemed, expired, void)
+
+#### Configuration
+Gift voucher settings are available in **FP Esperienze → Settings → Gift Vouchers**:
+- Default expiration period in months
+- PDF logo and brand color
+- Email sender details
+- Terms and conditions text
+- HMAC security key management
+
+#### Testing
+Use the included test script `test-gift-voucher.php` to verify:
+- Class loading and dependencies
+- Database table structure
+- QR code generation and verification
+- Settings configuration
+- Upload directory permissions
+
 ### Features
 
 - **Responsive Design**: Mobile-first approach with sticky booking widget
@@ -235,7 +284,8 @@ The plugin creates the following custom tables:
 - `fp_schedules` - Weekly recurring schedules
 - `fp_overrides` - Date-specific overrides
 - `fp_bookings` - Customer bookings
-- `fp_vouchers` - PDF vouchers with QR codes
+- `fp_vouchers` - Legacy voucher system (backwards compatibility)
+- `fp_exp_vouchers` - Gift voucher system with recipient data and status tracking
 
 ## Author
 

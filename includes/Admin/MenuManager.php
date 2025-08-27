@@ -1008,12 +1008,302 @@ class MenuManager {
      * Vouchers page
      */
     public function vouchersPage(): void {
+        global $wpdb;
+        
+        // Handle actions
+        if ($_POST && current_user_can('manage_woocommerce')) {
+            $this->handleVoucherActions();
+        }
+        
+        // Pagination setup
+        $per_page = 20;
+        $current_page = max(1, absint($_GET['paged'] ?? 1));
+        $offset = ($current_page - 1) * $per_page;
+        
+        // Get filters
+        $status_filter = sanitize_text_field($_GET['status'] ?? '');
+        $search = sanitize_text_field($_GET['search'] ?? '');
+        
+        // Build query
+        $table_name = $wpdb->prefix . 'fp_exp_vouchers';
+        $where_conditions = ['1=1'];
+        $query_params = [];
+        
+        if (!empty($status_filter)) {
+            $where_conditions[] = 'status = %s';
+            $query_params[] = $status_filter;
+        }
+        
+        if (!empty($search)) {
+            $where_conditions[] = '(code LIKE %s OR recipient_name LIKE %s OR recipient_email LIKE %s)';
+            $search_term = '%' . $wpdb->esc_like($search) . '%';
+            $query_params = array_merge($query_params, [$search_term, $search_term, $search_term]);
+        }
+        
+        $where_clause = implode(' AND ', $where_conditions);
+        
+        // Get total count
+        $total_query = "SELECT COUNT(*) FROM $table_name WHERE $where_clause";
+        if (!empty($query_params)) {
+            $total_items = $wpdb->get_var($wpdb->prepare($total_query, ...$query_params));
+        } else {
+            $total_items = $wpdb->get_var($total_query);
+        }
+        
+        // Get vouchers
+        $vouchers_query = "SELECT * FROM $table_name WHERE $where_clause ORDER BY created_at DESC LIMIT %d OFFSET %d";
+        $all_params = array_merge($query_params, [$per_page, $offset]);
+        $vouchers = $wpdb->get_results($wpdb->prepare($vouchers_query, ...$all_params));
+        
+        // Calculate pagination
+        $total_pages = ceil($total_items / $per_page);
+        
         ?>
         <div class="wrap">
-            <h1><?php _e('Vouchers Management', 'fp-esperienze'); ?></h1>
-            <p><?php _e('Voucher management functionality will be implemented in future updates.', 'fp-esperienze'); ?></p>
+            <h1><?php _e('Gift Vouchers', 'fp-esperienze'); ?></h1>
+            
+            <!-- Filters -->
+            <div class="tablenav top">
+                <form method="get" style="display: inline-block;">
+                    <input type="hidden" name="page" value="fp-esperienze-vouchers">
+                    
+                    <select name="status">
+                        <option value=""><?php _e('All Statuses', 'fp-esperienze'); ?></option>
+                        <option value="active" <?php selected($status_filter, 'active'); ?>><?php _e('Active', 'fp-esperienze'); ?></option>
+                        <option value="redeemed" <?php selected($status_filter, 'redeemed'); ?>><?php _e('Redeemed', 'fp-esperienze'); ?></option>
+                        <option value="expired" <?php selected($status_filter, 'expired'); ?>><?php _e('Expired', 'fp-esperienze'); ?></option>
+                        <option value="void" <?php selected($status_filter, 'void'); ?>><?php _e('Void', 'fp-esperienze'); ?></option>
+                    </select>
+                    
+                    <input type="text" 
+                           name="search" 
+                           value="<?php echo esc_attr($search); ?>" 
+                           placeholder="<?php esc_attr_e('Search vouchers...', 'fp-esperienze'); ?>">
+                    
+                    <input type="submit" class="button" value="<?php esc_attr_e('Filter', 'fp-esperienze'); ?>">
+                    
+                    <?php if (!empty($status_filter) || !empty($search)): ?>
+                        <a href="<?php echo esc_url(admin_url('admin.php?page=fp-esperienze-vouchers')); ?>" class="button"><?php _e('Clear', 'fp-esperienze'); ?></a>
+                    <?php endif; ?>
+                </form>
+                
+                <div class="alignright">
+                    <span class="displaying-num"><?php printf(__('%d items', 'fp-esperienze'), $total_items); ?></span>
+                </div>
+            </div>
+            
+            <!-- Vouchers Table -->
+            <table class="wp-list-table widefat fixed striped">
+                <thead>
+                    <tr>
+                        <th><?php _e('Code', 'fp-esperienze'); ?></th>
+                        <th><?php _e('Product', 'fp-esperienze'); ?></th>
+                        <th><?php _e('Recipient', 'fp-esperienze'); ?></th>
+                        <th><?php _e('Value', 'fp-esperienze'); ?></th>
+                        <th><?php _e('Status', 'fp-esperienze'); ?></th>
+                        <th><?php _e('Expires', 'fp-esperienze'); ?></th>
+                        <th><?php _e('Created', 'fp-esperienze'); ?></th>
+                        <th><?php _e('Actions', 'fp-esperienze'); ?></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (empty($vouchers)): ?>
+                        <tr>
+                            <td colspan="8" style="text-align: center; padding: 20px;">
+                                <?php _e('No vouchers found.', 'fp-esperienze'); ?>
+                            </td>
+                        </tr>
+                    <?php else: ?>
+                        <?php foreach ($vouchers as $voucher): ?>
+                            <?php
+                            $product = wc_get_product($voucher->product_id);
+                            $product_name = $product ? $product->get_name() : __('Product not found', 'fp-esperienze');
+                            
+                            $status_class = '';
+                            switch ($voucher->status) {
+                                case 'active':
+                                    $status_class = 'color: #46b450;';
+                                    break;
+                                case 'redeemed':
+                                    $status_class = 'color: #00a0d2;';
+                                    break;
+                                case 'expired':
+                                    $status_class = 'color: #dc3232;';
+                                    break;
+                                case 'void':
+                                    $status_class = 'color: #666;';
+                                    break;
+                            }
+                            
+                            $value_display = $voucher->amount_type === 'full' 
+                                ? __('Full Experience', 'fp-esperienze')
+                                : wc_price($voucher->amount);
+                            ?>
+                            <tr>
+                                <td>
+                                    <strong><?php echo esc_html($voucher->code); ?></strong>
+                                </td>
+                                <td>
+                                    <?php echo esc_html($product_name); ?>
+                                    <?php if ($voucher->order_id): ?>
+                                        <br><small><a href="<?php echo esc_url(admin_url('post.php?post=' . $voucher->order_id . '&action=edit')); ?>">
+                                            <?php printf(__('Order #%d', 'fp-esperienze'), $voucher->order_id); ?>
+                                        </a></small>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <strong><?php echo esc_html($voucher->recipient_name); ?></strong>
+                                    <br><small><?php echo esc_html($voucher->recipient_email); ?></small>
+                                    <?php if (!empty($voucher->sender_name)): ?>
+                                        <br><small><?php printf(__('From: %s', 'fp-esperienze'), esc_html($voucher->sender_name)); ?></small>
+                                    <?php endif; ?>
+                                </td>
+                                <td><?php echo $value_display; ?></td>
+                                <td>
+                                    <span style="<?php echo esc_attr($status_class); ?>font-weight: 600;">
+                                        <?php echo esc_html(ucfirst($voucher->status)); ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <?php echo esc_html(date_i18n(get_option('date_format'), strtotime($voucher->expires_on))); ?>
+                                    <?php if (strtotime($voucher->expires_on) < time() && $voucher->status === 'active'): ?>
+                                        <br><small style="color: #dc3232;"><?php _e('Expired', 'fp-esperienze'); ?></small>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <?php echo esc_html(date_i18n(get_option('date_format'), strtotime($voucher->created_at))); ?>
+                                </td>
+                                <td>
+                                    <?php if (!empty($voucher->pdf_path) && file_exists($voucher->pdf_path)): ?>
+                                        <a href="<?php echo esc_url(admin_url('admin.php?page=fp-esperienze-vouchers&action=download_pdf&voucher_id=' . $voucher->id)); ?>" 
+                                           class="button button-small"><?php _e('Download PDF', 'fp-esperienze'); ?></a>
+                                        <br>
+                                    <?php endif; ?>
+                                    
+                                    <?php if ($voucher->status === 'active'): ?>
+                                        <form method="post" style="display: inline-block; margin-top: 4px;">
+                                            <?php wp_nonce_field('fp_voucher_action', 'fp_voucher_nonce'); ?>
+                                            <input type="hidden" name="action" value="void_voucher">
+                                            <input type="hidden" name="voucher_id" value="<?php echo esc_attr($voucher->id); ?>">
+                                            <input type="submit" 
+                                                   class="button button-small button-link-delete" 
+                                                   value="<?php esc_attr_e('Void', 'fp-esperienze'); ?>"
+                                                   onclick="return confirm('<?php esc_js_e('Are you sure you want to void this voucher?', 'fp-esperienze'); ?>')">
+                                        </form>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+            
+            <!-- Pagination -->
+            <?php if ($total_pages > 1): ?>
+                <div class="tablenav bottom">
+                    <div class="tablenav-pages">
+                        <span class="displaying-num"><?php printf(__('%d items', 'fp-esperienze'), $total_items); ?></span>
+                        <span class="pagination-links">
+                            <?php
+                            $page_links = paginate_links([
+                                'base' => add_query_arg('paged', '%#%'),
+                                'format' => '',
+                                'prev_text' => '&laquo;',
+                                'next_text' => '&raquo;',
+                                'total' => $total_pages,
+                                'current' => $current_page,
+                                'type' => 'array'
+                            ]);
+                            
+                            if ($page_links) {
+                                echo implode("\n", $page_links);
+                            }
+                            ?>
+                        </span>
+                    </div>
+                </div>
+            <?php endif; ?>
         </div>
         <?php
+    }
+    
+    /**
+     * Handle voucher actions
+     */
+    private function handleVoucherActions(): void {
+        if (!wp_verify_nonce($_POST['fp_voucher_nonce'] ?? '', 'fp_voucher_action')) {
+            return;
+        }
+        
+        $action = sanitize_text_field($_POST['action'] ?? '');
+        $voucher_id = absint($_POST['voucher_id'] ?? 0);
+        
+        switch ($action) {
+            case 'void_voucher':
+                $this->voidVoucher($voucher_id);
+                break;
+        }
+        
+        // Handle PDF download
+        if ($_GET['action'] === 'download_pdf' && !empty($_GET['voucher_id'])) {
+            $this->downloadVoucherPdf(absint($_GET['voucher_id']));
+        }
+    }
+    
+    /**
+     * Void a voucher
+     */
+    private function voidVoucher($voucher_id): void {
+        global $wpdb;
+        
+        $table_name = $wpdb->prefix . 'fp_exp_vouchers';
+        
+        $result = $wpdb->update(
+            $table_name,
+            ['status' => 'void'],
+            ['id' => $voucher_id]
+        );
+        
+        if ($result !== false) {
+            add_action('admin_notices', function() {
+                echo '<div class="notice notice-success is-dismissible"><p>' . 
+                     esc_html__('Voucher voided successfully.', 'fp-esperienze') . 
+                     '</p></div>';
+            });
+        } else {
+            add_action('admin_notices', function() {
+                echo '<div class="notice notice-error is-dismissible"><p>' . 
+                     esc_html__('Failed to void voucher.', 'fp-esperienze') . 
+                     '</p></div>';
+            });
+        }
+    }
+    
+    /**
+     * Download voucher PDF
+     */
+    private function downloadVoucherPdf($voucher_id): void {
+        global $wpdb;
+        
+        $table_name = $wpdb->prefix . 'fp_exp_vouchers';
+        
+        $voucher = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM $table_name WHERE id = %d",
+            $voucher_id
+        ));
+        
+        if (!$voucher || empty($voucher->pdf_path) || !file_exists($voucher->pdf_path)) {
+            wp_die(__('PDF not found.', 'fp-esperienze'));
+        }
+        
+        $filename = 'voucher-' . $voucher->code . '.pdf';
+        
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Content-Length: ' . filesize($voucher->pdf_path));
+        
+        readfile($voucher->pdf_path);
+        exit;
     }
 
     /**
