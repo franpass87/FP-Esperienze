@@ -2180,6 +2180,11 @@ class MenuManager {
         $gbp_client_id = $integrations['gbp_client_id'] ?? '';
         $gbp_client_secret = $integrations['gbp_client_secret'] ?? '';
         
+        // Consent Mode v2 settings
+        $consent_mode_enabled = !empty($integrations['consent_mode_enabled']);
+        $consent_cookie_name = $integrations['consent_cookie_name'] ?? 'marketing_consent';
+        $consent_js_function = $integrations['consent_js_function'] ?? '';
+        
         ?>
         <div class="wrap">
             <h1><?php _e('FP Esperienze Settings', 'fp-esperienze'); ?></h1>
@@ -2394,6 +2399,58 @@ class MenuManager {
                                     <?php _e('Enable Conversions API and event deduplication (placeholder)', 'fp-esperienze'); ?>
                                 </label>
                                 <p class="description"><?php _e('Advanced feature for server-side tracking and better data accuracy. Implementation coming in future version.', 'fp-esperienze'); ?></p>
+                            </td>
+                        </tr>
+                        
+                        <!-- Consent Mode v2 Section -->
+                        <tr>
+                            <th colspan="2"><h3><?php _e('Consent Mode v2', 'fp-esperienze'); ?></h3></th>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row">
+                                <label for="consent_mode_enabled"><?php _e('Enable Consent Mode', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <label>
+                                    <input type="checkbox" 
+                                           id="consent_mode_enabled" 
+                                           name="consent_mode_enabled" 
+                                           value="1" 
+                                           <?php checked($consent_mode_enabled); ?> />
+                                    <?php _e('Use Consent Mode v2 for tracking compliance', 'fp-esperienze'); ?>
+                                </label>
+                                <p class="description"><?php _e('When enabled, GA4 and Meta Pixel events only fire if marketing consent is granted. Requires integration with a Consent Management Platform (CMP).', 'fp-esperienze'); ?></p>
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row">
+                                <label for="consent_cookie_name"><?php _e('Consent Cookie Name', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <input type="text" 
+                                       id="consent_cookie_name" 
+                                       name="consent_cookie_name" 
+                                       value="<?php echo esc_attr($consent_cookie_name); ?>" 
+                                       placeholder="marketing_consent"
+                                       class="regular-text" />
+                                <p class="description"><?php _e('Name of the cookie that stores marketing consent status (should contain "true" or "1" for granted).', 'fp-esperienze'); ?></p>
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row">
+                                <label for="consent_js_function"><?php _e('Consent JavaScript Function', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <input type="text" 
+                                       id="consent_js_function" 
+                                       name="consent_js_function" 
+                                       value="<?php echo esc_attr($consent_js_function); ?>" 
+                                       placeholder="window.myCMP.getMarketingConsent"
+                                       class="regular-text" />
+                                <p class="description"><?php _e('Optional: JavaScript function path that returns boolean consent status. Use either this OR cookie name, not both.', 'fp-esperienze'); ?></p>
                             </td>
                         </tr>
                         
@@ -2636,6 +2693,10 @@ class MenuManager {
                 'gplaces_cache_ttl' => max(5, min(1440, absint($_POST['gplaces_cache_ttl'] ?? 60))),
                 'gbp_client_id' => sanitize_text_field($_POST['gbp_client_id'] ?? ''),
                 'gbp_client_secret' => sanitize_text_field($_POST['gbp_client_secret'] ?? ''),
+                // Consent Mode v2 settings
+                'consent_mode_enabled' => !empty($_POST['consent_mode_enabled']),
+                'consent_cookie_name' => sanitize_text_field($_POST['consent_cookie_name'] ?? 'marketing_consent'),
+                'consent_js_function' => sanitize_text_field($_POST['consent_js_function'] ?? ''),
             ];
             
             // Store all integrations in a single option
