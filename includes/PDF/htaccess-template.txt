@@ -1,0 +1,13 @@
+# FP Esperienze Security - Prevent directory listing and direct access
+Options -Indexes
+<Files "*.pdf">
+    # Allow only authenticated access to PDFs
+    # This will be handled by WordPress endpoint
+    Order Deny,Allow
+    Deny from all
+</Files>
+<Files "*.png">
+    # QR codes can be accessed directly
+    Order Allow,Deny
+    Allow from all
+</Files>

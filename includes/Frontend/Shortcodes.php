@@ -55,7 +55,7 @@ class Shortcodes {
         // Handle pagination
         $paged = get_query_var('paged') ? get_query_var('paged') : 1;
         if (isset($_GET['paged'])) {
-            $paged = intval($_GET['paged']);
+            $paged = absint($_GET['paged']);
         }
 
         // Build query args
@@ -176,7 +176,7 @@ class Shortcodes {
 
         // Meeting point filter
         if (in_array('mp', $enabled_filters) && !empty($_GET['fp_mp'])) {
-            $meeting_point_id = intval($_GET['fp_mp']);
+            $meeting_point_id = absint($_GET['fp_mp']);
             $args['meta_query'][] = [
                 'key'     => '_fp_exp_meeting_point_id',
                 'value'   => $meeting_point_id,
@@ -302,7 +302,7 @@ class Shortcodes {
                                 <?php
                                 $meeting_points = \FP\Esperienze\Data\MeetingPointManager::getAllMeetingPoints();
                                 foreach ($meeting_points as $mp) {
-                                    $selected = isset($_GET['fp_mp']) && $_GET['fp_mp'] == $mp->id ? 'selected' : '';
+                                    $selected = isset($_GET['fp_mp']) && absint($_GET['fp_mp']) == $mp->id ? 'selected' : '';
                                     echo '<option value="' . esc_attr($mp->id) . '" ' . $selected . '>' . esc_html($mp->name) . '</option>';
                                 }
                                 ?>
@@ -318,7 +318,7 @@ class Shortcodes {
                                 <?php
                                 $languages = $this->getAvailableLanguages();
                                 foreach ($languages as $lang) {
-                                    $selected = isset($_GET['fp_lang']) && $_GET['fp_lang'] == $lang ? 'selected' : '';
+                                    $selected = isset($_GET['fp_lang']) && sanitize_text_field($_GET['fp_lang']) == $lang ? 'selected' : '';
                                     echo '<option value="' . esc_attr($lang) . '" ' . $selected . '>' . esc_html($lang) . '</option>';
                                 }
                                 ?>
@@ -331,9 +331,9 @@ class Shortcodes {
                             <label for="fp_duration"><?php _e('Duration', 'fp-esperienze'); ?></label>
                             <select name="fp_duration" id="fp_duration" class="fp-filter-select">
                                 <option value=""><?php _e('Any duration', 'fp-esperienze'); ?></option>
-                                <option value="<=90" <?php selected(isset($_GET['fp_duration']) ? $_GET['fp_duration'] : '', '<=90'); ?>><?php _e('Up to 1.5 hours', 'fp-esperienze'); ?></option>
-                                <option value="91-180" <?php selected(isset($_GET['fp_duration']) ? $_GET['fp_duration'] : '', '91-180'); ?>><?php _e('1.5 - 3 hours', 'fp-esperienze'); ?></option>
-                                <option value=">180" <?php selected(isset($_GET['fp_duration']) ? $_GET['fp_duration'] : '', '>180'); ?>><?php _e('More than 3 hours', 'fp-esperienze'); ?></option>
+                                <option value="<=90" <?php selected(isset($_GET['fp_duration']) ? sanitize_text_field($_GET['fp_duration']) : '', '<=90'); ?>><?php _e('Up to 1.5 hours', 'fp-esperienze'); ?></option>
+                                <option value="91-180" <?php selected(isset($_GET['fp_duration']) ? sanitize_text_field($_GET['fp_duration']) : '', '91-180'); ?>><?php _e('1.5 - 3 hours', 'fp-esperienze'); ?></option>
+                                <option value=">180" <?php selected(isset($_GET['fp_duration']) ? sanitize_text_field($_GET['fp_duration']) : '', '>180'); ?>><?php _e('More than 3 hours', 'fp-esperienze'); ?></option>
                             </select>
                         </div>
                     <?php endif; ?>
@@ -342,7 +342,7 @@ class Shortcodes {
                         <div class="fp-filter-group">
                             <label for="fp_date"><?php _e('Available on', 'fp-esperienze'); ?></label>
                             <input type="date" name="fp_date" id="fp_date" class="fp-filter-date" 
-                                   value="<?php echo esc_attr(isset($_GET['fp_date']) ? $_GET['fp_date'] : ''); ?>"
+                                   value="<?php echo esc_attr(isset($_GET['fp_date']) ? sanitize_text_field($_GET['fp_date']) : ''); ?>"
                                    min="<?php echo esc_attr(date('Y-m-d')); ?>">
                         </div>
                     <?php endif; ?>
@@ -361,7 +361,7 @@ class Shortcodes {
                 <!-- Preserve other query parameters -->
                 <?php foreach ($_GET as $key => $value) : ?>
                     <?php if (!in_array($key, ['fp_mp', 'fp_lang', 'fp_duration', 'fp_date', 'paged'])) : ?>
-                        <input type="hidden" name="<?php echo esc_attr($key); ?>" value="<?php echo esc_attr($value); ?>">
+                        <input type="hidden" name="<?php echo esc_attr(sanitize_key($key)); ?>" value="<?php echo esc_attr(sanitize_text_field($value)); ?>">
                     <?php endif; ?>
                 <?php endforeach; ?>
             </form>

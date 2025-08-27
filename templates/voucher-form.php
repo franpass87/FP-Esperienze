@@ -14,6 +14,7 @@ $has_voucher = !empty($applied_voucher);
 ?>
 
 <div class="fp-voucher-form" data-product-id="<?php echo esc_attr($product_id); ?>" data-cart-item-key="<?php echo esc_attr($cart_item_key); ?>">
+    <?php wp_nonce_field('fp_voucher_nonce', 'fp_voucher_nonce', false); ?>
     <div class="fp-voucher-header">
         <h4><?php esc_html_e('Have a voucher?', 'fp-esperienze'); ?></h4>
     </div>

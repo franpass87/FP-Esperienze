@@ -220,12 +220,12 @@ class MenuManager {
      */
     public function bookingsPage(): void {
         // Handle form submissions
-        if ($_POST && isset($_POST['action'])) {
+        if (!empty($_POST) && isset($_POST['action'])) {
             $this->handleBookingsActions();
         }
         
         // Handle CSV export
-        if (isset($_GET['action']) && $_GET['action'] === 'export_csv') {
+        if (isset($_GET['action']) && sanitize_text_field($_GET['action']) === 'export_csv') {
             $this->exportBookingsCSV();
             return;
         }
@@ -1093,7 +1093,7 @@ class MenuManager {
      */
     public function extrasPage(): void {
         // Handle form submissions
-        if ($_POST) {
+        if (!empty($_POST)) {
             $this->handleExtrasActions();
         }
         
@@ -2163,7 +2163,7 @@ class MenuManager {
      */
     public function closuresPage(): void {
         // Handle form submissions
-        if ($_POST) {
+        if (!empty($_POST)) {
             $this->handleClosuresActions();
         }
         
@@ -3312,7 +3312,8 @@ class MenuManager {
             
             // Regenerate HMAC secret if requested
             if (!empty($_POST['regenerate_secret'])) {
-                update_option('fp_esperienze_gift_secret_hmac', wp_generate_password(32, false));
+                $new_secret = bin2hex(random_bytes(32)); // 256-bit cryptographically secure key
+                update_option('fp_esperienze_gift_secret_hmac', $new_secret);
             }
             
         } elseif ($tab === 'integrations') {

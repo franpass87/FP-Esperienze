@@ -275,7 +275,7 @@ class Installer {
             'fp_esperienze_gift_pdf_brand_color' => '#ff6b35',
             'fp_esperienze_gift_email_sender_name' => get_bloginfo('name'),
             'fp_esperienze_gift_email_sender_email' => get_option('admin_email'),
-            'fp_esperienze_gift_secret_hmac' => wp_generate_password(32, false),
+            'fp_esperienze_gift_secret_hmac' => bin2hex(random_bytes(32)), // 256-bit cryptographically secure key
             'fp_esperienze_gift_terms' => __('This voucher is valid for one experience booking. Please present the QR code when redeeming.', 'fp-esperienze'),
         ];
 

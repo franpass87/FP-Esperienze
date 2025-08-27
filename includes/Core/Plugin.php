@@ -15,6 +15,7 @@ use FP\Esperienze\Blocks\ArchiveBlock;
 use FP\Esperienze\REST\AvailabilityAPI;
 use FP\Esperienze\REST\BookingsAPI;
 use FP\Esperienze\REST\ICSAPI;
+use FP\Esperienze\REST\SecurePDFAPI;
 use FP\Esperienze\Booking\Cart_Hooks;
 use FP\Esperienze\Booking\BookingManager;
 use FP\Esperienze\Data\VoucherManager;
@@ -162,6 +163,7 @@ class Plugin {
         new AvailabilityAPI();
         new BookingsAPI();
         new ICSAPI();
+        new SecurePDFAPI();
     }
 
     /**

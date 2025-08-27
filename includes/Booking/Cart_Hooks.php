@@ -10,6 +10,7 @@ namespace FP\Esperienze\Booking;
 use FP\Esperienze\Data\ExtraManager;
 use FP\Esperienze\Data\VoucherManager;
 use FP\Esperienze\Data\DynamicPricingManager;
+use FP\Esperienze\Core\RateLimiter;
 
 defined('ABSPATH') || exit;
 
@@ -500,6 +501,13 @@ class Cart_Hooks {
      */
     public function applyVoucher() {
         check_ajax_referer('fp_voucher_nonce', 'nonce');
+        
+        // Apply rate limiting for voucher redemption attempts (5 attempts per minute per IP)
+        if (!RateLimiter::checkRateLimit('voucher_redemption', 5, 60)) {
+            wp_send_json_error([
+                'message' => __('Too many voucher redemption attempts. Please try again in a minute.', 'fp-esperienze')
+            ]);
+        }
         
         $voucher_code = sanitize_text_field($_POST['voucher_code'] ?? '');
         $product_id = absint($_POST['product_id'] ?? 0);

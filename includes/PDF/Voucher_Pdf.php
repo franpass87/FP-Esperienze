@@ -42,10 +42,12 @@ class Voucher_Pdf {
         
         // Save PDF file
         $upload_dir = wp_upload_dir();
-        $voucher_dir = $upload_dir['basedir'] . '/fp-vouchers/';
+        $voucher_dir = $upload_dir['basedir'] . '/fp-esperienze/voucher/';
         
         if (!file_exists($voucher_dir)) {
             wp_mkdir_p($voucher_dir);
+            // Create .htaccess for security
+            self::createSecurityHtaccess($voucher_dir);
         }
         
         $filename = 'voucher-' . $voucher_data['code'] . '-' . time() . '.pdf';
@@ -236,5 +238,31 @@ class Voucher_Pdf {
         </html>';
         
         return $html;
+    }
+    
+    /**
+     * Create security .htaccess file in uploads directory
+     *
+     * @param string $directory Directory path
+     */
+    private static function createSecurityHtaccess(string $directory): void {
+        $htaccess_content = '# FP Esperienze Security - Prevent directory listing and direct access
+Options -Indexes
+<Files "*.pdf">
+    # Allow only authenticated access to PDFs
+    # This will be handled by WordPress endpoint
+    Order Deny,Allow
+    Deny from all
+</Files>
+<Files "*.png">
+    # QR codes can be accessed directly
+    Order Allow,Deny
+    Allow from all
+</Files>';
+        
+        $htaccess_path = $directory . '.htaccess';
+        if (!file_exists($htaccess_path)) {
+            file_put_contents($htaccess_path, $htaccess_content);
+        }
     }
 }

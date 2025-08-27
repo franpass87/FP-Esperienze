@@ -40,7 +40,7 @@ class SystemStatus {
      * Handle fix actions
      */
     public function handleFixActions(): void {
-        if (!isset($_GET['page']) || $_GET['page'] !== 'fp-esperienze-system-status') {
+        if (!isset($_GET['page']) || sanitize_text_field($_GET['page']) !== 'fp-esperienze-system-status') {
             return;
         }
 
@@ -90,7 +90,8 @@ class SystemStatus {
                 <div class="notice notice-success is-dismissible">
                     <p>
                         <?php
-                        switch ($_GET['fixed']) {
+                        $fixed = sanitize_text_field($_GET['fixed']);
+                        switch ($fixed) {
                             case 'tables':
                                 _e('Database tables have been created successfully.', 'fp-esperienze');
                                 break;
