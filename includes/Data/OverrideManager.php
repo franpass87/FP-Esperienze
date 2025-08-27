@@ -174,6 +174,7 @@ class OverrideManager {
         // Get all experience products
         $experience_products = get_posts([
             'post_type' => 'product',
+            'post_status' => 'publish',
             'meta_query' => [
                 [
                     'key' => '_product_type',

@@ -454,12 +454,12 @@ class Shortcodes {
                 <?php for ($i = 1; $i <= $max_pages; $i++) : ?>
                     <?php if ($i == $current_page) : ?>
                         <li class="fp-pagination-item fp-pagination-current">
-                            <span class="fp-pagination-link"><?php echo $i; ?></span>
+                            <span class="fp-pagination-link"><?php echo esc_html($i); ?></span>
                         </li>
                     <?php elseif ($i <= 3 || $i > $max_pages - 3 || abs($i - $current_page) <= 2) : ?>
                         <li class="fp-pagination-item">
                             <a href="<?php echo esc_url($this->getPaginationUrl($i)); ?>" class="fp-pagination-link">
-                                <?php echo $i; ?>
+                                <?php echo esc_html($i); ?>
                             </a>
                         </li>
                     <?php elseif ($i == 4 || $i == $max_pages - 3) : ?>

@@ -149,6 +149,7 @@ class I18nManager {
                     // Get all experience posts in current language
                     $experience_posts = get_posts([
                         'post_type' => 'product',
+                        'post_status' => 'publish',
                         'meta_query' => [
                             [
                                 'key' => '_product_type',

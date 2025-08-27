@@ -130,7 +130,9 @@ class CacheManager {
         delete_transient($archive_cache_key);
         
         // Log cache invalidation
-        error_log("FP Cache: Invalidated availability cache for product {$product_id} on {$date}");
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("FP Cache: Invalidated availability cache for product {$product_id} on {$date}");
+        }
     }
     
     /**
