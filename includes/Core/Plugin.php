@@ -115,6 +115,30 @@ class Plugin {
      * Enqueue frontend scripts and styles
      */
     public function enqueueScripts(): void {
+        // Only enqueue on experience product pages or archive pages
+        $should_enqueue = false;
+        
+        if (is_singular('product')) {
+            global $post;
+            $product = wc_get_product($post->ID);
+            if ($product && $product->get_type() === 'experience') {
+                $should_enqueue = true;
+            }
+        } elseif (is_shop() || is_product_category() || is_product_tag()) {
+            // Also enqueue on shop pages in case there are experience products
+            $should_enqueue = true;
+        } elseif (is_page()) {
+            // Check if page contains the shortcode
+            global $post;
+            if ($post && has_shortcode($post->post_content, 'fp_exp_archive')) {
+                $should_enqueue = true;
+            }
+        }
+
+        if (!$should_enqueue) {
+            return;
+        }
+
         wp_enqueue_style(
             'fp-esperienze-frontend',
             FP_ESPERIENZE_PLUGIN_URL . 'assets/css/frontend.css',
@@ -129,6 +153,17 @@ class Plugin {
             FP_ESPERIENZE_VERSION,
             true
         );
+
+        // Enqueue booking widget JS only on single experience pages
+        if (is_singular('product')) {
+            wp_enqueue_script(
+                'fp-esperienze-booking-widget',
+                FP_ESPERIENZE_PLUGIN_URL . 'assets/js/booking-widget.js',
+                ['jquery', 'fp-esperienze-frontend'],
+                FP_ESPERIENZE_VERSION,
+                true
+            );
+        }
 
         // Localize script with WooCommerce data
         if (function_exists('wc_get_cart_url')) {

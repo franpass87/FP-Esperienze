@@ -1,18 +1,19 @@
 /**
- * FP Esperienze Frontend JavaScript
+ * FP Esperienze Booking Widget
+ * GetYourGuide-style functionality
  */
 
 (function($) {
     'use strict';
 
     $(document).ready(function() {
-        // Initialize frontend functionality
-        FPEsperienze.init();
+        // Initialize booking widget functionality
+        FPBookingWidget.init();
     });
 
-    window.FPEsperienze = {
+    window.FPBookingWidget = {
         
-        // Booking widget state
+        // Widget state
         selectedSlot: null,
         selectedDate: null,
         adultPrice: 0,
@@ -20,60 +21,83 @@
         capacity: 10,
         
         /**
-         * Initialize
+         * Initialize widget
          */
         init: function() {
-            // Check if the new booking widget is present
-            if ($('#fp-booking-widget').length && typeof window.FPBookingWidget !== 'undefined') {
-                // New GetYourGuide-style widget is present, only init general frontend features
-                this.bindGeneralEvents();
-            } else {
-                // Legacy mode - init everything
-                this.bindEvents();
-                this.initBookingWidget();
+            // Only init on experience single pages
+            if (!$('#fp-booking-widget').length) {
+                return;
             }
+
+            this.bindEvents();
+            this.initStickyWidget();
+            this.initAccessibility();
+            this.initData();
+            this.updateTotal();
         },
 
         /**
-         * General events that don't conflict with booking widget
+         * Initialize widget data
          */
-        bindGeneralEvents: function() {
-            // Experience card hover effects
-            $('.fp-experience-card').hover(
-                function() {
-                    $(this).addClass('hovered');
-                },
-                function() {
-                    $(this).removeClass('hovered');
-                }
-            );
-
-            // Smooth scroll for anchor links
-            $('a[href^="#"]').on('click', function(e) {
-                var target = $(this.getAttribute('href'));
-                if (target.length) {
-                    e.preventDefault();
-                    $('html, body').animate({
-                        scrollTop: target.offset().top - 80
-                    }, 600);
-                }
-            });
-        },
-
-        /**
-         * Initialize booking widget
-         */
-        initBookingWidget: function() {
-            if (!$('#fp-date-picker').length) {
-                return; // Not on single experience page
-            }
-
-            // Get data from hidden fields
+        initData: function() {
             this.adultPrice = parseFloat($('#fp-adult-price').val()) || 0;
             this.childPrice = parseFloat($('#fp-child-price').val()) || 0;
             this.capacity = parseInt($('#fp-capacity').val()) || 10;
+        },
 
-            this.updateTotal();
+        /**
+         * Initialize sticky widget behavior
+         */
+        initStickyWidget: function() {
+            var $widget = $('#fp-booking-widget');
+            var $stickyNotice = $('.fp-sticky-notice');
+            
+            if ($widget.length && $stickyNotice.length) {
+                $(window).on('scroll', function() {
+                    var widgetTop = $widget.offset().top;
+                    var scrollTop = $(window).scrollTop();
+                    var windowHeight = $(window).height();
+                    
+                    // Show sticky notice on mobile when widget is not visible
+                    if (scrollTop + windowHeight < widgetTop || scrollTop > widgetTop + $widget.height()) {
+                        $stickyNotice.addClass('fp-sticky-visible');
+                    } else {
+                        $stickyNotice.removeClass('fp-sticky-visible');
+                    }
+                });
+            }
+        },
+
+        /**
+         * Initialize accessibility features
+         */
+        initAccessibility: function() {
+            // FAQ accordion
+            $('.fp-faq-question').on('click', function() {
+                var $button = $(this);
+                var $answer = $button.next('.fp-faq-answer');
+                var isExpanded = $button.attr('aria-expanded') === 'true';
+                
+                // Close all other FAQ items
+                $('.fp-faq-question').attr('aria-expanded', 'false');
+                $('.fp-faq-answer').attr('hidden', true);
+                $('.fp-faq-icon').text('+');
+                
+                // Toggle current item
+                if (!isExpanded) {
+                    $button.attr('aria-expanded', 'true');
+                    $answer.removeAttr('hidden');
+                    $button.find('.fp-faq-icon').text('−');
+                }
+            });
+
+            // Keyboard navigation for time slots
+            $(document).on('keydown', '.fp-time-slot', function(e) {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    $(this).click();
+                }
+            });
         },
 
         /**
@@ -82,28 +106,7 @@
         bindEvents: function() {
             var self = this;
 
-            // Experience card hover effects
-            $('.fp-experience-card').hover(
-                function() {
-                    $(this).addClass('hovered');
-                },
-                function() {
-                    $(this).removeClass('hovered');
-                }
-            );
-
-            // Smooth scroll for anchor links
-            $('a[href^="#"]').on('click', function(e) {
-                var target = $(this.getAttribute('href'));
-                if (target.length) {
-                    e.preventDefault();
-                    $('html, body').animate({
-                        scrollTop: target.offset().top - 80
-                    }, 600);
-                }
-            });
-
-            // Booking widget events
+            // Date picker
             $('#fp-date-picker').on('change', function() {
                 self.selectedDate = $(this).val();
                 if (self.selectedDate) {
@@ -128,10 +131,10 @@
                 self.validateForm();
             });
 
-            // Time slot selection
+            // Time slot selection with GA4 event
             $(document).on('click', '.fp-time-slot:not(.unavailable)', function() {
-                $('.fp-time-slot').removeClass('selected');
-                $(this).addClass('selected');
+                $('.fp-time-slot').removeClass('selected').attr('aria-checked', 'false');
+                $(this).addClass('selected').attr('aria-checked', 'true');
                 
                 self.selectedSlot = {
                     start_time: $(this).data('start-time'),
@@ -141,15 +144,17 @@
                 };
                 
                 $('#fp-selected-slot').val(self.selectedDate + ' ' + self.selectedSlot.start_time);
+                
+                // GA4 select_item event
+                self.trackSlotSelection();
+                
+                // Update social proof
+                self.updateSocialProof();
+                
                 self.updateTotal();
                 self.validateForm();
             });
 
-            // Add to cart
-            $('#fp-add-to-cart').on('click', function() {
-                self.addToCart();
-            });
-            
             // Extras handlers
             $(document).on('change', '.fp-extra-toggle', function() {
                 var $extra = $(this).closest('.fp-extra-item');
@@ -172,7 +177,7 @@
                 var $input = $(this).siblings('.fp-extra-qty-input');
                 var currentVal = parseInt($input.val()) || 0;
                 var isPlus = $(this).hasClass('fp-extra-qty-plus');
-                var max = parseInt($input.attr('max')) || 1;
+                var max = parseInt($input.attr('max')) || 99;
                 var min = parseInt($input.attr('min')) || 0;
                 
                 if (isPlus && currentVal < max) {
@@ -181,18 +186,13 @@
                     $input.val(currentVal - 1);
                 }
                 
-                // Update checkbox state if quantity goes to 0
-                var $checkbox = $(this).closest('.fp-extra-item').find('.fp-extra-toggle');
-                if (parseInt($input.val()) > 0) {
-                    $checkbox.prop('checked', true);
-                    $(this).closest('.fp-extra-item').find('.fp-extra-quantity').removeClass('fp-extra-quantity-hidden');
-                } else {
-                    $checkbox.prop('checked', false);
-                    $(this).closest('.fp-extra-item').find('.fp-extra-quantity').addClass('fp-extra-quantity-hidden');
-                }
-                
                 self.updateTotal();
                 self.validateForm();
+            });
+
+            // Add to cart
+            $('#fp-add-to-cart').on('click', function() {
+                self.addToCart();
             });
         },
 
@@ -207,7 +207,6 @@
             $('#fp-time-slots').html('<p class="fp-slots-placeholder">' + 'Loading available times...' + '</p>');
             $('#fp-error-messages').empty();
             
-            // Build the full REST URL
             var restUrl = (typeof fp_esperienze_params !== 'undefined' && fp_esperienze_params.rest_url) 
                 ? fp_esperienze_params.rest_url + 'fp-exp/v1/availability'
                 : '/wp-json/fp-exp/v1/availability';
@@ -221,20 +220,15 @@
                 },
                 success: function(response) {
                     self.displayTimeSlots(response.slots);
+                    $('#fp-loading').hide();
                 },
                 error: function(xhr, status, error) {
                     var errorMsg = 'Failed to load availability.';
                     if (xhr.responseJSON && xhr.responseJSON.message) {
                         errorMsg = xhr.responseJSON.message;
-                    } else if (status === 'timeout') {
-                        errorMsg = 'Request timed out. Please try again.';
-                    } else if (status === 'error') {
-                        errorMsg = 'Network error. Please check your connection.';
                     }
+                    
                     self.showError(errorMsg);
-                    $('#fp-time-slots').html('<p class="fp-slots-placeholder">' + errorMsg + '</p>');
-                },
-                complete: function() {
                     $('#fp-loading').hide();
                 }
             });
@@ -247,20 +241,23 @@
             var html = '';
             
             if (!slots || slots.length === 0) {
-                html = '<p class="fp-slots-placeholder">No available times for this date.</p>';
+                html = '<p class="fp-no-slots">No availability for this date.</p>';
             } else {
                 slots.forEach(function(slot) {
-                    var availableClass = slot.is_available ? '' : 'unavailable';
+                    var availableClass = slot.is_available ? 'available' : 'unavailable';
                     var availableText = slot.is_available ? 
                         slot.available + ' spots left' : 
-                        'Fully booked';
+                        'Sold out';
                     var availableColorClass = slot.is_available ? 'fp-slot-available' : 'fp-slot-unavailable';
                     
                     html += '<div class="fp-time-slot ' + availableClass + '" ' +
                            'data-start-time="' + slot.start_time + '" ' +
                            'data-adult-price="' + slot.adult_price + '" ' +
                            'data-child-price="' + slot.child_price + '" ' +
-                           'data-available="' + slot.available + '">' +
+                           'data-available="' + slot.available + '" ' +
+                           'role="radio" ' +
+                           'tabindex="0" ' +
+                           'aria-checked="false">' +
                            '<div class="fp-slot-time">' + slot.start_time + ' - ' + slot.end_time + '</div>' +
                            '<div class="fp-slot-info">' +
                            '<div class="fp-slot-price">From €' + slot.adult_price + '</div>' +
@@ -274,6 +271,44 @@
             this.selectedSlot = null;
             $('#fp-selected-slot').val('');
             this.validateForm();
+        },
+
+        /**
+         * Update social proof based on availability
+         */
+        updateSocialProof: function() {
+            var $socialProof = $('#fp-social-proof');
+            
+            if (this.selectedSlot && this.selectedSlot.available <= 5 && this.selectedSlot.available > 0) {
+                var message = this.selectedSlot.available === 1 ? 
+                    'Only 1 spot left!' : 
+                    'Only ' + this.selectedSlot.available + ' spots left!';
+                
+                $socialProof.find('.fp-urgency-text').text(message);
+                $socialProof.show();
+            } else {
+                $socialProof.hide();
+            }
+        },
+
+        /**
+         * Track slot selection for GA4
+         */
+        trackSlotSelection: function() {
+            if (typeof window.dataLayer !== 'undefined') {
+                window.dataLayer.push({
+                    'event': 'select_item',
+                    'item_list_name': 'Available Time Slots',
+                    'items': [{
+                        'item_id': $('#fp-product-id').val(),
+                        'item_name': document.title,
+                        'item_category': 'Experience',
+                        'item_variant': this.selectedSlot.start_time,
+                        'price': this.selectedSlot.adult_price
+                    }]
+                });
+            }
+            // TODO: Implement actual GA4 tracking in Milestone D
         },
 
         /**
@@ -324,6 +359,9 @@
             
             $('#fp-price-details').html(detailsHtml);
             $('#fp-total-amount').text('€' + total.toFixed(2));
+            
+            // Update sticky notice price
+            $('.fp-sticky-notice .fp-amount').text('€' + (this.adultPrice || 0).toFixed(2));
         },
 
         /**
@@ -352,7 +390,7 @@
             // Check required extras
             $('.fp-extra-item').each(function() {
                 var $extra = $(this);
-                var isRequired = $extra.data('is-required') == '1';
+                var isRequired = $extra.data('is-required') === 1;
                 var extraQty = parseInt($extra.find('.fp-extra-qty-input').val()) || 0;
                 
                 if (isRequired && extraQty === 0) {
@@ -361,6 +399,19 @@
             });
             
             $('#fp-add-to-cart').prop('disabled', !isValid);
+            
+            // Update button text and help text
+            if (isValid) {
+                $('#fp-cart-help').text('Ready to book this experience');
+            } else if (!this.selectedDate) {
+                $('#fp-cart-help').text('Select a date to continue');
+            } else if (!this.selectedSlot) {
+                $('#fp-cart-help').text('Select a time slot to continue');
+            } else if (adultQty === 0 && childQty === 0) {
+                $('#fp-cart-help').text('Select at least one participant');
+            } else {
+                $('#fp-cart-help').text('Complete all required fields');
+            }
         },
 
         /**
@@ -389,48 +440,29 @@
                 }
             });
             
-            // Create form data
-            var formData = new FormData();
-            formData.append('add-to-cart', productId);
-            formData.append('quantity', 1); // We handle quantity in our custom fields
-            formData.append('fp_slot_start', slotStart);
-            formData.append('fp_meeting_point_id', meetingPointId);
-            formData.append('fp_lang', language);
-            formData.append('fp_qty_adult', adultQty);
-            formData.append('fp_qty_child', childQty);
-            formData.append('fp_extras', JSON.stringify(extras));
-            
-            fetch(window.location.href, {
-                method: 'POST',
-                body: formData
-            })
-            .then(function(response) {
-                if (response.ok) {
-                    // Redirect to cart or show success message
-                    var cartUrl = (typeof fp_esperienze_params !== 'undefined' && fp_esperienze_params.cart_url) 
-                        ? fp_esperienze_params.cart_url 
-                        : '/cart';
-                    window.location.href = cartUrl;
-                } else {
-                    throw new Error('Failed to add to cart');
-                }
-            })
-            .catch(function(error) {
-                self.showError('Failed to add to cart. Please try again.');
+            // Use existing cart functionality from frontend.js
+            if (window.FPEsperienze && typeof window.FPEsperienze.addToCart === 'function') {
+                // Set the legacy widget state to match our state
+                window.FPEsperienze.selectedSlot = self.selectedSlot;
+                window.FPEsperienze.selectedDate = self.selectedDate;
+                window.FPEsperienze.addToCart();
+            } else {
+                // Fallback: redirect to shop with error
+                self.showError('Booking system temporarily unavailable. Please try again.');
                 $('#fp-add-to-cart').prop('disabled', false).text('Add to Cart');
-            });
+            }
         },
 
         /**
          * Show error message
          */
         showError: function(message) {
-            var errorHtml = '<div class="fp-error-message">' + message + '</div>';
-            $('#fp-error-messages').html(errorHtml);
+            var $errorContainer = $('#fp-error-messages');
+            $errorContainer.html('<div class="fp-error-message">' + message + '</div>');
             
             // Auto-hide after 5 seconds
             setTimeout(function() {
-                $('#fp-error-messages').fadeOut();
+                $errorContainer.empty();
             }, 5000);
         }
     };
