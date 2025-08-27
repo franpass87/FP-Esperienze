@@ -462,6 +462,8 @@ class ReportsManager {
      * AJAX handler for KPI data
      */
     public function ajaxGetKpiData(): void {
+        check_ajax_referer('fp_reports_nonce', 'nonce');
+        
         if (!CapabilityManager::canManageFPEsperienze()) {
             wp_die(__('Insufficient permissions.', 'fp-esperienze'));
         }
@@ -482,6 +484,8 @@ class ReportsManager {
      * AJAX handler for chart data
      */
     public function ajaxGetChartData(): void {
+        check_ajax_referer('fp_reports_nonce', 'nonce');
+        
         if (!CapabilityManager::canManageFPEsperienze()) {
             wp_die(__('Insufficient permissions.', 'fp-esperienze'));
         }
@@ -500,6 +504,12 @@ class ReportsManager {
      * AJAX handler for export
      */
     public function ajaxExportReportData(): void {
+        check_ajax_referer('fp_reports_nonce', 'nonce');
+        
+        if (!CapabilityManager::canManageFPEsperienze()) {
+            wp_die(__('Insufficient permissions.', 'fp-esperienze'));
+        }
+        
         $format = sanitize_text_field($_POST['format'] ?? 'csv');
         $filters = [
             'date_from' => sanitize_text_field($_POST['date_from'] ?? ''),

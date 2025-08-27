@@ -122,7 +122,7 @@ class QueryMonitor {
         if (strpos(strtoupper(trim($query)), 'SELECT') === 0) {
             $explain = $wpdb->get_results("EXPLAIN " . $query, ARRAY_A);
             if ($explain) {
-                error_log("[FP Esperienze] Query Plan: " . json_encode($explain));
+                error_log("[FP Esperienze] Query Plan: " . wp_json_encode($explain));
             }
         }
     }

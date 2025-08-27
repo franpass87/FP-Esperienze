@@ -2741,8 +2741,8 @@ class MenuManager {
                     <?php
                     global $wpdb;
                     $holds_table = $wpdb->prefix . 'fp_exp_holds';
-                    $active_holds = $wpdb->get_var("SELECT COUNT(*) FROM $holds_table WHERE expires_at > NOW()");
-                    $expired_holds = $wpdb->get_var("SELECT COUNT(*) FROM $holds_table WHERE expires_at <= NOW()");
+                    $active_holds = $wpdb->get_var("SELECT COUNT(*) FROM `" . esc_sql($holds_table) . "` WHERE expires_at > NOW()");
+                    $expired_holds = $wpdb->get_var("SELECT COUNT(*) FROM `" . esc_sql($holds_table) . "` WHERE expires_at <= NOW()");
                     ?>
                     <table class="form-table">
                         <tr>
