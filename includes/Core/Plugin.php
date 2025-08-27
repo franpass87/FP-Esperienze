@@ -230,6 +230,16 @@ class Plugin {
                 FP_ESPERIENZE_VERSION,
                 true
             );
+            
+            // Localize booking widget with translated strings
+            wp_localize_script('fp-esperienze-booking-widget', 'fp_booking_widget_i18n', [
+                'error_failed_load_availability' => __('Failed to load availability.', 'fp-esperienze'),
+                'error_booking_unavailable' => __('Booking system temporarily unavailable. Please try again.', 'fp-esperienze'),
+                'error_no_availability' => __('No availability for this date.', 'fp-esperienze'),
+                'spots_left' => __('spots left', 'fp-esperienze'),
+                'sold_out' => __('Sold out', 'fp-esperienze'),
+                'loading_availability' => __('Loading available times...', 'fp-esperienze'),
+            ]);
         }
 
         // Localize script with WooCommerce data

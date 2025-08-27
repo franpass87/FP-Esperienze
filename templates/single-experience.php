@@ -540,7 +540,7 @@ jQuery(document).ready(function($) {
 
                         <!-- Time Slots -->
                         <div class="fp-form-field">
-                            <label><?php _e('Available Times', 'fp-esperienze'); ?></label>
+                            <label id="fp-time-slots-label" for="fp-time-slots"><?php _e('Available Times', 'fp-esperienze'); ?></label>
                             <div id="fp-time-slots" 
                                  class="fp-time-slots" 
                                  role="radiogroup" 
@@ -566,7 +566,7 @@ jQuery(document).ready(function($) {
 
                         <!-- Quantity Selectors -->
                         <div class="fp-form-field">
-                            <label><?php _e('Participants', 'fp-esperienze'); ?></label>
+                            <label id="fp-participants-label"><?php _e('Participants', 'fp-esperienze'); ?></label>
                             
                             <div class="fp-quantity-group" role="group" aria-labelledby="fp-participants-label">
                                 <div class="fp-quantity-row">
