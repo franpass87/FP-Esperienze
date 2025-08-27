@@ -26,6 +26,11 @@ class Installer {
         
         // Update version option
         update_option('fp_esperienze_version', FP_ESPERIENZE_VERSION);
+        
+        // Set activation redirect transient (only if not already complete)
+        if (!get_option('fp_esperienze_setup_complete', false)) {
+            set_transient('fp_esperienze_activation_redirect', 1, 30);
+        }
     }
 
     /**
