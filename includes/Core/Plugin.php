@@ -88,6 +88,12 @@ class Plugin {
         // Add filter to defer non-critical scripts
         add_filter('script_loader_tag', [$this, 'deferNonCriticalScripts'], 10, 3);
         
+        // Add lazy loading for images (when not in admin)
+        if (!is_admin()) {
+            add_filter('wp_get_attachment_image_attributes', [$this, 'addLazyLoadingToImages'], 10, 2);
+            add_filter('the_content', [$this, 'addLazyLoadingToContentImages'], 20);
+        }
+        
         // Initialize blocks
         add_action('init', [$this, 'initBlocks']);
         add_action('enqueue_block_editor_assets', [$this, 'enqueueBlockAssets']);
@@ -95,6 +101,14 @@ class Plugin {
         // Initialize holds cleanup cron
         add_action('init', [$this, 'initHoldsCron']);
         add_action('fp_esperienze_cleanup_holds', [$this, 'cleanupExpiredHolds']);
+        
+        // Initialize performance monitoring
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            QueryMonitor::init();
+        }
+        
+        // Initialize performance indexes on admin_init (only once)
+        add_action('admin_init', [$this, 'maybeAddPerformanceIndexes'], 5);
     }
 
     /**
@@ -379,11 +393,21 @@ class Plugin {
         // List of scripts to defer (non-critical)
         $defer_scripts = [
             'fp-esperienze-tracking',
-            'fp-esperienze-archive-block'
+            'fp-esperienze-archive-block',
+            'fp-esperienze-reports',
+        ];
+        
+        // List of scripts to load async (independent)
+        $async_scripts = [
+            'fp-esperienze-tracking',
         ];
         
         if (in_array($handle, $defer_scripts)) {
-            return str_replace(' src', ' defer src', $tag);
+            $tag = str_replace(' src', ' defer src', $tag);
+        }
+        
+        if (in_array($handle, $async_scripts)) {
+            $tag = str_replace(' defer src', ' async defer src', $tag);
         }
         
         return $tag;
@@ -424,5 +448,71 @@ class Plugin {
         if ($count > 0) {
             error_log("FP Esperienze: Cleaned up {$count} expired holds");
         }
+    }
+    
+    /**
+     * Maybe add performance indexes (only once per plugin version)
+     */
+    public function maybeAddPerformanceIndexes(): void {
+        $indexes_version = get_option('fp_esperienze_indexes_version', '0.0.0');
+        $current_version = FP_ESPERIENZE_VERSION;
+        
+        // Only add indexes if they haven't been added for this version
+        if (version_compare($indexes_version, $current_version, '<')) {
+            Installer::addPerformanceIndexes();
+            update_option('fp_esperienze_indexes_version', $current_version);
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("FP Esperienze: Performance indexes updated to version {$current_version}");
+            }
+        }
+    }
+    
+    /**
+     * Add lazy loading to attachment images
+     *
+     * @param array $attributes Image attributes
+     * @param WP_Post $attachment Attachment post object
+     * @return array
+     */
+    public function addLazyLoadingToImages(array $attributes, $attachment): array {
+        // Only add loading attribute if not already set
+        if (!isset($attributes['loading'])) {
+            $attributes['loading'] = 'lazy';
+        }
+        
+        return $attributes;
+    }
+    
+    /**
+     * Add lazy loading to images in content
+     *
+     * @param string $content Post content
+     * @return string
+     */
+    public function addLazyLoadingToContentImages(string $content): string {
+        // Skip if this content doesn't contain images
+        if (strpos($content, '<img') === false) {
+            return $content;
+        }
+        
+        // Add loading="lazy" to img tags that don't already have it
+        $content = preg_replace_callback(
+            '/<img([^>]*?)(?:\s+loading=["\'][^"\']*["\'])?([^>]*?)>/i',
+            function($matches) {
+                $before = $matches[1];
+                $after = $matches[2];
+                
+                // Check if loading attribute already exists
+                if (preg_match('/\bloading\s*=/i', $before . $after)) {
+                    return $matches[0]; // Return original if loading attribute exists
+                }
+                
+                return '<img' . $before . ' loading="lazy"' . $after . '>';
+            },
+            $content
+        );
+        
+        return $content;
     }
 }

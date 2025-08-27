@@ -313,4 +313,58 @@ class Installer {
         $capability_manager = new CapabilityManager();
         $capability_manager->addCapabilitiesToRoles();
     }
+
+    /**
+     * Add performance indexes for better query performance
+     */
+    public static function addPerformanceIndexes(): void {
+        global $wpdb;
+
+        // Add composite indexes for better performance on common queries
+        $indexes = [
+            // Bookings table performance indexes
+            $wpdb->prefix . 'fp_bookings' => [
+                'product_date_time' => 'ADD INDEX idx_product_date_time (product_id, booking_date, booking_time)',
+                'date_status' => 'ADD INDEX idx_date_status (booking_date, status)',
+                'product_status' => 'ADD INDEX idx_product_status (product_id, status)',
+            ],
+            
+            // Schedules table performance indexes  
+            $wpdb->prefix . 'fp_schedules' => [
+                'product_day_active' => 'ADD INDEX idx_product_day_active (product_id, day_of_week, is_active)',
+                'day_time' => 'ADD INDEX idx_day_time (day_of_week, start_time)',
+            ],
+            
+            // Overrides table performance indexes
+            $wpdb->prefix . 'fp_overrides' => [
+                'product_date_closed' => 'ADD INDEX idx_product_date_closed (product_id, date, is_closed)',
+                'date_closed' => 'ADD INDEX idx_date_closed (date, is_closed)',
+            ],
+            
+            // Holds table performance indexes
+            $wpdb->prefix . 'fp_exp_holds' => [
+                'product_slot_expires' => 'ADD INDEX idx_product_slot_expires (product_id, slot_start, expires_at)',
+                'session_expires' => 'ADD INDEX idx_session_expires (session_id, expires_at)',
+            ],
+        ];
+
+        foreach ($indexes as $table => $table_indexes) {
+            foreach ($table_indexes as $index_name => $index_sql) {
+                // Check if index already exists
+                $existing_index = $wpdb->get_var($wpdb->prepare(
+                    "SHOW INDEX FROM {$table} WHERE Key_name = %s",
+                    'idx_' . $index_name
+                ));
+                
+                if (!$existing_index) {
+                    $full_sql = "ALTER TABLE {$table} {$index_sql}";
+                    $wpdb->query($full_sql);
+                    
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        error_log("FP Performance: Added index {$index_name} to table {$table}");
+                    }
+                }
+            }
+        }
+    }
 }
