@@ -12,7 +12,9 @@ use FP\Esperienze\Admin\MenuManager;
 use FP\Esperienze\Frontend\Shortcodes;
 use FP\Esperienze\Frontend\Templates;
 use FP\Esperienze\REST\AvailabilityAPI;
+use FP\Esperienze\REST\BookingsAPI;
 use FP\Esperienze\Booking\Cart_Hooks;
+use FP\Esperienze\Booking\BookingManager;
 
 defined('ABSPATH') || exit;
 
@@ -81,6 +83,9 @@ class Plugin {
         
         // Initialize cart hooks for experience bookings
         new Cart_Hooks();
+        
+        // Initialize booking manager for order processing
+        new BookingManager();
     }
 
     /**
@@ -103,6 +108,7 @@ class Plugin {
      */
     public function initREST(): void {
         new AvailabilityAPI();
+        new BookingsAPI();
     }
 
     /**
@@ -153,5 +159,12 @@ class Plugin {
             FP_ESPERIENZE_VERSION,
             true
         );
+        
+        // Localize script with admin data
+        wp_localize_script('fp-esperienze-admin', 'fp_esperienze_admin', [
+            'ajax_url' => admin_url('admin-ajax.php'),
+            'rest_url' => get_rest_url(),
+            'nonce' => wp_create_nonce('fp_esperienze_admin_nonce'),
+        ]);
     }
 }

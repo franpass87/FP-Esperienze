@@ -18,6 +18,7 @@
         init: function() {
             this.handleProductTypeChange();
             this.bindEvents();
+            this.initBookingsPage();
         },
 
         /**
@@ -59,6 +60,117 @@
             
             // Override management
             this.bindOverrideEvents();
+        },
+        
+        /**
+         * Initialize bookings page functionality
+         */
+        initBookingsPage: function() {
+            if ($('#fp-calendar').length) {
+                this.initBookingsCalendar();
+            }
+        },
+        
+        /**
+         * Initialize bookings calendar
+         */
+        initBookingsCalendar: function() {
+            var self = this;
+            
+            // Load FullCalendar from CDN
+            if (typeof FullCalendar === 'undefined') {
+                this.loadFullCalendar().then(function() {
+                    self.renderCalendar();
+                });
+            } else {
+                this.renderCalendar();
+            }
+        },
+        
+        /**
+         * Load FullCalendar library
+         */
+        loadFullCalendar: function() {
+            return new Promise(function(resolve, reject) {
+                // Load CSS
+                var css = document.createElement('link');
+                css.rel = 'stylesheet';
+                css.href = 'https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css';
+                document.head.appendChild(css);
+                
+                // Load JS
+                var script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js';
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        },
+        
+        /**
+         * Render FullCalendar
+         */
+        renderCalendar: function() {
+            var calendarEl = document.getElementById('fp-calendar');
+            if (!calendarEl) return;
+            
+            var calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                },
+                height: 600,
+                events: {
+                    url: window.fp_esperienze_admin.rest_url + 'fp-exp/v1/bookings/calendar',
+                    method: 'GET',
+                    extraParams: function() {
+                        return {
+                            // Add any filters here if needed
+                        };
+                    },
+                    failure: function() {
+                        alert('There was an error while fetching events!');
+                    }
+                },
+                eventClick: function(info) {
+                    var booking = info.event.extendedProps;
+                    var content = '<div class="fp-booking-popup">' +
+                        '<h3>' + info.event.title + '</h3>' +
+                        '<p><strong>Order:</strong> #' + booking.order_id + '</p>' +
+                        '<p><strong>Customer:</strong> ' + booking.customer_name + '</p>' +
+                        '<p><strong>Status:</strong> ' + booking.status + '</p>' +
+                        '<p><strong>Participants:</strong> ' + booking.adults + ' adults, ' + booking.children + ' children</p>' +
+                        '<p><strong>Date:</strong> ' + info.event.start.toLocaleDateString() + '</p>' +
+                        '<p><strong>Time:</strong> ' + info.event.start.toLocaleTimeString() + '</p>' +
+                        '</div>';
+                    
+                    // Show popup (using WordPress admin modal or simple alert)
+                    if (typeof tb_show !== 'undefined') {
+                        $('body').append('<div id="fp-booking-details" style="display:none">' + content + '</div>');
+                        tb_show('Booking Details', '#TB_inline?inlineId=fp-booking-details&width=400&height=300');
+                    } else {
+                        alert(info.event.title + '\n' + 
+                              'Order: #' + booking.order_id + '\n' +
+                              'Status: ' + booking.status + '\n' +
+                              'Participants: ' + (booking.adults + booking.children));
+                    }
+                },
+                eventDidMount: function(info) {
+                    // Add tooltip
+                    info.el.setAttribute('title', 
+                        info.event.title + '\n' +
+                        'Order: #' + info.event.extendedProps.order_id + '\n' +
+                        'Status: ' + info.event.extendedProps.status
+                    );
+                }
+            });
+            
+            calendar.render();
+            
+            // Store calendar instance for later use
+            window.fpBookingsCalendar = calendar;
         },
         
         /**
