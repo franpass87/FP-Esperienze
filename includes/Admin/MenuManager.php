@@ -10,7 +10,14 @@ namespace FP\Esperienze\Admin;
 use FP\Esperienze\Data\OverrideManager;
 use FP\Esperienze\Data\MeetingPointManager;
 use FP\Esperienze\Data\ExtraManager;
+use FP\Esperienze\Data\VoucherManager;
+use FP\Esperienze\Data\Availability;
+use FP\Esperienze\Data\HoldManager;
+use FP\Esperienze\Booking\BookingManager;
+use FP\Esperienze\PDF\Voucher_Pdf;
 use FP\Esperienze\Core\CapabilityManager;
+use FP\Esperienze\Core\I18nManager;
+use FP\Esperienze\Core\WebhookManager;
 
 defined('ABSPATH') || exit;
 

@@ -7,6 +7,8 @@
 
 namespace FP\Esperienze\Admin;
 
+use FP\Esperienze\Core\Installer;
+
 defined('ABSPATH') || exit;
 
 /**
@@ -71,7 +73,7 @@ class SystemStatus {
      * Create missing database tables
      */
     private function createMissingTables(): void {
-        \FP\Esperienze\Core\Installer::activate();
+        Installer::activate();
         wp_redirect(admin_url('admin.php?page=fp-esperienze-system-status&fixed=tables'));
         exit;
     }
