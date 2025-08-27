@@ -29,6 +29,7 @@ class MenuManager {
         new SetupWizard();
         new SystemStatus();
         new PerformanceSettings();
+        new ReportsManager();
         
         // Handle setup wizard redirect
         add_action('admin_init', [$this, 'handleSetupWizardRedirect']);
@@ -113,6 +114,16 @@ class MenuManager {
             CapabilityManager::MANAGE_FP_ESPERIENZE,
             'fp-esperienze-closures',
             [$this, 'closuresPage']
+        );
+
+        // Reports submenu
+        add_submenu_page(
+            'fp-esperienze',
+            __('Reports', 'fp-esperienze'),
+            __('Reports', 'fp-esperienze'),
+            CapabilityManager::MANAGE_FP_ESPERIENZE,
+            'fp-esperienze-reports',
+            [$this, 'reportsPage']
         );
 
         // Performance submenu
@@ -3284,6 +3295,42 @@ class MenuManager {
     public function performancePage(): void {
         $performance_settings = new PerformanceSettings();
         $performance_settings->renderPage();
+    }
+    
+    /**
+     * Reports page
+     */
+    public function reportsPage(): void {
+        if (!CapabilityManager::canManageFPEsperienze()) {
+            wp_die(__('You do not have sufficient permissions to access this page.', 'fp-esperienze'));
+        }
+
+        // Handle form submissions for export
+        if (isset($_POST['action']) && $_POST['action'] === 'export_report') {
+            if (!wp_verify_nonce($_POST['fp_report_nonce'] ?? '', 'fp_export_report')) {
+                wp_die(__('Security check failed.', 'fp-esperienze'));
+            }
+
+            $format = sanitize_text_field($_POST['export_format'] ?? 'csv');
+            $filters = [
+                'date_from' => sanitize_text_field($_POST['date_from'] ?? ''),
+                'date_to' => sanitize_text_field($_POST['date_to'] ?? ''),
+                'product_id' => absint($_POST['product_id'] ?? 0),
+                'meeting_point_id' => absint($_POST['meeting_point_id'] ?? 0),
+                'language' => sanitize_text_field($_POST['language'] ?? '')
+            ];
+
+            $reports_manager = new ReportsManager();
+            $reports_manager->exportReportData($format, array_filter($filters));
+            return;
+        }
+
+        // Get filter options
+        $experience_products = $this->getExperienceProducts();
+        $meeting_points = \FP\Esperienze\Data\MeetingPointManager::getAllMeetingPoints();
+
+        // Include the reports template
+        include FP_ESPERIENZE_PLUGIN_DIR . 'templates/admin/reports.php';
     }
     
     /**

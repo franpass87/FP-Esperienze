@@ -125,6 +125,7 @@ class CapabilityManager {
             'fp-esperienze-extras' => self::MANAGE_FP_ESPERIENZE,
             'fp-esperienze-vouchers' => self::MANAGE_FP_ESPERIENZE,
             'fp-esperienze-closures' => self::MANAGE_FP_ESPERIENZE,
+            'fp-esperienze-reports' => self::MANAGE_FP_ESPERIENZE,
             'fp-esperienze-settings' => self::MANAGE_FP_ESPERIENZE,
         ];
     }
