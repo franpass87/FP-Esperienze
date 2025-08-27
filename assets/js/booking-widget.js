@@ -441,7 +441,10 @@
             });
             
             // Use existing cart functionality from frontend.js
-            if (window.FPEsperienze && window.FPEsperienze.addToCart) {
+            if (window.FPEsperienze && typeof window.FPEsperienze.addToCart === 'function') {
+                // Set the legacy widget state to match our state
+                window.FPEsperienze.selectedSlot = self.selectedSlot;
+                window.FPEsperienze.selectedDate = self.selectedDate;
                 window.FPEsperienze.addToCart();
             } else {
                 // Fallback: redirect to shop with error

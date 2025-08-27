@@ -23,8 +23,41 @@
          * Initialize
          */
         init: function() {
-            this.bindEvents();
-            this.initBookingWidget();
+            // Check if the new booking widget is present
+            if ($('#fp-booking-widget').length && typeof window.FPBookingWidget !== 'undefined') {
+                // New GetYourGuide-style widget is present, only init general frontend features
+                this.bindGeneralEvents();
+            } else {
+                // Legacy mode - init everything
+                this.bindEvents();
+                this.initBookingWidget();
+            }
+        },
+
+        /**
+         * General events that don't conflict with booking widget
+         */
+        bindGeneralEvents: function() {
+            // Experience card hover effects
+            $('.fp-experience-card').hover(
+                function() {
+                    $(this).addClass('hovered');
+                },
+                function() {
+                    $(this).removeClass('hovered');
+                }
+            );
+
+            // Smooth scroll for anchor links
+            $('a[href^="#"]').on('click', function(e) {
+                var target = $(this.getAttribute('href'));
+                if (target.length) {
+                    e.preventDefault();
+                    $('html, body').animate({
+                        scrollTop: target.offset().top - 80
+                    }, 600);
+                }
+            });
         },
 
         /**
