@@ -454,16 +454,23 @@ class Cart_Hooks {
                     
                     if ($voucher['amount_type'] === 'full') {
                         // Full voucher: make base product free, keep extras
-                        $total_price = $extras_total;
+                        $voucher_discount = $base_total;
                     } else {
                         // Value voucher: apply discount up to voucher amount on base price only
-                        $discount = min($base_total, floatval($voucher['amount']));
-                        $total_price = max(0, $base_total - $discount) + $extras_total;
+                        $voucher_discount = min($base_total, floatval($voucher['amount']));
                     }
+                    
+                    // Allow filtering of voucher discount amount
+                    $voucher_discount = apply_filters('fp_esperienze_voucher_discount_amount', $voucher_discount, $voucher, $cart_item);
+                    
+                    $base_total = max(0, $base_total - $voucher_discount);
                 }
             }
             
-            $product->set_price($total_price);
+            $total_price = $base_total + $extras_total;
+            
+            // Allow filtering of final cart item price
+            $total_price = apply_filters('fp_esperienze_cart_item_price', $total_price, $cart_item, $base_total, $extras_total);
         }
     }
     
@@ -484,18 +491,26 @@ class Cart_Hooks {
         // Validate voucher
         $validation = VoucherManager::validateVoucherForRedemption($voucher_code, $product_id);
         
+        // Allow filtering of validation results
+        $validation = apply_filters('fp_esperienze_voucher_validation', $validation, $voucher_code, $product_id);
+        
         if (!$validation['success']) {
             wp_send_json_error(['message' => $validation['message']]);
         }
         
         // Store voucher in session
-        $this->storeAppliedVoucher($cart_item_key, [
+        $voucher_data = [
             'code' => $voucher_code,
             'voucher_id' => $validation['voucher']['id'],
             'product_id' => $product_id,
             'amount_type' => $validation['voucher']['amount_type'],
             'amount' => $validation['voucher']['amount']
-        ]);
+        ];
+        
+        $this->storeAppliedVoucher($cart_item_key, $voucher_data);
+        
+        // Fire action hook
+        do_action('fp_esperienze_voucher_applied', $voucher_code, $product_id, $cart_item_key, $validation['voucher']);
         
         // Calculate new totals
         WC()->cart->calculate_totals();
@@ -522,6 +537,9 @@ class Cart_Hooks {
         // Remove voucher from session
         $this->removeAppliedVoucher($cart_item_key);
         
+        // Fire action hook
+        do_action('fp_esperienze_voucher_removed', $cart_item_key);
+        
         // Recalculate totals
         WC()->cart->calculate_totals();
         
@@ -545,6 +563,9 @@ class Cart_Hooks {
             $voucher_code = $item->get_meta('_fp_voucher_code');
             if ($voucher_code) {
                 VoucherManager::redeemVoucher($voucher_code);
+                
+                // Fire action hook
+                do_action('fp_esperienze_voucher_redeemed', $voucher_code, $order_id, $item_id);
                 
                 // Add order note
                 $order->add_order_note(sprintf(
@@ -570,6 +591,9 @@ class Cart_Hooks {
             $voucher_code = $item->get_meta('_fp_voucher_code');
             if ($voucher_code) {
                 if (VoucherManager::rollbackVoucherRedemption($voucher_code)) {
+                    // Fire action hook
+                    do_action('fp_esperienze_voucher_rollback', $voucher_code, $order_id, $item_id);
+                    
                     // Add order note
                     $order->add_order_note(sprintf(
                         __('Voucher %s restored to active status due to order cancellation/refund.', 'fp-esperienze'),
