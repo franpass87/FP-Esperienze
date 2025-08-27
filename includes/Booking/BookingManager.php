@@ -7,6 +7,7 @@
 
 namespace FP\Esperienze\Booking;
 
+use FP\Esperienze\Data\VoucherManager;
 defined('ABSPATH') || exit;
 
 /**
@@ -21,11 +22,14 @@ class BookingManager {
         // Order status change hooks
         add_action('woocommerce_order_status_processing', [$this, 'createBookingsFromOrder'], 10, 1);
         add_action('woocommerce_order_status_completed', [$this, 'createBookingsFromOrder'], 10, 1);
+        add_action('woocommerce_order_status_completed', [$this, 'processVoucherRedemption'], 20, 1);
         
         // Refund hooks
         add_action('woocommerce_order_refunded', [$this, 'handleOrderRefund'], 10, 2);
         add_action('woocommerce_order_status_cancelled', [$this, 'cancelBookingsFromOrder'], 10, 1);
         add_action('woocommerce_order_status_refunded', [$this, 'cancelBookingsFromOrder'], 10, 1);
+        add_action('woocommerce_order_status_cancelled', [$this, 'restoreOrderVouchers'], 20, 1);
+        add_action('woocommerce_order_status_refunded', [$this, 'restoreOrderVouchers'], 20, 1);
     }
     
     /**
@@ -287,5 +291,73 @@ class BookingManager {
         return $wpdb->get_row(
             $wpdb->prepare("SELECT * FROM {$table_name} WHERE id = %d", $booking_id)
         );
+    }
+    
+    /**
+     * Process voucher redemption when order is completed
+     *
+     * @param int $order_id Order ID
+     */
+    public function processVoucherRedemption(int $order_id): void {
+        $order = wc_get_order($order_id);
+        if (!$order) {
+            return;
+        }
+        
+        foreach ($order->get_items() as $item) {
+            $voucher_code = $item->get_meta('Voucher Code');
+            if ($voucher_code) {
+                $success = VoucherManager::redeemVoucher($voucher_code, $order_id);
+                if ($success) {
+                    $order->add_order_note(
+                        sprintf(
+                            __('Voucher %s has been redeemed.', 'fp-esperienze'),
+                            $voucher_code
+                        )
+                    );
+                } else {
+                    $order->add_order_note(
+                        sprintf(
+                            __('Failed to redeem voucher %s.', 'fp-esperienze'),
+                            $voucher_code
+                        )
+                    );
+                }
+            }
+        }
+    }
+    
+    /**
+     * Restore vouchers when order is cancelled or refunded
+     *
+     * @param int $order_id Order ID
+     */
+    public function restoreOrderVouchers(int $order_id): void {
+        $order = wc_get_order($order_id);
+        if (!$order) {
+            return;
+        }
+        
+        foreach ($order->get_items() as $item) {
+            $voucher_code = $item->get_meta('Voucher Code');
+            if ($voucher_code) {
+                $success = VoucherManager::restoreVoucher($voucher_code);
+                if ($success) {
+                    $order->add_order_note(
+                        sprintf(
+                            __('Voucher %s has been restored to active status.', 'fp-esperienze'),
+                            $voucher_code
+                        )
+                    );
+                } else {
+                    $order->add_order_note(
+                        sprintf(
+                            __('Failed to restore voucher %s.', 'fp-esperienze'),
+                            $voucher_code
+                        )
+                    );
+                }
+            }
+        }
     }
 }

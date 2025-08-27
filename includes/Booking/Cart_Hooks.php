@@ -8,6 +8,7 @@
 namespace FP\Esperienze\Booking;
 
 use FP\Esperienze\Data\ExtraManager;
+use FP\Esperienze\Data\VoucherManager;
 
 defined('ABSPATH') || exit;
 
@@ -25,6 +26,15 @@ class Cart_Hooks {
         add_filter('woocommerce_get_item_data', [$this, 'displayExperienceCartData'], 10, 2);
         add_action('woocommerce_checkout_create_order_line_item', [$this, 'addExperienceOrderItemMeta'], 10, 4);
         add_action('woocommerce_before_calculate_totals', [$this, 'calculateExperiencePrice'], 10, 1);
+        
+        // Voucher hooks
+        add_action('wp_ajax_fp_apply_voucher', [$this, 'applyVoucherAjax']);
+        add_action('wp_ajax_nopriv_fp_apply_voucher', [$this, 'applyVoucherAjax']);
+        add_action('wp_ajax_fp_remove_voucher', [$this, 'removeVoucherAjax']);
+        add_action('wp_ajax_nopriv_fp_remove_voucher', [$this, 'removeVoucherAjax']);
+        add_filter('woocommerce_add_cart_item_data', [$this, 'addVoucherToCartData'], 20, 2);
+        add_filter('woocommerce_get_item_data', [$this, 'displayVoucherInCart'], 20, 2);
+        add_action('woocommerce_checkout_create_order_line_item', [$this, 'addVoucherOrderItemMeta'], 20, 4);
     }
 
     /**
@@ -309,9 +319,123 @@ class Cart_Hooks {
                 }
             }
 
+            // Check for applied voucher and calculate discount
+            $applied_voucher = VoucherManager::getAppliedVoucherFromSession();
+            if ($applied_voucher && $applied_voucher['product_id'] == $product->get_id()) {
+                $discount = VoucherManager::calculateDiscount($applied_voucher, $base_total);
+                $base_total = max(0, $base_total - $discount);
+            }
+
             // Set the new price
             $total_price = $base_total + $extras_total;
             $product->set_price($total_price);
+        }
+    }
+    
+    /**
+     * Handle voucher application via AJAX
+     */
+    public function applyVoucherAjax(): void {
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'] ?? '', 'fp_voucher_nonce')) {
+            wp_die(__('Security check failed.', 'fp-esperienze'));
+        }
+        
+        $voucher_code = sanitize_text_field($_POST['voucher_code'] ?? '');
+        $product_id = absint($_POST['product_id'] ?? 0);
+        
+        if (empty($voucher_code) || !$product_id) {
+            wp_send_json_error([
+                'message' => __('Please enter a valid voucher code.', 'fp-esperienze')
+            ]);
+        }
+        
+        // Validate voucher
+        $voucher = VoucherManager::validateVoucher($voucher_code, $product_id);
+        
+        if (!$voucher) {
+            wp_send_json_error([
+                'message' => __('Invalid voucher code or voucher not applicable to this product.', 'fp-esperienze')
+            ]);
+        }
+        
+        // Store voucher in session
+        VoucherManager::setAppliedVoucherInSession([
+            'code' => $voucher_code,
+            'type' => $voucher['voucher_type'],
+            'amount' => $voucher['amount'],
+            'voucher_id' => $voucher['id'],
+            'product_id' => $product_id
+        ]);
+        
+        wp_send_json_success([
+            'message' => __('Voucher applied successfully!', 'fp-esperienze'),
+            'voucher_type' => $voucher['voucher_type'],
+            'amount' => $voucher['amount']
+        ]);
+    }
+    
+    /**
+     * Handle voucher removal via AJAX
+     */
+    public function removeVoucherAjax(): void {
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'] ?? '', 'fp_voucher_nonce')) {
+            wp_die(__('Security check failed.', 'fp-esperienze'));
+        }
+        
+        VoucherManager::removeVoucherFromSession();
+        
+        wp_send_json_success([
+            'message' => __('Voucher removed.', 'fp-esperienze')
+        ]);
+    }
+    
+    /**
+     * Add voucher data to cart item
+     */
+    public function addVoucherToCartData(array $cart_item_data, int $product_id): array {
+        $applied_voucher = VoucherManager::getAppliedVoucherFromSession();
+        
+        if ($applied_voucher && $applied_voucher['product_id'] == $product_id) {
+            $cart_item_data['fp_voucher'] = $applied_voucher;
+            // Clear from session after adding to cart
+            VoucherManager::removeVoucherFromSession();
+        }
+        
+        return $cart_item_data;
+    }
+    
+    /**
+     * Display voucher in cart
+     */
+    public function displayVoucherInCart(array $item_data, array $cart_item): array {
+        if (!empty($cart_item['fp_voucher'])) {
+            $voucher = $cart_item['fp_voucher'];
+            $item_data[] = [
+                'key' => __('Voucher Applied', 'fp-esperienze'),
+                'value' => sprintf(
+                    __('Code: %s (%s)', 'fp-esperienze'),
+                    $voucher['code'],
+                    $voucher['type'] === 'full' ? __('Free Experience', 'fp-esperienze') : wc_price($voucher['amount'])
+                ),
+                'display' => ''
+            ];
+        }
+        
+        return $item_data;
+    }
+    
+    /**
+     * Add voucher meta to order item
+     */
+    public function addVoucherOrderItemMeta($item, $cart_item_key, $values, $order): void {
+        if (!empty($values['fp_voucher'])) {
+            $voucher = $values['fp_voucher'];
+            $item->add_meta_data(__('Voucher Code', 'fp-esperienze'), $voucher['code']);
+            $item->add_meta_data('_fp_voucher_id', $voucher['voucher_id']);
+            $item->add_meta_data('_fp_voucher_type', $voucher['type']);
+            $item->add_meta_data('_fp_voucher_amount', $voucher['amount']);
         }
     }
 }

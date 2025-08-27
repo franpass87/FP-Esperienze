@@ -555,6 +555,24 @@ window.dataLayer.push(<?php echo wp_json_encode($ga4_view_item, JSON_UNESCAPED_S
                         </div>
                         <?php endif; ?>
 
+                        <!-- Voucher Section -->
+                        <div class="fp-form-field fp-voucher-section">
+                            <label><?php _e('Have a voucher?', 'fp-esperienze'); ?></label>
+                            <div class="fp-voucher-input-group">
+                                <input type="text" 
+                                       id="fp-voucher-code" 
+                                       class="fp-input" 
+                                       placeholder="<?php esc_attr_e('Enter voucher code', 'fp-esperienze'); ?>"
+                                       maxlength="50" />
+                                <button type="button" 
+                                        id="fp-apply-voucher" 
+                                        class="fp-btn fp-btn-secondary">
+                                    <?php _e('Apply', 'fp-esperienze'); ?>
+                                </button>
+                            </div>
+                            <div id="fp-voucher-status" class="fp-voucher-status" style="display: none;"></div>
+                        </div>
+
                         <!-- Total Price -->
                         <div class="fp-total-price">
                             <div class="fp-price-breakdown">

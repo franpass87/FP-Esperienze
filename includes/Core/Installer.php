@@ -157,7 +157,7 @@ class Installer {
             KEY status (status)
         ) $charset_collate;";
 
-        // Vouchers table
+        // Vouchers table (for generated vouchers from bookings)
         $table_vouchers = $wpdb->prefix . 'fp_vouchers';
         $sql_vouchers = "CREATE TABLE $table_vouchers (
             id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -176,6 +176,28 @@ class Installer {
             KEY is_used (is_used)
         ) $charset_collate;";
 
+        // Gift vouchers table (for voucher redemption)
+        $table_exp_vouchers = $wpdb->prefix . 'fp_exp_vouchers';
+        $sql_exp_vouchers = "CREATE TABLE $table_exp_vouchers (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            voucher_code varchar(50) NOT NULL,
+            voucher_type enum('full', 'value') NOT NULL DEFAULT 'value',
+            amount decimal(10,2) NOT NULL DEFAULT 0.00,
+            product_id bigint(20) unsigned DEFAULT NULL,
+            status enum('active', 'redeemed', 'expired') NOT NULL DEFAULT 'active',
+            expires_on date DEFAULT NULL,
+            signature varchar(64) NOT NULL,
+            order_id bigint(20) unsigned DEFAULT NULL,
+            redeemed_at datetime DEFAULT NULL,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY voucher_code (voucher_code),
+            KEY product_id (product_id),
+            KEY status (status),
+            KEY expires_on (expires_on)
+        ) $charset_collate;";
+
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         
         dbDelta($sql_meeting_points);
@@ -185,6 +207,7 @@ class Installer {
         dbDelta($sql_overrides);
         dbDelta($sql_bookings);
         dbDelta($sql_vouchers);
+        dbDelta($sql_exp_vouchers);
     }
 
     /**

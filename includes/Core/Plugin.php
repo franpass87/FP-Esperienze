@@ -177,6 +177,7 @@ class Plugin {
                 'ajax_url' => admin_url('admin-ajax.php'),
                 'rest_url' => get_rest_url(),
                 'nonce' => wp_create_nonce('fp_esperienze_nonce'),
+                'voucher_nonce' => wp_create_nonce('fp_voucher_nonce'),
             ]);
         }
     }

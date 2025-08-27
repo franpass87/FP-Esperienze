@@ -19,6 +19,7 @@
         adultPrice: 0,
         childPrice: 0,
         capacity: 10,
+        currentVoucher: null,
         
         /**
          * Initialize widget
@@ -194,6 +195,17 @@
             $('#fp-add-to-cart').on('click', function() {
                 self.addToCart();
             });
+            
+            // Voucher application
+            $('#fp-apply-voucher').on('click', function() {
+                self.applyVoucher();
+            });
+            
+            $('#fp-voucher-code').on('keypress', function(e) {
+                if (e.which === 13) { // Enter key
+                    self.applyVoucher();
+                }
+            });
         },
 
         /**
@@ -357,6 +369,19 @@
             
             var total = baseTotal + extrasTotal;
             
+            // Apply voucher discount
+            if (this.currentVoucher) {
+                var discount = 0;
+                if (this.currentVoucher.type === 'full') {
+                    discount = baseTotal; // Make product free, but keep extras
+                    detailsHtml += '<div class="fp-voucher-discount">Voucher (' + this.currentVoucher.code + '): -€' + discount.toFixed(2) + '</div>';
+                } else if (this.currentVoucher.type === 'value') {
+                    discount = Math.min(this.currentVoucher.amount, baseTotal);
+                    detailsHtml += '<div class="fp-voucher-discount">Voucher (' + this.currentVoucher.code + '): -€' + discount.toFixed(2) + '</div>';
+                }
+                total = Math.max(0, total - discount);
+            }
+            
             $('#fp-price-details').html(detailsHtml);
             $('#fp-total-amount').text('€' + total.toFixed(2));
             
@@ -450,6 +475,106 @@
                 // Fallback: redirect to shop with error
                 self.showError('Booking system temporarily unavailable. Please try again.');
                 $('#fp-add-to-cart').prop('disabled', false).text('Add to Cart');
+            }
+        },
+
+        /**
+         * Apply voucher
+         */
+        applyVoucher: function() {
+            var self = this;
+            var voucherCode = $('#fp-voucher-code').val().trim();
+            var productId = $('#fp-product-id').val();
+            
+            if (!voucherCode) {
+                self.showVoucherMessage('Please enter a voucher code.', 'error');
+                return;
+            }
+            
+            $('#fp-apply-voucher').prop('disabled', true).text('Applying...');
+            
+            $.ajax({
+                url: (typeof fp_esperienze_params !== 'undefined' && fp_esperienze_params.ajax_url) 
+                    ? fp_esperienze_params.ajax_url 
+                    : '/wp-admin/admin-ajax.php',
+                method: 'POST',
+                data: {
+                    action: 'fp_apply_voucher',
+                    voucher_code: voucherCode,
+                    product_id: productId,
+                    nonce: (typeof fp_esperienze_params !== 'undefined' && fp_esperienze_params.voucher_nonce) 
+                        ? fp_esperienze_params.voucher_nonce 
+                        : ''
+                },
+                success: function(response) {
+                    if (response.success) {
+                        self.showVoucherMessage(response.data.message, 'success');
+                        self.currentVoucher = {
+                            code: voucherCode,
+                            type: response.data.voucher_type,
+                            amount: response.data.amount
+                        };
+                        $('#fp-voucher-code').prop('disabled', true);
+                        $('#fp-apply-voucher').text('Remove').off('click').on('click', function() {
+                            self.removeVoucher();
+                        });
+                        self.updateTotal();
+                    } else {
+                        self.showVoucherMessage(response.data.message, 'error');
+                    }
+                },
+                error: function() {
+                    self.showVoucherMessage('Failed to apply voucher. Please try again.', 'error');
+                },
+                complete: function() {
+                    $('#fp-apply-voucher').prop('disabled', false);
+                }
+            });
+        },
+        
+        /**
+         * Remove voucher
+         */
+        removeVoucher: function() {
+            var self = this;
+            
+            $.ajax({
+                url: (typeof fp_esperienze_params !== 'undefined' && fp_esperienze_params.ajax_url) 
+                    ? fp_esperienze_params.ajax_url 
+                    : '/wp-admin/admin-ajax.php',
+                method: 'POST',
+                data: {
+                    action: 'fp_remove_voucher',
+                    nonce: (typeof fp_esperienze_params !== 'undefined' && fp_esperienze_params.voucher_nonce) 
+                        ? fp_esperienze_params.voucher_nonce 
+                        : ''
+                },
+                success: function(response) {
+                    self.currentVoucher = null;
+                    $('#fp-voucher-code').val('').prop('disabled', false);
+                    $('#fp-apply-voucher').text('Apply').off('click').on('click', function() {
+                        self.applyVoucher();
+                    });
+                    $('#fp-voucher-status').hide();
+                    self.updateTotal();
+                }
+            });
+        },
+        
+        /**
+         * Show voucher message
+         */
+        showVoucherMessage: function(message, type) {
+            var $status = $('#fp-voucher-status');
+            $status.removeClass('fp-voucher-success fp-voucher-error')
+                   .addClass('fp-voucher-' + type)
+                   .html(message)
+                   .show();
+            
+            if (type === 'error') {
+                setTimeout(function() {
+                    $status.hide();
+                }, 5000);
             }
         },
 
