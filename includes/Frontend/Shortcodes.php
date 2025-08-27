@@ -146,6 +146,9 @@ class Shortcodes {
             $args['meta_key'] = $meta_key;
         }
 
+        // Apply language filtering hook for multilingual plugins
+        $args = apply_filters('fp_experience_archive_query_args', $args);
+
         return $args;
     }
 
@@ -368,10 +371,20 @@ class Shortcodes {
 
     /**
      * Get available languages from experience products
+     * Uses multilingual plugin when available, falls back to product meta
      *
      * @return array
      */
     private function getAvailableLanguages(): array {
+        // Use multilingual plugin languages if available
+        if (\FP\Esperienze\Core\I18nManager::isMultilingualActive()) {
+            $available_languages = \FP\Esperienze\Core\I18nManager::getAvailableLanguages();
+            if (!empty($available_languages)) {
+                return $available_languages;
+            }
+        }
+
+        // Fallback to experience product meta (for legacy setups)
         global $wpdb;
 
         $results = $wpdb->get_col("
@@ -455,7 +468,10 @@ class Shortcodes {
      */
     private function getPaginationUrl(int $page): string {
         $current_url = add_query_arg(null, null);
-        return add_query_arg('paged', $page, $current_url);
+        $url = add_query_arg('paged', $page, $current_url);
+        
+        // Apply language filtering hook for multilingual plugins
+        return apply_filters('fp_archive_pagination_url', $url);
     }
 
     /**

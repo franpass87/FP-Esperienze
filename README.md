@@ -935,6 +935,49 @@ JavaScript strings are localized through the WordPress `wp_localize_script()` fu
 - Keep strings concise but descriptive
 - Use proper capitalization and punctuation
 
+### WPML/Polylang Compatibility
+
+FP Esperienze is fully compatible with WPML and Polylang for multilingual websites.
+
+#### Setup Instructions
+
+**For WPML:**
+
+1. Install and configure WPML
+2. Go to **FP Esperienze > Settings > General** and set your archive page
+3. Translate the archive page in WPML
+4. Meeting point names and addresses will be automatically registered with WPML String Translation
+5. Configure string translations in **WPML > String Translation**
+
+**For Polylang:**
+
+1. Install and configure Polylang  
+2. Go to **FP Esperienze > Settings > General** and set your archive page
+3. Translate the archive page in Polylang
+4. Create experience products in each language
+5. The plugin will automatically filter experiences by current language
+
+#### Features
+
+- **Language Filtering**: Archive shortcode/block automatically filters experiences by current language
+- **Meeting Point Translation**: Names and addresses can be translated (WPML) or managed per language (Polylang)
+- **URL Translation**: Archive page URLs respect translated page slugs
+- **Shared Place IDs**: Google Places integration works across all language versions
+- **Filter Labels**: All admin and frontend strings are translatable
+
+#### Archive Shortcode
+
+The `[fp_exp_archive]` shortcode automatically respects the current language:
+
+```php
+// Displays experiences in current language only
+[fp_exp_archive posts_per_page="12" filters="mp,lang,duration"]
+```
+
+#### Gutenberg Block
+
+The Experience Archive block also includes automatic language filtering when WPML/Polylang is detected.
+
 ## Accessibility
 
 FP Esperienze follows WCAG 2.1 AA accessibility standards.

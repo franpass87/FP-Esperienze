@@ -25,6 +25,7 @@ use FP\Esperienze\Integrations\BrevoManager;
 use FP\Esperienze\Integrations\GooglePlacesManager;
 use FP\Esperienze\Core\CapabilityManager;
 use FP\Esperienze\Core\WebhookManager;
+use FP\Esperienze\Core\I18nManager;
 
 defined('ABSPATH') || exit;
 
@@ -97,6 +98,9 @@ class Plugin {
     public function initComponents(): void {
         // Initialize capability manager first
         new CapabilityManager();
+        
+        // Initialize i18n manager for multilingual support
+        new I18nManager();
         
         // Initialize cache manager for performance
         new CacheManager();
