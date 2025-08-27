@@ -286,6 +286,94 @@ All Meta Pixel events include `event_id` for deduplication with Conversions API 
 - **Settings Integration**: Respects enable/disable toggles in admin settings
 - **Performance Optimized**: Tracking code only loads when integrations are configured and enabled
 
+## Consent Mode v2 Integration
+
+FP Esperienze supports Consent Mode v2 for privacy compliance. When enabled, GA4 and Meta Pixel events only fire if marketing consent is granted.
+
+### Configuration
+
+Navigate to **FP Esperienze → Settings → Integrations → Consent Mode v2**:
+
+1. **Enable Consent Mode**: Toggle to activate consent checking
+2. **Consent Cookie Name**: Name of cookie storing consent status (default: `marketing_consent`)
+3. **Consent JavaScript Function**: Optional function path returning boolean consent status
+
+### CMP Integration Methods
+
+#### Method 1: Cookie-Based (Recommended)
+
+Configure your CMP to set a cookie with the marketing consent status:
+
+```javascript
+// Example: Set cookie when user grants marketing consent
+document.cookie = "marketing_consent=true; path=/; max-age=31536000";
+
+// Example: Set cookie when user denies marketing consent  
+document.cookie = "marketing_consent=false; path=/; max-age=31536000";
+```
+
+**Supported cookie values for granted consent:**
+- `"true"` (recommended)
+- `"1"`
+- `"granted"`
+
+#### Method 2: JavaScript Function
+
+Configure your CMP to expose a function that returns the consent status:
+
+```javascript
+// Example: CMP exposes consent status via function
+window.myCMP = {
+    getMarketingConsent: function() {
+        return userHasGrantedMarketingConsent; // boolean
+    }
+};
+```
+
+Then configure the function path in settings: `window.myCMP.getMarketingConsent`
+
+### Public API
+
+FP Esperienze exposes a global function for checking consent status:
+
+```javascript
+// Check current consent status
+const hasConsent = window.fpExpGetConsent(); // returns boolean
+
+// Example: Update UI based on consent
+if (window.fpExpGetConsent()) {
+    console.log('Marketing consent granted');
+} else {
+    console.log('Marketing consent denied');
+}
+```
+
+### Behavior
+
+- **Consent Mode Disabled**: All tracking fires normally (default behavior)
+- **Consent Mode Enabled + Consent Granted**: All tracking fires normally
+- **Consent Mode Enabled + Consent Denied**: GA4 and Meta Pixel events are blocked
+- **No Consent Data**: Defaults to denied (safe default)
+
+Events are logged to browser console for debugging with the status "blocked due to consent" when consent is denied.
+
+### Testing
+
+To test consent mode functionality:
+
+1. Enable Consent Mode in settings
+2. Set cookie name (e.g., `test_consent`)
+3. In browser console:
+   ```javascript
+   // Test denied consent
+   document.cookie = "test_consent=false; path=/";
+   // Trigger an event (add to cart, etc.) - should be blocked
+   
+   // Test granted consent
+   document.cookie = "test_consent=true; path=/";
+   // Trigger an event - should fire normally
+   ```
+
 ## Archivio (Shortcode + Block)
 
 ### Shortcode Usage

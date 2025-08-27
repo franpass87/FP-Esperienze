@@ -87,6 +87,10 @@ class TrackingManager {
                 'ga4_measurement_id' => $this->settings['ga4_measurement_id'] ?? '',
                 'meta_pixel_id' => $this->settings['meta_pixel_id'] ?? '',
                 'currency' => get_woocommerce_currency(),
+                // Consent Mode v2 settings
+                'consent_mode_enabled' => !empty($this->settings['consent_mode_enabled']),
+                'consent_cookie_name' => $this->settings['consent_cookie_name'] ?? 'marketing_consent',
+                'consent_js_function' => $this->settings['consent_js_function'] ?? '',
             ]);
         }
     }

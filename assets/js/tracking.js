@@ -15,11 +15,75 @@
         init: function() {
             this.settings = window.fpTrackingSettings || {};
             
+            // Initialize consent mode
+            this.initConsentMode();
+            
             // Process any pending tracking events
             this.processPendingEvents();
             
             // Bind to cart events
             this.bindEvents();
+        },
+        
+        /**
+         * Initialize consent mode functionality
+         */
+        initConsentMode: function() {
+            // Create public API for consent checking
+            window.fpExpGetConsent = this.getConsentStatus.bind(this);
+        },
+        
+        /**
+         * Get consent status for marketing
+         */
+        getConsentStatus: function() {
+            if (!this.settings.consent_mode_enabled) {
+                // Consent mode disabled, always allow tracking
+                return true;
+            }
+            
+            // Try JavaScript function first (if configured)
+            if (this.settings.consent_js_function) {
+                try {
+                    const funcPath = this.settings.consent_js_function.split('.');
+                    let func = window;
+                    for (const part of funcPath) {
+                        func = func[part];
+                        if (!func) break;
+                    }
+                    if (typeof func === 'function') {
+                        const result = func();
+                        return Boolean(result);
+                    }
+                } catch (e) {
+                    console.warn('FP Esperienze: Error calling consent function', e);
+                }
+            }
+            
+            // Fall back to cookie checking
+            const cookieName = this.settings.consent_cookie_name || 'marketing_consent';
+            const cookieValue = this.getCookie(cookieName);
+            
+            if (cookieValue === null) {
+                // No consent cookie found, default to false
+                return false;
+            }
+            
+            // Check for various truthy values
+            const normalizedValue = cookieValue.toLowerCase();
+            return normalizedValue === 'true' || normalizedValue === '1' || normalizedValue === 'granted';
+        },
+        
+        /**
+         * Get cookie value by name
+         */
+        getCookie: function(name) {
+            const value = '; ' + document.cookie;
+            const parts = value.split('; ' + name + '=');
+            if (parts.length === 2) {
+                return parts.pop().split(';').shift();
+            }
+            return null;
         },
         
         /**
@@ -159,6 +223,12 @@
                 return;
             }
             
+            // Check consent if consent mode is enabled
+            if (this.settings.consent_mode_enabled && !this.getConsentStatus()) {
+                console.log('FP Esperienze: GA4 event blocked due to consent:', eventName);
+                return;
+            }
+            
             if (typeof window.dataLayer !== 'undefined') {
                 window.dataLayer.push({
                     event: eventName,
@@ -174,6 +244,12 @@
          */
         trackMetaEvent: function(eventName, eventData, eventId = null) {
             if (!this.settings.meta_enabled) {
+                return;
+            }
+            
+            // Check consent if consent mode is enabled
+            if (this.settings.consent_mode_enabled && !this.getConsentStatus()) {
+                console.log('FP Esperienze: Meta Pixel event blocked due to consent:', eventName);
                 return;
             }
             
