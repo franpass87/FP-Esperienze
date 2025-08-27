@@ -65,10 +65,10 @@ class CacheManager {
      * @param int $product_id Product ID
      * @param string $date Date in Y-m-d format
      * @param array $data Data to cache
-     * @param int $ttl TTL in seconds (optional, uses default)
+     * @param int|null $ttl TTL in seconds (optional, uses default)
      * @return bool
      */
-    public static function setAvailabilityCache(int $product_id, string $date, array $data, int $ttl = null): bool {
+    public static function setAvailabilityCache(int $product_id, string $date, array $data, ?int $ttl = null): bool {
         $cache_key = self::getAvailabilityCacheKey($product_id, $date);
         $ttl = $ttl ?: self::CACHE_TTL;
         

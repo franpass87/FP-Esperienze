@@ -34,10 +34,10 @@ class HoldManager {
      * @param int $product_id Product ID
      * @param string $slot_start Slot start datetime (Y-m-d H:i format)
      * @param int $qty Number of spots to hold
-     * @param string $session_id Session ID
+     * @param string|null $session_id Session ID
      * @return array Result with success status and hold data
      */
-    public static function createHold(int $product_id, string $slot_start, int $qty, string $session_id = null): array {
+    public static function createHold(int $product_id, string $slot_start, int $qty, ?string $session_id = null): array {
         if (!self::isEnabled()) {
             return ['success' => false, 'message' => __('Holds system disabled', 'fp-esperienze')];
         }
@@ -138,10 +138,10 @@ class HoldManager {
      *
      * @param int $product_id Product ID
      * @param string $slot_start Slot start datetime (Y-m-d H:i format)
-     * @param string $exclude_session_id Session ID to exclude from count
+     * @param string|null $exclude_session_id Session ID to exclude from count
      * @return int Total held quantity
      */
-    public static function getHeldQuantity(int $product_id, string $slot_start, string $exclude_session_id = null): int {
+    public static function getHeldQuantity(int $product_id, string $slot_start, ?string $exclude_session_id = null): int {
         global $wpdb;
         
         $slot_datetime = \DateTime::createFromFormat('Y-m-d H:i', $slot_start);
