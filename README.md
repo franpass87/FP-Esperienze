@@ -136,6 +136,42 @@ The integration activates only when API key and at least one list ID are configu
 - **Reviews Limit**: Maximum number of reviews to display (1-10)
 - **Cache TTL**: How long to cache Google Places data (5-1440 minutes)
 
+#### Recensioni Meeting Point (Places API New)
+
+When enabled, the plugin displays Google reviews for meeting points on single experience pages:
+
+**Features:**
+- **Rating Display**: Shows average rating with star visualization and total review count
+- **Individual Reviews**: Displays reviewer name (partial for privacy), rating, relative time, and text excerpt
+- **Performance**: Server-side caching with configurable TTL (5-1440 minutes)
+- **Policy Compliance**: Uses only Places API (New), no permanent storage beyond cache
+- **Error Handling**: Graceful fallbacks on API errors or quota limits
+- **Privacy**: Author names are partially masked (e.g., "John D." instead of full name)
+
+**Requirements:**
+- Valid Google Places API key with Places API (New) enabled
+- Meeting points must have `place_id` configured
+- Reviews integration enabled in settings
+
+**Data Source:** Uses Place Details (New) API with fields:
+- `rating` - Average rating
+- `userRatingCount` - Total number of reviews  
+- `reviews.authorAttribution.displayName` - Reviewer name
+- `reviews.rating` - Individual review rating
+- `reviews.text.text` - Review text content
+- `reviews.relativePublishTimeDescription` - Relative time
+
+**Display Behavior:**
+- Shows in "Reviews" section after Meeting Point information
+- Includes Google disclosure: "Reviews via Google" with Maps profile link
+- Responsive design adapts to mobile devices
+- Fallback to rating-only display if individual reviews unavailable
+
+**Cache Management:**
+- Cache key format: `fp_gplaces_[md5_hash_of_place_id]`
+- Automatic cache invalidation after TTL expiry
+- Respects API rate limits through caching
+
 ### Google Business Profile API (Optional)
 
 - **Coming Soon**: OAuth integration for Google Business Profile management
