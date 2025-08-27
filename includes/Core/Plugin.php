@@ -19,6 +19,7 @@ use FP\Esperienze\Booking\Cart_Hooks;
 use FP\Esperienze\Booking\BookingManager;
 use FP\Esperienze\Data\VoucherManager;
 use FP\Esperienze\Data\NotificationManager;
+use FP\Esperienze\Data\DynamicPricingHooks;
 use FP\Esperienze\Integrations\TrackingManager;
 use FP\Esperienze\Integrations\BrevoManager;
 use FP\Esperienze\Integrations\GooglePlacesManager;
@@ -107,6 +108,9 @@ class Plugin {
         
         // Initialize cart hooks for experience bookings
         new Cart_Hooks();
+        
+        // Initialize dynamic pricing hooks
+        new DynamicPricingHooks();
         
         // Initialize booking manager for order processing
         new BookingManager();

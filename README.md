@@ -8,12 +8,106 @@ A WordPress + WooCommerce plugin for experience booking management by Francesco 
 - **Booking Management**: Complete booking system with slots, schedules, and capacity management
 - **Meeting Points**: GPS-enabled meeting points for experiences
 - **Extras**: Additional services and add-ons
+- **Dynamic Pricing**: Advanced pricing rules with seasonal, weekend/weekday, early-bird, and group discounts
 - **Gift Vouchers**: Complete gift system with PDF generation, QR codes, and email delivery
 - **Voucher Redemption**: Cart/checkout voucher redemption with HMAC validation (Phase 2)
 - **Vouchers**: PDF vouchers with QR codes (legacy system)
 - **REST API**: Real-time availability checking
 - **Frontend Templates**: GetYourGuide-style single experience pages
 - **Admin Dashboard**: Comprehensive management interface
+
+## Dynamic Pricing
+
+The plugin includes a sophisticated dynamic pricing system that allows you to create flexible pricing rules based on various conditions. Rules are applied in a specific priority order to ensure predictable pricing.
+
+### Pricing Rule Types
+
+#### Seasonal Pricing
+Set different prices for specific date ranges:
+- **Date Range**: Define start and end dates for seasonal periods
+- **Adjustments**: Apply percentage or fixed amount changes to adult and child prices
+- **Example**: Summer season (June-August) with +20% adult pricing and +15% child pricing
+
+#### Weekend/Weekday Pricing
+Apply different rates for weekends vs weekdays:
+- **Weekend Override**: Higher prices for Saturday and Sunday bookings
+- **Weekday Override**: Lower prices for Monday through Friday bookings
+- **Example**: +10% for weekend bookings
+
+#### Early Bird Discounts
+Reward customers who book in advance:
+- **Days Before**: Minimum number of days between purchase and experience date
+- **Discount**: Percentage or fixed amount reduction
+- **Example**: -15% discount for bookings made 7+ days in advance
+
+#### Group Discounts
+Tiered discounts based on party size:
+- **Minimum Participants**: Threshold for discount eligibility
+- **Separate Config**: Different discounts for adults and children
+- **Multiple Tiers**: Create various group size thresholds (e.g., 4+, 8+, 12+)
+- **Example**: -5% for 4+ people, -10% for 8+ people
+
+### Rule Priority and Composition
+
+Dynamic pricing rules are applied in a specific order to ensure consistent pricing:
+
+1. **Base Price** - Starting adult/child prices
+2. **Seasonal** - Date range adjustments
+3. **Weekend/Weekday** - Day of week overrides
+4. **Early Bird** - Advance booking discounts
+5. **Group** - Party size discounts
+
+Each rule modifies the price from the previous step, creating compound effects.
+
+### Admin Interface
+
+#### Product Configuration
+- **Dynamic Pricing Tab**: Dedicated tab in product edit screen
+- **Rule Management**: Add, edit, and remove pricing rules with drag-and-drop priority
+- **Active/Inactive**: Toggle rules on/off without deletion
+- **Priority Settings**: Control the order of rule application
+
+#### Preview Calculator
+- **Test Scenarios**: Input test dates, quantities, and purchase dates
+- **Real-time Calculation**: See exactly how rules will be applied
+- **Price Breakdown**: Detailed breakdown showing each rule's impact
+- **Visual Feedback**: Clear display of base vs final prices
+
+### Cart Integration
+
+#### Price Breakdown Display
+In the shopping cart, customers see:
+- Applied pricing rules and their effects
+- Clear breakdown of price adjustments
+- Rule names and percentage/amount changes
+- Total price changes from base to final
+
+#### Compatibility
+- **Tax Integration**: Works seamlessly with WooCommerce tax settings
+- **Coupon Compatibility**: Stacks properly with WooCommerce coupons
+- **Voucher System**: No double discounts with gift vouchers
+- **Multi-currency**: Supports WooCommerce currency plugins
+
+### Example Pricing Scenario
+
+**Base Price**: Adult €100, Child €80  
+**Booking**: Summer weekend (July 14), party of 6, booked 10 days in advance
+
+1. **Base**: Adult €100.00, Child €80.00
+2. **Seasonal (+20%)**: Adult €120.00, Child €92.00  
+3. **Weekend (+10%)**: Adult €132.00, Child €101.20
+4. **Early Bird (-15%)**: Adult €112.20, Child €86.02
+5. **Group 4+ (-5%)**: Adult €106.59, Child €81.72
+
+**Total for 4 adults + 2 children**: €590.00
+
+### Technical Implementation
+
+The dynamic pricing system integrates with existing WooCommerce pricing through filter hooks:
+- `fp_esperienze_adult_price` - Modifies adult base price
+- `fp_esperienze_child_price` - Modifies child base price
+- Tax calculations use WooCommerce's native `wc_get_price_to_display()` method
+- Database table `fp_dynamic_pricing_rules` stores all pricing rules
 
 ## Requirements
 

@@ -9,6 +9,7 @@ namespace FP\Esperienze\Booking;
 
 use FP\Esperienze\Data\ExtraManager;
 use FP\Esperienze\Data\VoucherManager;
+use FP\Esperienze\Data\DynamicPricingManager;
 
 defined('ABSPATH') || exit;
 
@@ -313,6 +314,9 @@ class Cart_Hooks {
                     ),
                 ];
             }
+            
+            // Display dynamic pricing breakdown
+            $this->addDynamicPricingBreakdown($item_data, $cart_item);
         }
 
         return $item_data;
@@ -809,5 +813,67 @@ class Cart_Hooks {
         
         // Allow filtering of final extra price
         return apply_filters('fp_esperienze_extra_price_with_tax', $total_price, $base_price, $tax_class, $quantity, $total_participants, $extra);
+    }
+    
+    /**
+     * Add dynamic pricing breakdown to cart item data
+     *
+     * @param array &$item_data Cart item data array (passed by reference)
+     * @param array $cart_item Cart item
+     */
+    private function addDynamicPricingBreakdown(array &$item_data, array $cart_item): void {
+        if (!isset($cart_item['fp_experience'])) {
+            return;
+        }
+        
+        $product = $cart_item['data'];
+        $product_id = $product->get_id();
+        
+        // Get applied pricing rules breakdown
+        $adult_rules = DynamicPricingManager::getAppliedRulesBreakdown($product_id, 'adult');
+        $child_rules = DynamicPricingManager::getAppliedRulesBreakdown($product_id, 'child');
+        
+        if (empty($adult_rules) && empty($child_rules)) {
+            return; // No dynamic pricing applied
+        }
+        
+        $breakdown_html = '<div class="fp-pricing-breakdown">';
+        
+        if (!empty($adult_rules)) {
+            $breakdown_html .= '<div><strong>' . __('Adult Price Adjustments:', 'fp-esperienze') . '</strong></div>';
+            foreach ($adult_rules as $rule) {
+                $adjustment_text = $rule['adjustment_type'] === 'percentage' 
+                    ? sprintf('%+.1f%%', $rule['adjustment']) 
+                    : sprintf('%+s', wc_price($rule['adjustment']));
+                    
+                $breakdown_html .= sprintf(
+                    '<div style="font-size: 0.9em; color: #666; margin-left: 10px;">• %s: %s</div>',
+                    esc_html($rule['rule_name']),
+                    $adjustment_text
+                );
+            }
+        }
+        
+        if (!empty($child_rules)) {
+            $breakdown_html .= '<div><strong>' . __('Child Price Adjustments:', 'fp-esperienze') . '</strong></div>';
+            foreach ($child_rules as $rule) {
+                $adjustment_text = $rule['adjustment_type'] === 'percentage' 
+                    ? sprintf('%+.1f%%', $rule['adjustment']) 
+                    : sprintf('%+s', wc_price($rule['adjustment']));
+                    
+                $breakdown_html .= sprintf(
+                    '<div style="font-size: 0.9em; color: #666; margin-left: 10px;">• %s: %s</div>',
+                    esc_html($rule['rule_name']),
+                    $adjustment_text
+                );
+            }
+        }
+        
+        $breakdown_html .= '</div>';
+        
+        $item_data[] = [
+            'key'   => __('Dynamic Pricing', 'fp-esperienze'),
+            'value' => $breakdown_html,
+        ];
     }
 }
