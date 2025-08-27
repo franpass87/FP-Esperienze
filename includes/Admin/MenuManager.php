@@ -10,6 +10,7 @@ namespace FP\Esperienze\Admin;
 use FP\Esperienze\Data\OverrideManager;
 use FP\Esperienze\Data\MeetingPointManager;
 use FP\Esperienze\Data\ExtraManager;
+use FP\Esperienze\Core\CapabilityManager;
 
 defined('ABSPATH') || exit;
 
@@ -40,7 +41,7 @@ class MenuManager {
         add_menu_page(
             __('FP Esperienze', 'fp-esperienze'),
             __('FP Esperienze', 'fp-esperienze'),
-            'manage_woocommerce',
+            CapabilityManager::MANAGE_FP_ESPERIENZE,
             'fp-esperienze',
             [$this, 'dashboardPage'],
             'dashicons-calendar-alt',
@@ -52,7 +53,7 @@ class MenuManager {
             'fp-esperienze',
             __('Dashboard', 'fp-esperienze'),
             __('Dashboard', 'fp-esperienze'),
-            'manage_woocommerce',
+            CapabilityManager::MANAGE_FP_ESPERIENZE,
             'fp-esperienze',
             [$this, 'dashboardPage']
         );
@@ -62,7 +63,7 @@ class MenuManager {
             'fp-esperienze',
             __('Bookings', 'fp-esperienze'),
             __('Bookings', 'fp-esperienze'),
-            'manage_woocommerce',
+            CapabilityManager::MANAGE_FP_ESPERIENZE,
             'fp-esperienze-bookings',
             [$this, 'bookingsPage']
         );
@@ -72,7 +73,7 @@ class MenuManager {
             'fp-esperienze',
             __('Meeting Points', 'fp-esperienze'),
             __('Meeting Points', 'fp-esperienze'),
-            'manage_woocommerce',
+            CapabilityManager::MANAGE_FP_ESPERIENZE,
             'fp-esperienze-meeting-points',
             [$this, 'meetingPointsPage']
         );
@@ -82,7 +83,7 @@ class MenuManager {
             'fp-esperienze',
             __('Extras', 'fp-esperienze'),
             __('Extras', 'fp-esperienze'),
-            'manage_woocommerce',
+            CapabilityManager::MANAGE_FP_ESPERIENZE,
             'fp-esperienze-extras',
             [$this, 'extrasPage']
         );
@@ -92,7 +93,7 @@ class MenuManager {
             'fp-esperienze',
             __('Vouchers', 'fp-esperienze'),
             __('Vouchers', 'fp-esperienze'),
-            'manage_woocommerce',
+            CapabilityManager::MANAGE_FP_ESPERIENZE,
             'fp-esperienze-vouchers',
             [$this, 'vouchersPage']
         );
@@ -102,7 +103,7 @@ class MenuManager {
             'fp-esperienze',
             __('Closures', 'fp-esperienze'),
             __('Closures', 'fp-esperienze'),
-            'manage_woocommerce',
+            CapabilityManager::MANAGE_FP_ESPERIENZE,
             'fp-esperienze-closures',
             [$this, 'closuresPage']
         );
@@ -112,7 +113,7 @@ class MenuManager {
             'fp-esperienze',
             __('Settings', 'fp-esperienze'),
             __('Settings', 'fp-esperienze'),
-            'manage_woocommerce',
+            CapabilityManager::MANAGE_FP_ESPERIENZE,
             'fp-esperienze-settings',
             [$this, 'settingsPage']
         );
@@ -411,7 +412,10 @@ class MenuManager {
      */
     public function meetingPointsPage(): void {
         // Handle form submissions
-        if ($_SERVER['REQUEST_METHOD'] === 'POST' && wp_verify_nonce($_POST['_wpnonce'] ?? '', 'fp_meeting_points_action')) {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            if (!CapabilityManager::verifyAdminAction('fp_meeting_points_action', '_wpnonce')) {
+                wp_die(__('Security check failed.', 'fp-esperienze'));
+            }
             $this->handleMeetingPointAction();
         }
         
@@ -1048,7 +1052,7 @@ class MenuManager {
         global $wpdb;
         
         // Handle actions
-        if ($_POST && current_user_can('manage_woocommerce')) {
+        if ($_POST && CapabilityManager::canManageFPEsperienze()) {
             $this->handleVoucherActions();
         }
         
@@ -1440,7 +1444,7 @@ class MenuManager {
      */
     private function handleVoucherActions(): void {
         // Check permissions first
-        if (!current_user_can('manage_woocommerce')) {
+        if (!CapabilityManager::canManageFPEsperienze()) {
             wp_die(__('You do not have permission to perform this action.', 'fp-esperienze'));
         }
         
@@ -1452,7 +1456,7 @@ class MenuManager {
         
         // Handle individual actions
         if (!wp_verify_nonce($_POST['fp_voucher_nonce'] ?? '', 'fp_voucher_action')) {
-            return;
+            wp_die(__('Security check failed.', 'fp-esperienze'));
         }
         
         $action = sanitize_text_field($_POST['action'] ?? '');
@@ -1936,7 +1940,7 @@ class MenuManager {
             wp_die(__('Security check failed.', 'fp-esperienze'));
         }
         
-        if (!current_user_can('manage_woocommerce')) {
+        if (!CapabilityManager::canManageFPEsperienze()) {
             wp_die(__('You do not have permission to perform this action.', 'fp-esperienze'));
         }
         
@@ -2090,7 +2094,7 @@ class MenuManager {
             wp_die(__('Security check failed.', 'fp-esperienze'));
         }
         
-        if (!current_user_can('manage_woocommerce')) {
+        if (!CapabilityManager::canManageFPEsperienze()) {
             wp_die(__('You do not have permission to perform this action.', 'fp-esperienze'));
         }
         
@@ -2714,12 +2718,12 @@ class MenuManager {
      * Handle bookings actions
      */
     private function handleBookingsActions(): void {
-        if (!current_user_can('manage_options')) {
-            return;
+        if (!CapabilityManager::canManageFPEsperienze()) {
+            wp_die(__('You do not have permission to perform this action.', 'fp-esperienze'));
         }
         
         if (!wp_verify_nonce($_POST['fp_booking_nonce'] ?? '', 'fp_booking_action')) {
-            return;
+            wp_die(__('Security check failed.', 'fp-esperienze'));
         }
         
         $action = sanitize_text_field($_POST['action'] ?? '');

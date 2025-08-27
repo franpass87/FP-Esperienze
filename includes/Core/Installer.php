@@ -7,6 +7,8 @@
 
 namespace FP\Esperienze\Core;
 
+use FP\Esperienze\Core\CapabilityManager;
+
 defined('ABSPATH') || exit;
 
 /**
@@ -20,6 +22,7 @@ class Installer {
     public static function activate(): void {
         self::createTables();
         self::createDefaultOptions();
+        self::addCapabilities();
         
         // Flush rewrite rules
         flush_rewrite_rules();
@@ -39,6 +42,13 @@ class Installer {
     public static function deactivate(): void {
         // Flush rewrite rules
         flush_rewrite_rules();
+    }
+
+    /**
+     * Plugin uninstall - remove capabilities
+     */
+    public static function uninstall(): void {
+        CapabilityManager::removeCapabilitiesFromRoles();
     }
 
     /**
@@ -247,5 +257,13 @@ class Installer {
                 add_option($option_name, $option_value);
             }
         }
+    }
+
+    /**
+     * Add capabilities to user roles
+     */
+    private static function addCapabilities(): void {
+        $capability_manager = new CapabilityManager();
+        $capability_manager->addCapabilitiesToRoles();
     }
 }

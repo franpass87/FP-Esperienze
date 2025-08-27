@@ -20,6 +20,7 @@ use FP\Esperienze\Data\VoucherManager;
 use FP\Esperienze\Integrations\TrackingManager;
 use FP\Esperienze\Integrations\BrevoManager;
 use FP\Esperienze\Integrations\GooglePlacesManager;
+use FP\Esperienze\Core\CapabilityManager;
 
 defined('ABSPATH') || exit;
 
@@ -87,6 +88,9 @@ class Plugin {
      * Initialize components
      */
     public function initComponents(): void {
+        // Initialize capability manager first
+        new CapabilityManager();
+        
         // Initialize experience product type
         new Experience();
         
