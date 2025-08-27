@@ -199,7 +199,7 @@ class Installer {
             KEY status (status),
             KEY expires_on (expires_on),
             KEY order_id (order_id)
-        ) $charset_collate;
+        ) $charset_collate;";
         
         // Keep existing vouchers table for backward compatibility
         $table_vouchers = $wpdb->prefix . 'fp_vouchers';
