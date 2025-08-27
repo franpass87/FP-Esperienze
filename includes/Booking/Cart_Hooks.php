@@ -35,6 +35,9 @@ class Cart_Hooks {
         add_filter('woocommerce_add_cart_item_data', [$this, 'addVoucherToCartData'], 20, 2);
         add_filter('woocommerce_get_item_data', [$this, 'displayVoucherInCart'], 20, 2);
         add_action('woocommerce_checkout_create_order_line_item', [$this, 'addVoucherOrderItemMeta'], 20, 4);
+        
+        // Add voucher section to cart page
+        add_action('woocommerce_cart_coupon', [$this, 'displayCartVoucherSection']);
     }
 
     /**
@@ -437,5 +440,112 @@ class Cart_Hooks {
             $item->add_meta_data('_fp_voucher_type', $voucher['type']);
             $item->add_meta_data('_fp_voucher_amount', $voucher['amount']);
         }
+    }
+    
+    /**
+     * Display voucher section on cart page
+     */
+    public function displayCartVoucherSection(): void {
+        // Check if cart contains experience products
+        $has_experience = false;
+        foreach (WC()->cart->get_cart() as $cart_item) {
+            if (isset($cart_item['fp_experience'])) {
+                $has_experience = true;
+                break;
+            }
+        }
+        
+        if (!$has_experience) {
+            return;
+        }
+        
+        ?>
+        <div class="fp-cart-voucher-section">
+            <h3><?php _e('Have a voucher?', 'fp-esperienze'); ?></h3>
+            <div class="fp-voucher-input-group">
+                <input type="text" 
+                       id="fp-cart-voucher-code" 
+                       class="fp-input" 
+                       placeholder="<?php esc_attr_e('Enter voucher code', 'fp-esperienze'); ?>"
+                       maxlength="50" />
+                <button type="button" 
+                        id="fp-cart-apply-voucher" 
+                        class="button">
+                    <?php _e('Apply Voucher', 'fp-esperienze'); ?>
+                </button>
+            </div>
+            <div id="fp-cart-voucher-status" class="fp-voucher-status" style="display: none;"></div>
+        </div>
+        <style>
+        .fp-cart-voucher-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        .fp-cart-voucher-section h3 {
+            margin: 0 0 15px 0;
+            font-size: 16px;
+        }
+        .fp-cart-voucher-section .fp-voucher-input-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .fp-cart-voucher-section .fp-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        </style>
+        <script>
+        jQuery(document).ready(function($) {
+            $('#fp-cart-apply-voucher').on('click', function() {
+                var voucherCode = $('#fp-cart-voucher-code').val().trim();
+                if (!voucherCode) {
+                    alert('<?php esc_js_e('Please enter a voucher code.', 'fp-esperienze'); ?>');
+                    return;
+                }
+                
+                $(this).prop('disabled', true).text('<?php esc_js_e('Applying...', 'fp-esperienze'); ?>');
+                
+                $.ajax({
+                    url: '<?php echo admin_url('admin-ajax.php'); ?>',
+                    method: 'POST',
+                    data: {
+                        action: 'fp_apply_voucher',
+                        voucher_code: voucherCode,
+                        product_id: 0, // For cart, we'll handle this differently
+                        nonce: '<?php echo wp_create_nonce('fp_voucher_nonce'); ?>'
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            $('#fp-cart-voucher-status').removeClass('fp-voucher-error')
+                                .addClass('fp-voucher-success')
+                                .html(response.data.message)
+                                .show();
+                            location.reload(); // Reload to update cart totals
+                        } else {
+                            $('#fp-cart-voucher-status').removeClass('fp-voucher-success')
+                                .addClass('fp-voucher-error')
+                                .html(response.data.message)
+                                .show();
+                        }
+                    },
+                    error: function() {
+                        $('#fp-cart-voucher-status').removeClass('fp-voucher-success')
+                            .addClass('fp-voucher-error')
+                            .html('<?php esc_js_e('Failed to apply voucher. Please try again.', 'fp-esperienze'); ?>')
+                            .show();
+                    },
+                    complete: function() {
+                        $('#fp-cart-apply-voucher').prop('disabled', false).text('<?php esc_js_e('Apply Voucher', 'fp-esperienze'); ?>');
+                    }
+                });
+            });
+        });
+        </script>
+        <?php
     }
 }

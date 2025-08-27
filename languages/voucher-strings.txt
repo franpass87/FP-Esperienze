@@ -1,0 +1,62 @@
+# Additional translation strings for voucher functionality
+# These need to be added to the POT file
+
+# VoucherManager.php
+msgid "Security check failed."
+msgstr ""
+
+msgid "Please enter a valid voucher code."
+msgstr ""
+
+msgid "Invalid voucher code or voucher not applicable to this product."
+msgstr ""
+
+msgid "Voucher applied successfully!"
+msgstr ""
+
+msgid "Voucher removed."
+msgstr ""
+
+# Cart_Hooks.php
+msgid "Have a voucher?"
+msgstr ""
+
+msgid "Enter voucher code"
+msgstr ""
+
+msgid "Apply"
+msgstr ""
+
+msgid "Apply Voucher"
+msgstr ""
+
+msgid "Applying..."
+msgstr ""
+
+msgid "Failed to apply voucher. Please try again."
+msgstr ""
+
+msgid "Voucher Applied"
+msgstr ""
+
+msgid "Code: %s (%s)"
+msgstr ""
+
+msgid "Free Experience"
+msgstr ""
+
+msgid "Voucher Code"
+msgstr ""
+
+# BookingManager.php
+msgid "Voucher %s has been redeemed."
+msgstr ""
+
+msgid "Failed to redeem voucher %s."
+msgstr ""
+
+msgid "Voucher %s has been restored to active status."
+msgstr ""
+
+msgid "Failed to restore voucher %s."
+msgstr ""

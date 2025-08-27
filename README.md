@@ -236,6 +236,77 @@ The plugin creates the following custom tables:
 - `fp_overrides` - Date-specific overrides
 - `fp_bookings` - Customer bookings
 - `fp_vouchers` - PDF vouchers with QR codes
+- `fp_exp_vouchers` - Gift vouchers for redemption
+
+## Voucher Redemption System (Phase 2)
+
+The plugin supports gift voucher redemption with the following features:
+
+### Voucher Types
+
+1. **Full Vouchers** (`TYPE=full`): Makes the experience product completely free (but extras remain chargeable)
+2. **Value Vouchers** (`TYPE=value`): Applies a discount amount up to the voucher's value on the base experience price
+
+### Voucher Validation
+
+Vouchers are validated using:
+- **HMAC Signature**: Ensures voucher authenticity using `hash_hmac('sha256', $data, $secret_key)`
+- **Product Compatibility**: Vouchers can be restricted to specific products
+- **Expiration Check**: Validates against `expires_on` date
+- **Status Check**: Only `active` vouchers can be redeemed
+
+### Database Structure
+
+The `fp_exp_vouchers` table contains:
+```sql
+CREATE TABLE fp_exp_vouchers (
+    id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+    voucher_code varchar(50) NOT NULL UNIQUE,
+    voucher_type enum('full', 'value') NOT NULL DEFAULT 'value',
+    amount decimal(10,2) NOT NULL DEFAULT 0.00,
+    product_id bigint(20) unsigned DEFAULT NULL,
+    status enum('active', 'redeemed', 'expired') NOT NULL DEFAULT 'active',
+    expires_on date DEFAULT NULL,
+    signature varchar(64) NOT NULL,
+    order_id bigint(20) unsigned DEFAULT NULL,
+    redeemed_at datetime DEFAULT NULL,
+    created_at datetime DEFAULT CURRENT_TIMESTAMP,
+    updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+```
+
+### User Interface
+
+1. **Booking Widget**: "Have a voucher?" section with code input and apply button
+2. **Cart Page**: Voucher application section for experience products
+3. **Order Display**: Shows applied voucher details in cart and order items
+
+### Redemption Flow
+
+1. Customer enters voucher code during booking
+2. System validates HMAC signature, expiry, and product compatibility
+3. Discount is applied to base product price (not extras)
+4. Voucher is stored in cart session and order meta
+5. On order completion, voucher status changes to `redeemed`
+6. On order cancellation/refund, voucher status returns to `active`
+
+### Implementation Classes
+
+- **VoucherManager**: Core voucher validation and redemption logic
+- **Cart_Hooks**: Integration with WooCommerce cart system
+- **BookingManager**: Order processing and voucher status updates
+
+### AJAX Endpoints
+
+- `fp_apply_voucher`: Apply voucher code with validation
+- `fp_remove_voucher`: Remove applied voucher from session
+
+### Security Features
+
+- CSRF protection with WordPress nonces
+- Input sanitization and validation
+- HMAC signature verification
+- Single-use voucher enforcement
 
 ## Author
 
