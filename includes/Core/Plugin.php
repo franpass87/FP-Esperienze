@@ -29,6 +29,8 @@ use FP\Esperienze\Integrations\GooglePlacesManager;
 use FP\Esperienze\Core\CapabilityManager;
 use FP\Esperienze\Core\WebhookManager;
 use FP\Esperienze\Core\I18nManager;
+use FP\Esperienze\Core\CacheManager;
+use FP\Esperienze\Core\AssetOptimizer;
 
 defined('ABSPATH') || exit;
 
