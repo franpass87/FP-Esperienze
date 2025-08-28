@@ -50,35 +50,7 @@ if (version_compare(PHP_VERSION, '8.1', '<')) {
     return;
 }
 
-// Check WooCommerce dependency
-if (!class_exists('WooCommerce')) {
-    add_action('admin_notices', function() {
-        echo '<div class="notice notice-error"><p>' . 
-             esc_html__('FP Esperienze requires WooCommerce to be installed and activated.', 'fp-esperienze') . 
-             '</p></div>';
-    });
-    return;
-}
-
-// Check WooCommerce version
-if (defined('WC_VERSION') && version_compare(WC_VERSION, '8.0', '<')) {
-    add_action('admin_notices', function() {
-        echo '<div class="notice notice-error"><p>' . 
-             esc_html__('FP Esperienze requires WooCommerce 8.0 or higher.', 'fp-esperienze') . 
-             '</p></div>';
-    });
-    return;
-}
-
-// Check if WooCommerce is active
-if (!in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_option('active_plugins')))) {
-    add_action('admin_notices', function() {
-        echo '<div class="notice notice-error"><p>' . 
-             esc_html__('FP Esperienze requires WooCommerce to be installed and active.', 'fp-esperienze') . 
-             '</p></div>';
-    });
-    return;
-}
+// WooCommerce dependency checks will be performed in plugins_loaded hook
 
 // Check for Composer autoloader
 $autoloader_path = FP_ESPERIENZE_PLUGIN_DIR . 'vendor/autoload.php';
@@ -101,6 +73,26 @@ require_once $autoloader_path;
  * Initialize the plugin
  */
 function fp_esperienze_init() {
+    // Check WooCommerce dependency first
+    if (!class_exists('WooCommerce')) {
+        add_action('admin_notices', function() {
+            echo '<div class="notice notice-error"><p>' . 
+                 esc_html__('FP Esperienze requires WooCommerce to be installed and activated.', 'fp-esperienze') . 
+                 '</p></div>';
+        });
+        return;
+    }
+
+    // Check WooCommerce version
+    if (defined('WC_VERSION') && version_compare(WC_VERSION, '8.0', '<')) {
+        add_action('admin_notices', function() {
+            echo '<div class="notice notice-error"><p>' . 
+                 esc_html__('FP Esperienze requires WooCommerce 8.0 or higher.', 'fp-esperienze') . 
+                 '</p></div>';
+        });
+        return;
+    }
+
     // Load text domain
     load_plugin_textdomain('fp-esperienze', false, dirname(FP_ESPERIENZE_PLUGIN_BASENAME) . '/languages');
     
@@ -112,9 +104,24 @@ function fp_esperienze_init() {
 add_action('plugins_loaded', 'fp_esperienze_init');
 
 /**
+ * Declare compatibility with WooCommerce features
+ */
+add_action('before_woocommerce_init', function() {
+    // Declare HPOS compatibility
+    if (class_exists('\Automattic\WooCommerce\Utilities\FeaturesUtil')) {
+        \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility('custom_order_tables', FP_ESPERIENZE_PLUGIN_FILE, true);
+    }
+});
+
+/**
  * Activation hook
  */
 register_activation_hook(__FILE__, function() {
+    // Check WooCommerce is available during activation
+    if (!class_exists('WooCommerce')) {
+        wp_die(esc_html__('FP Esperienze requires WooCommerce to be installed and activated.', 'fp-esperienze'));
+    }
+    
     // Check WooCommerce version during activation
     if (defined('WC_VERSION') && version_compare(WC_VERSION, '8.0', '<')) {
         wp_die(esc_html__('FP Esperienze requires WooCommerce 8.0 or higher.', 'fp-esperienze'));
