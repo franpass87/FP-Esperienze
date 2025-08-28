@@ -592,6 +592,11 @@ class Experience {
             return;
         }
         
+        // Ensure product type is set to 'experience' when experience data is being saved
+        if (isset($_POST['product-type']) && $_POST['product-type'] === 'experience') {
+            update_post_meta($post_id, '_product_type', 'experience');
+        }
+        
         // Save basic experience fields
         $fields = [
             '_experience_duration',
