@@ -42,10 +42,10 @@ function fp_debug_product_type() {
     
     // Check if filters are hooked
     global $wp_filter;
-    if (isset($wp_filter['woocommerce_product_type_selector'])) {
-        echo "<p>✅ woocommerce_product_type_selector filter has " . count($wp_filter['woocommerce_product_type_selector']->callbacks) . " callbacks</p>";
+    if (isset($wp_filter['product_type_selector'])) {
+        echo "<p>✅ product_type_selector filter has " . count($wp_filter['product_type_selector']->callbacks) . " callbacks</p>";
     } else {
-        echo "<p>❌ woocommerce_product_type_selector filter not found</p>";
+        echo "<p>❌ product_type_selector filter not found</p>";
     }
     
     if (isset($wp_filter['woocommerce_product_class'])) {
