@@ -26,6 +26,7 @@ class Experience {
     public function __construct() {
         add_action('init', [$this, 'init']);
         add_filter('product_type_selector', [$this, 'addProductType']);
+        add_filter('woocommerce_product_class', [$this, 'getProductClass'], 10, 2);
         add_filter('woocommerce_product_data_tabs', [$this, 'addProductDataTabs']);
         add_action('woocommerce_product_data_panels', [$this, 'addProductDataPanels']);
         add_action('woocommerce_process_product_meta', [$this, 'saveProductData']);
@@ -51,6 +52,20 @@ class Experience {
     public function addProductType(array $types): array {
         $types['experience'] = __('Experience', 'fp-esperienze');
         return $types;
+    }
+
+    /**
+     * Get product class for experience products
+     *
+     * @param string $classname Current class name
+     * @param string $product_type Product type
+     * @return string
+     */
+    public function getProductClass(string $classname, string $product_type): string {
+        if ($product_type === 'experience') {
+            return 'WC_Product_Experience';
+        }
+        return $classname;
     }
 
     /**
