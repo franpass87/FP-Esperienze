@@ -79,7 +79,10 @@ class Plugin {
             add_action('init', [$this, 'initAdmin']);
         }
         
-        // Initialize frontend
+        // Initialize shortcodes (always needed for frontend display)
+        add_action('init', [$this, 'initShortcodes']);
+        
+        // Initialize frontend (templates and SEO only when not in admin)
         if (!is_admin()) {
             add_action('init', [$this, 'initFrontend']);
         }
@@ -172,10 +175,16 @@ class Plugin {
     }
 
     /**
-     * Initialize frontend
+     * Initialize shortcodes (always needed for frontend display)
+     */
+    public function initShortcodes(): void {
+        new Shortcodes();
+    }
+
+    /**
+     * Initialize frontend (templates and SEO only)
      */
     public function initFrontend(): void {
-        new Shortcodes();
         new Templates();
         new SEOManager();
     }
