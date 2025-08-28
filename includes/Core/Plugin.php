@@ -31,6 +31,7 @@ use FP\Esperienze\Core\WebhookManager;
 use FP\Esperienze\Core\I18nManager;
 use FP\Esperienze\Core\CacheManager;
 use FP\Esperienze\Core\AssetOptimizer;
+use FP\Esperienze\Core\QueryMonitor;
 
 defined('ABSPATH') || exit;
 

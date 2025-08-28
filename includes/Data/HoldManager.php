@@ -7,6 +7,8 @@
 
 namespace FP\Esperienze\Data;
 
+use FP\Esperienze\Data\Availability;
+
 defined('ABSPATH') || exit;
 
 /**
