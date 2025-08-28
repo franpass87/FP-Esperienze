@@ -30,6 +30,9 @@ define('FP_ESPERIENZE_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('FP_ESPERIENZE_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('FP_ESPERIENZE_PLUGIN_BASENAME', plugin_basename(__FILE__));
 
+// Feature flags
+define('FP_ESPERIENZE_ENABLE_SCHEDULE_NULL_MIGRATION', false); // Set to true to enable NULL migration for schedule override fields
+
 // Check WordPress version
 if (version_compare(get_bloginfo('version'), '6.5', '<')) {
     add_action('admin_notices', function() {

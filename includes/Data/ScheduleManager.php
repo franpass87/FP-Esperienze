@@ -63,36 +63,55 @@ class ScheduleManager {
         
         $table_name = $wpdb->prefix . 'fp_schedules';
         
-        $defaults = [
-            'duration_min' => 60,
-            'capacity' => 10,
-            'lang' => 'en',
-            'meeting_point_id' => null,
-            'price_adult' => 0.00,
-            'price_child' => 0.00,
+        // Only set required defaults - allow override fields to be NULL for inheritance
+        $required_defaults = [
             'is_active' => 1
         ];
         
-        $data = wp_parse_args($data, $defaults);
+        $data = wp_parse_args($data, $required_defaults);
         
-        $result = $wpdb->insert(
-            $table_name,
-            [
-                'product_id' => (int) $data['product_id'],
-                'day_of_week' => (int) $data['day_of_week'],
-                'start_time' => sanitize_text_field($data['start_time']),
-                'duration_min' => (int) $data['duration_min'],
-                'capacity' => (int) $data['capacity'],
-                'lang' => sanitize_text_field($data['lang']),
-                'meeting_point_id' => $data['meeting_point_id'] ? (int) $data['meeting_point_id'] : null,
-                'price_adult' => (float) $data['price_adult'],
-                'price_child' => (float) $data['price_child'],
-                'is_active' => (int) $data['is_active']
-            ],
-            [
-                '%d', '%d', '%s', '%d', '%d', '%s', '%d', '%f', '%f', '%d'
-            ]
-        );
+        // Prepare insert data with proper NULL handling for override fields
+        $insert_data = [
+            'product_id' => (int) $data['product_id'],
+            'day_of_week' => (int) $data['day_of_week'],
+            'start_time' => sanitize_text_field($data['start_time']),
+            'is_active' => (int) $data['is_active']
+        ];
+        
+        $formats = ['%d', '%d', '%s', '%d'];
+        
+        // Handle override fields - allow NULL for inheritance
+        if (isset($data['duration_min']) && $data['duration_min'] !== '' && $data['duration_min'] !== null) {
+            $insert_data['duration_min'] = (int) $data['duration_min'];
+            $formats[] = '%d';
+        }
+        
+        if (isset($data['capacity']) && $data['capacity'] !== '' && $data['capacity'] !== null) {
+            $insert_data['capacity'] = (int) $data['capacity'];
+            $formats[] = '%d';
+        }
+        
+        if (isset($data['lang']) && $data['lang'] !== '' && $data['lang'] !== null) {
+            $insert_data['lang'] = sanitize_text_field($data['lang']);
+            $formats[] = '%s';
+        }
+        
+        if (isset($data['meeting_point_id']) && $data['meeting_point_id'] !== '' && $data['meeting_point_id'] !== null) {
+            $insert_data['meeting_point_id'] = (int) $data['meeting_point_id'];
+            $formats[] = '%d';
+        }
+        
+        if (isset($data['price_adult']) && $data['price_adult'] !== '' && $data['price_adult'] !== null) {
+            $insert_data['price_adult'] = (float) $data['price_adult'];
+            $formats[] = '%f';
+        }
+        
+        if (isset($data['price_child']) && $data['price_child'] !== '' && $data['price_child'] !== null) {
+            $insert_data['price_child'] = (float) $data['price_child'];
+            $formats[] = '%f';
+        }
+        
+        $result = $wpdb->insert($table_name, $insert_data, $formats);
         
         return $result ? $wpdb->insert_id : false;
     }

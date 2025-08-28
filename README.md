@@ -36,6 +36,7 @@ A WordPress + WooCommerce plugin for experience booking management by Francesco 
 ## Features
 
 - **Experience Product Type**: Custom WooCommerce product type for bookable experiences
+- **Schedule Builder**: Simplified schedule management with inheritance from product defaults
 - **Booking Management**: Complete booking system with slots, schedules, and capacity management
 - **Meeting Points**: GPS-enabled meeting points for experiences
 - **Extras**: Additional services and add-ons
@@ -1079,7 +1080,44 @@ The plugin creates the following custom tables:
 
 ### Experience Schedules
 
-Experience schedules define the recurring weekly time slots when an experience is available for booking. Each schedule represents a recurring time slot on a specific day of the week.
+Experience schedules define the recurring weekly time slots when an experience is available for booking. The plugin offers two ways to manage schedules: the intuitive **Schedule Builder** (recommended) and **Advanced Mode** for detailed control.
+
+#### Schedule Builder (Recommended)
+
+The Schedule Builder provides a simplified interface for creating recurring time slots with inheritance from product defaults.
+
+**Key Features:**
+- **Weekly Programming**: Create time slots by selecting days + start time
+- **Inheritance System**: Override fields inherit from product defaults when empty
+- **Override Toggle**: Show/hide advanced settings as needed
+- **Multiple Days**: Apply same time slot to multiple days at once
+- **Validation**: Built-in time format and required field validation
+
+**Product Defaults (Inherited Values):**
+- **Default Duration**: Base duration in minutes (e.g., 90)
+- **Default Max Capacity**: Base capacity for all schedules (e.g., 12)
+- **Default Language**: Base language code (e.g., 'it', 'en')
+- **Default Meeting Point**: Default meeting location
+- **Default Child Price**: Base child pricing
+
+**Creating Time Slots:**
+
+1. **Basic Setup**: Set start time and select days
+2. **Inheritance**: Leave override fields empty to inherit product defaults
+3. **Overrides**: Use "Show advanced overrides" to specify different values
+4. **Multiple Slots**: Add multiple time slots for different times/conditions
+
+**Example Usage:**
+```
+Time Slot 1: 09:00, Mon/Wed/Fri (inherits all defaults)
+Time Slot 2: 14:30, Tue/Thu/Sat/Sun (120min duration, €35 adult price, other inherited)
+```
+
+This creates 7 individual schedule records with optimized inheritance.
+
+#### Advanced Mode (Legacy)
+
+Toggle "Show Advanced Mode" to access individual schedule row editing for fine-grained control.
 
 #### Schedule Fields
 
@@ -1092,52 +1130,72 @@ Experience schedules define the recurring weekly time slots when an experience i
 - Example: `09:00` for 9:00 AM, `14:30` for 2:30 PM
 - Used to calculate booking availability slots
 
-**Duration (minutes)** *(Required)*
+**Duration (minutes)** *(Override Optional)*
 - How long the experience lasts in minutes
-- Must be greater than 0
+- **Inheritance**: Uses product default duration if not specified
+- Must be greater than 0 when specified
 - Example: `120` for a 2-hour experience
 
-**Max Capacity** *(Required)*
+**Max Capacity** *(Override Optional)*
 - Maximum number of participants for this specific schedule
-- Must be at least 1
+- **Inheritance**: Uses product default capacity if not specified
+- Must be at least 1 when specified
 - Can be different for each schedule (e.g., different group sizes for morning vs evening)
 
-**Language** *(Optional)*
+**Language** *(Override Optional)*
 - Language code for this schedule (e.g., `en`, `it`, `es`)
+- **Inheritance**: Uses product default language if not specified
 - Useful for multilingual experiences with different schedules per language
-- Defaults to `en` if not specified
 
-**Meeting Point** *(Optional)*
+**Meeting Point** *(Override Optional)*
 - The meeting point location for this schedule
+- **Inheritance**: Uses product default meeting point if not specified
 - Can be different for each schedule if experiences meet at different locations
-- If not specified, uses the default product meeting point
 
-**Adult Price** *(Optional)*
+**Adult Price** *(Override Optional)*
 - Price per adult participant for this specific schedule
-- Overrides the default product price if specified
-- Leave empty to use the standard product pricing
+- **Inheritance**: Uses standard WooCommerce product price if not specified
+- Overrides the default product price when specified
 
-**Child Price** *(Optional)*
+**Child Price** *(Override Optional)*
 - Price per child participant for this specific schedule
+- **Inheritance**: Uses product default child price if not specified
 - Leave empty if no child pricing or to use default pricing
-- Only relevant if your experience offers child rates
 
 #### Schedule Validation
 
 The system validates schedule data when saving:
 - **Time Format**: Must be in HH:MM format (e.g., `09:00`, `14:30`)
-- **Duration**: Must be greater than 0 minutes
-- **Capacity**: Must be at least 1 participant
+- **Duration**: Must be greater than 0 minutes (when specified)
+- **Capacity**: Must be at least 1 participant (when specified)
 - **Invalid Schedules**: Automatically discarded with admin notice
 - **Validation Feedback**: Clear error messages for any validation issues
 
 #### How Schedules Work
 
 1. **Recurring Availability**: Schedules create recurring weekly time slots
-2. **Booking Slots**: System generates bookable slots based on schedules
-3. **Capacity Management**: Each schedule has independent capacity tracking
-4. **Override Support**: Date-specific overrides can modify or disable schedule slots
-5. **Multi-language**: Different schedules can serve different languages
+2. **Inheritance Logic**: Empty override fields inherit from product defaults via ScheduleHelper
+3. **Effective Values**: System calculates final values (override → default → fallback)
+4. **Booking Slots**: System generates bookable slots using effective values
+5. **Capacity Management**: Each schedule has independent capacity tracking
+6. **Override Support**: Date-specific overrides can modify or disable schedule slots
+7. **Multi-language**: Different schedules can serve different languages
+
+#### Database Migration (Optional)
+
+The plugin includes optional database migration to optimize storage:
+
+**Feature Flag**: Set `FP_ESPERIENZE_ENABLE_SCHEDULE_NULL_MIGRATION = true` to enable
+
+**Benefits**:
+- Removes redundant data by setting inherited values to NULL
+- Cleaner database with explicit inheritance
+- Backward compatible with existing schedules
+
+**Migration Process**:
+- Alters schedule table columns to allow NULL values
+- Sets values to NULL where they match product defaults
+- Maintains all functionality while reducing data redundancy
 
 ### Hooks and Filters
 

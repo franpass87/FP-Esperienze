@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FP Esperienze Schedule Builder - UI Preview</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+            background: #f1f1f1;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .preview-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+        
+        .options_group {
+            border: 1px solid #ddd;
+            margin-bottom: 20px;
+            background: #fff;
+        }
+        
+        .options_group h4 {
+            background: #f9f9f9;
+            border-bottom: 1px solid #ddd;
+            padding: 10px 15px;
+            margin: 0;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .options_group .content {
+            padding: 15px;
+        }
+        
+        /* Schedule Builder Styles */
+        .fp-builder-section h5 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            font-weight: 600;
+            color: #1d2327;
+        }
+        
+        .fp-time-slot-row {
+            border: 1px solid #c3c4c7;
+            padding: 15px;
+            margin-bottom: 15px;
+            background: #f6f7f7;
+            border-radius: 4px;
+            box-shadow: 0 1px 1px rgba(0,0,0,0.04);
+        }
+        
+        .fp-time-slot-header {
+            display: flex;
+            align-items: flex-end;
+            gap: 15px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .fp-days-checkboxes {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .fp-days-checkboxes label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            white-space: nowrap;
+            font-size: 12px;
+            margin: 0;
+        }
+        
+        .fp-override-toggle {
+            border-top: 1px solid #ddd;
+            padding-top: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .fp-override-toggle label {
+            font-weight: normal;
+            margin: 0;
+        }
+        
+        .fp-overrides-section {
+            border-top: 1px solid #ddd;
+            padding-top: 15px;
+            background: #fff;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        
+        .fp-remove-time-slot {
+            background: #dc3232;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            height: fit-content;
+            align-self: flex-end;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 8px 12px;
+            cursor: pointer;
+        }
+        
+        .fp-remove-time-slot:hover {
+            background: #c62d2d;
+        }
+        
+        .fp-add-time-slot {
+            background: #2271b1;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 3px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .fp-add-time-slot:hover {
+            background: #135e96;
+        }
+        
+        /* Form elements */
+        label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+            font-size: 13px;
+        }
+        
+        input[type="time"], input[type="number"], input[type="text"], select {
+            width: 100%;
+            padding: 6px 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        
+        input::placeholder {
+            color: #757575;
+            font-style: italic;
+        }
+        
+        .required {
+            color: #dc3232;
+        }
+        
+        .description {
+            color: #666;
+            font-size: 12px;
+            font-style: italic;
+        }
+        
+        /* Grid layouts */
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+        
+        /* Advanced mode */
+        .advanced-mode {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        
+        .advanced-mode h5 {
+            margin: 0 0 15px 0;
+            color: #856404;
+            font-weight: 600;
+        }
+        
+        .toggle-section {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <div class="preview-container">
+        <h1>FP Esperienze - Schedule Builder UI Preview</h1>
+        <p class="description">This preview shows the new Schedule Builder interface that simplifies schedule management by allowing inheritance from product defaults.</p>
+        
+        <div class="options_group">
+            <h4>Product Defaults</h4>
+            <div class="content">
+                <div class="grid-3">
+                    <div>
+                        <label>Default Duration (minutes) <span class="required">*</span></label>
+                        <input type="number" value="90" placeholder="60">
+                    </div>
+                    <div>
+                        <label>Default Max Capacity <span class="required">*</span></label>
+                        <input type="number" value="12" placeholder="10">
+                    </div>
+                    <div>
+                        <label>Default Language</label>
+                        <input type="text" value="it" placeholder="en">
+                    </div>
+                </div>
+                <div style="margin-top: 15px;">
+                    <div class="grid-3">
+                        <div>
+                            <label>Default Meeting Point</label>
+                            <select>
+                                <option>Piazza San Marco, Venice</option>
+                                <option>Colosseum Entrance, Rome</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label>Default Child Price (€)</label>
+                            <input type="number" value="15.00" placeholder="0.00" step="0.01">
+                        </div>
+                        <div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="options_group">
+            <h4>Weekly Schedules</h4>
+            <div class="content">
+                <div class="fp-builder-section">
+                    <h5>Weekly Programming</h5>
+                    <p class="description">Create time slots that apply to multiple days. Override values are inherited from product defaults above.</p>
+                    
+                    <!-- Time Slot 1 -->
+                    <div class="fp-time-slot-row">
+                        <div class="fp-time-slot-header">
+                            <div style="flex: 0 0 120px;">
+                                <label>Start Time <span class="required">*</span></label>
+                                <input type="time" value="09:00" required>
+                            </div>
+                            
+                            <div style="flex: 1;">
+                                <label>Days <span class="required">*</span></label>
+                                <div class="fp-days-checkboxes">
+                                    <label><input type="checkbox" checked> <span>Monday</span></label>
+                                    <label><input type="checkbox"> <span>Tuesday</span></label>
+                                    <label><input type="checkbox" checked> <span>Wednesday</span></label>
+                                    <label><input type="checkbox"> <span>Thursday</span></label>
+                                    <label><input type="checkbox" checked> <span>Friday</span></label>
+                                    <label><input type="checkbox"> <span>Saturday</span></label>
+                                    <label><input type="checkbox"> <span>Sunday</span></label>
+                                </div>
+                            </div>
+                            
+                            <div style="flex: 0 0 auto;">
+                                <button type="button" class="fp-remove-time-slot">
+                                    🗑️ Remove
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="fp-override-toggle">
+                            <label>
+                                <input type="checkbox"> Show advanced overrides
+                            </label>
+                            <span class="description">Override default values for this time slot</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Time Slot 2 with overrides shown -->
+                    <div class="fp-time-slot-row">
+                        <div class="fp-time-slot-header">
+                            <div style="flex: 0 0 120px;">
+                                <label>Start Time <span class="required">*</span></label>
+                                <input type="time" value="14:30" required>
+                            </div>
+                            
+                            <div style="flex: 1;">
+                                <label>Days <span class="required">*</span></label>
+                                <div class="fp-days-checkboxes">
+                                    <label><input type="checkbox"> <span>Monday</span></label>
+                                    <label><input type="checkbox" checked> <span>Tuesday</span></label>
+                                    <label><input type="checkbox"> <span>Wednesday</span></label>
+                                    <label><input type="checkbox" checked> <span>Thursday</span></label>
+                                    <label><input type="checkbox"> <span>Friday</span></label>
+                                    <label><input type="checkbox" checked> <span>Saturday</span></label>
+                                    <label><input type="checkbox" checked> <span>Sunday</span></label>
+                                </div>
+                            </div>
+                            
+                            <div style="flex: 0 0 auto;">
+                                <button type="button" class="fp-remove-time-slot">
+                                    🗑️ Remove
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="fp-override-toggle">
+                            <label>
+                                <input type="checkbox" checked> Show advanced overrides
+                            </label>
+                            <span class="description">Override default values for this time slot</span>
+                        </div>
+                        
+                        <div class="fp-overrides-section">
+                            <div class="grid-3" style="margin-bottom: 10px;">
+                                <div>
+                                    <label>Duration (minutes)</label>
+                                    <input type="number" value="120" placeholder="Inherit (90)" min="1">
+                                </div>
+                                <div>
+                                    <label>Capacity</label>
+                                    <input type="number" value="" placeholder="Inherit (12)" min="1">
+                                </div>
+                                <div>
+                                    <label>Language</label>
+                                    <input type="text" value="" placeholder="Inherit (it)" maxlength="10">
+                                </div>
+                            </div>
+                            <div class="grid-3">
+                                <div>
+                                    <label>Meeting Point</label>
+                                    <select>
+                                        <option value="">Inherit (Piazza San Marco, Venice)</option>
+                                        <option>Colosseum Entrance, Rome</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label>Adult Price (€)</label>
+                                    <input type="number" value="35.00" placeholder="Inherit (25.00)" min="0" step="0.01">
+                                </div>
+                                <div>
+                                    <label>Child Price (€)</label>
+                                    <input type="number" value="" placeholder="Inherit (15.00)" min="0" step="0.01">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button type="button" class="fp-add-time-slot">
+                        ➕ Add Time Slot
+                    </button>
+                </div>
+                
+                <div class="toggle-section">
+                    <label>
+                        <input type="checkbox"> Show Advanced Mode
+                    </label>
+                    <span class="description">Enable to view/edit individual schedule rows directly</span>
+                </div>
+                
+                <div class="advanced-mode" style="display: none;">
+                    <h5>Advanced Mode (Raw Schedules)</h5>
+                    <p class="description">Individual schedule rows for fine-grained control. Changes here override the schedule builder above.</p>
+                    <!-- Raw schedule rows would appear here -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Simple demo functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            // Toggle overrides sections
+            document.querySelectorAll('.fp-override-toggle input[type="checkbox"]').forEach(function(checkbox) {
+                checkbox.addEventListener('change', function() {
+                    const overridesSection = this.closest('.fp-time-slot-row').querySelector('.fp-overrides-section');
+                    if (this.checked) {
+                        overridesSection.style.display = 'block';
+                    } else {
+                        overridesSection.style.display = 'none';
+                    }
+                });
+            });
+            
+            // Toggle advanced mode
+            document.querySelector('.toggle-section input[type="checkbox"]').addEventListener('change', function() {
+                const advancedMode = document.querySelector('.advanced-mode');
+                if (this.checked) {
+                    advancedMode.style.display = 'block';
+                } else {
+                    advancedMode.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
