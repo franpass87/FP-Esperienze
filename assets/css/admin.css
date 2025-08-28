@@ -34,6 +34,24 @@
     font-weight: 600;
 }
 
+/* Additional utility classes */
+.fp-narrow-input {
+    width: 60px !important;
+}
+
+.fp-centered-cell {
+    text-align: center;
+    padding: 20px;
+}
+
+.fp-error-text {
+    color: #dc3232;
+}
+
+.fp-voucher-actions-spacing {
+    margin-top: 4px;
+}
+
 /* Setup Wizard */
 .fp-logo-preview-container {
     margin-top: 10px;

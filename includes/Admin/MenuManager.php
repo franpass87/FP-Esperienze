@@ -1488,7 +1488,7 @@ class MenuManager {
                         </select>
                         
                         <div id="bulk-extend-options" style="display: none; margin-top: 5px;">
-                            <input type="number" name="bulk_extend_months" min="1" max="60" value="12" style="width: 60px;">
+                            <input type="number" name="bulk_extend_months" min="1" max="60" value="12" class="fp-narrow-input">
                             <label><?php _e('months', 'fp-esperienze'); ?></label>
                         </div>
                         
@@ -1516,7 +1516,7 @@ class MenuManager {
                     <tbody>
                         <?php if (empty($vouchers)): ?>
                             <tr>
-                                <td colspan="9" style="text-align: center; padding: 20px;">
+                                <td colspan="9" class="fp-centered-cell">
                                     <?php _e('No vouchers found.', 'fp-esperienze'); ?>
                                 </td>
                             </tr>
@@ -1577,7 +1577,7 @@ class MenuManager {
                                     <td>
                                         <?php echo esc_html(date_i18n(get_option('date_format'), strtotime($voucher->expires_on))); ?>
                                         <?php if (strtotime($voucher->expires_on) < time() && $voucher->status === 'active'): ?>
-                                            <br><small style="color: #dc3232;"><?php _e('Expired', 'fp-esperienze'); ?></small>
+                                            <br><small class="fp-error-text"><?php _e('Expired', 'fp-esperienze'); ?></small>
                                         <?php endif; ?>
                                     </td>
                                     <td>
@@ -1597,7 +1597,7 @@ class MenuManager {
                                         <?php endif; ?>
                                         
                                         <?php if ($voucher->status === 'active'): ?>
-                                            <div class="fp-voucher-actions" style="margin-top: 4px;">
+                                            <div class="fp-voucher-actions" class="fp-voucher-actions-spacing">
                                                 <!-- Resend Email -->
                                                 <form method="post" style="display: inline-block; margin-right: 4px;">
                                                     <?php wp_nonce_field('fp_voucher_action', 'fp_voucher_nonce'); ?>
