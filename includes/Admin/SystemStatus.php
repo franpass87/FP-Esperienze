@@ -232,7 +232,16 @@ class SystemStatus {
                         $timezone = get_option('timezone_string');
                         if (empty($timezone)) {
                             $offset = get_option('gmt_offset');
-                            echo sprintf('UTC%+d', $offset);
+                            // Handle decimal offsets (e.g., 5.5 for IST)
+                            if (is_numeric($offset)) {
+                                if (fmod($offset, 1) == 0) {
+                                    echo sprintf('UTC%+d', (int)$offset);
+                                } else {
+                                    echo sprintf('UTC%+.1f', (float)$offset);
+                                }
+                            } else {
+                                echo 'UTC+0';
+                            }
                         } else {
                             echo esc_html($timezone);
                         }
