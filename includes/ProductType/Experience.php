@@ -29,7 +29,8 @@ class Experience {
         add_filter('woocommerce_product_class', [$this, 'getProductClass'], 10, 2);
         add_filter('woocommerce_product_data_tabs', [$this, 'addProductDataTabs']);
         add_action('woocommerce_product_data_panels', [$this, 'addProductDataPanels']);
-        add_action('woocommerce_process_product_meta', [$this, 'saveProductData']);
+        // Priority 20 ensures our product type saving runs after WooCommerce core (priority 10)
+        add_action('woocommerce_process_product_meta', [$this, 'saveProductData'], 20);
         add_action('admin_notices', [$this, 'showScheduleValidationNotices']);
     }
 
