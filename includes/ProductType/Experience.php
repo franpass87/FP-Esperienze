@@ -53,8 +53,8 @@ class Experience {
      * Load the WC_Product_Experience class
      */
     private function loadProductClass(): void {
-        // Load the WC_Product_Experience class if WooCommerce is available
-        if (class_exists('WC_Product')) {
+        // Only load if not already loaded and WooCommerce is available
+        if (!class_exists('WC_Product_Experience') && class_exists('WC_Product')) {
             require_once FP_ESPERIENZE_PLUGIN_DIR . 'includes/ProductType/WC_Product_Experience.php';
         }
     }
@@ -98,6 +98,10 @@ class Experience {
      */
     public function getProductClass(string $classname, string $product_type): string {
         if ($product_type === 'experience') {
+            // Ensure the WC_Product_Experience class is loaded when needed
+            if (!class_exists('WC_Product_Experience')) {
+                $this->loadProductClass();
+            }
             return 'WC_Product_Experience';
         }
         return $classname;
