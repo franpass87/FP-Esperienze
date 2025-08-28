@@ -19,6 +19,7 @@ use FP\Esperienze\PDF\Qr;
 use FP\Esperienze\Core\CapabilityManager;
 use FP\Esperienze\Core\I18nManager;
 use FP\Esperienze\Core\WebhookManager;
+use FP\Esperienze\Core\Log;
 
 defined('ABSPATH') || exit;
 
@@ -32,6 +33,7 @@ class MenuManager {
      */
     public function __construct() {
         add_action('admin_menu', [$this, 'addAdminMenu']);
+        add_action('admin_enqueue_scripts', [$this, 'enqueueAdminScripts']);
         
         // Initialize Setup Wizard and System Status
         new SetupWizard();
@@ -179,6 +181,73 @@ class MenuManager {
                 exit;
             }
         }
+    }
+
+    /**
+     * Enqueue admin scripts and styles with localization
+     *
+     * @param string $hook Current admin page hook
+     */
+    public function enqueueAdminScripts(string $hook): void {
+        // Only enqueue on FP Esperienze admin pages
+        if (strpos($hook, 'fp-esperienze') === false) {
+            return;
+        }
+
+        // Enqueue jQuery and other dependencies
+        wp_enqueue_script('jquery');
+        wp_enqueue_script('thickbox');
+        wp_enqueue_style('thickbox');
+        
+        // Enqueue bookings calendar script for bookings page
+        if (strpos($hook, 'fp-esperienze-bookings') !== false) {
+            wp_enqueue_script(
+                'fp-admin-bookings',
+                FP_ESPERIENZE_PLUGIN_URL . 'assets/js/admin-bookings.js',
+                ['jquery'],
+                FP_ESPERIENZE_VERSION,
+                true
+            );
+        }
+
+        // Localize scripts with translatable strings
+        wp_localize_script('jquery', 'fpEsperienzeAdmin', [
+            'i18n' => [
+                'editExtra' => __('Edit Extra', 'fp-esperienze'),
+                'pdfLinkCopied' => __('PDF link copied to clipboard!', 'fp-esperienze'),
+                'selectAction' => __('Please select an action.', 'fp-esperienze'),
+                'selectVouchers' => __('Please select at least one voucher.', 'fp-esperienze'),
+                'confirmVoid' => __('Are you sure you want to void the selected vouchers?', 'fp-esperienze'),
+                'confirmResend' => __('Are you sure you want to resend emails for the selected vouchers?', 'fp-esperienze'),
+                'confirmExtend' => __('Are you sure you want to extend the selected vouchers by', 'fp-esperienze'),
+                'months' => __('months?', 'fp-esperienze'),
+                'confirmRegenerateSecret' => __('Are you sure? This will invalidate all existing QR codes!', 'fp-esperienze'),
+                'selectLogo' => __('Select Logo', 'fp-esperienze'),
+                'useThisImage' => __('Use This Image', 'fp-esperienze'),
+                'enterWebhookUrl' => __('Please enter a webhook URL first.', 'fp-esperienze'),
+                'testing' => __('Testing...', 'fp-esperienze'),
+                'webhookTestSuccess' => __('Webhook test successful!', 'fp-esperienze'),
+                'status' => __('Status:', 'fp-esperienze'),
+                'webhookTestFailed' => __('Webhook test failed:', 'fp-esperienze'),
+                'requestFailed' => __('Request failed. Please try again.', 'fp-esperienze'),
+                'generateNewSecret' => __('Generate a new webhook secret? This will invalidate the current secret.', 'fp-esperienze'),
+                'cleanupHolds' => __('Clean up expired holds now?', 'fp-esperienze'),
+                'cleaning' => __('Cleaning...', 'fp-esperienze'),
+                'cleanupCompleted' => __('Cleanup completed!', 'fp-esperienze'),
+                'cleanedUp' => __('Cleaned up:', 'fp-esperienze'),
+                'holds' => __('holds', 'fp-esperienze'),
+                'cleanupFailed' => __('Cleanup failed:', 'fp-esperienze'),
+                'resendVoucherEmail' => __('Resend voucher email?', 'fp-esperienze'),
+                'extendVoucherExpiration' => __('Extend voucher expiration?', 'fp-esperienze'),
+                'voidVoucher' => __('Are you sure you want to void this voucher?', 'fp-esperienze'),
+                'selectTimeSlot' => __('Select time slot', 'fp-esperienze'),
+                'loadingEvents' => __('Loading events...', 'fp-esperienze'),
+                'errorFetchingEvents' => __('There was an error while fetching events. Please try again.', 'fp-esperienze')
+            ],
+            'ajax_url' => admin_url('admin-ajax.php'),
+            'rest_url' => rest_url('fp-esperienze/v1/'),
+            'nonce' => wp_create_nonce('fp_esperienze_admin')
+        ]);
     }
 
     /**
@@ -1356,7 +1425,7 @@ class MenuManager {
                 $('#edit_extra_is_active').prop('checked', data.isActive == '1');
                 
                 // Show modal using WordPress thickbox
-                tb_show('<?php esc_js_e('Edit Extra', 'fp-esperienze'); ?>', '#TB_inline?inlineId=fp-edit-extra-modal&width=600&height=500');
+                tb_show(fpEsperienzeAdmin.i18n.editExtra, '#TB_inline?inlineId=fp-edit-extra-modal&width=600&height=500');
             });
             
             // Submit edit form
@@ -1629,7 +1698,7 @@ class MenuManager {
                                                     <input type="submit" 
                                                            class="button button-small" 
                                                            value="<?php esc_attr_e('Resend', 'fp-esperienze'); ?>"
-                                                           onclick="return confirm('<?php esc_js_e('Resend voucher email?', 'fp-esperienze'); ?>')">
+                                                           onclick="return confirm(fpEsperienzeAdmin.i18n.resendVoucherEmail)">>
                                                 </form>
                                                 
                                                 <!-- Extend Expiration -->
@@ -1641,7 +1710,7 @@ class MenuManager {
                                                     <input type="submit" 
                                                            class="button button-small" 
                                                            value="<?php esc_attr_e('Extend', 'fp-esperienze'); ?>"
-                                                           onclick="return confirm('<?php esc_js_e('Extend voucher expiration?', 'fp-esperienze'); ?>')">
+                                                           onclick="return confirm(fpEsperienzeAdmin.i18n.extendVoucherExpiration)">>
                                                 </form>
                                                 
                                                 <!-- Void Voucher -->
@@ -1652,7 +1721,7 @@ class MenuManager {
                                                     <input type="submit" 
                                                            class="button button-small button-link-delete" 
                                                            value="<?php esc_attr_e('Void', 'fp-esperienze'); ?>"
-                                                           onclick="return confirm('<?php esc_js_e('Are you sure you want to void this voucher?', 'fp-esperienze'); ?>')">
+                                                           onclick="return confirm(fpEsperienzeAdmin.i18n.voidVoucher)">>
                                                 </form>
                                             </div>
                                         <?php endif; ?>
@@ -1715,7 +1784,7 @@ class MenuManager {
                 
                 // Copy to clipboard
                 navigator.clipboard.writeText(downloadUrl).then(function() {
-                    alert('<?php esc_js_e('PDF link copied to clipboard!', 'fp-esperienze'); ?>');
+                    alert(fpEsperienzeAdmin.i18n.pdfLinkCopied);
                 }).catch(function() {
                     // Fallback for older browsers
                     var textArea = document.createElement('textarea');
@@ -1724,7 +1793,7 @@ class MenuManager {
                     textArea.select();
                     document.execCommand('copy');
                     document.body.removeChild(textArea);
-                    alert('<?php esc_js_e('PDF link copied to clipboard!', 'fp-esperienze'); ?>');
+                    alert(fpEsperienzeAdmin.i18n.pdfLinkCopied);
                 });
             });
         });
@@ -1734,26 +1803,26 @@ class MenuManager {
             var selectedItems = document.querySelectorAll('input[name="voucher_ids[]"]:checked').length;
             
             if (!action) {
-                alert('<?php esc_js_e('Please select an action.', 'fp-esperienze'); ?>');
+                alert(fpEsperienzeAdmin.i18n.selectAction);
                 return false;
             }
             
             if (selectedItems === 0) {
-                alert('<?php esc_js_e('Please select at least one voucher.', 'fp-esperienze'); ?>');
+                alert(fpEsperienzeAdmin.i18n.selectVouchers);
                 return false;
             }
             
             var message = '';
             switch (action) {
                 case 'bulk_void':
-                    message = '<?php esc_js_e('Are you sure you want to void the selected vouchers?', 'fp-esperienze'); ?>';
+                    message = fpEsperienzeAdmin.i18n.confirmVoid;
                     break;
                 case 'bulk_resend':
-                    message = '<?php esc_js_e('Are you sure you want to resend emails for the selected vouchers?', 'fp-esperienze'); ?>';
+                    message = fpEsperienzeAdmin.i18n.confirmResend;
                     break;
                 case 'bulk_extend':
                     var months = document.querySelector('input[name="bulk_extend_months"]').value;
-                    message = '<?php esc_js_e('Are you sure you want to extend the selected vouchers by', 'fp-esperienze'); ?>' + ' ' + months + ' <?php esc_js_e('months?', 'fp-esperienze'); ?>';
+                    message = fpEsperienzeAdmin.i18n.confirmExtend + ' ' + months + ' ' + fpEsperienzeAdmin.i18n.months;
                     break;
             }
             
@@ -2702,7 +2771,7 @@ class MenuManager {
                                 <code style="background: #f1f1f1; padding: 8px; display: block; margin-bottom: 8px; word-break: break-all;"><?php echo esc_html(substr($gift_secret, 0, 10) . '...' . substr($gift_secret, -10)); ?></code>
                                 <button type="button" 
                                         class="button" 
-                                        onclick="if(confirm('<?php esc_js_e('Are you sure? This will invalidate all existing QR codes!', 'fp-esperienze'); ?>')) { document.getElementById('regenerate_secret').value = '1'; }"><?php _e('Regenerate Secret', 'fp-esperienze'); ?></button>
+                                        onclick="if(confirm(fpEsperienzeAdmin.i18n.confirmRegenerateSecret)) { document.getElementById('regenerate_secret').value = '1'; }"><?php _e('Regenerate Secret', 'fp-esperienze'); ?></button>
                                 <input type="hidden" id="regenerate_secret" name="regenerate_secret" value="0" />
                                 <p class="description"><?php _e('Secret key used to sign QR codes for security. Regenerating will invalidate existing QR codes!', 'fp-esperienze'); ?></p>
                             </td>
@@ -3315,9 +3384,9 @@ class MenuManager {
         <script>
         function selectMediaFile(inputId) {
             var frame = wp.media({
-                title: '<?php esc_js_e('Select Logo', 'fp-esperienze'); ?>',
+                title: fpEsperienzeAdmin.i18n.selectLogo,
                 button: {
-                    text: '<?php esc_js_e('Use This Image', 'fp-esperienze'); ?>'
+                    text: fpEsperienzeAdmin.i18n.useThisImage
                 },
                 multiple: false
             });
@@ -3333,13 +3402,13 @@ class MenuManager {
         function testWebhook(inputId) {
             var url = document.getElementById(inputId).value;
             if (!url) {
-                alert('<?php esc_js_e('Please enter a webhook URL first.', 'fp-esperienze'); ?>');
+                alert(fpEsperienzeAdmin.i18n.enterWebhookUrl);
                 return;
             }
             
             var button = event.target;
             var originalText = button.textContent;
-            button.textContent = '<?php esc_js_e('Testing...', 'fp-esperienze'); ?>';
+            button.textContent = fpEsperienzeAdmin.i18n.testing;
             button.disabled = true;
             
             jQuery.post(ajaxurl, {
@@ -3351,20 +3420,20 @@ class MenuManager {
                 button.disabled = false;
                 
                 if (response.success) {
-                    alert('<?php esc_js_e('Webhook test successful!', 'fp-esperienze'); ?>\\n' + 
-                          '<?php esc_js_e('Status:', 'fp-esperienze'); ?> ' + response.data.status_code);
+                    alert(fpEsperienzeAdmin.i18n.webhookTestSuccess + '\\n' + 
+                          fpEsperienzeAdmin.i18n.status + ' ' + response.data.status_code);
                 } else {
-                    alert('<?php esc_js_e('Webhook test failed:', 'fp-esperienze'); ?>\\n' + response.data.message);
+                    alert(fpEsperienzeAdmin.i18n.webhookTestFailed + '\\n' + response.data.message);
                 }
             }).fail(function() {
                 button.textContent = originalText;
                 button.disabled = false;
-                alert('<?php esc_js_e('Request failed. Please try again.', 'fp-esperienze'); ?>');
+                alert(fpEsperienzeAdmin.i18n.requestFailed);
             });
         }
         
         function generateWebhookSecret() {
-            if (confirm('<?php esc_js_e('Generate a new webhook secret? This will invalidate the current secret.', 'fp-esperienze'); ?>')) {
+            if (confirm(fpEsperienzeAdmin.i18n.generateNewSecret)) {
                 var secret = '';
                 var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
                 for (var i = 0; i < 32; i++) {
@@ -3375,13 +3444,13 @@ class MenuManager {
         }
         
         function cleanupExpiredHolds() {
-            if (!confirm('<?php esc_js_e('Clean up expired holds now?', 'fp-esperienze'); ?>')) {
+            if (!confirm(fpEsperienzeAdmin.i18n.cleanupHolds)) {
                 return;
             }
             
             var button = event.target;
             var originalText = button.textContent;
-            button.textContent = '<?php esc_js_e('Cleaning...', 'fp-esperienze'); ?>';
+            button.textContent = fpEsperienzeAdmin.i18n.cleaning;
             button.disabled = true;
             
             jQuery.post(ajaxurl, {
@@ -3392,16 +3461,16 @@ class MenuManager {
                 button.disabled = false;
                 
                 if (response.success) {
-                    alert('<?php esc_js_e('Cleanup completed!', 'fp-esperienze'); ?>\\n' + 
-                          '<?php esc_js_e('Cleaned up:', 'fp-esperienze'); ?> ' + response.data.count + ' <?php esc_js_e('holds', 'fp-esperienze'); ?>');
+                    alert(fpEsperienzeAdmin.i18n.cleanupCompleted + '\\n' + 
+                          fpEsperienzeAdmin.i18n.cleanedUp + ' ' + response.data.count + ' ' + fpEsperienzeAdmin.i18n.holds);
                     location.reload(); // Refresh to update statistics
                 } else {
-                    alert('<?php esc_js_e('Cleanup failed:', 'fp-esperienze'); ?>\\n' + response.data.message);
+                    alert(fpEsperienzeAdmin.i18n.cleanupFailed + '\\n' + response.data.message);
                 }
             }).fail(function() {
                 button.textContent = originalText;
                 button.disabled = false;
-                alert('<?php esc_js_e('Request failed. Please try again.', 'fp-esperienze'); ?>');
+                alert(fpEsperienzeAdmin.i18n.requestFailed);
             });
         }
         </script>
@@ -3744,6 +3813,8 @@ class MenuManager {
      * AJAX handler: Get available slots for a date
      */
     public function ajaxGetAvailableSlots(): void {
+        $start_time = microtime(true);
+        
         if (!CapabilityManager::canManageFPEsperienze()) {
             wp_die('Insufficient permissions');
         }
@@ -3761,6 +3832,8 @@ class MenuManager {
         
         $slots = Availability::getSlotsForDate($product_id, $date);
         
+        Log::performance('AJAX GetAvailableSlots', $start_time);
+        
         wp_send_json_success(['slots' => $slots]);
     }
     
@@ -3768,6 +3841,8 @@ class MenuManager {
      * AJAX handler: Reschedule booking
      */
     public function ajaxRescheduleBooking(): void {
+        $start_time = microtime(true);
+        
         if (!CapabilityManager::canManageFPEsperienze()) {
             wp_die('Insufficient permissions');
         }
@@ -3786,6 +3861,8 @@ class MenuManager {
         }
         
         $result = BookingManager::rescheduleBooking($booking_id, $new_date, $new_time, $admin_notes);
+        
+        Log::performance('AJAX RescheduleBooking', $start_time);
         
         if ($result['success']) {
             wp_send_json_success(['message' => $result['message']]);

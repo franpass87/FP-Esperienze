@@ -1,0 +1,113 @@
+/**
+ * FP Esperienze Admin Bookings Calendar
+ */
+
+(function($) {
+    'use strict';
+
+    window.FPEsperienzeAdmin = window.FPEsperienzeAdmin || {};
+
+    FPEsperienzeAdmin.initBookingsCalendar = function() {
+        if (!$('#fp-bookings-calendar').length) {
+            console.warn('FP Esperienze: Calendar container not found');
+            return;
+        }
+
+        // Initialize FullCalendar
+        $('#fp-bookings-calendar').fullCalendar({
+            header: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'month,agendaWeek,agendaDay'
+            },
+            defaultView: 'month',
+            navLinks: true,
+            editable: false,
+            selectable: false,
+            selectHelper: true,
+            height: 'auto',
+            loading: function(isLoading) {
+                if (isLoading) {
+                    $('#fp-calendar-loading').show();
+                } else {
+                    $('#fp-calendar-loading').hide();
+                }
+            },
+            events: function(start, end, timezone, callback) {
+                // Use our new REST endpoint
+                $.ajax({
+                    url: fpEsperienzeAdmin.rest_url + 'events',
+                    type: 'GET',
+                    dataType: 'json',
+                    data: {
+                        start: start.format('YYYY-MM-DD'),
+                        end: end.format('YYYY-MM-DD')
+                    },
+                    beforeSend: function(xhr) {
+                        xhr.setRequestHeader('X-WP-Nonce', fpEsperienzeAdmin.nonce);
+                    },
+                    success: function(response) {
+                        if (response && response.events) {
+                            callback(response.events);
+                        } else {
+                            console.warn('FP Esperienze: Invalid events response', response);
+                            callback([]);
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('FP Esperienze: Error fetching events', {
+                            status: status,
+                            error: error,
+                            response: xhr.responseText
+                        });
+                        
+                        // Show user-friendly error message
+                        if (typeof fpEsperienzeAdmin.i18n !== 'undefined') {
+                            alert(fpEsperienzeAdmin.i18n.errorFetchingEvents);
+                        } else {
+                            alert('There was an error while fetching events. Please try again.');
+                        }
+                        
+                        callback([]);
+                    }
+                });
+            },
+            eventClick: function(calEvent, jsEvent, view) {
+                // Handle booking event click
+                var booking = calEvent.extendedProps;
+                if (booking && booking.booking_id) {
+                    // Show booking details modal or navigate to booking details
+                    var bookingUrl = 'admin.php?page=fp-esperienze-bookings&booking_id=' + booking.booking_id;
+                    window.location.href = bookingUrl;
+                }
+            },
+            eventRender: function(event, element) {
+                // Add custom tooltip or styling
+                var booking = event.extendedProps;
+                if (booking) {
+                    var tooltip = booking.customer_name + ' (' + booking.participants + ' participants)';
+                    element.attr('title', tooltip);
+                }
+            }
+        });
+
+        // Add loading indicator
+        if (!$('#fp-calendar-loading').length) {
+            $('#fp-bookings-calendar').before(
+                '<div id="fp-calendar-loading" style="display:none; text-align:center; padding:20px;">' +
+                '<div class="spinner is-active"></div>' +
+                '<p>' + (fpEsperienzeAdmin.i18n ? fpEsperienzeAdmin.i18n.loadingEvents : 'Loading events...') + '</p>' +
+                '</div>'
+            );
+        }
+    };
+
+    // Initialize when DOM is ready
+    $(document).ready(function() {
+        // Auto-initialize if calendar view is active
+        if ($('#fp-bookings-calendar').is(':visible')) {
+            FPEsperienzeAdmin.initBookingsCalendar();
+        }
+    });
+
+})(jQuery);
