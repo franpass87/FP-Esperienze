@@ -7,6 +7,10 @@
 
 defined('ABSPATH') || exit;
 
+use FP\Esperienze\Data\MeetingPointManager;
+use FP\Esperienze\Data\ExtraManager;
+use FP\Esperienze\Integrations\GooglePlacesManager;
+
 get_header();
 
 global $post;
@@ -36,7 +40,7 @@ $faq_data = get_post_meta($product_id, '_fp_exp_faq', true);
 $meeting_point_id = get_post_meta($product_id, '_fp_exp_meeting_point_id', true);
 $meeting_point = null;
 if ($meeting_point_id) {
-    $meeting_point = \FP\Esperienze\Data\MeetingPointManager::getMeetingPoint((int) $meeting_point_id);
+    $meeting_point = MeetingPointManager::getMeetingPoint((int) $meeting_point_id);
 }
 
 // Get what's included/excluded data
@@ -288,7 +292,7 @@ jQuery(document).ready(function($) {
                 <?php if ($meeting_point && !empty($meeting_point->place_id)) : ?>
                     <?php 
                     // Load Google Places Manager
-                    $places_manager = new \FP\Esperienze\Integrations\GooglePlacesManager();
+                    $places_manager = new GooglePlacesManager();
                     $place_data = null;
                     
                     if ($places_manager->isEnabled()) {
@@ -600,7 +604,7 @@ jQuery(document).ready(function($) {
 
                         <?php
                         // Get extras for this product
-                        $extras = \FP\Esperienze\Data\ExtraManager::getProductExtras($product_id, true);
+                        $extras = ExtraManager::getProductExtras($product_id, true);
                         if (!empty($extras)) :
                         ?>
                         <!-- Extras Selection -->

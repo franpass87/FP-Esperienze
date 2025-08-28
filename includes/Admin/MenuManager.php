@@ -10,7 +10,15 @@ namespace FP\Esperienze\Admin;
 use FP\Esperienze\Data\OverrideManager;
 use FP\Esperienze\Data\MeetingPointManager;
 use FP\Esperienze\Data\ExtraManager;
+use FP\Esperienze\Data\VoucherManager;
+use FP\Esperienze\Data\Availability;
+use FP\Esperienze\Data\HoldManager;
+use FP\Esperienze\Booking\BookingManager;
+use FP\Esperienze\PDF\Voucher_Pdf;
+use FP\Esperienze\PDF\Qr;
 use FP\Esperienze\Core\CapabilityManager;
+use FP\Esperienze\Core\I18nManager;
+use FP\Esperienze\Core\WebhookManager;
 
 defined('ABSPATH') || exit;
 
@@ -243,7 +251,7 @@ class MenuManager {
         $filters = array_filter($filters);
         
         // Get bookings
-        $bookings = \FP\Esperienze\Booking\BookingManager::getBookings($filters);
+        $bookings = BookingManager::getBookings($filters);
         
         // Get experience products for filter dropdown
         $experience_products = $this->getExperienceProducts();
@@ -347,7 +355,7 @@ class MenuManager {
                                     <td>
                                         <?php 
                                         if ($booking->meeting_point_id) {
-                                            $mp = \FP\Esperienze\Data\MeetingPointManager::getMeetingPoint($booking->meeting_point_id);
+                                            $mp = MeetingPointManager::getMeetingPoint($booking->meeting_point_id);
                                             echo $mp ? esc_html($mp->name) : __('Not found', 'fp-esperienze');
                                         } else {
                                             echo __('Not set', 'fp-esperienze');
@@ -1880,7 +1888,7 @@ class MenuManager {
             // Regenerate PDF if it doesn't exist
             $pdf_path = $voucher['pdf_path'];
             if (empty($pdf_path) || !file_exists($pdf_path)) {
-                $pdf_path = \FP\Esperienze\PDF\Voucher_Pdf::generate($voucher);
+                $pdf_path = Voucher_Pdf::generate($voucher);
                 
                 // Update voucher with new PDF path
                 $wpdb->update(
@@ -1891,7 +1899,7 @@ class MenuManager {
             }
             
             // Send email using VoucherManager
-            $voucher_manager = new \FP\Esperienze\Data\VoucherManager();
+            $voucher_manager = new VoucherManager();
             $reflection = new ReflectionClass($voucher_manager);
             $method = $reflection->getMethod('sendVoucherEmail');
             $method->setAccessible(true);
@@ -2568,12 +2576,12 @@ class MenuManager {
                             </td>
                         </tr>
                         
-                        <?php if (\FP\Esperienze\Core\I18nManager::isMultilingualActive()) : ?>
+                        <?php if (I18nManager::isMultilingualActive()) : ?>
                         <tr>
                             <th scope="row"><?php _e('Multilingual Plugin', 'fp-esperienze'); ?></th>
                             <td>
                                 <p>
-                                    <strong><?php echo esc_html(ucfirst(\FP\Esperienze\Core\I18nManager::getActivePlugin())); ?></strong> 
+                                    <strong><?php echo esc_html(ucfirst(I18nManager::getActivePlugin())); ?></strong> 
                                     <?php _e('detected and active', 'fp-esperienze'); ?>
                                 </p>
                                 <p class="description">
@@ -3558,7 +3566,7 @@ class MenuManager {
                     ));
                     
                     if ($booking) {
-                        $booking_manager = new \FP\Esperienze\Booking\BookingManager();
+                        $booking_manager = new BookingManager();
                         $success = $booking_manager->updateBookingStatus(
                             $booking->order_id, 
                             $booking->order_item_id, 
@@ -3604,7 +3612,7 @@ class MenuManager {
         $filters = array_filter($filters);
         
         // Get bookings
-        $bookings = \FP\Esperienze\Booking\BookingManager::getBookings($filters);
+        $bookings = BookingManager::getBookings($filters);
         
         // Set headers for CSV download
         $filename = 'bookings-' . date('Y-m-d-H-i-s') . '.csv';
@@ -3640,7 +3648,7 @@ class MenuManager {
             
             $meeting_point_name = '';
             if ($booking->meeting_point_id) {
-                $mp = \FP\Esperienze\Data\MeetingPointManager::getMeetingPoint($booking->meeting_point_id);
+                $mp = MeetingPointManager::getMeetingPoint($booking->meeting_point_id);
                 $meeting_point_name = $mp ? $mp->name : __('Not found', 'fp-esperienze');
             }
             
@@ -3726,7 +3734,7 @@ class MenuManager {
 
         // Get filter options
         $experience_products = $this->getExperienceProducts();
-        $meeting_points = \FP\Esperienze\Data\MeetingPointManager::getAllMeetingPoints();
+        $meeting_points = MeetingPointManager::getAllMeetingPoints();
 
         // Include the reports template
         include FP_ESPERIENZE_PLUGIN_DIR . 'templates/admin/reports.php';
@@ -3751,7 +3759,7 @@ class MenuManager {
             wp_send_json_error(['message' => __('Invalid parameters.', 'fp-esperienze')]);
         }
         
-        $slots = \FP\Esperienze\Data\Availability::getSlotsForDate($product_id, $date);
+        $slots = Availability::getSlotsForDate($product_id, $date);
         
         wp_send_json_success(['slots' => $slots]);
     }
@@ -3777,7 +3785,7 @@ class MenuManager {
             wp_send_json_error(['message' => __('Invalid parameters.', 'fp-esperienze')]);
         }
         
-        $result = \FP\Esperienze\Booking\BookingManager::rescheduleBooking($booking_id, $new_date, $new_time, $admin_notes);
+        $result = BookingManager::rescheduleBooking($booking_id, $new_date, $new_time, $admin_notes);
         
         if ($result['success']) {
             wp_send_json_success(['message' => $result['message']]);
@@ -3804,7 +3812,7 @@ class MenuManager {
             wp_send_json_error(['message' => __('Invalid booking ID.', 'fp-esperienze')]);
         }
         
-        $result = \FP\Esperienze\Booking\BookingManager::checkCancellationRules($booking_id);
+        $result = BookingManager::checkCancellationRules($booking_id);
         
         wp_send_json_success($result);
     }
@@ -3832,7 +3840,7 @@ class MenuManager {
         global $wpdb;
         $table_name = $wpdb->prefix . 'fp_bookings';
         
-        $booking = \FP\Esperienze\Booking\BookingManager::getBooking($booking_id);
+        $booking = BookingManager::getBooking($booking_id);
         if (!$booking) {
             wp_send_json_error(['message' => __('Booking not found.', 'fp-esperienze')]);
         }
@@ -3880,7 +3888,7 @@ class MenuManager {
             wp_send_json_error(['message' => __('Invalid webhook URL.', 'fp-esperienze')]);
         }
         
-        $result = \FP\Esperienze\Core\WebhookManager::testWebhook($webhook_url);
+        $result = WebhookManager::testWebhook($webhook_url);
         
         if ($result['success']) {
             wp_send_json_success($result);
@@ -3901,7 +3909,7 @@ class MenuManager {
             wp_die('Security check failed');
         }
         
-        $count = \FP\Esperienze\Data\HoldManager::cleanupExpiredHolds();
+        $count = HoldManager::cleanupExpiredHolds();
         
         wp_send_json_success(['count' => $count, 'message' => sprintf(__('Cleaned up %d expired holds', 'fp-esperienze'), $count)]);
     }

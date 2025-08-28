@@ -8,6 +8,7 @@
 namespace FP\Esperienze\Data;
 
 use FP\Esperienze\PDF\Voucher_Pdf;
+use FP\Esperienze\PDF\Qr;
 
 defined('ABSPATH') || exit;
 
@@ -525,7 +526,7 @@ class VoucherManager {
         
         // Validate HMAC signature if payload provided
         if ($payload) {
-            $verification = \FP\Esperienze\PDF\Qr::verifyPayload($payload);
+            $verification = Qr::verifyPayload($payload);
             if (!$verification) {
                 $result['message'] = __('Invalid voucher signature.', 'fp-esperienze');
                 return $result;

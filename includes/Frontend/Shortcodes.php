@@ -7,6 +7,10 @@
 
 namespace FP\Esperienze\Frontend;
 
+use FP\Esperienze\Data\Availability;
+use FP\Esperienze\Data\MeetingPointManager;
+use FP\Esperienze\Core\I18nManager;
+
 defined('ABSPATH') || exit;
 
 /**
@@ -284,7 +288,7 @@ class Shortcodes {
             
             foreach ($batch as $product_id) {
                 // Use the cached availability check from Availability::forDay
-                $slots = \FP\Esperienze\Data\Availability::forDay($product_id, $date);
+                $slots = Availability::forDay($product_id, $date);
                 
                 if (!empty($slots)) {
                     // Check if any slot has availability
@@ -326,7 +330,7 @@ class Shortcodes {
                             <select name="fp_mp" id="fp_mp" class="fp-filter-select" aria-label="<?php esc_attr_e('Filter by meeting point', 'fp-esperienze'); ?>">
                                 <option value=""><?php _e('All locations', 'fp-esperienze'); ?></option>
                                 <?php
-                                $meeting_points = \FP\Esperienze\Data\MeetingPointManager::getAllMeetingPoints();
+                                $meeting_points = MeetingPointManager::getAllMeetingPoints();
                                 foreach ($meeting_points as $mp) {
                                     $selected = isset($_GET['fp_mp']) && absint($_GET['fp_mp']) == $mp->id ? 'selected' : '';
                                     echo '<option value="' . esc_attr($mp->id) . '" ' . $selected . '>' . esc_html($mp->name) . '</option>';
@@ -404,8 +408,8 @@ class Shortcodes {
      */
     private function getAvailableLanguages(): array {
         // Use multilingual plugin languages if available
-        if (\FP\Esperienze\Core\I18nManager::isMultilingualActive()) {
-            $available_languages = \FP\Esperienze\Core\I18nManager::getAvailableLanguages();
+        if (I18nManager::isMultilingualActive()) {
+            $available_languages = I18nManager::getAvailableLanguages();
             if (!empty($available_languages)) {
                 return $available_languages;
             }

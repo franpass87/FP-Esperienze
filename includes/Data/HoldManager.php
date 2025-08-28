@@ -7,6 +7,8 @@
 
 namespace FP\Esperienze\Data;
 
+use FP\Esperienze\Data\Availability;
+
 defined('ABSPATH') || exit;
 
 /**
@@ -349,7 +351,7 @@ class HoldManager {
             $date = $slot_datetime->format('Y-m-d');
             $time = $slot_datetime->format('H:i');
             
-            $slots = \FP\Esperienze\Data\Availability::forDay($product_id, $date);
+            $slots = Availability::forDay($product_id, $date);
             $available_capacity = 0;
             
             foreach ($slots as $slot) {

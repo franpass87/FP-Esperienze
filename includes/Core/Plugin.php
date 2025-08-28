@@ -11,6 +11,7 @@ use FP\Esperienze\ProductType\Experience;
 use FP\Esperienze\Admin\MenuManager;
 use FP\Esperienze\Frontend\Shortcodes;
 use FP\Esperienze\Frontend\Templates;
+use FP\Esperienze\Frontend\SEOManager;
 use FP\Esperienze\Blocks\ArchiveBlock;
 use FP\Esperienze\REST\AvailabilityAPI;
 use FP\Esperienze\REST\BookingsAPI;
@@ -21,12 +22,16 @@ use FP\Esperienze\Booking\BookingManager;
 use FP\Esperienze\Data\VoucherManager;
 use FP\Esperienze\Data\NotificationManager;
 use FP\Esperienze\Data\DynamicPricingHooks;
+use FP\Esperienze\Data\HoldManager;
 use FP\Esperienze\Integrations\TrackingManager;
 use FP\Esperienze\Integrations\BrevoManager;
 use FP\Esperienze\Integrations\GooglePlacesManager;
 use FP\Esperienze\Core\CapabilityManager;
 use FP\Esperienze\Core\WebhookManager;
 use FP\Esperienze\Core\I18nManager;
+use FP\Esperienze\Core\CacheManager;
+use FP\Esperienze\Core\AssetOptimizer;
+use FP\Esperienze\Core\QueryMonitor;
 
 defined('ABSPATH') || exit;
 
@@ -171,7 +176,7 @@ class Plugin {
     public function initFrontend(): void {
         new Shortcodes();
         new Templates();
-        new \FP\Esperienze\Frontend\SEOManager();
+        new SEOManager();
     }
 
     /**
@@ -444,7 +449,7 @@ class Plugin {
      * Cleanup expired holds
      */
     public function cleanupExpiredHolds(): void {
-        $count = \FP\Esperienze\Data\HoldManager::cleanupExpiredHolds();
+        $count = HoldManager::cleanupExpiredHolds();
         if ($count > 0 && defined('WP_DEBUG') && WP_DEBUG) {
             error_log("FP Esperienze: Cleaned up {$count} expired holds");
         }

@@ -8,6 +8,7 @@
 namespace FP\Esperienze\Booking;
 
 use FP\Esperienze\Data\HoldManager;
+use FP\Esperienze\Data\Availability;
 
 defined('ABSPATH') || exit;
 
@@ -486,7 +487,7 @@ class BookingManager {
      */
     private static function validateCapacity(int $product_id, string $date, string $time, int $participants): array {
         // Get slots for the date to check capacity
-        $slots = \FP\Esperienze\Data\Availability::getSlotsForDate($product_id, $date);
+        $slots = Availability::getSlotsForDate($product_id, $date);
         
         // Find the specific slot
         $target_slot = null;
