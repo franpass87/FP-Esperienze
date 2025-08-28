@@ -45,4 +45,5 @@ error_log
 .phpstorm.meta.php
 
 # Test files (should be removed in production)
-test-*.php.git\nnode_modules\n*.log\ntest-product-type-fix.php
+test-*.php
+verify-experience-fix.php
