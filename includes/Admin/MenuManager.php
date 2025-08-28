@@ -3124,6 +3124,7 @@ class MenuManager {
                         </tr>
                         
                         <!-- Google Business Profile Section -->
+                        <?php if (defined('FP_ESP_SHOW_EXPERIMENTAL') && FP_ESP_SHOW_EXPERIMENTAL) : ?>
                         <tr>
                             <th colspan="2"><h3><?php _e('Google Business Profile API (Optional)', 'fp-esperienze'); ?></h3></th>
                         </tr>
@@ -3171,6 +3172,17 @@ class MenuManager {
                                 </p>
                             </td>
                         </tr>
+                        <?php else : ?>
+                        <tr>
+                            <th colspan="2">
+                                <h3><?php _e('Google Business Profile API', 'fp-esperienze'); ?></h3>
+                                <p style="margin: 0; padding: 10px; background: #f0f6fc; border-left: 4px solid #0073aa; font-style: italic; color: #666;">
+                                    <strong><?php _e('Roadmap Feature:', 'fp-esperienze'); ?></strong> 
+                                    <?php _e('Google Business Profile integration is planned for a future release. This will allow automatic posting of experiences and enhanced review management.', 'fp-esperienze'); ?>
+                                </p>
+                            </th>
+                        </tr>
+                        <?php endif; ?>
                     </table>
                     
                     <?php submit_button(__('Save Integrations', 'fp-esperienze')); ?>

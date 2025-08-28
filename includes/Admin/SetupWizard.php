@@ -42,7 +42,7 @@ class SetupWizard {
                 'fp-esperienze',
                 __('Setup Wizard', 'fp-esperienze'),
                 __('Setup Wizard', 'fp-esperienze'),
-                'manage_options',
+                'manage_woocommerce',
                 'fp-esperienze-setup-wizard',
                 [$this, 'setupWizardPage']
             );
@@ -135,7 +135,7 @@ class SetupWizard {
             return;
         }
 
-        if (!current_user_can('manage_options')) {
+        if (!current_user_can('manage_woocommerce')) {
             return;
         }
 

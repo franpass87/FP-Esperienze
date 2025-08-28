@@ -29,6 +29,7 @@ class Experience {
         add_filter('woocommerce_product_data_tabs', [$this, 'addProductDataTabs']);
         add_action('woocommerce_product_data_panels', [$this, 'addProductDataPanels']);
         add_action('woocommerce_process_product_meta', [$this, 'saveProductData']);
+        add_action('admin_notices', [$this, 'showScheduleValidationNotices']);
     }
 
     /**
@@ -312,50 +313,137 @@ class Experience {
         ];
         
         ?>
-        <div class="fp-schedule-row" data-index="<?php echo esc_attr($index); ?>">
+        <div class="fp-schedule-row" data-index="<?php echo esc_attr($index); ?>" style="border: 1px solid #ddd; padding: 15px; margin-bottom: 10px; background: #f9f9f9; border-radius: 4px;">
             <input type="hidden" name="schedules[<?php echo esc_attr($index); ?>][id]" value="<?php echo esc_attr($schedule->id ?? ''); ?>">
             
-            <select name="schedules[<?php echo esc_attr($index); ?>][day_of_week]" required>
-                <option value=""><?php _e('Select Day', 'fp-esperienze'); ?></option>
-                <?php foreach ($days as $value => $label): ?>
-                    <option value="<?php echo esc_attr($value); ?>" <?php selected($schedule->day_of_week ?? '', $value); ?>>
-                        <?php echo esc_html($label); ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 10px;">
+                <div>
+                    <label style="font-weight: bold; display: block; margin-bottom: 5px;">
+                        <?php _e('Day of Week', 'fp-esperienze'); ?> <span style="color: red;">*</span>
+                        <span class="dashicons dashicons-info" title="<?php esc_attr_e('Which day of the week this schedule applies to', 'fp-esperienze'); ?>" style="font-size: 14px; color: #666;"></span>
+                    </label>
+                    <select name="schedules[<?php echo esc_attr($index); ?>][day_of_week]" required style="width: 100%;">
+                        <option value=""><?php _e('Select Day', 'fp-esperienze'); ?></option>
+                        <?php foreach ($days as $value => $label): ?>
+                            <option value="<?php echo esc_attr($value); ?>" <?php selected($schedule->day_of_week ?? '', $value); ?>>
+                                <?php echo esc_html($label); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                
+                <div>
+                    <label style="font-weight: bold; display: block; margin-bottom: 5px;">
+                        <?php _e('Start Time', 'fp-esperienze'); ?> <span style="color: red;">*</span>
+                        <span class="dashicons dashicons-info" title="<?php esc_attr_e('When the experience starts (24-hour format)', 'fp-esperienze'); ?>" style="font-size: 14px; color: #666;"></span>
+                    </label>
+                    <input type="time" 
+                           name="schedules[<?php echo esc_attr($index); ?>][start_time]" 
+                           value="<?php echo esc_attr($schedule->start_time ?? ''); ?>" 
+                           required 
+                           style="width: 100%;"
+                           title="<?php esc_attr_e('Experience start time', 'fp-esperienze'); ?>">
+                </div>
+                
+                <div>
+                    <label style="font-weight: bold; display: block; margin-bottom: 5px;">
+                        <?php _e('Duration (minutes)', 'fp-esperienze'); ?> <span style="color: red;">*</span>
+                        <span class="dashicons dashicons-info" title="<?php esc_attr_e('How long the experience lasts in minutes', 'fp-esperienze'); ?>" style="font-size: 14px; color: #666;"></span>
+                    </label>
+                    <input type="number" 
+                           name="schedules[<?php echo esc_attr($index); ?>][duration_min]" 
+                           value="<?php echo esc_attr($schedule->duration_min ?? 60); ?>" 
+                           placeholder="60" 
+                           min="1" 
+                           step="1" 
+                           required 
+                           style="width: 100%;"
+                           title="<?php esc_attr_e('Duration in minutes (minimum 1)', 'fp-esperienze'); ?>">
+                </div>
+                
+                <div>
+                    <label style="font-weight: bold; display: block; margin-bottom: 5px;">
+                        <?php _e('Max Capacity', 'fp-esperienze'); ?> <span style="color: red;">*</span>
+                        <span class="dashicons dashicons-info" title="<?php esc_attr_e('Maximum number of participants for this schedule', 'fp-esperienze'); ?>" style="font-size: 14px; color: #666;"></span>
+                    </label>
+                    <input type="number" 
+                           name="schedules[<?php echo esc_attr($index); ?>][capacity]" 
+                           value="<?php echo esc_attr($schedule->capacity ?? 10); ?>" 
+                           placeholder="10" 
+                           min="1" 
+                           step="1" 
+                           required 
+                           style="width: 100%;"
+                           title="<?php esc_attr_e('Maximum participants (minimum 1)', 'fp-esperienze'); ?>">
+                </div>
+            </div>
             
-            <input type="time" name="schedules[<?php echo esc_attr($index); ?>][start_time]" 
-                   value="<?php echo esc_attr($schedule->start_time ?? ''); ?>" required>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 10px;">
+                <div>
+                    <label style="font-weight: bold; display: block; margin-bottom: 5px;">
+                        <?php _e('Language', 'fp-esperienze'); ?>
+                        <span class="dashicons dashicons-info" title="<?php esc_attr_e('Experience language code (e.g., en, it, es)', 'fp-esperienze'); ?>" style="font-size: 14px; color: #666;"></span>
+                    </label>
+                    <input type="text" 
+                           name="schedules[<?php echo esc_attr($index); ?>][lang]" 
+                           value="<?php echo esc_attr($schedule->lang ?? 'en'); ?>" 
+                           placeholder="en" 
+                           maxlength="10" 
+                           style="width: 100%;"
+                           title="<?php esc_attr_e('Language code (ISO format preferred)', 'fp-esperienze'); ?>">
+                </div>
+                
+                <div>
+                    <label style="font-weight: bold; display: block; margin-bottom: 5px;">
+                        <?php _e('Meeting Point', 'fp-esperienze'); ?>
+                        <span class="dashicons dashicons-info" title="<?php esc_attr_e('Where participants should meet for this experience', 'fp-esperienze'); ?>" style="font-size: 14px; color: #666;"></span>
+                    </label>
+                    <select name="schedules[<?php echo esc_attr($index); ?>][meeting_point_id]" style="width: 100%;">
+                        <?php foreach ($meeting_points as $value => $label): ?>
+                            <option value="<?php echo esc_attr($value); ?>" <?php selected($schedule->meeting_point_id ?? '', $value); ?>>
+                                <?php echo esc_html($label); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                
+                <div>
+                    <label style="font-weight: bold; display: block; margin-bottom: 5px;">
+                        <?php _e('Adult Price', 'fp-esperienze'); ?>
+                        <span class="dashicons dashicons-info" title="<?php esc_attr_e('Price per adult participant (leave empty to use default product price)', 'fp-esperienze'); ?>" style="font-size: 14px; color: #666;"></span>
+                    </label>
+                    <input type="number" 
+                           name="schedules[<?php echo esc_attr($index); ?>][price_adult]" 
+                           value="<?php echo esc_attr($schedule->price_adult ?? ''); ?>" 
+                           placeholder="0.00" 
+                           min="0" 
+                           step="0.01" 
+                           style="width: 100%;"
+                           title="<?php esc_attr_e('Adult price (optional override)', 'fp-esperienze'); ?>">
+                </div>
+                
+                <div>
+                    <label style="font-weight: bold; display: block; margin-bottom: 5px;">
+                        <?php _e('Child Price', 'fp-esperienze'); ?>
+                        <span class="dashicons dashicons-info" title="<?php esc_attr_e('Price per child participant (leave empty to use default or no child pricing)', 'fp-esperienze'); ?>" style="font-size: 14px; color: #666;"></span>
+                    </label>
+                    <input type="number" 
+                           name="schedules[<?php echo esc_attr($index); ?>][price_child]" 
+                           value="<?php echo esc_attr($schedule->price_child ?? ''); ?>" 
+                           placeholder="0.00" 
+                           min="0" 
+                           step="0.01" 
+                           style="width: 100%;"
+                           title="<?php esc_attr_e('Child price (optional)', 'fp-esperienze'); ?>">
+                </div>
+            </div>
             
-            <input type="number" name="schedules[<?php echo esc_attr($index); ?>][duration_min]" 
-                   value="<?php echo esc_attr($schedule->duration_min ?? 60); ?>" 
-                   placeholder="60" min="1" step="1" required>
-            
-            <input type="number" name="schedules[<?php echo esc_attr($index); ?>][capacity]" 
-                   value="<?php echo esc_attr($schedule->capacity ?? 10); ?>" 
-                   placeholder="10" min="1" step="1" required>
-            
-            <input type="text" name="schedules[<?php echo esc_attr($index); ?>][lang]" 
-                   value="<?php echo esc_attr($schedule->lang ?? 'en'); ?>" 
-                   placeholder="en" maxlength="10">
-            
-            <select name="schedules[<?php echo esc_attr($index); ?>][meeting_point_id]">
-                <?php foreach ($meeting_points as $value => $label): ?>
-                    <option value="<?php echo esc_attr($value); ?>" <?php selected($schedule->meeting_point_id ?? '', $value); ?>>
-                        <?php echo esc_html($label); ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-            
-            <input type="number" name="schedules[<?php echo esc_attr($index); ?>][price_adult]" 
-                   value="<?php echo esc_attr($schedule->price_adult ?? ''); ?>" 
-                   placeholder="0.00" min="0" step="0.01">
-            
-            <input type="number" name="schedules[<?php echo esc_attr($index); ?>][price_child]" 
-                   value="<?php echo esc_attr($schedule->price_child ?? ''); ?>" 
-                   placeholder="0.00" min="0" step="0.01">
-            
-            <button type="button" class="button fp-remove-schedule"><?php _e('Remove', 'fp-esperienze'); ?></button>
+            <div style="text-align: right;">
+                <button type="button" class="button fp-remove-schedule" style="color: #dc3545;">
+                    <span class="dashicons dashicons-trash" style="vertical-align: middle;"></span>
+                    <?php _e('Remove Schedule', 'fp-esperienze'); ?>
+                </button>
+            </div>
         </div>
         <?php
     }
@@ -564,9 +652,36 @@ class Experience {
         $existing_schedules = ScheduleManager::getSchedules($product_id);
         $existing_ids = array_column($existing_schedules, 'id');
         $processed_ids = [];
+        $validation_errors = [];
+        $discarded_count = 0;
         
-        foreach ($_POST['schedules'] as $schedule_data) {
+        foreach ($_POST['schedules'] as $index => $schedule_data) {
+            // Validate required fields
             if (empty($schedule_data['day_of_week']) || empty($schedule_data['start_time'])) {
+                $discarded_count++;
+                continue;
+            }
+            
+            // Validate time format (HH:MM)
+            if (!preg_match('/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/', $schedule_data['start_time'])) {
+                $validation_errors[] = sprintf(__('Row %d: Invalid time format. Use HH:MM format.', 'fp-esperienze'), $index + 1);
+                $discarded_count++;
+                continue;
+            }
+            
+            // Validate duration (must be > 0)
+            $duration = (int) ($schedule_data['duration_min'] ?: 60);
+            if ($duration <= 0) {
+                $validation_errors[] = sprintf(__('Row %d: Duration must be greater than 0 minutes.', 'fp-esperienze'), $index + 1);
+                $discarded_count++;
+                continue;
+            }
+            
+            // Validate capacity (must be >= 1)
+            $capacity = (int) ($schedule_data['capacity'] ?: 10);
+            if ($capacity < 1) {
+                $validation_errors[] = sprintf(__('Row %d: Capacity must be at least 1 participant.', 'fp-esperienze'), $index + 1);
+                $discarded_count++;
                 continue;
             }
             
@@ -576,8 +691,8 @@ class Experience {
                 'product_id' => $product_id,
                 'day_of_week' => (int) $schedule_data['day_of_week'],
                 'start_time' => sanitize_text_field($schedule_data['start_time']),
-                'duration_min' => (int) ($schedule_data['duration_min'] ?: 60),
-                'capacity' => (int) ($schedule_data['capacity'] ?: 10),
+                'duration_min' => $duration,
+                'capacity' => $capacity,
                 'lang' => sanitize_text_field($schedule_data['lang'] ?: 'en'),
                 'meeting_point_id' => !empty($schedule_data['meeting_point_id']) ? (int) $schedule_data['meeting_point_id'] : null,
                 'price_adult' => (float) ($schedule_data['price_adult'] ?: 0),
@@ -602,6 +717,20 @@ class Experience {
         $ids_to_delete = array_diff($existing_ids, $processed_ids);
         foreach ($ids_to_delete as $id) {
             ScheduleManager::deleteSchedule($id);
+        }
+        
+        // Store validation feedback in transients for display
+        if (!empty($validation_errors)) {
+            set_transient("fp_schedule_validation_errors_{$product_id}", $validation_errors, 60);
+        }
+        
+        if ($discarded_count > 0) {
+            set_transient("fp_schedule_discarded_{$product_id}", $discarded_count, 60);
+        }
+        
+        // Set success notice if schedules were saved
+        if (!empty($processed_ids)) {
+            set_transient("fp_schedule_saved_{$product_id}", count($processed_ids), 60);
         }
     }
     
@@ -994,5 +1123,56 @@ class Experience {
         </div>
         <?php
         return ob_get_clean();
+    }
+    
+    /**
+     * Show schedule validation notices
+     */
+    public function showScheduleValidationNotices(): void {
+        $screen = get_current_screen();
+        if (!$screen || $screen->id !== 'product') {
+            return;
+        }
+        
+        $product_id = get_the_ID();
+        if (!$product_id) {
+            return;
+        }
+        
+        // Check for validation errors
+        $validation_errors = get_transient("fp_schedule_validation_errors_{$product_id}");
+        if ($validation_errors) {
+            echo '<div class="notice notice-error"><p>';
+            echo '<strong>' . __('Schedule Validation Errors:', 'fp-esperienze') . '</strong><br>';
+            foreach ($validation_errors as $error) {
+                echo '• ' . esc_html($error) . '<br>';
+            }
+            echo '</p></div>';
+            delete_transient("fp_schedule_validation_errors_{$product_id}");
+        }
+        
+        // Check for discarded schedules
+        $discarded_count = get_transient("fp_schedule_discarded_{$product_id}");
+        if ($discarded_count) {
+            echo '<div class="notice notice-warning"><p>';
+            echo sprintf(
+                _n('%d invalid schedule was discarded.', '%d invalid schedules were discarded.', $discarded_count, 'fp-esperienze'),
+                $discarded_count
+            );
+            echo '</p></div>';
+            delete_transient("fp_schedule_discarded_{$product_id}");
+        }
+        
+        // Check for successful saves
+        $saved_count = get_transient("fp_schedule_saved_{$product_id}");
+        if ($saved_count) {
+            echo '<div class="notice notice-success"><p>';
+            echo sprintf(
+                _n('%d schedule saved successfully.', '%d schedules saved successfully.', $saved_count, 'fp-esperienze'),
+                $saved_count
+            );
+            echo '</p></div>';
+            delete_transient("fp_schedule_saved_{$product_id}");
+        }
     }
 }
