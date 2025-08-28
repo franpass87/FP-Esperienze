@@ -155,17 +155,17 @@ class PerformanceSettings {
                     <tr>
                         <td><?php _e('Minified Assets Available', 'fp-esperienze'); ?></td>
                         <td><?php echo AssetOptimizer::hasMinifiedAssets() ? 
-                                 '<span style="color: green;">✓ ' . __('Yes', 'fp-esperienze') . '</span>' : 
-                                 '<span style="color: red;">✗ ' . __('No', 'fp-esperienze') . '</span>'; ?></td>
+                                 '<span class="fp-status-success">✓ ' . __('Yes', 'fp-esperienze') . '</span>' : 
+                                 '<span class="fp-status-error">✗ ' . __('No', 'fp-esperienze') . '</span>'; ?></td>
                     </tr>
                 </tbody>
             </table>
             
             <h2><?php _e('Performance Actions', 'fp-esperienze'); ?></h2>
-            <div class="fp-performance-actions" style="display: flex; gap: 15px; flex-wrap: wrap;">
+            <div class="fp-performance-actions">
                 
                 <!-- Clear Cache -->
-                <form method="post" style="display: inline-block;">
+                <form method="post" class="fp-inline-form">
                     <?php wp_nonce_field('fp_esperienze_clear_cache'); ?>
                     <input type="submit" name="clear_cache" class="button button-secondary" 
                            value="<?php esc_attr_e('Clear All Caches', 'fp-esperienze'); ?>" 
@@ -173,14 +173,14 @@ class PerformanceSettings {
                 </form>
                 
                 <!-- Regenerate Assets -->
-                <form method="post" style="display: inline-block;">
+                <form method="post" class="fp-inline-form">
                     <?php wp_nonce_field('fp_esperienze_regenerate_assets'); ?>
                     <input type="submit" name="regenerate_assets" class="button button-secondary" 
                            value="<?php esc_attr_e('Regenerate Minified Assets', 'fp-esperienze'); ?>" />
                 </form>
                 
                 <!-- Manual Pre-build -->
-                <form method="post" style="display: inline-block;">
+                <form method="post" class="fp-inline-form">
                     <?php wp_nonce_field('fp_esperienze_prebuild_cache'); ?>
                     <input type="submit" name="prebuild_cache" class="button button-primary" 
                            value="<?php esc_attr_e('Pre-build Cache Now', 'fp-esperienze'); ?>" />

@@ -340,7 +340,7 @@ class SetupWizard {
                     var uploaded_image = image.state().get('selection').first();
                     var image_url = uploaded_image.toJSON().url;
                     $('#pdf_logo').val(image_url);
-                    $('#logo_preview').html('<img src="' + image_url + '" style="max-width: 200px; height: auto;">');
+                    $('#logo_preview').html('<img src="' + image_url + '" class="fp-logo-preview">');
                 });
             });
         });
@@ -589,9 +589,9 @@ class SetupWizard {
                 <td>
                     <input type="text" name="pdf_logo" id="pdf_logo" value="<?php echo esc_attr($logo); ?>" class="regular-text">
                     <button type="button" id="upload_logo_button" class="button button-secondary"><?php _e('Upload Logo', 'fp-esperienze'); ?></button>
-                    <div id="logo_preview" style="margin-top: 10px;">
+                    <div id="logo_preview" class="fp-logo-preview-container">
                         <?php if ($logo) : ?>
-                            <img src="<?php echo esc_url($logo); ?>" style="max-width: 200px; height: auto;">
+                            <img src="<?php echo esc_url($logo); ?>" class="fp-logo-preview">
                         <?php endif; ?>
                     </div>
                     <p class="description"><?php _e('Logo to display on voucher PDFs and emails.', 'fp-esperienze'); ?></p>
