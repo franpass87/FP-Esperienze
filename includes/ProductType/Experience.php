@@ -24,6 +24,9 @@ class Experience {
      * Constructor
      */
     public function __construct() {
+        // Load the WC_Product_Experience class immediately to ensure it's available
+        $this->loadProductClass();
+        
         add_action('init', [$this, 'init']);
         add_filter('woocommerce_product_type_selector', [$this, 'addProductType']);
         add_filter('woocommerce_product_class', [$this, 'getProductClass'], 10, 2);
@@ -47,13 +50,21 @@ class Experience {
     }
 
     /**
-     * Initialize
+     * Load the WC_Product_Experience class
      */
-    public function init(): void {
-        // Register the experience product type
+    private function loadProductClass(): void {
+        // Load the WC_Product_Experience class if WooCommerce is available
         if (class_exists('WC_Product')) {
             require_once FP_ESPERIENZE_PLUGIN_DIR . 'includes/ProductType/WC_Product_Experience.php';
         }
+    }
+
+    /**
+     * Initialize
+     */
+    public function init(): void {
+        // Class is already loaded in constructor, but keep this for any future initialization needs
+        $this->loadProductClass();
     }
 
     /**
