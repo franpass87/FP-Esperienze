@@ -267,7 +267,12 @@
             // Add time slot
             $(document).on('click', '#fp-add-time-slot', function(e) {
                 e.preventDefault();
-                self.addTimeSlot();
+                try {
+                    self.addTimeSlot();
+                } catch (error) {
+                    console.error('Error adding time slot:', error);
+                    alert('Error adding time slot. Please check the browser console for details.');
+                }
             });
             
             // Remove time slot
@@ -307,6 +312,13 @@
          */
         addTimeSlot: function() {
             var container = $('#fp-time-slots-container');
+            
+            // Check if container exists
+            if (container.length === 0) {
+                alert('Time slots container not found. Please make sure you are editing an Experience product.');
+                return;
+            }
+            
             var index = container.find('.fp-time-slot').length;
             
             var days = {
@@ -398,22 +410,43 @@
             
             container.append(timeSlotHtml);
             
-            // Populate meeting points dropdown
-            this.populateMeetingPointsDropdown(container.find('.fp-time-slot').last().find('select[name*="meeting_point_id"]'));
+            // Populate meeting points dropdown with error handling
+            try {
+                var newTimeSlot = container.find('.fp-time-slot').last();
+                var meetingPointSelect = newTimeSlot.find('select[name*="meeting_point_id"]');
+                if (meetingPointSelect.length > 0) {
+                    this.populateMeetingPointsDropdown(meetingPointSelect);
+                }
+            } catch (error) {
+                // If there's an error populating meeting points, continue anyway
+                console.warn('Error populating meeting points dropdown:', error);
+            }
         },
         
         /**
          * Populate meeting points dropdown
          */
         populateMeetingPointsDropdown: function(selectElement) {
+            // Check if the select element exists
+            if (!selectElement || selectElement.length === 0) {
+                console.warn('Meeting point select element not found');
+                return;
+            }
+            
             // Copy options from the main meeting point select
             var mainSelect = $('#_fp_exp_meeting_point_id');
             if (mainSelect.length) {
                 mainSelect.find('option').each(function() {
                     if ($(this).val()) { // Skip empty option
-                        selectElement.append('<option value="' + $(this).val() + '">' + $(this).text() + '</option>');
+                        try {
+                            selectElement.append('<option value="' + $(this).val() + '">' + $(this).text() + '</option>');
+                        } catch (error) {
+                            console.warn('Error adding meeting point option:', error);
+                        }
                     }
                 });
+            } else {
+                console.warn('Main meeting point select not found');
             }
         },
         
