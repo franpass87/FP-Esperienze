@@ -1,9 +1,11 @@
 <?php
 /**
- * Test script to verify the product type fix works correctly
+ * Test script to verify the enhanced product type fix works correctly
  * 
  * This simulates the product saving process to ensure the product type
  * is correctly preserved when saving experience products.
+ * 
+ * UPDATED: Enhanced fix with multiple hooks and data store registration
  * 
  * REMOVE THIS FILE AFTER TESTING!
  */

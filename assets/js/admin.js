@@ -32,6 +32,14 @@
             $('#product-type').on('change', function() {
                 FPEsperienzeAdmin.toggleExperienceFields($(this).val());
             });
+            
+            // Ensure experience product type is preserved on form submit
+            $('form#post').on('submit', function() {
+                if ($('#product-type').val() === 'experience') {
+                    // Double-check the product type is set correctly
+                    $('#product-type').val('experience');
+                }
+            });
         },
 
         /**

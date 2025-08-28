@@ -29,8 +29,13 @@ class Experience {
         add_filter('woocommerce_product_class', [$this, 'getProductClass'], 10, 2);
         add_filter('woocommerce_product_data_tabs', [$this, 'addProductDataTabs']);
         add_action('woocommerce_product_data_panels', [$this, 'addProductDataPanels']);
-        // Priority 20 ensures our product type saving runs after WooCommerce core (priority 10)
+        
+        // Hook into product type saving with higher priority and multiple hooks
         add_action('woocommerce_process_product_meta', [$this, 'saveProductData'], 20);
+        // Also hook into the product save process to ensure type is preserved
+        add_action('woocommerce_update_product', [$this, 'ensureProductType'], 5);
+        add_action('woocommerce_new_product', [$this, 'ensureProductType'], 5);
+        
         add_action('admin_notices', [$this, 'showScheduleValidationNotices']);
     }
 
@@ -42,6 +47,10 @@ class Experience {
         if (class_exists('WC_Product')) {
             require_once FP_ESPERIENZE_PLUGIN_DIR . 'includes/ProductType/WC_Product_Experience.php';
         }
+        
+        // Ensure the product type is registered with WooCommerce
+        // This helps WooCommerce core recognize our custom type
+        add_filter('woocommerce_data_stores', [$this, 'registerDataStore']);
     }
 
     /**
@@ -53,6 +62,17 @@ class Experience {
     public function addProductType(array $types): array {
         $types['experience'] = __('Experience', 'fp-esperienze');
         return $types;
+    }
+    
+    /**
+     * Register data store for experience products
+     *
+     * @param array $stores Data stores
+     * @return array
+     */
+    public function registerDataStore(array $stores): array {
+        $stores['product-experience'] = 'WC_Product_Data_Store_CPT';
+        return $stores;
     }
 
     /**
@@ -593,10 +613,17 @@ class Experience {
             return;
         }
         
-        // Ensure product type is set to 'experience' when experience data is being saved
-        if (isset($_POST['product-type']) && $_POST['product-type'] === 'experience') {
-            update_post_meta($post_id, '_product_type', 'experience');
+        // Only proceed if this is an experience product
+        if (!isset($_POST['product-type']) || $_POST['product-type'] !== 'experience') {
+            return;
         }
+        
+        // Ensure product type is set to 'experience' - this MUST happen
+        // Use multiple approaches to ensure it sticks
+        update_post_meta($post_id, '_product_type', 'experience');
+        
+        // Also set it on the global $_POST to ensure WooCommerce core picks it up
+        $_POST['product-type'] = 'experience';
         
         // Save basic experience fields
         $fields = [
@@ -631,6 +658,24 @@ class Experience {
         
         // Save dynamic pricing rules
         $this->savePricingRules($post_id);
+    }
+    
+    /**
+     * Ensure product type is preserved during save
+     *
+     * @param int $product_id Product ID
+     */
+    public function ensureProductType(int $product_id): void {
+        // Only proceed if we're saving an experience product
+        if (!isset($_POST['product-type']) || $_POST['product-type'] !== 'experience') {
+            return;
+        }
+        
+        // Double-check that product type is properly set
+        $current_type = get_post_meta($product_id, '_product_type', true);
+        if ($current_type !== 'experience') {
+            update_post_meta($product_id, '_product_type', 'experience');
+        }
     }
     
     /**
