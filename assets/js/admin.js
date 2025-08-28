@@ -267,11 +267,12 @@
             // Add time slot
             $(document).on('click', '#fp-add-time-slot', function(e) {
                 e.preventDefault();
+                console.log('Add Time Slot button clicked');
                 try {
                     self.addTimeSlot();
                 } catch (error) {
                     console.error('Error adding time slot:', error);
-                    alert('Error adding time slot. Please check the browser console for details.');
+                    alert('Error adding time slot: ' + error.message + '\nPlease check the browser console for details.');
                 }
             });
             
@@ -315,7 +316,17 @@
             
             // Check if container exists
             if (container.length === 0) {
-                alert('Time slots container not found. Please make sure you are editing an Experience product.');
+                var productType = $('#product-type').val();
+                var errorMessage = 'Time slots container not found.';
+                
+                if (productType !== 'experience') {
+                    errorMessage += ' Please make sure the product type is set to "Experience".';
+                } else {
+                    errorMessage += ' Please make sure you are on the Experience tab.';
+                }
+                
+                alert(errorMessage);
+                console.warn('Container not found. Product type:', productType);
                 return;
             }
             
