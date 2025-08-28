@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Comprehensive Test: FP Esperienze Schedule Builder</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f1f1f1; }
+        .wrap { background: #fff; padding: 20px; margin: 20px 0; border: 1px solid #ccd0d4; }
+        .options_group { margin: 20px 0; padding: 15px; border: 1px solid #ddd; background: #f9f9f9; }
+        .fp-time-slot { border: 1px solid #ddd; margin: 10px 0; padding: 15px; background: #f9f9f9; border-radius: 4px; }
+        .fp-time-slot-row { border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; background: #f9f9f9; border-radius: 4px; }
+        .fp-time-slot-header { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; }
+        .fp-days-checkboxes { display: flex; gap: 10px; flex-wrap: wrap; }
+        .fp-overrides-section { display: none; margin-top: 15px; }
+        .button { padding: 8px 12px; background: #0073aa; color: white; border: none; cursor: pointer; text-decoration: none; display: inline-block; }
+        .button:hover { background: #005a87; }
+        .dashicons { font-family: dashicons; }
+        .dashicons-plus-alt:before { content: '+'; }
+        .dashicons-trash:before { content: '🗑'; }
+        h4 { margin: 0 0 10px 0; color: #23282d; }
+        select, input { padding: 6px; border: 1px solid #7e8993; }
+        .description { font-style: italic; color: #666; }
+        .console-log { background: #000; color: #0f0; padding: 10px; margin: 10px 0; font-family: monospace; height: 200px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <h1>FP Esperienze - Schedule Builder Test</h1>
+        
+        <!-- Simulate the WordPress product edit form -->
+        <form id="post">
+            <!-- Product Type Selector -->
+            <div class="options_group">
+                <h4>Product Type</h4>
+                <select id="product-type">
+                    <option value="simple">Simple product</option>
+                    <option value="experience" selected>Experience</option>
+                    <option value="variable">Variable product</option>
+                </select>
+            </div>
+            
+            <!-- Experience Product Fields -->
+            <div id="experience_product_data" class="show_if_experience">
+                <!-- Default fields that the Schedule Builder depends on -->
+                <div class="options_group">
+                    <h4>Product Defaults</h4>
+                    <p>
+                        <label>Default Duration (minutes):</label>
+                        <input type="number" id="_fp_exp_duration" name="_fp_exp_duration" value="60" min="1">
+                    </p>
+                    <p>
+                        <label>Default Capacity:</label>
+                        <input type="number" id="_fp_exp_capacity" name="_fp_exp_capacity" value="10" min="1">
+                    </p>
+                    <p>
+                        <label>Default Language:</label>
+                        <input type="text" id="_fp_exp_language" name="_fp_exp_language" value="en" maxlength="10">
+                    </p>
+                    <p>
+                        <label>Default Adult Price:</label>
+                        <input type="number" id="_regular_price" name="_regular_price" value="25.00" step="0.01" min="0">
+                    </p>
+                    <p>
+                        <label>Default Child Price:</label>
+                        <input type="number" id="_fp_exp_price_child" name="_fp_exp_price_child" value="15.00" step="0.01" min="0">
+                    </p>
+                    <p>
+                        <label>Default Meeting Point:</label>
+                        <select id="_fp_exp_meeting_point_id" name="_fp_exp_meeting_point_id">
+                            <option value="">Select Meeting Point</option>
+                            <option value="1" selected>Central Square</option>
+                            <option value="2">Train Station</option>
+                            <option value="3">Tourist Office</option>
+                        </select>
+                    </p>
+                </div>
+                
+                <!-- Weekly Schedules Section -->
+                <div class="options_group">
+                    <h4>Weekly Schedules</h4>
+                    
+                    <div id="fp-schedule-builder-container">
+                        <div id="fp-schedule-builder">
+                            <div class="fp-builder-section">
+                                <h5>Weekly Programming</h5>
+                                <p class="description">
+                                    Create time slots that apply to multiple days. Override values are inherited from product defaults above.
+                                </p>
+                                
+                                <div id="fp-time-slots-container">
+                                    <!-- Time slots will be added here -->
+                                    <p><em>No time slots created yet. Click "Add Time Slot" to get started.</em></p>
+                                </div>
+                                
+                                <button type="button" class="button" id="fp-add-time-slot">
+                                    <span class="dashicons dashicons-plus-alt"></span>
+                                    Add Time Slot
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <p>
+                        <label>
+                            <input type="checkbox" id="fp-toggle-raw-mode"> 
+                            Show Advanced Mode
+                        </label>
+                        <span class="description">Enable to view/edit individual schedule rows directly</span>
+                    </p>
+                </div>
+            </div>
+        </form>
+        
+        <!-- Console Output -->
+        <div class="options_group">
+            <h4>Console Output</h4>
+            <div id="console-output" class="console-log"></div>
+            <button type="button" onclick="$('#console-output').empty()">Clear Console</button>
+        </div>
+    </div>
+
+    <script>
+        // Override console.log to display in our custom console
+        var originalLog = console.log;
+        var originalWarn = console.warn;
+        var originalError = console.error;
+        
+        function addToConsole(message, type) {
+            var timestamp = new Date().toLocaleTimeString();
+            var color = type === 'error' ? '#f00' : type === 'warn' ? '#ff0' : '#0f0';
+            $('#console-output').append('<div style="color:' + color + '">[' + timestamp + '] ' + message + '</div>');
+            $('#console-output').scrollTop($('#console-output')[0].scrollHeight);
+        }
+        
+        console.log = function(message) {
+            originalLog.apply(console, arguments);
+            addToConsole(message, 'log');
+        };
+        
+        console.warn = function(message) {
+            originalWarn.apply(console, arguments);
+            addToConsole(message, 'warn');
+        };
+        
+        console.error = function(message) {
+            originalError.apply(console, arguments);
+            addToConsole(message, 'error');
+        };
+
+        // Simulate the FPEsperienzeAdmin functionality (simplified for testing)
+        window.FPEsperienzeAdmin = {
+            init: function() {
+                console.log('FPEsperienzeAdmin.init() called');
+                this.handleProductTypeChange();
+                this.bindEvents();
+            },
+
+            handleProductTypeChange: function() {
+                console.log('handleProductTypeChange() called');
+                var productType = $('#product-type').val();
+                this.toggleExperienceFields(productType);
+
+                $('#product-type').on('change', function() {
+                    console.log('Product type changed to:', $(this).val());
+                    FPEsperienzeAdmin.toggleExperienceFields($(this).val());
+                });
+            },
+
+            toggleExperienceFields: function(productType) {
+                console.log('toggleExperienceFields() called with:', productType);
+                if (productType === 'experience') {
+                    $('.show_if_experience').show();
+                    console.log('Experience fields shown');
+                } else {
+                    $('.show_if_experience').hide();
+                    console.log('Experience fields hidden');
+                }
+            },
+
+            bindEvents: function() {
+                console.log('bindEvents() called');
+                this.bindScheduleEvents();
+            },
+
+            bindScheduleEvents: function() {
+                console.log('bindScheduleEvents() called');
+                this.bindScheduleBuilderEvents();
+            },
+
+            bindScheduleBuilderEvents: function() {
+                var self = this;
+                console.log('bindScheduleBuilderEvents() called');
+                
+                // Add time slot
+                $(document).on('click', '#fp-add-time-slot', function(e) {
+                    e.preventDefault();
+                    console.log('Add Time Slot button clicked');
+                    try {
+                        self.addTimeSlot();
+                    } catch (error) {
+                        console.error('Error adding time slot:', error);
+                        alert('Error adding time slot: ' + error.message + '\nPlease check the browser console for details.');
+                    }
+                });
+
+                // Remove time slot
+                $(document).on('click', '.fp-remove-time-slot', function(e) {
+                    e.preventDefault();
+                    console.log('Remove time slot clicked');
+                    $(this).closest('.fp-time-slot-row').remove();
+                });
+
+                // Toggle overrides visibility
+                $(document).on('change', '.fp-show-overrides-toggle', function() {
+                    var overridesSection = $(this).closest('.fp-time-slot-row').find('.fp-overrides-section');
+                    if ($(this).is(':checked')) {
+                        overridesSection.show();
+                        console.log('Overrides section shown');
+                    } else {
+                        overridesSection.hide();
+                        overridesSection.find('input, select').val('');
+                        console.log('Overrides section hidden');
+                    }
+                });
+            },
+
+            addTimeSlot: function() {
+                console.log('addTimeSlot() function called');
+                var container = $('#fp-time-slots-container');
+                
+                // Check if container exists
+                if (container.length === 0) {
+                    var productType = $('#product-type').val();
+                    var errorMessage = 'Time slots container not found.';
+                    
+                    if (productType !== 'experience') {
+                        errorMessage += ' Please make sure the product type is set to "Experience".';
+                    } else {
+                        errorMessage += ' Please make sure you are on the Experience tab.';
+                    }
+                    
+                    alert(errorMessage);
+                    console.warn('Container not found. Product type:', productType);
+                    return;
+                }
+                
+                var index = container.find('.fp-time-slot').length;
+                console.log('Creating time slot with index:', index);
+                
+                // Clear the placeholder text if this is the first time slot
+                if (index === 0) {
+                    container.empty();
+                }
+                
+                var days = {
+                    '1': 'Monday',
+                    '2': 'Tuesday', 
+                    '3': 'Wednesday',
+                    '4': 'Thursday',
+                    '5': 'Friday',
+                    '6': 'Saturday',
+                    '0': 'Sunday'
+                };
+                
+                // Get product defaults for placeholders (with safe fallbacks)
+                var defaultDuration = ($('#_fp_exp_duration').val() || '60');
+                var defaultCapacity = ($('#_fp_exp_capacity').val() || '10');
+                var defaultLanguage = ($('#_fp_exp_language').val() || 'en');
+                var defaultMeetingPoint = ($('#_fp_exp_meeting_point_id option:selected').text() || 'Default');
+                var defaultPriceAdult = ($('#_regular_price').val() || '0.00');
+                var defaultPriceChild = ($('#_fp_exp_price_child').val() || '0.00');
+                
+                console.log('Defaults:', {
+                    duration: defaultDuration,
+                    capacity: defaultCapacity,
+                    language: defaultLanguage,
+                    meetingPoint: defaultMeetingPoint,
+                    priceAdult: defaultPriceAdult,
+                    priceChild: defaultPriceChild
+                });
+                
+                var timeSlotHtml = '<div class="fp-time-slot" data-index="' + index + '">' +
+                    '<div class="fp-time-slot-row">' +
+                        '<div class="fp-time-slot-header">' +
+                            '<div style="flex: 0 0 120px;">' +
+                                '<label style="font-weight: bold; display: block; margin-bottom: 5px;">Start Time <span style="color: red;">*</span></label>' +
+                                '<input type="time" name="builder_slots[' + index + '][start_time]" required style="width: 100%;">' +
+                            '</div>' +
+                            '<div style="flex: 1;">' +
+                                '<label style="font-weight: bold; display: block; margin-bottom: 5px;">Days <span style="color: red;">*</span></label>' +
+                                '<div class="fp-days-checkboxes">';
+                
+                for (var dayValue in days) {
+                    timeSlotHtml += '<label style="display: flex; align-items: center; gap: 5px; white-space: nowrap; margin-right: 10px;">' +
+                        '<input type="checkbox" name="builder_slots[' + index + '][days][]" value="' + dayValue + '">' +
+                        '<span style="font-size: 12px;">' + days[dayValue] + '</span>' +
+                    '</label>';
+                }
+                
+                timeSlotHtml += '</div></div>' +
+                            '<div style="flex: 0 0 auto;">' +
+                                '<button type="button" class="button fp-remove-time-slot" style="color: #a00;">' +
+                                    '<span class="dashicons dashicons-trash"></span> Remove' +
+                                '</button>' +
+                            '</div>' +
+                        '</div>' +
+                        
+                        '<div class="fp-override-toggle" style="margin-bottom: 15px;">' +
+                            '<label>' +
+                                '<input type="checkbox" class="fp-show-overrides-toggle">' +
+                                ' Show advanced overrides' +
+                            '</label>' +
+                            '<span class="description"> Override default values for this time slot</span>' +
+                        '</div>' +
+                        
+                        '<div class="fp-overrides-section">' +
+                            '<p><strong>Override Settings</strong> (leave empty to inherit defaults)</p>' +
+                            '<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">' +
+                                '<div>' +
+                                    '<label>Duration (minutes):</label><br>' +
+                                    '<input type="number" name="builder_slots[' + index + '][duration_min]" placeholder="' + defaultDuration + '" min="1">' +
+                                '</div>' +
+                                '<div>' +
+                                    '<label>Capacity:</label><br>' +
+                                    '<input type="number" name="builder_slots[' + index + '][capacity]" placeholder="' + defaultCapacity + '" min="1">' +
+                                '</div>' +
+                                '<div>' +
+                                    '<label>Language:</label><br>' +
+                                    '<input type="text" name="builder_slots[' + index + '][lang]" placeholder="' + defaultLanguage + '" maxlength="10">' +
+                                '</div>' +
+                                '<div>' +
+                                    '<label>Adult Price:</label><br>' +
+                                    '<input type="number" name="builder_slots[' + index + '][price_adult]" placeholder="' + defaultPriceAdult + '" min="0" step="0.01">' +
+                                '</div>' +
+                                '<div>' +
+                                    '<label>Child Price:</label><br>' +
+                                    '<input type="number" name="builder_slots[' + index + '][price_child]" placeholder="' + defaultPriceChild + '" min="0" step="0.01">' +
+                                '</div>' +
+                                '<div>' +
+                                    '<label>Meeting Point:</label><br>' +
+                                    '<select name="builder_slots[' + index + '][meeting_point_id]">' +
+                                        '<option value="">Inherit (' + defaultMeetingPoint + ')</option>' +
+                                    '</select>' +
+                                '</div>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>';
+                
+                container.append(timeSlotHtml);
+                console.log('Time slot HTML added to container');
+                
+                // Populate meeting points dropdown with error handling
+                try {
+                    var newTimeSlot = container.find('.fp-time-slot').last();
+                    var meetingPointSelect = newTimeSlot.find('select[name*="meeting_point_id"]');
+                    if (meetingPointSelect.length > 0) {
+                        this.populateMeetingPointsDropdown(meetingPointSelect);
+                        console.log('Meeting points dropdown populated');
+                    }
+                } catch (error) {
+                    console.warn('Error populating meeting points dropdown:', error);
+                }
+                
+                console.log('addTimeSlot() completed successfully');
+            },
+
+            populateMeetingPointsDropdown: function(selectElement) {
+                console.log('populateMeetingPointsDropdown() called');
+                
+                // Check if the select element exists
+                if (!selectElement || selectElement.length === 0) {
+                    console.warn('Meeting point select element not found');
+                    return;
+                }
+                
+                // Copy options from the main meeting point select
+                var mainSelect = $('#_fp_exp_meeting_point_id');
+                if (mainSelect.length) {
+                    mainSelect.find('option').each(function() {
+                        if ($(this).val()) { // Skip empty option
+                            try {
+                                selectElement.append('<option value="' + $(this).val() + '">' + $(this).text() + '</option>');
+                            } catch (error) {
+                                console.warn('Error adding meeting point option:', error);
+                            }
+                        }
+                    });
+                    console.log('Meeting point options copied from main select');
+                } else {
+                    console.warn('Main meeting point select not found');
+                }
+            }
+        };
+
+        $(document).ready(function() {
+            console.log('Document ready - initializing FPEsperienzeAdmin');
+            FPEsperienzeAdmin.init();
+            console.log('Initialization complete');
+        });
+    </script>
+</body>
+</html>
