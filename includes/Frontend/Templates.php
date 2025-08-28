@@ -18,8 +18,13 @@ class Templates {
      * Constructor
      */
     public function __construct() {
-        add_filter('single_template', [$this, 'singleExperienceTemplate']);
+        // Use higher priority to ensure our template override works
+        add_filter('single_template', [$this, 'singleExperienceTemplate'], 99);
         add_filter('wc_get_template', [$this, 'getTemplate'], 10, 5);
+        
+        // Additional template hooks for better compatibility
+        add_filter('template_include', [$this, 'templateInclude'], 99);
+        add_action('woocommerce_single_product_summary', [$this, 'addExperienceNotice'], 5);
     }
 
     /**
@@ -64,5 +69,39 @@ class Templates {
         }
 
         return $template;
+    }
+    
+    /**
+     * Additional template include filter for better compatibility
+     *
+     * @param string $template Template path
+     * @return string
+     */
+    public function templateInclude(string $template): string {
+        if (is_singular('product')) {
+            global $post;
+            $product = wc_get_product($post->ID);
+            
+            if ($product && $product->get_type() === 'experience') {
+                $custom_template = FP_ESPERIENZE_PLUGIN_DIR . 'templates/single-experience.php';
+                if (file_exists($custom_template)) {
+                    return $custom_template;
+                }
+            }
+        }
+        
+        return $template;
+    }
+    
+    /**
+     * Add experience notice to product page for debugging
+     */
+    public function addExperienceNotice(): void {
+        global $product;
+        
+        if ($product && $product->get_type() === 'experience') {
+            // Add a hidden debug marker to verify our hooks are working
+            echo '<!-- FP Esperienze: Experience product detected -->';
+        }
     }
 }

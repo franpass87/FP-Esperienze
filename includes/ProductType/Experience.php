@@ -25,7 +25,7 @@ class Experience {
      */
     public function __construct() {
         add_action('init', [$this, 'init']);
-        add_filter('product_type_selector', [$this, 'addProductType']);
+        add_filter('woocommerce_product_type_selector', [$this, 'addProductType']);
         add_filter('woocommerce_product_class', [$this, 'getProductClass'], 10, 2);
         add_filter('woocommerce_product_data_tabs', [$this, 'addProductDataTabs']);
         add_action('woocommerce_product_data_panels', [$this, 'addProductDataPanels']);
@@ -37,6 +37,13 @@ class Experience {
         add_action('woocommerce_new_product', [$this, 'ensureProductType'], 5);
         
         add_action('admin_notices', [$this, 'showScheduleValidationNotices']);
+        
+        // Additional hooks for proper WooCommerce integration
+        add_filter('woocommerce_data_stores', [$this, 'registerDataStore'], 10, 1);
+        add_action('woocommerce_product_options_general_product_data', [$this, 'addExperienceProductFields']);
+        
+        // Ensure admin scripts are loaded on product edit pages
+        add_action('admin_enqueue_scripts', [$this, 'enqueueAdminScripts']);
     }
 
     /**
@@ -47,10 +54,6 @@ class Experience {
         if (class_exists('WC_Product')) {
             require_once FP_ESPERIENZE_PLUGIN_DIR . 'includes/ProductType/WC_Product_Experience.php';
         }
-        
-        // Ensure the product type is registered with WooCommerce
-        // This helps WooCommerce core recognize our custom type
-        add_filter('woocommerce_data_stores', [$this, 'registerDataStore']);
     }
 
     /**
@@ -1240,5 +1243,85 @@ class Experience {
             echo '</p></div>';
             delete_transient("fp_schedule_saved_{$product_id}");
         }
+    }
+    
+    /**
+     * Add experience product fields to general tab for better admin integration
+     */
+    public function addExperienceProductFields(): void {
+        global $product_object;
+        
+        // Only show for experience products
+        if (!$product_object || $product_object->get_type() !== 'experience') {
+            return;
+        }
+        
+        echo '<div class="options_group show_if_experience">';
+        
+        woocommerce_wp_text_input([
+            'id'          => '_experience_duration_general',
+            'label'       => __('Duration (minutes)', 'fp-esperienze'),
+            'placeholder' => '60',
+            'desc_tip'    => true,
+            'description' => __('Experience duration in minutes', 'fp-esperienze'),
+            'type'        => 'number',
+            'custom_attributes' => [
+                'step' => '1',
+                'min'  => '1'
+            ],
+            'value' => get_post_meta($product_object->get_id(), '_experience_duration', true)
+        ]);
+        
+        echo '</div>';
+    }
+    
+    /**
+     * Enqueue admin scripts for product edit pages
+     */
+    public function enqueueAdminScripts($hook): void {
+        // Only load on product edit pages
+        if (!in_array($hook, ['post.php', 'post-new.php'])) {
+            return;
+        }
+        
+        $screen = get_current_screen();
+        if (!$screen || $screen->post_type !== 'product') {
+            return;
+        }
+        
+        wp_enqueue_script(
+            'fp-esperienze-product-admin',
+            FP_ESPERIENZE_PLUGIN_URL . 'assets/js/admin.js',
+            ['jquery', 'wc-admin-product-meta-boxes'],
+            FP_ESPERIENZE_VERSION,
+            true
+        );
+        
+        wp_localize_script('fp-esperienze-product-admin', 'fp_esperienze_admin', [
+            'ajaxurl' => admin_url('admin-ajax.php'),
+            'nonce' => wp_create_nonce('fp_esperienze_admin'),
+            'rest_url' => rest_url('fp-exp/v1/'),
+            'strings' => [
+                'experience_type' => __('Experience', 'fp-esperienze'),
+                'select_date' => __('Select Date', 'fp-esperienze'),
+                'loading' => __('Loading...', 'fp-esperienze')
+            ]
+        ]);
+        
+        // Add custom CSS for experience product type
+        wp_add_inline_style('woocommerce_admin_styles', '
+            .product-type-experience .show_if_simple,
+            .product-type-experience .show_if_variable,
+            .product-type-experience .show_if_grouped,
+            .product-type-experience .show_if_external {
+                display: none !important;
+            }
+            .show_if_experience {
+                display: block !important;
+            }
+            body:not(.product-type-experience) .show_if_experience {
+                display: none !important;
+            }
+        ');
     }
 }

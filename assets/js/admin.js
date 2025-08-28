@@ -40,6 +40,31 @@
                     $('#product-type').val('experience');
                 }
             });
+            
+            // Force experience type to be recognized on page load
+            if (productType === 'experience') {
+                this.forceExperienceType();
+            }
+        },
+        
+        /**
+         * Force experience type recognition
+         */
+        forceExperienceType: function() {
+            // Ensure the product type dropdown shows experience
+            $('#product-type').val('experience');
+            
+            // Trigger change event to ensure all handlers are called
+            $('#product-type').trigger('change');
+            
+            // Add body class for CSS targeting
+            $('body').addClass('product-type-experience');
+            
+            // Show experience-specific fields
+            $('.show_if_experience').show();
+            
+            // Hide incompatible fields
+            $('.show_if_simple, .show_if_variable, .show_if_grouped, .show_if_external').hide();
         },
 
         /**
@@ -56,6 +81,24 @@
             // Add current product type class
             if (productType) {
                 $body.addClass('product-type-' + productType);
+            }
+            
+            // Special handling for experience type
+            if (productType === 'experience') {
+                // Show experience-specific elements
+                $('.show_if_experience').show();
+                $('#experience_product_data, #dynamic_pricing_product_data').show();
+                
+                // Hide incompatible elements
+                $('.show_if_simple, .show_if_variable, .show_if_grouped, .show_if_external').hide();
+                
+                // Update virtual/downloadable settings for experiences
+                $('#_virtual').prop('checked', true).trigger('change');
+                $('#_downloadable').prop('checked', false).trigger('change');
+            } else {
+                // Hide experience-specific elements
+                $('.show_if_experience').hide();
+                $('#experience_product_data, #dynamic_pricing_product_data').hide();
             }
         },
 
