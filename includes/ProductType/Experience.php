@@ -578,7 +578,6 @@ class Experience {
         ?>
         <div id="fp-schedule-builder">
             <div class="fp-builder-section">
-                <h5><?php _e('Weekly Programming', 'fp-esperienze'); ?></h5>
                 <p class="description">
                     <?php _e('Create time slots that apply to multiple days. Override values are inherited from product defaults above.', 'fp-esperienze'); ?>
                 </p>
