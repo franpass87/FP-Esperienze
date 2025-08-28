@@ -71,7 +71,10 @@ class Plugin {
      * Initialize plugin
      */
     private function init(): void {
-        // Initialize components
+        // Initialize the Experience product type EARLY to ensure it's registered before WooCommerce loads product types
+        add_action('init', [$this, 'initExperienceProductType'], 5);
+        
+        // Initialize other components later
         add_action('init', [$this, 'initComponents'], 20);
         
         // Initialize admin
@@ -118,6 +121,15 @@ class Plugin {
     }
 
     /**
+     * Initialize experience product type early
+     */
+    public function initExperienceProductType(): void {
+        // Initialize experience product type FIRST with high priority
+        // This ensures the filter is registered before WooCommerce loads product types
+        new Experience();
+    }
+
+    /**
      * Initialize components
      */
     public function initComponents(): void {
@@ -133,8 +145,8 @@ class Plugin {
         // Initialize asset optimizer
         AssetOptimizer::init();
         
-        // Initialize experience product type
-        new Experience();
+        // Experience product type is already initialized in initExperienceProductType()
+        // Skip: new Experience();
         
         // Initialize cart hooks for experience bookings
         new Cart_Hooks();
