@@ -104,6 +104,16 @@ function fp_esperienze_init() {
 add_action('plugins_loaded', 'fp_esperienze_init');
 
 /**
+ * Declare compatibility with WooCommerce features
+ */
+add_action('before_woocommerce_init', function() {
+    // Declare HPOS compatibility
+    if (class_exists('\Automattic\WooCommerce\Utilities\FeaturesUtil')) {
+        \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility('custom_order_tables', FP_ESPERIENZE_PLUGIN_FILE, true);
+    }
+});
+
+/**
  * Activation hook
  */
 register_activation_hook(__FILE__, function() {
