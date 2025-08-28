@@ -1,18 +1,18 @@
 # Manual Test: Experience Product Type Fix
 
 ## Issue Fixed
-**Problem**: "non compare experience sotto dati prodotto nella creazione prodotto" (Experience doesn't appear under product data in product creation)
+**Problem**: Experience product type not appearing in WooCommerce product type dropdown during creation/editing.
 
-**Root Cause**: The `WC_Product_Experience` class was not being loaded at the right time when WooCommerce tried to instantiate experience products.
+**Root Cause**: The plugin was using the wrong filter hook `woocommerce_product_type_selector` instead of the correct `product_type_selector` that WooCommerce actually calls.
 
 ## Fix Applied
-**Modified `getProductClass` method** in `/includes/ProductType/Experience.php`:
-- Added lazy loading of `WC_Product_Experience` class when the filter is applied
-- Ensures the class is available when WooCommerce needs it
+**Modified filter registration** in `/includes/ProductType/Experience.php` (line 31):
+- Changed from: `add_filter('woocommerce_product_type_selector', [$this, 'addProductType']);`
+- Changed to: `add_filter('product_type_selector', [$this, 'addProductType']);`
 
-**Improved `loadProductClass` method**:
-- Added check to prevent duplicate loading
-- More robust class existence validation
+**Updated debug scripts** for consistency:
+- `debug-product-type.php` - Updated to check correct filter
+- `verify-product-type-fix.php` - Fixed filter names and descriptions
 
 ## Manual Testing Steps
 
@@ -92,20 +92,20 @@ If any test fails, check:
 ## Technical Details
 
 **Files Modified**:
-- `/includes/ProductType/Experience.php` - Enhanced `getProductClass()` and `loadProductClass()` methods
+1. `/includes/ProductType/Experience.php` - Fixed filter hook name (line 31)
+2. `/debug-product-type.php` - Updated filter references for consistency
+3. `/verify-product-type-fix.php` - Corrected filter names and test descriptions
 
 **Key Fix**:
 ```php
-public function getProductClass(string $classname, string $product_type): string {
-    if ($product_type === 'experience') {
-        // Ensure the WC_Product_Experience class is loaded when needed
-        if (!class_exists('WC_Product_Experience')) {
-            $this->loadProductClass();
-        }
-        return 'WC_Product_Experience';
-    }
-    return $classname;
-}
+// Before (WRONG):
+add_filter('woocommerce_product_type_selector', [$this, 'addProductType']);
+
+// After (CORRECT):
+add_filter('product_type_selector', [$this, 'addProductType']);
 ```
 
-This ensures the `WC_Product_Experience` class is available exactly when WooCommerce needs it to instantiate experience products.
+**Why this works**:
+- WooCommerce core uses `product_type_selector` filter to populate the dropdown
+- The prefix `woocommerce_` was incorrect and not recognized by WooCommerce
+- This simple one-line change ensures the Experience type is properly registered

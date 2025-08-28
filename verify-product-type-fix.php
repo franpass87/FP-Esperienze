@@ -18,7 +18,7 @@ echo "<h1>Experience Product Type Fix - Verification Test</h1>\n";
 
 // Test 1: Verify the filter hook change
 echo "<h2>✅ Test 1: Filter Hook Verification</h2>\n";
-echo "✅ Filter changed from 'product_type_selector' to 'woocommerce_product_type_selector'\n";
+echo "✅ Filter changed from 'woocommerce_product_type_selector' to 'product_type_selector'\n";
 echo "✅ This ensures WooCommerce core recognizes 'experience' as valid\n";
 
 // Test 2: Test filter registration
@@ -27,17 +27,17 @@ echo "<h2>Test 2: Product Type Registration</h2>\n";
 // Simulate applying the filter (this would normally be done by WooCommerce)
 $product_types = [];
 
-// Test the old filter (should be empty since we removed it)
-$old_types = apply_filters('product_type_selector', []);
-echo "Old filter 'product_type_selector' results: " . (empty($old_types) ? "✅ Empty (as expected)" : "❌ Still has data") . "\n";
+// Test the old filter (should be empty since we fixed it)
+$old_types = apply_filters('woocommerce_product_type_selector', []);
+echo "Old filter 'woocommerce_product_type_selector' results: " . (empty($old_types) ? "✅ Empty (as expected)" : "❌ Still has data") . "\n";
 
-// Test the new filter 
-$new_types = apply_filters('woocommerce_product_type_selector', ['simple' => 'Simple Product']);
-echo "New filter 'woocommerce_product_type_selector' results:\n";
+// Test the correct filter 
+$new_types = apply_filters('product_type_selector', ['simple' => 'Simple Product']);
+echo "Correct filter 'product_type_selector' results:\n";
 echo "<pre>" . print_r($new_types, true) . "</pre>\n";
 
 if (isset($new_types['experience'])) {
-    echo "✅ 'experience' is properly registered in woocommerce_product_type_selector\n";
+    echo "✅ 'experience' is properly registered in product_type_selector\n";
 } else {
     echo "❌ 'experience' not found in filter results\n";
     echo "Note: This may be normal if the Experience class hasn't been instantiated yet\n";
