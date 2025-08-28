@@ -452,12 +452,12 @@ class MenuManager {
             </div>
             
             <!-- Calendar View -->
-            <div id="fp-bookings-calendar" class="fp-bookings-content" style="display: none;">
+            <div id="fp-bookings-calendar" class="fp-bookings-content fp-hidden">
                 <div id="fp-calendar"></div>
             </div>
             
             <!-- Reschedule Modal -->
-            <div id="fp-reschedule-modal" style="display: none;">
+            <div id="fp-reschedule-modal">
                 <div class="fp-modal-content">
                     <span class="fp-modal-close">&times;</span>
                     <h3><?php _e('Reschedule Booking', 'fp-esperienze'); ?></h3>
@@ -492,12 +492,12 @@ class MenuManager {
             </div>
             
             <!-- Cancel Modal -->
-            <div id="fp-cancel-modal" style="display: none;">
+            <div id="fp-cancel-modal">
                 <div class="fp-modal-content">
                     <span class="fp-modal-close">&times;</span>
                     <h3><?php _e('Cancel Booking', 'fp-esperienze'); ?></h3>
                     <div id="fp-cancel-info"></div>
-                    <form id="fp-cancel-form" style="display: none;">
+                    <form id="fp-cancel-form" class="fp-hidden">
                         <?php wp_nonce_field('fp_cancel_booking', 'fp_cancel_nonce'); ?>
                         <input type="hidden" id="cancel-booking-id" name="booking_id" value="">
                         
@@ -515,99 +515,7 @@ class MenuManager {
             </div>
         </div>
         
-        <style>
-        .fp-bookings-filters {
-            background: #fff;
-            padding: 15px;
-            margin: 15px 0;
-            border: 1px solid #ccd0d4;
-        }
-        .filter-row > * {
-            margin-right: 10px;
-            margin-bottom: 5px;
-        }
-        .fp-view-toggle {
-            margin: 15px 0;
-        }
-        .fp-view-toggle .button {
-            margin-right: 5px;
-        }
-        .booking-status {
-            padding: 3px 8px;
-            border-radius: 3px;
-            font-size: 11px;
-            font-weight: bold;
-            text-transform: uppercase;
-        }
-        .status-confirmed {
-            background: #46b450;
-            color: white;
-        }
-        .status-cancelled {
-            background: #dc3232;
-            color: white;
-        }
-        .status-refunded {
-            background: #ffb900;
-            color: black;
-        }
-        #fp-calendar {
-            height: 600px;
-            margin-top: 20px;
-        }
-        
-        /* Modal Styles */
-        #fp-reschedule-modal, #fp-cancel-modal {
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-        }
-        
-        .fp-modal-content {
-            background-color: #fefefe;
-            margin: 5% auto;
-            padding: 20px;
-            border: 1px solid #888;
-            width: 600px;
-            max-width: 90%;
-            border-radius: 5px;
-            position: relative;
-        }
-        
-        .fp-modal-close {
-            color: #aaa;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-            position: absolute;
-            right: 10px;
-            top: 10px;
-        }
-        
-        .fp-modal-close:hover,
-        .fp-modal-close:focus {
-            color: black;
-        }
-        
-        .fp-modal-content label {
-            font-weight: bold;
-            display: block;
-            margin-bottom: 5px;
-        }
-        
-        .fp-modal-content input,
-        .fp-modal-content select,
-        .fp-modal-content textarea {
-            width: 100%;
-            padding: 5px;
-            margin-bottom: 10px;
-        }
-        </style>
+
         
         <script>
         jQuery(document).ready(function($) {
@@ -1580,7 +1488,7 @@ class MenuManager {
                         </select>
                         
                         <div id="bulk-extend-options" style="display: none; margin-top: 5px;">
-                            <input type="number" name="bulk_extend_months" min="1" max="60" value="12" style="width: 60px;">
+                            <input type="number" name="bulk_extend_months" min="1" max="60" value="12" class="fp-narrow-input">
                             <label><?php _e('months', 'fp-esperienze'); ?></label>
                         </div>
                         
@@ -1608,7 +1516,7 @@ class MenuManager {
                     <tbody>
                         <?php if (empty($vouchers)): ?>
                             <tr>
-                                <td colspan="9" style="text-align: center; padding: 20px;">
+                                <td colspan="9" class="fp-centered-cell">
                                     <?php _e('No vouchers found.', 'fp-esperienze'); ?>
                                 </td>
                             </tr>
@@ -1669,7 +1577,7 @@ class MenuManager {
                                     <td>
                                         <?php echo esc_html(date_i18n(get_option('date_format'), strtotime($voucher->expires_on))); ?>
                                         <?php if (strtotime($voucher->expires_on) < time() && $voucher->status === 'active'): ?>
-                                            <br><small style="color: #dc3232;"><?php _e('Expired', 'fp-esperienze'); ?></small>
+                                            <br><small class="fp-error-text"><?php _e('Expired', 'fp-esperienze'); ?></small>
                                         <?php endif; ?>
                                     </td>
                                     <td>
@@ -1689,7 +1597,7 @@ class MenuManager {
                                         <?php endif; ?>
                                         
                                         <?php if ($voucher->status === 'active'): ?>
-                                            <div class="fp-voucher-actions" style="margin-top: 4px;">
+                                            <div class="fp-voucher-actions" class="fp-voucher-actions-spacing">
                                                 <!-- Resend Email -->
                                                 <form method="post" style="display: inline-block; margin-right: 4px;">
                                                     <?php wp_nonce_field('fp_voucher_action', 'fp_voucher_nonce'); ?>
