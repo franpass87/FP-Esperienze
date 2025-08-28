@@ -28,7 +28,7 @@ class SetupWizard {
      * Constructor
      */
     public function __construct() {
-        add_action('admin_menu', [$this, 'addSetupWizardMenu'], 5);
+        add_action('admin_menu', [$this, 'addSetupWizardMenu'], 15);
         add_action('admin_init', [$this, 'handleStepSubmission']);
         add_action('admin_enqueue_scripts', [$this, 'enqueueScripts']);
     }
@@ -53,6 +53,7 @@ class SetupWizard {
      * Enqueue setup wizard scripts and styles
      */
     public function enqueueScripts($hook): void {
+        // The correct hook for submenus is: {parent_slug}_page_{menu_slug}
         if ($hook !== 'fp-esperienze_page_fp-esperienze-setup-wizard') {
             return;
         }
@@ -62,7 +63,8 @@ class SetupWizard {
         wp_enqueue_style('wp-color-picker');
         wp_enqueue_script('wp-color-picker');
         
-        // Add inline styles for wizard
+        // Add inline styles for wizard - ensure we have a style to add it to
+        wp_enqueue_style('wp-admin');
         wp_add_inline_style('wp-admin', $this->getWizardStyles());
     }
 
@@ -192,7 +194,7 @@ class SetupWizard {
         }
         
         $settings = [
-            'fp_esperienze_currency' => sanitize_text_field($_POST['currency'] ?? get_woocommerce_currency()),
+            'fp_esperienze_currency' => sanitize_text_field($_POST['currency'] ?? (function_exists('get_woocommerce_currency') ? get_woocommerce_currency() : 'USD')),
             'fp_esperienze_default_duration' => absint($_POST['default_duration'] ?? 60),
             'fp_esperienze_default_capacity' => absint($_POST['default_capacity'] ?? 10),
             'fp_esperienze_default_language' => sanitize_text_field($_POST['default_language'] ?? $default_lang),
@@ -367,7 +369,7 @@ class SetupWizard {
      * Render basic settings step
      */
     private function renderBasicSettingsStep(): void {
-        $currency = get_option('fp_esperienze_currency', get_woocommerce_currency());
+        $currency = get_option('fp_esperienze_currency', function_exists('get_woocommerce_currency') ? get_woocommerce_currency() : 'USD');
         $duration = get_option('fp_esperienze_default_duration', 60);
         $capacity = get_option('fp_esperienze_default_capacity', 10);
         
@@ -393,11 +395,17 @@ class SetupWizard {
                 </th>
                 <td>
                     <select name="currency" id="currency">
-                        <?php foreach (get_woocommerce_currencies() as $code => $name) : ?>
-                            <option value="<?php echo esc_attr($code); ?>" <?php selected($currency, $code); ?>>
-                                <?php echo esc_html($name . ' (' . get_woocommerce_currency_symbol($code) . ')'); ?>
-                            </option>
-                        <?php endforeach; ?>
+                        <?php if (function_exists('get_woocommerce_currencies')) : ?>
+                            <?php foreach (get_woocommerce_currencies() as $code => $name) : ?>
+                                <option value="<?php echo esc_attr($code); ?>" <?php selected($currency, $code); ?>>
+                                    <?php echo esc_html($name . ' (' . (function_exists('get_woocommerce_currency_symbol') ? get_woocommerce_currency_symbol($code) : $code) . ')'); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        <?php else : ?>
+                            <option value="USD" <?php selected($currency, 'USD'); ?>>US Dollar (USD)</option>
+                            <option value="EUR" <?php selected($currency, 'EUR'); ?>>Euro (EUR)</option>
+                            <option value="GBP" <?php selected($currency, 'GBP'); ?>>British Pound (GBP)</option>
+                        <?php endif; ?>
                     </select>
                     <p class="description"><?php _e('Default currency for experience pricing.', 'fp-esperienze'); ?></p>
                 </td>
