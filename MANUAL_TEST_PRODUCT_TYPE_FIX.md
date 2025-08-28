@@ -5,20 +5,27 @@ This test verifies that the enhanced fix for the experience product type saving 
 ## Issue
 When creating a new product and selecting "Experience" as the product type, then publishing it, the product was being saved as a "simple" product instead of maintaining the "experience" type.
 
-## Enhanced Fix Implementation
-The fix now includes multiple defensive measures:
+## Root Cause
+The issue was caused by using the incorrect filter hook `product_type_selector` instead of the proper WooCommerce filter `woocommerce_product_type_selector`. This meant that while the "Experience" option appeared in the dropdown, WooCommerce core didn't recognize it as a valid product type and automatically reverted it to "simple" during save validation.
+
+## Fix Implementation
+The fix includes multiple defensive measures:
 
 ### Backend (PHP):
-1. **Multiple Hook Points**: 
+1. **Correct Filter Hook**: 
+   - Changed from `product_type_selector` to `woocommerce_product_type_selector` (CRITICAL FIX)
+   - This ensures WooCommerce core recognizes 'experience' as a valid product type
+
+2. **Multiple Hook Points**: 
    - `woocommerce_process_product_meta` (priority 20)
    - `woocommerce_update_product` (priority 5) 
    - `woocommerce_new_product` (priority 5)
 
-2. **Redundant Product Type Setting**:
+3. **Redundant Product Type Setting**:
    - `update_post_meta($post_id, '_product_type', 'experience')`
    - `$_POST['product-type'] = 'experience'` to ensure WooCommerce core picks it up
 
-3. **Data Store Registration**: 
+4. **Data Store Registration**: 
    - Registers the experience product type with WooCommerce's data store system
 
 ### Frontend (JavaScript):

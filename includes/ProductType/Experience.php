@@ -25,7 +25,7 @@ class Experience {
      */
     public function __construct() {
         add_action('init', [$this, 'init']);
-        add_filter('product_type_selector', [$this, 'addProductType']);
+        add_filter('woocommerce_product_type_selector', [$this, 'addProductType']);
         add_filter('woocommerce_product_class', [$this, 'getProductClass'], 10, 2);
         add_filter('woocommerce_product_data_tabs', [$this, 'addProductDataTabs']);
         add_action('woocommerce_product_data_panels', [$this, 'addProductDataPanels']);
