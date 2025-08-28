@@ -1077,6 +1077,68 @@ The plugin creates the following custom tables:
 - `fp_vouchers` - Legacy voucher system (backwards compatibility)
 - `fp_exp_vouchers` - Gift voucher system with recipient data and status tracking
 
+### Experience Schedules
+
+Experience schedules define the recurring weekly time slots when an experience is available for booking. Each schedule represents a recurring time slot on a specific day of the week.
+
+#### Schedule Fields
+
+**Day of Week** *(Required)*
+- Which day of the week this schedule applies to (Sunday = 0, Monday = 1, etc.)
+- Each experience can have multiple schedules for different days
+
+**Start Time** *(Required)*
+- When the experience starts in 24-hour format (HH:MM)
+- Example: `09:00` for 9:00 AM, `14:30` for 2:30 PM
+- Used to calculate booking availability slots
+
+**Duration (minutes)** *(Required)*
+- How long the experience lasts in minutes
+- Must be greater than 0
+- Example: `120` for a 2-hour experience
+
+**Max Capacity** *(Required)*
+- Maximum number of participants for this specific schedule
+- Must be at least 1
+- Can be different for each schedule (e.g., different group sizes for morning vs evening)
+
+**Language** *(Optional)*
+- Language code for this schedule (e.g., `en`, `it`, `es`)
+- Useful for multilingual experiences with different schedules per language
+- Defaults to `en` if not specified
+
+**Meeting Point** *(Optional)*
+- The meeting point location for this schedule
+- Can be different for each schedule if experiences meet at different locations
+- If not specified, uses the default product meeting point
+
+**Adult Price** *(Optional)*
+- Price per adult participant for this specific schedule
+- Overrides the default product price if specified
+- Leave empty to use the standard product pricing
+
+**Child Price** *(Optional)*
+- Price per child participant for this specific schedule
+- Leave empty if no child pricing or to use default pricing
+- Only relevant if your experience offers child rates
+
+#### Schedule Validation
+
+The system validates schedule data when saving:
+- **Time Format**: Must be in HH:MM format (e.g., `09:00`, `14:30`)
+- **Duration**: Must be greater than 0 minutes
+- **Capacity**: Must be at least 1 participant
+- **Invalid Schedules**: Automatically discarded with admin notice
+- **Validation Feedback**: Clear error messages for any validation issues
+
+#### How Schedules Work
+
+1. **Recurring Availability**: Schedules create recurring weekly time slots
+2. **Booking Slots**: System generates bookable slots based on schedules
+3. **Capacity Management**: Each schedule has independent capacity tracking
+4. **Override Support**: Date-specific overrides can modify or disable schedule slots
+5. **Multi-language**: Different schedules can serve different languages
+
 ### Hooks and Filters
 
 The plugin provides several action hooks and filters for customization:

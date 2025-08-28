@@ -23,6 +23,7 @@ class Shortcodes {
      */
     public function __construct() {
         add_shortcode('fp_exp_archive', [$this, 'experienceArchive']);
+        add_shortcode('wcefp_experiences', [$this, 'experienceArchive']); // Alternative name for compatibility
     }
 
     /**

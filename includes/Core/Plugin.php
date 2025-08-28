@@ -15,6 +15,7 @@ use FP\Esperienze\Frontend\SEOManager;
 use FP\Esperienze\Blocks\ArchiveBlock;
 use FP\Esperienze\REST\AvailabilityAPI;
 use FP\Esperienze\REST\BookingsAPI;
+use FP\Esperienze\REST\BookingsController;
 use FP\Esperienze\REST\ICSAPI;
 use FP\Esperienze\REST\SecurePDFAPI;
 use FP\Esperienze\Booking\Cart_Hooks;
@@ -185,6 +186,7 @@ class Plugin {
     public function initREST(): void {
         new AvailabilityAPI();
         new BookingsAPI();
+        new BookingsController();
         new ICSAPI();
         new SecurePDFAPI();
     }
