@@ -24,6 +24,11 @@ class Installer {
         self::createDefaultOptions();
         self::addCapabilities();
         
+        // Execute schedule migration if feature flag is enabled
+        if (defined('FP_ESPERIENZE_ENABLE_SCHEDULE_NULL_MIGRATION') && FP_ESPERIENZE_ENABLE_SCHEDULE_NULL_MIGRATION) {
+            self::migrateScheduleNullFields();
+        }
+        
         // Flush rewrite rules
         flush_rewrite_rules();
         
@@ -274,6 +279,116 @@ class Installer {
         dbDelta($sql_vouchers);
         dbDelta($sql_dynamic_pricing);
         dbDelta($sql_holds);
+    }
+
+    /**
+     * Migrate schedule override fields to allow NULL values for inheritance
+     * Only executed when FP_ESPERIENZE_ENABLE_SCHEDULE_NULL_MIGRATION is true
+     */
+    private static function migrateScheduleNullFields(): void {
+        global $wpdb;
+        
+        $table_name = $wpdb->prefix . 'fp_schedules';
+        
+        // Check if migration has already been applied
+        $migration_applied = get_option('fp_esperienze_schedule_null_migration_applied', false);
+        if ($migration_applied) {
+            return;
+        }
+        
+        // Check current column definitions to see if they're already nullable
+        $duration_column = $wpdb->get_row($wpdb->prepare(
+            "SHOW COLUMNS FROM %i LIKE 'duration_min'",
+            $table_name
+        ));
+        
+        // If duration_min column is already nullable, migration was likely applied
+        if ($duration_column && strpos($duration_column->Null, 'YES') !== false) {
+            update_option('fp_esperienze_schedule_null_migration_applied', true);
+            return;
+        }
+        
+        try {
+            // Step 1: Alter table structure to allow NULL values
+            $wpdb->query("
+                ALTER TABLE `{$table_name}` 
+                MODIFY `duration_min` int(11) NULL,
+                MODIFY `capacity` int(11) NULL,
+                MODIFY `lang` varchar(10) NULL,
+                MODIFY `price_adult` decimal(10,2) NULL,
+                MODIFY `price_child` decimal(10,2) NULL
+            ");
+            
+            // Step 2: Set values to NULL where they match product defaults to enable inheritance
+            // Get all products with schedules
+            $products_with_schedules = $wpdb->get_results("
+                SELECT DISTINCT s.product_id 
+                FROM `{$table_name}` s 
+                WHERE s.is_active = 1
+            ");
+            
+            foreach ($products_with_schedules as $product) {
+                $product_id = $product->product_id;
+                
+                // Get product defaults
+                $default_duration = get_post_meta($product_id, '_fp_exp_duration', true);
+                $default_capacity = get_post_meta($product_id, '_fp_exp_capacity', true);
+                $default_lang = get_post_meta($product_id, '_fp_exp_language', true);
+                $default_price_adult = get_post_meta($product_id, '_regular_price', true);
+                $default_price_child = get_post_meta($product_id, '_fp_exp_price_child', true);
+                
+                // Set fields to NULL where they match defaults
+                if ($default_duration) {
+                    $wpdb->query($wpdb->prepare("
+                        UPDATE `{$table_name}` 
+                        SET duration_min = NULL 
+                        WHERE product_id = %d AND duration_min = %d
+                    ", $product_id, $default_duration));
+                }
+                
+                if ($default_capacity) {
+                    $wpdb->query($wpdb->prepare("
+                        UPDATE `{$table_name}` 
+                        SET capacity = NULL 
+                        WHERE product_id = %d AND capacity = %d
+                    ", $product_id, $default_capacity));
+                }
+                
+                if ($default_lang) {
+                    $wpdb->query($wpdb->prepare("
+                        UPDATE `{$table_name}` 
+                        SET lang = NULL 
+                        WHERE product_id = %d AND lang = %s
+                    ", $product_id, $default_lang));
+                }
+                
+                if ($default_price_adult) {
+                    $wpdb->query($wpdb->prepare("
+                        UPDATE `{$table_name}` 
+                        SET price_adult = NULL 
+                        WHERE product_id = %d AND ABS(price_adult - %f) < 0.01
+                    ", $product_id, $default_price_adult));
+                }
+                
+                if ($default_price_child) {
+                    $wpdb->query($wpdb->prepare("
+                        UPDATE `{$table_name}` 
+                        SET price_child = NULL 
+                        WHERE product_id = %d AND ABS(price_child - %f) < 0.01
+                    ", $product_id, $default_price_child));
+                }
+            }
+            
+            // Mark migration as applied
+            update_option('fp_esperienze_schedule_null_migration_applied', true);
+            
+            // Log successful migration
+            error_log('FP Esperienze: Schedule NULL migration completed successfully.');
+            
+        } catch (Exception $e) {
+            // Log error but don't fail activation
+            error_log('FP Esperienze: Schedule NULL migration failed: ' . $e->getMessage());
+        }
     }
 
     /**

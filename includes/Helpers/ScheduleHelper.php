@@ -86,13 +86,15 @@ class ScheduleHelper {
      * @return mixed Effective value
      */
     private static function getEffectiveValue($override_value, $default_value, $fallback_value) {
-        // Check if override value is meaningful (not null, not empty string, not 0 for numeric fields)
-        if ($override_value !== null && $override_value !== '' && $override_value !== 0) {
+        // Check if override value is meaningful (not null, not empty string)
+        // For numeric values, 0 is considered valid
+        if ($override_value !== null && $override_value !== '') {
             return $override_value;
         }
         
         // Check if default value is meaningful
-        if ($default_value !== null && $default_value !== '' && $default_value !== 0) {
+        // For numeric values, 0 is considered valid
+        if ($default_value !== null && $default_value !== '') {
             return $default_value;
         }
         

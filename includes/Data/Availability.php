@@ -10,6 +10,7 @@ namespace FP\Esperienze\Data;
 use DateTime;
 use DateTimeZone;
 use FP\Esperienze\Core\CacheManager;
+use FP\Esperienze\Helpers\ScheduleHelper;
 
 defined('ABSPATH') || exit;
 
@@ -62,21 +63,27 @@ class Availability {
         $slots = [];
         
         foreach ($schedules as $schedule) {
+            // Hydrate schedule with effective values for inheritance
+            $hydrated_schedule = ScheduleHelper::hydrateEffectiveValues($schedule, $product_id);
+            
             // Create start time
             $start_time = DateTime::createFromFormat('Y-m-d H:i:s', $date . ' ' . $schedule->start_time, $wp_timezone);
             if (!$start_time) {
                 continue;
             }
             
-            // Calculate end time
+            // Calculate end time using effective duration
             $end_time = clone $start_time;
-            $end_time->modify('+' . $schedule->duration_min . ' minutes');
+            $end_time->modify('+' . $hydrated_schedule->effective->duration_min . ' minutes');
             
-            // Apply overrides if they exist
-            $capacity = $schedule->capacity;
-            $adult_price = $schedule->price_adult;
-            $child_price = $schedule->price_child;
+            // Use effective values from hydrated schedule
+            $capacity = $hydrated_schedule->effective->capacity;
+            $adult_price = $hydrated_schedule->effective->price_adult;
+            $child_price = $hydrated_schedule->effective->price_child;
+            $meeting_point_id = $hydrated_schedule->effective->meeting_point_id;
+            $language = $hydrated_schedule->effective->lang;
             
+            // Apply date-specific overrides if they exist
             if ($override) {
                 // Apply capacity override
                 if ($override->capacity_override !== null) {
@@ -120,8 +127,8 @@ class Availability {
                 'is_available'    => $available_spots > 0,
                 'adult_price'     => $adult_price,
                 'child_price'     => $child_price,
-                'languages'       => $schedule->lang,
-                'meeting_point_id' => $schedule->meeting_point_id,
+                'languages'       => $language,
+                'meeting_point_id' => $meeting_point_id,
             ];
         }
         
