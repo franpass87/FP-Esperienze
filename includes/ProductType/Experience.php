@@ -12,6 +12,7 @@ use FP\Esperienze\Data\OverrideManager;
 use FP\Esperienze\Data\MeetingPointManager;
 use FP\Esperienze\Data\ExtraManager;
 use FP\Esperienze\Data\DynamicPricingManager;
+use FP\Esperienze\Helpers\ScheduleHelper;
 
 defined('ABSPATH') || exit;
 
@@ -139,11 +140,11 @@ class Experience {
             
             // Duration
             woocommerce_wp_text_input([
-                'id'          => '_experience_duration',
-                'label'       => __('Duration (minutes)', 'fp-esperienze'),
+                'id'          => '_fp_exp_duration',
+                'label'       => __('Default Duration (minutes)', 'fp-esperienze'),
                 'placeholder' => '60',
                 'desc_tip'    => true,
-                'description' => __('Experience duration in minutes', 'fp-esperienze'),
+                'description' => __('Default experience duration in minutes (used as fallback for schedules)', 'fp-esperienze'),
                 'type'        => 'number',
                 'custom_attributes' => [
                     'step' => '1',
@@ -153,15 +154,41 @@ class Experience {
 
             // Capacity
             woocommerce_wp_text_input([
-                'id'          => '_experience_capacity',
-                'label'       => __('Max Capacity', 'fp-esperienze'),
+                'id'          => '_fp_exp_capacity',
+                'label'       => __('Default Max Capacity', 'fp-esperienze'),
                 'placeholder' => '10',
                 'desc_tip'    => true,
-                'description' => __('Maximum number of participants', 'fp-esperienze'),
+                'description' => __('Default maximum number of participants (used as fallback for schedules)', 'fp-esperienze'),
                 'type'        => 'number',
                 'custom_attributes' => [
                     'step' => '1',
                     'min'  => '1'
+                ]
+            ]);
+
+            // Default Language
+            woocommerce_wp_text_input([
+                'id'          => '_fp_exp_language',
+                'label'       => __('Default Language', 'fp-esperienze'),
+                'placeholder' => 'en',
+                'desc_tip'    => true,
+                'description' => __('Default language code for this experience (e.g., en, it, es)', 'fp-esperienze'),
+                'custom_attributes' => [
+                    'maxlength' => '10'
+                ]
+            ]);
+
+            // Child Price
+            woocommerce_wp_text_input([
+                'id'          => '_fp_exp_price_child',
+                'label'       => __('Default Child Price', 'fp-esperienze') . ' (' . get_woocommerce_currency_symbol() . ')',
+                'placeholder' => '0.00',
+                'desc_tip'    => true,
+                'description' => __('Default price per child participant (used as fallback for schedules)', 'fp-esperienze'),
+                'type'        => 'number',
+                'custom_attributes' => [
+                    'step' => '0.01',
+                    'min'  => '0'
                 ]
             ]);
 
@@ -299,13 +326,29 @@ class Experience {
             </div>
             
             <div class="options_group">
-                <h4><?php _e('Schedules', 'fp-esperienze'); ?></h4>
-                <div id="fp-schedules-container">
-                    <?php $this->renderSchedulesSection($post->ID); ?>
+                <h4><?php _e('Weekly Schedules', 'fp-esperienze'); ?></h4>
+                
+                <div id="fp-schedule-builder-container" style="margin-bottom: 20px;">
+                    <?php $this->renderScheduleBuilder($post->ID); ?>
                 </div>
-                <button type="button" class="button" id="fp-add-schedule">
-                    <?php _e('Add Schedule', 'fp-esperienze'); ?>
-                </button>
+                
+                <div id="fp-schedule-raw-container" style="display: none;">
+                    <h5><?php _e('Advanced Mode (Raw Schedules)', 'fp-esperienze'); ?></h5>
+                    <div id="fp-schedules-container">
+                        <?php $this->renderSchedulesSection($post->ID); ?>
+                    </div>
+                    <button type="button" class="button" id="fp-add-schedule">
+                        <?php _e('Add Schedule', 'fp-esperienze'); ?>
+                    </button>
+                </div>
+                
+                <p>
+                    <label>
+                        <input type="checkbox" id="fp-toggle-raw-mode"> 
+                        <?php _e('Show Advanced Mode', 'fp-esperienze'); ?>
+                    </label>
+                    <span class="description"><?php _e('Enable to view/edit individual schedule rows directly', 'fp-esperienze'); ?></span>
+                </p>
             </div>
             
             <div class="options_group">
@@ -503,6 +546,208 @@ class Experience {
     }
     
     /**
+     * Render the schedule builder UI
+     *
+     * @param int $product_id Product ID
+     */
+    private function renderScheduleBuilder(int $product_id): void {
+        $schedules = ScheduleManager::getSchedules($product_id);
+        $meeting_points = $this->getMeetingPoints();
+        
+        // Get product defaults for placeholders
+        $default_duration = get_post_meta($product_id, '_fp_exp_duration', true) ?: '60';
+        $default_capacity = get_post_meta($product_id, '_fp_exp_capacity', true) ?: '10';
+        $default_language = get_post_meta($product_id, '_fp_exp_language', true) ?: 'en';
+        $default_meeting_point = get_post_meta($product_id, '_fp_exp_meeting_point_id', true);
+        $default_price_adult = get_post_meta($product_id, '_regular_price', true) ?: '0.00';
+        $default_price_child = get_post_meta($product_id, '_fp_exp_price_child', true) ?: '0.00';
+        
+        // Aggregate existing schedules for builder view
+        $aggregated = ScheduleHelper::aggregateSchedulesForBuilder($schedules, $product_id);
+        
+        $days = [
+            1 => __('Monday', 'fp-esperienze'),
+            2 => __('Tuesday', 'fp-esperienze'),
+            3 => __('Wednesday', 'fp-esperienze'),
+            4 => __('Thursday', 'fp-esperienze'),
+            5 => __('Friday', 'fp-esperienze'),
+            6 => __('Saturday', 'fp-esperienze'),
+            0 => __('Sunday', 'fp-esperienze'),
+        ];
+        
+        ?>
+        <div id="fp-schedule-builder">
+            <div class="fp-builder-section">
+                <h5><?php _e('Weekly Programming', 'fp-esperienze'); ?></h5>
+                <p class="description">
+                    <?php _e('Create time slots that apply to multiple days. Override values are inherited from product defaults above.', 'fp-esperienze'); ?>
+                </p>
+                
+                <div id="fp-time-slots-container">
+                    <?php foreach ($aggregated['time_slots'] as $index => $slot): ?>
+                        <div class="fp-time-slot" data-index="<?php echo esc_attr($index); ?>">
+                            <?php $this->renderTimeSlot($slot, $index, $days, $meeting_points, $default_duration, $default_capacity, $default_language, $default_meeting_point, $default_price_adult, $default_price_child); ?>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+                
+                <button type="button" class="button" id="fp-add-time-slot">
+                    <span class="dashicons dashicons-plus-alt"></span>
+                    <?php _e('Add Time Slot', 'fp-esperienze'); ?>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Hidden container for generated schedule inputs -->
+        <div id="fp-generated-schedules" style="display: none;"></div>
+        <?php
+    }
+    
+    /**
+     * Render a single time slot in the builder
+     */
+    private function renderTimeSlot($slot, $index, $days, $meeting_points, $default_duration, $default_capacity, $default_language, $default_meeting_point, $default_price_adult, $default_price_child): void {
+        $overrides = $slot['overrides'] ?? [];
+        ?>
+        <div class="fp-time-slot-row" style="border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; background: #f9f9f9; border-radius: 4px;">
+            <div class="fp-time-slot-header" style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                <div style="flex: 0 0 120px;">
+                    <label style="font-weight: bold; display: block; margin-bottom: 5px;">
+                        <?php _e('Start Time', 'fp-esperienze'); ?> <span style="color: red;">*</span>
+                    </label>
+                    <input type="time" 
+                           name="builder_slots[<?php echo esc_attr($index); ?>][start_time]" 
+                           value="<?php echo esc_attr($slot['start_time'] ?? ''); ?>" 
+                           required 
+                           style="width: 100%;">
+                </div>
+                
+                <div style="flex: 1;">
+                    <label style="font-weight: bold; display: block; margin-bottom: 5px;">
+                        <?php _e('Days', 'fp-esperienze'); ?> <span style="color: red;">*</span>
+                    </label>
+                    <div class="fp-days-checkboxes" style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <?php foreach ($days as $day_value => $day_label): ?>
+                            <label style="display: flex; align-items: center; gap: 5px; white-space: nowrap;">
+                                <input type="checkbox" 
+                                       name="builder_slots[<?php echo esc_attr($index); ?>][days][]" 
+                                       value="<?php echo esc_attr($day_value); ?>"
+                                       <?php checked(in_array($day_value, $slot['days'] ?? [])); ?>>
+                                <span style="font-size: 12px;"><?php echo esc_html($day_label); ?></span>
+                            </label>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                
+                <div style="flex: 0 0 auto;">
+                    <button type="button" class="button fp-remove-time-slot" style="color: #a00;">
+                        <span class="dashicons dashicons-trash"></span>
+                        <?php _e('Remove', 'fp-esperienze'); ?>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="fp-override-toggle" style="margin-bottom: 15px;">
+                <label>
+                    <input type="checkbox" class="fp-show-overrides-toggle" <?php checked(!empty($overrides)); ?>>
+                    <?php _e('Show advanced overrides', 'fp-esperienze'); ?>
+                </label>
+                <span class="description"><?php _e('Override default values for this time slot', 'fp-esperienze'); ?></span>
+            </div>
+            
+            <div class="fp-overrides-section" style="<?php echo empty($overrides) ? 'display: none;' : ''; ?>">
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 10px;">
+                    <div>
+                        <label style="font-weight: bold; display: block; margin-bottom: 5px;">
+                            <?php _e('Duration (minutes)', 'fp-esperienze'); ?>
+                        </label>
+                        <input type="number" 
+                               name="builder_slots[<?php echo esc_attr($index); ?>][duration_min]" 
+                               value="<?php echo esc_attr($overrides['duration_min'] ?? ''); ?>" 
+                               placeholder="<?php echo esc_attr(sprintf(__('Inherit (%s)', 'fp-esperienze'), $default_duration)); ?>" 
+                               min="1" 
+                               style="width: 100%;">
+                    </div>
+                    
+                    <div>
+                        <label style="font-weight: bold; display: block; margin-bottom: 5px;">
+                            <?php _e('Capacity', 'fp-esperienze'); ?>
+                        </label>
+                        <input type="number" 
+                               name="builder_slots[<?php echo esc_attr($index); ?>][capacity]" 
+                               value="<?php echo esc_attr($overrides['capacity'] ?? ''); ?>" 
+                               placeholder="<?php echo esc_attr(sprintf(__('Inherit (%s)', 'fp-esperienze'), $default_capacity)); ?>" 
+                               min="1" 
+                               style="width: 100%;">
+                    </div>
+                    
+                    <div>
+                        <label style="font-weight: bold; display: block; margin-bottom: 5px;">
+                            <?php _e('Language', 'fp-esperienze'); ?>
+                        </label>
+                        <input type="text" 
+                               name="builder_slots[<?php echo esc_attr($index); ?>][lang]" 
+                               value="<?php echo esc_attr($overrides['lang'] ?? ''); ?>" 
+                               placeholder="<?php echo esc_attr(sprintf(__('Inherit (%s)', 'fp-esperienze'), $default_language)); ?>" 
+                               maxlength="10" 
+                               style="width: 100%;">
+                    </div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+                    <div>
+                        <label style="font-weight: bold; display: block; margin-bottom: 5px;">
+                            <?php _e('Meeting Point', 'fp-esperienze'); ?>
+                        </label>
+                        <select name="builder_slots[<?php echo esc_attr($index); ?>][meeting_point_id]" style="width: 100%;">
+                            <option value=""><?php echo esc_html(sprintf(__('Inherit (%s)', 'fp-esperienze'), $meeting_points[$default_meeting_point] ?? __('Default', 'fp-esperienze'))); ?></option>
+                            <?php foreach ($meeting_points as $mp_id => $mp_name): ?>
+                                <option value="<?php echo esc_attr($mp_id); ?>" <?php selected($overrides['meeting_point_id'] ?? '', $mp_id); ?>>
+                                    <?php echo esc_html($mp_name); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label style="font-weight: bold; display: block; margin-bottom: 5px;">
+                            <?php _e('Adult Price', 'fp-esperienze'); ?> (<?php echo get_woocommerce_currency_symbol(); ?>)
+                        </label>
+                        <input type="number" 
+                               name="builder_slots[<?php echo esc_attr($index); ?>][price_adult]" 
+                               value="<?php echo esc_attr($overrides['price_adult'] ?? ''); ?>" 
+                               placeholder="<?php echo esc_attr(sprintf(__('Inherit (%.2f)', 'fp-esperienze'), $default_price_adult)); ?>" 
+                               min="0" 
+                               step="0.01" 
+                               style="width: 100%;">
+                    </div>
+                    
+                    <div>
+                        <label style="font-weight: bold; display: block; margin-bottom: 5px;">
+                            <?php _e('Child Price', 'fp-esperienze'); ?> (<?php echo get_woocommerce_currency_symbol(); ?>)
+                        </label>
+                        <input type="number" 
+                               name="builder_slots[<?php echo esc_attr($index); ?>][price_child]" 
+                               value="<?php echo esc_attr($overrides['price_child'] ?? ''); ?>" 
+                               placeholder="<?php echo esc_attr(sprintf(__('Inherit (%.2f)', 'fp-esperienze'), $default_price_child)); ?>" 
+                               min="0" 
+                               step="0.01" 
+                               style="width: 100%;">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Store schedule IDs for updates -->
+            <?php if (!empty($slot['schedule_ids'])): ?>
+                <?php foreach ($slot['schedule_ids'] as $schedule_id): ?>
+                    <input type="hidden" name="builder_slots[<?php echo esc_attr($index); ?>][schedule_ids][]" value="<?php echo esc_attr($schedule_id); ?>">
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
+        <?php
+    }
+    
+    /**
      * Render overrides section
      *
      * @param int $product_id Product ID
@@ -645,8 +890,10 @@ class Experience {
         
         // Save basic experience fields
         $fields = [
-            '_experience_duration',
-            '_experience_capacity',
+            '_fp_exp_duration',
+            '_fp_exp_capacity', 
+            '_fp_exp_language',
+            '_fp_exp_price_child',
             '_experience_adult_price',
             '_experience_child_price',
             '_experience_adult_tax_class',
@@ -728,18 +975,134 @@ class Experience {
      * @param int $product_id Product ID
      */
     private function saveSchedules(int $product_id): void {
-        if (!isset($_POST['schedules']) || !is_array($_POST['schedules'])) {
-            return;
-        }
-        
         // Get existing schedules
         $existing_schedules = ScheduleManager::getSchedules($product_id);
         $existing_ids = array_column($existing_schedules, 'id');
         $processed_ids = [];
         $validation_errors = [];
+        
+        // Process builder slots first if they exist
+        if (isset($_POST['builder_slots']) && is_array($_POST['builder_slots'])) {
+            $processed_ids = array_merge($processed_ids, $this->processBuilderSlots($product_id, $_POST['builder_slots'], $validation_errors));
+        }
+        
+        // Process raw schedules if they exist (for advanced mode)
+        if (isset($_POST['schedules']) && is_array($_POST['schedules'])) {
+            $processed_ids = array_merge($processed_ids, $this->processRawSchedules($product_id, $_POST['schedules'], $validation_errors));
+        }
+        
+        // Delete schedules that were removed
+        $ids_to_delete = array_diff($existing_ids, $processed_ids);
+        foreach ($ids_to_delete as $id) {
+            ScheduleManager::deleteSchedule($id);
+        }
+        
+        // Store validation feedback in transients for display
+        if (!empty($validation_errors)) {
+            set_transient("fp_schedule_validation_errors_{$product_id}", $validation_errors, 60);
+        }
+        
+        // Set success notice if schedules were saved
+        if (!empty($processed_ids)) {
+            set_transient("fp_schedule_saved_{$product_id}", count($processed_ids), 60);
+        }
+    }
+    
+    /**
+     * Process builder slots and create individual schedule records
+     *
+     * @param int $product_id Product ID
+     * @param array $builder_slots Builder slot data
+     * @param array &$validation_errors Reference to validation errors array
+     * @return array Array of processed schedule IDs
+     */
+    private function processBuilderSlots(int $product_id, array $builder_slots, array &$validation_errors): array {
+        $processed_ids = [];
+        
+        foreach ($builder_slots as $slot_index => $slot_data) {
+            // Validate required fields
+            if (empty($slot_data['start_time']) || empty($slot_data['days'])) {
+                continue;
+            }
+            
+            // Validate time format
+            if (!preg_match('/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/', $slot_data['start_time'])) {
+                $validation_errors[] = sprintf(__('Time slot %d: Invalid time format. Use HH:MM format.', 'fp-esperienze'), $slot_index + 1);
+                continue;
+            }
+            
+            // Get override values or null for inheritance
+            $duration_override = !empty($slot_data['duration_min']) ? (int) $slot_data['duration_min'] : null;
+            $capacity_override = !empty($slot_data['capacity']) ? (int) $slot_data['capacity'] : null;
+            $lang_override = !empty($slot_data['lang']) ? sanitize_text_field($slot_data['lang']) : null;
+            $meeting_point_override = !empty($slot_data['meeting_point_id']) ? (int) $slot_data['meeting_point_id'] : null;
+            $price_adult_override = !empty($slot_data['price_adult']) ? (float) $slot_data['price_adult'] : null;
+            $price_child_override = !empty($slot_data['price_child']) ? (float) $slot_data['price_child'] : null;
+            
+            // Track existing schedule IDs for this slot
+            $existing_slot_ids = !empty($slot_data['schedule_ids']) ? array_map('intval', $slot_data['schedule_ids']) : [];
+            $slot_processed_ids = [];
+            
+            // Create or update schedule for each selected day
+            foreach ($slot_data['days'] as $day_of_week) {
+                $day_of_week = (int) $day_of_week;
+                
+                // Prepare schedule data
+                $schedule_data = [
+                    'product_id' => $product_id,
+                    'day_of_week' => $day_of_week,
+                    'start_time' => sanitize_text_field($slot_data['start_time']),
+                    'duration_min' => $duration_override,
+                    'capacity' => $capacity_override,
+                    'lang' => $lang_override,
+                    'meeting_point_id' => $meeting_point_override,
+                    'price_adult' => $price_adult_override,
+                    'price_child' => $price_child_override,
+                    'is_active' => 1
+                ];
+                
+                // Try to find existing schedule for this day/time combination
+                $existing_schedule_id = null;
+                foreach ($existing_slot_ids as $id) {
+                    $existing = ScheduleManager::getSchedule($id);
+                    if ($existing && $existing->day_of_week == $day_of_week && $existing->start_time == $slot_data['start_time']) {
+                        $existing_schedule_id = $id;
+                        break;
+                    }
+                }
+                
+                if ($existing_schedule_id) {
+                    // Update existing schedule
+                    ScheduleManager::updateSchedule($existing_schedule_id, $schedule_data);
+                    $slot_processed_ids[] = $existing_schedule_id;
+                } else {
+                    // Create new schedule
+                    $new_id = ScheduleManager::createSchedule($schedule_data);
+                    if ($new_id) {
+                        $slot_processed_ids[] = $new_id;
+                    }
+                }
+            }
+            
+            $processed_ids = array_merge($processed_ids, $slot_processed_ids);
+        }
+        
+        return $processed_ids;
+    }
+    
+    /**
+     * Process raw schedules (advanced mode)
+     *
+     * @param int $product_id Product ID
+     * @param array $schedules Raw schedule data
+     * @param array &$validation_errors Reference to validation errors array
+     * @return array Array of processed schedule IDs
+     */
+    private function processRawSchedules(int $product_id, array $schedules, array &$validation_errors): array {
+        $processed_ids = [];
         $discarded_count = 0;
         
-        foreach ($_POST['schedules'] as $index => $schedule_data) {
+        foreach ($schedules as $index => $schedule_data) {
             // Validate required fields
             if (empty($schedule_data['day_of_week']) || empty($schedule_data['start_time'])) {
                 $discarded_count++;
@@ -753,34 +1116,19 @@ class Experience {
                 continue;
             }
             
-            // Validate duration (must be > 0)
-            $duration = (int) ($schedule_data['duration_min'] ?: 60);
-            if ($duration <= 0) {
-                $validation_errors[] = sprintf(__('Row %d: Duration must be greater than 0 minutes.', 'fp-esperienze'), $index + 1);
-                $discarded_count++;
-                continue;
-            }
-            
-            // Validate capacity (must be >= 1)
-            $capacity = (int) ($schedule_data['capacity'] ?: 10);
-            if ($capacity < 1) {
-                $validation_errors[] = sprintf(__('Row %d: Capacity must be at least 1 participant.', 'fp-esperienze'), $index + 1);
-                $discarded_count++;
-                continue;
-            }
-            
             $schedule_id = !empty($schedule_data['id']) ? (int) $schedule_data['id'] : 0;
             
+            // Prepare data for raw schedule (use defaults if empty, but allow overrides)
             $data = [
                 'product_id' => $product_id,
                 'day_of_week' => (int) $schedule_data['day_of_week'],
                 'start_time' => sanitize_text_field($schedule_data['start_time']),
-                'duration_min' => $duration,
-                'capacity' => $capacity,
-                'lang' => sanitize_text_field($schedule_data['lang'] ?: 'en'),
+                'duration_min' => !empty($schedule_data['duration_min']) ? (int) $schedule_data['duration_min'] : null,
+                'capacity' => !empty($schedule_data['capacity']) ? (int) $schedule_data['capacity'] : null,
+                'lang' => !empty($schedule_data['lang']) ? sanitize_text_field($schedule_data['lang']) : null,
                 'meeting_point_id' => !empty($schedule_data['meeting_point_id']) ? (int) $schedule_data['meeting_point_id'] : null,
-                'price_adult' => (float) ($schedule_data['price_adult'] ?: 0),
-                'price_child' => (float) ($schedule_data['price_child'] ?: 0),
+                'price_adult' => !empty($schedule_data['price_adult']) ? (float) $schedule_data['price_adult'] : null,
+                'price_child' => !empty($schedule_data['price_child']) ? (float) $schedule_data['price_child'] : null,
                 'is_active' => 1
             ];
             
@@ -797,25 +1145,11 @@ class Experience {
             }
         }
         
-        // Delete schedules that were removed
-        $ids_to_delete = array_diff($existing_ids, $processed_ids);
-        foreach ($ids_to_delete as $id) {
-            ScheduleManager::deleteSchedule($id);
-        }
-        
-        // Store validation feedback in transients for display
-        if (!empty($validation_errors)) {
-            set_transient("fp_schedule_validation_errors_{$product_id}", $validation_errors, 60);
-        }
-        
         if ($discarded_count > 0) {
             set_transient("fp_schedule_discarded_{$product_id}", $discarded_count, 60);
         }
         
-        // Set success notice if schedules were saved
-        if (!empty($processed_ids)) {
-            set_transient("fp_schedule_saved_{$product_id}", count($processed_ids), 60);
-        }
+        return $processed_ids;
     }
     
     /**

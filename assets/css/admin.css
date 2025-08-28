@@ -189,3 +189,173 @@
         margin-bottom: 5px;
     }
 }
+
+/* Schedule Builder Styles */
+#fp-schedule-builder {
+    margin-bottom: 20px;
+}
+
+.fp-builder-section h5 {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #1d2327;
+}
+
+.fp-time-slot-row {
+    border: 1px solid #c3c4c7;
+    padding: 15px;
+    margin-bottom: 15px;
+    background: #f6f7f7;
+    border-radius: 4px;
+    box-shadow: 0 1px 1px rgba(0,0,0,0.04);
+}
+
+.fp-time-slot-header {
+    display: flex;
+    align-items: flex-end;
+    gap: 15px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+
+.fp-days-checkboxes {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.fp-days-checkboxes label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+    font-size: 12px;
+    margin: 0;
+}
+
+.fp-override-toggle {
+    border-top: 1px solid #ddd;
+    padding-top: 15px;
+    margin-bottom: 15px;
+}
+
+.fp-override-toggle label {
+    font-weight: normal;
+    margin: 0;
+}
+
+.fp-overrides-section {
+    border-top: 1px solid #ddd;
+    padding-top: 15px;
+    background: #fff;
+    padding: 15px;
+    border-radius: 4px;
+    margin-top: 10px;
+}
+
+.fp-remove-time-slot {
+    background: #dc3232 !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 3px;
+    height: fit-content;
+    align-self: flex-end;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.fp-remove-time-slot:hover {
+    background: #c62d2d !important;
+}
+
+.fp-remove-time-slot .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+}
+
+#fp-add-time-slot {
+    background: #2271b1;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 3px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+#fp-add-time-slot:hover {
+    background: #135e96;
+}
+
+#fp-add-time-slot .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+}
+
+#fp-schedule-raw-container {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 4px;
+    padding: 15px;
+    margin-top: 20px;
+}
+
+#fp-schedule-raw-container h5 {
+    margin: 0 0 15px 0;
+    color: #856404;
+    font-weight: 600;
+}
+
+/* Toggle checkbox styling */
+#fp-toggle-raw-mode {
+    margin-right: 8px;
+}
+
+/* Placeholder text styling */
+.fp-overrides-section input::placeholder,
+.fp-overrides-section select option[value=""] {
+    color: #757575;
+    font-style: italic;
+}
+
+/* Grid layouts for override fields */
+.fp-overrides-section > div {
+    display: grid;
+    gap: 15px;
+}
+
+.fp-overrides-section > div:first-child {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+.fp-overrides-section > div:last-child {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+/* Responsive adjustments for builder */
+@media (max-width: 768px) {
+    .fp-time-slot-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .fp-days-checkboxes {
+        gap: 8px;
+    }
+    
+    .fp-overrides-section > div {
+        grid-template-columns: 1fr;
+    }
+    
+    .fp-remove-time-slot {
+        align-self: stretch;
+        justify-content: center;
+    }
+}

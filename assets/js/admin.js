@@ -230,7 +230,10 @@
         bindScheduleEvents: function() {
             var self = this;
             
-            // Add schedule
+            // Schedule Builder events
+            this.bindScheduleBuilderEvents();
+            
+            // Raw Schedule events (for advanced mode)
             $(document).on('click', '#fp-add-schedule', function(e) {
                 e.preventDefault();
                 self.addScheduleRow();
@@ -240,6 +243,235 @@
             $(document).on('click', '.fp-remove-schedule', function(e) {
                 e.preventDefault();
                 $(this).closest('.fp-schedule-row').remove();
+            });
+            
+            // Toggle raw mode
+            $(document).on('change', '#fp-toggle-raw-mode', function() {
+                self.toggleRawMode($(this).is(':checked'));
+            });
+            
+            // Form submission handling for schedule builder
+            $('form#post').on('submit', function() {
+                if ($('#product-type').val() === 'experience') {
+                    self.generateSchedulesFromBuilder();
+                }
+            });
+        },
+        
+        /**
+         * Bind Schedule Builder specific events
+         */
+        bindScheduleBuilderEvents: function() {
+            var self = this;
+            
+            // Add time slot
+            $(document).on('click', '#fp-add-time-slot', function(e) {
+                e.preventDefault();
+                self.addTimeSlot();
+            });
+            
+            // Remove time slot
+            $(document).on('click', '.fp-remove-time-slot', function(e) {
+                e.preventDefault();
+                $(this).closest('.fp-time-slot-row').remove();
+            });
+            
+            // Toggle overrides visibility
+            $(document).on('change', '.fp-show-overrides-toggle', function() {
+                var overridesSection = $(this).closest('.fp-time-slot-row').find('.fp-overrides-section');
+                if ($(this).is(':checked')) {
+                    overridesSection.show();
+                } else {
+                    overridesSection.hide();
+                    // Clear override values when hiding
+                    overridesSection.find('input, select').val('');
+                }
+            });
+        },
+        
+        /**
+         * Toggle between builder and raw mode
+         */
+        toggleRawMode: function(showRaw) {
+            if (showRaw) {
+                $('#fp-schedule-builder-container').hide();
+                $('#fp-schedule-raw-container').show();
+            } else {
+                $('#fp-schedule-builder-container').show();
+                $('#fp-schedule-raw-container').hide();
+            }
+        },
+        
+        /**
+         * Add a new time slot to the builder
+         */
+        addTimeSlot: function() {
+            var container = $('#fp-time-slots-container');
+            var index = container.find('.fp-time-slot').length;
+            
+            var days = {
+                '1': 'Monday',
+                '2': 'Tuesday', 
+                '3': 'Wednesday',
+                '4': 'Thursday',
+                '5': 'Friday',
+                '6': 'Saturday',
+                '0': 'Sunday'
+            };
+            
+            // Get product defaults for placeholders
+            var defaultDuration = $('#_fp_exp_duration').val() || '60';
+            var defaultCapacity = $('#_fp_exp_capacity').val() || '10';
+            var defaultLanguage = $('#_fp_exp_language').val() || 'en';
+            var defaultMeetingPoint = $('#_fp_exp_meeting_point_id option:selected').text() || 'Default';
+            var defaultPriceAdult = $('#_regular_price').val() || '0.00';
+            var defaultPriceChild = $('#_fp_exp_price_child').val() || '0.00';
+            
+            var timeSlotHtml = '<div class="fp-time-slot" data-index="' + index + '">' +
+                '<div class="fp-time-slot-row" style="border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; background: #f9f9f9; border-radius: 4px;">' +
+                    '<div class="fp-time-slot-header" style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">' +
+                        '<div style="flex: 0 0 120px;">' +
+                            '<label style="font-weight: bold; display: block; margin-bottom: 5px;">Start Time <span style="color: red;">*</span></label>' +
+                            '<input type="time" name="builder_slots[' + index + '][start_time]" required style="width: 100%;">' +
+                        '</div>' +
+                        '<div style="flex: 1;">' +
+                            '<label style="font-weight: bold; display: block; margin-bottom: 5px;">Days <span style="color: red;">*</span></label>' +
+                            '<div class="fp-days-checkboxes" style="display: flex; gap: 10px; flex-wrap: wrap;">';
+            
+            for (var dayValue in days) {
+                timeSlotHtml += '<label style="display: flex; align-items: center; gap: 5px; white-space: nowrap;">' +
+                    '<input type="checkbox" name="builder_slots[' + index + '][days][]" value="' + dayValue + '">' +
+                    '<span style="font-size: 12px;">' + days[dayValue] + '</span>' +
+                '</label>';
+            }
+            
+            timeSlotHtml += '</div></div>' +
+                        '<div style="flex: 0 0 auto;">' +
+                            '<button type="button" class="button fp-remove-time-slot" style="color: #a00;">' +
+                                '<span class="dashicons dashicons-trash"></span> Remove' +
+                            '</button>' +
+                        '</div>' +
+                    '</div>' +
+                    
+                    '<div class="fp-override-toggle" style="margin-bottom: 15px;">' +
+                        '<label>' +
+                            '<input type="checkbox" class="fp-show-overrides-toggle">' +
+                            ' Show advanced overrides' +
+                        '</label>' +
+                        '<span class="description"> Override default values for this time slot</span>' +
+                    '</div>' +
+                    
+                    '<div class="fp-overrides-section" style="display: none;">' +
+                        '<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 10px;">' +
+                            '<div>' +
+                                '<label style="font-weight: bold; display: block; margin-bottom: 5px;">Duration (minutes)</label>' +
+                                '<input type="number" name="builder_slots[' + index + '][duration_min]" min="1" style="width: 100%;" placeholder="Inherit (' + defaultDuration + ')">' +
+                            '</div>' +
+                            '<div>' +
+                                '<label style="font-weight: bold; display: block; margin-bottom: 5px;">Capacity</label>' +
+                                '<input type="number" name="builder_slots[' + index + '][capacity]" min="1" style="width: 100%;" placeholder="Inherit (' + defaultCapacity + ')">' +
+                            '</div>' +
+                            '<div>' +
+                                '<label style="font-weight: bold; display: block; margin-bottom: 5px;">Language</label>' +
+                                '<input type="text" name="builder_slots[' + index + '][lang]" maxlength="10" style="width: 100%;" placeholder="Inherit (' + defaultLanguage + ')">' +
+                            '</div>' +
+                        '</div>' +
+                        '<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">' +
+                            '<div>' +
+                                '<label style="font-weight: bold; display: block; margin-bottom: 5px;">Meeting Point</label>' +
+                                '<select name="builder_slots[' + index + '][meeting_point_id]" style="width: 100%;">' +
+                                    '<option value="">Inherit (' + defaultMeetingPoint + ')</option>' +
+                                '</select>' +
+                            '</div>' +
+                            '<div>' +
+                                '<label style="font-weight: bold; display: block; margin-bottom: 5px;">Adult Price</label>' +
+                                '<input type="number" name="builder_slots[' + index + '][price_adult]" min="0" step="0.01" style="width: 100%;" placeholder="Inherit (' + defaultPriceAdult + ')">' +
+                            '</div>' +
+                            '<div>' +
+                                '<label style="font-weight: bold; display: block; margin-bottom: 5px;">Child Price</label>' +
+                                '<input type="number" name="builder_slots[' + index + '][price_child]" min="0" step="0.01" style="width: 100%;" placeholder="Inherit (' + defaultPriceChild + ')">' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+            '</div>';
+            
+            container.append(timeSlotHtml);
+            
+            // Populate meeting points dropdown
+            this.populateMeetingPointsDropdown(container.find('.fp-time-slot').last().find('select[name*="meeting_point_id"]'));
+        },
+        
+        /**
+         * Populate meeting points dropdown
+         */
+        populateMeetingPointsDropdown: function(selectElement) {
+            // Copy options from the main meeting point select
+            var mainSelect = $('#_fp_exp_meeting_point_id');
+            if (mainSelect.length) {
+                mainSelect.find('option').each(function() {
+                    if ($(this).val()) { // Skip empty option
+                        selectElement.append('<option value="' + $(this).val() + '">' + $(this).text() + '</option>');
+                    }
+                });
+            }
+        },
+        
+        /**
+         * Generate schedule inputs from builder before form submission
+         */
+        generateSchedulesFromBuilder: function() {
+            var generatedContainer = $('#fp-generated-schedules');
+            generatedContainer.empty();
+            
+            var scheduleIndex = 0;
+            
+            // Process each time slot
+            $('#fp-time-slots-container .fp-time-slot').each(function() {
+                var timeSlot = $(this);
+                var startTime = timeSlot.find('input[name*="[start_time]"]').val();
+                var selectedDays = [];
+                
+                // Get selected days
+                timeSlot.find('input[name*="[days][]"]:checked').each(function() {
+                    selectedDays.push($(this).val());
+                });
+                
+                if (!startTime || selectedDays.length === 0) {
+                    return; // Skip invalid slots
+                }
+                
+                // Get override values
+                var overrides = {};
+                if (timeSlot.find('.fp-show-overrides-toggle').is(':checked')) {
+                    var duration = timeSlot.find('input[name*="[duration_min]"]').val();
+                    var capacity = timeSlot.find('input[name*="[capacity]"]').val();
+                    var lang = timeSlot.find('input[name*="[lang]"]').val();
+                    var meetingPoint = timeSlot.find('select[name*="[meeting_point_id]"]').val();
+                    var priceAdult = timeSlot.find('input[name*="[price_adult]"]').val();
+                    var priceChild = timeSlot.find('input[name*="[price_child]"]').val();
+                    
+                    if (duration) overrides.duration_min = duration;
+                    if (capacity) overrides.capacity = capacity;
+                    if (lang) overrides.lang = lang;
+                    if (meetingPoint) overrides.meeting_point_id = meetingPoint;
+                    if (priceAdult) overrides.price_adult = priceAdult;
+                    if (priceChild) overrides.price_child = priceChild;
+                }
+                
+                // Generate schedule input for each selected day
+                selectedDays.forEach(function(dayOfWeek) {
+                    var scheduleHtml = '<input type="hidden" name="schedules[' + scheduleIndex + '][day_of_week]" value="' + dayOfWeek + '">' +
+                        '<input type="hidden" name="schedules[' + scheduleIndex + '][start_time]" value="' + startTime + '">';
+                    
+                    // Add override values if they exist
+                    for (var key in overrides) {
+                        scheduleHtml += '<input type="hidden" name="schedules[' + scheduleIndex + '][' + key + ']" value="' + overrides[key] + '">';
+                    }
+                    
+                    generatedContainer.append(scheduleHtml);
+                    scheduleIndex++;
+                });
             });
         },
         
