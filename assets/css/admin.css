@@ -2013,3 +2013,44 @@
 .fp-add-override:hover .dashicons {
     transform: rotate(90deg);
 }
+
+/* Extras section styling */
+.fp-extras-selection {
+    margin: 16px 0;
+}
+
+.fp-available-extras {
+    margin-top: 12px;
+}
+
+.fp-extra-checkbox {
+    display: block;
+    margin: 8px 0;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: #f9f9f9;
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.fp-extra-checkbox:hover {
+    background: #f0f0f0;
+    border-color: #999;
+}
+
+.fp-extra-checkbox input {
+    margin-right: 8px;
+    margin-top: 2px;
+}
+
+.fp-extra-checkbox strong {
+    color: #1d2327;
+    font-weight: 600;
+}
+
+.fp-extra-checkbox .description {
+    color: #646970;
+    font-style: italic;
+    margin-top: 4px;
+}
