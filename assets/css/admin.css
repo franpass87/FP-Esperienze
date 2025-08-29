@@ -1,4 +1,31 @@
-/* FP Esperienze Admin Styles */
+/* FP Esperienze Admin Styles with Modern Design System */
+
+/* CSS Animations and Keyframes */
+@keyframes gradientShift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+}
+
+@keyframes shimmer {
+    0%, 100% { background-position: 200% 0; }
+    50% { background-position: -200% 0; }
+}
+
+@keyframes iconPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
 
 /* Utility classes */
 .fp-hidden {
@@ -562,61 +589,179 @@
     color: #1d2327;
 }
 
-/* Enhanced Visual Hierarchy for Sections */
+/* Enhanced Visual Hierarchy for Sections with Modern Design */
 .fp-schedules-section {
-    background: #fff;
-    border: 1px solid #c3c4c7;
-    border-radius: 6px;
-    padding: 20px;
-    margin-bottom: 20px;
-    box-shadow: 0 1px 1px rgba(0,0,0,0.04);
+    background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
+    border: none;
+    border-radius: 16px;
+    padding: 0;
+    margin-bottom: 30px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04);
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+}
+
+.fp-schedules-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    background-size: 200% 100%;
+    animation: gradientShift 4s ease-in-out infinite;
+}
+
+.fp-schedules-section:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 20px 48px rgba(0,0,0,0.15), 0 8px 24px rgba(0,0,0,0.1);
 }
 
 .fp-schedules-section h4 {
-    margin: 0 0 15px 0;
-    padding: 0 0 10px 0;
-    border-bottom: 2px solid #0073aa;
-    font-size: 16px;
-    font-weight: 600;
-    color: #1d2327;
+    margin: 0 0 24px 0;
+    padding: 24px 28px 20px;
+    border-bottom: none;
+    font-size: 20px;
+    font-weight: 700;
+    color: #1a202c;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 14px;
+    background: linear-gradient(135deg, rgba(102,126,234,0.08) 0%, rgba(118,75,162,0.08) 100%);
+    position: relative;
 }
 
 .fp-schedules-section h4::before {
     content: "\f507"; /* dashicons-clock */
     font-family: "dashicons";
-    font-size: 18px;
-    color: #0073aa;
+    font-size: 22px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 2px 6px rgba(102,126,234,0.25));
+    animation: iconPulse 2s ease-in-out infinite;
+}
+
+@keyframes iconPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+.fp-schedules-section .fp-section-description {
+    margin: 0 28px 24px;
+    background: linear-gradient(135deg, #f0f6fc 0%, #e6f3ff 100%);
+    border-left: 4px solid #667eea;
+    padding: 16px 20px;
+    border-radius: 0 12px 12px 0;
+    font-size: 14px;
+    color: #4a5568;
+    line-height: 1.6;
+    position: relative;
+    overflow: hidden;
+}
+
+.fp-schedules-section .fp-section-description::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+    border-radius: 0 0 0 0;
+}
+
+/* Add padding to section content */
+.fp-schedules-section .fp-section-content,
+.fp-overrides-section-wrapper .fp-section-content {
+    padding: 0 28px 28px;
+}
+
+/* Enhanced content area styling */
+.fp-time-slot-row {
+    border: none;
+    padding: 24px;
+    margin-bottom: 24px;
+    background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
+    border-radius: 16px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.03);
+    position: relative;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+}
+
+.fp-time-slot-row::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 6px;
+    height: 100%;
+    background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+    border-radius: 0 3px 3px 0;
+}
+
+.fp-time-slot-row:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(0,0,0,0.12), 0 4px 16px rgba(0,0,0,0.08);
 }
 
 .fp-overrides-section-wrapper {
-    background: #fff;
-    border: 1px solid #c3c4c7;
-    border-radius: 6px;
-    padding: 20px;
-    margin-bottom: 20px;
-    box-shadow: 0 1px 1px rgba(0,0,0,0.04);
+    background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
+    border: none;
+    border-radius: 16px;
+    padding: 0;
+    margin-bottom: 30px;
+    box-shadow: 0 8px 32px rgba(214,54,56,0.08), 0 2px 8px rgba(214,54,56,0.04);
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+}
+
+.fp-overrides-section-wrapper::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #ff6b6b 0%, #d63638 50%, #ff8a80 100%);
+    background-size: 200% 100%;
+    animation: gradientShift 4s ease-in-out infinite;
+}
+
+.fp-overrides-section-wrapper:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 20px 48px rgba(214,54,56,0.15), 0 8px 24px rgba(214,54,56,0.1);
 }
 
 .fp-overrides-section-wrapper h4 {
-    margin: 0 0 15px 0;
-    padding: 0 0 10px 0;
-    border-bottom: 2px solid #d63638;
-    font-size: 16px;
-    font-weight: 600;
-    color: #1d2327;
+    margin: 0 0 24px 0;
+    padding: 24px 28px 20px;
+    border-bottom: none;
+    font-size: 20px;
+    font-weight: 700;
+    color: #1a202c;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 14px;
+    background: linear-gradient(135deg, rgba(214,54,56,0.08) 0%, rgba(255,107,107,0.08) 100%);
+    position: relative;
 }
 
 .fp-overrides-section-wrapper h4::before {
     content: "\f145"; /* dashicons-calendar-alt */
     font-family: "dashicons";
-    font-size: 18px;
-    color: #d63638;
+    font-size: 22px;
+    background: linear-gradient(135deg, #d63638, #ff6b6b);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 2px 6px rgba(214,54,56,0.25));
+    animation: iconPulse 2s ease-in-out infinite;
 }
 
 /* Section descriptions */
@@ -660,16 +805,17 @@
     align-items: start;
 }
 
-/* Improved day selector with pill-style buttons */
+/* Enhanced day selector with modern pill-style buttons */
 .fp-days-selector {
-    margin-top: 5px;
+    margin-top: 8px;
 }
 
 .fp-days-pills {
     display: flex !important;
-    gap: 6px !important;
+    gap: 8px !important;
     flex-wrap: wrap !important;
     align-items: center !important;
+    padding: 4px 0 !important;
 }
 
 .fp-day-pill {
@@ -688,39 +834,65 @@
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    min-width: 32px !important;
-    height: 32px !important;
-    padding: 0 8px !important;
+    min-width: 40px !important;
+    height: 40px !important;
+    padding: 0 12px !important;
     margin: 0 !important;
-    font-size: 12px !important;
-    font-weight: 500 !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
     text-align: center !important;
-    background: #fff !important;
-    border: 2px solid #ddd !important;
-    border-radius: 16px !important;
+    background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%) !important;
+    border: 2px solid #e2e8f0 !important;
+    border-radius: 20px !important;
     cursor: pointer !important;
-    transition: all 0.2s ease !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
     user-select: none;
     white-space: nowrap !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.fp-day-pill label::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    transition: left 0.5s;
+}
+
+.fp-day-pill label:hover::before {
+    left: 100%;
 }
 
 .fp-day-pill label:hover {
-    border-color: #0073aa !important;
-    background: #f0f6fc !important;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0,115,170,0.1);
+    border-color: #667eea !important;
+    background: linear-gradient(145deg, #f0f6fc 0%, #e6f3ff 100%) !important;
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 8px 16px rgba(102,126,234,0.15), 0 2px 8px rgba(102,126,234,0.1);
 }
 
 .fp-day-pill input[type="checkbox"]:checked + label {
-    background: #0073aa !important;
-    border-color: #0073aa !important;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    border-color: #667eea !important;
     color: #fff !important;
-    box-shadow: 0 2px 4px rgba(0,115,170,0.2);
+    box-shadow: 0 8px 20px rgba(102,126,234,0.3), 0 2px 10px rgba(102,126,234,0.2);
+    transform: translateY(-2px) scale(1.05);
+}
+
+.fp-day-pill input[type="checkbox"]:checked + label::before {
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
 }
 
 .fp-day-pill input[type="checkbox"]:focus + label {
-    outline: 2px solid #72aee6;
-    outline-offset: 2px;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(102,126,234,0.3);
+}
+
+.fp-day-pill input[type="checkbox"]:checked:focus + label {
+    box-shadow: 0 8px 20px rgba(102,126,234,0.3), 0 2px 10px rgba(102,126,234,0.2), 0 0 0 3px rgba(102,126,234,0.3);
 }
 
 /* Remove old checkbox styles for days */
@@ -728,7 +900,7 @@
     display: none !important;
 }
 
-/* Enhanced form fields styling */
+/* Enhanced form fields styling with modern design */
 .fp-time-field {
     position: relative;
 }
@@ -737,65 +909,121 @@
     font-weight: 600 !important;
     display: flex !important;
     align-items: center !important;
-    gap: 6px !important;
-    margin-bottom: 8px !important;
-    color: #1d2327 !important;
-    font-size: 13px !important;
+    gap: 8px !important;
+    margin-bottom: 10px !important;
+    color: #2d3748 !important;
+    font-size: 14px !important;
+    letter-spacing: 0.025em;
 }
 
 .fp-time-field .dashicons {
-    font-size: 16px;
-    color: #72aee6;
+    font-size: 18px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 1px 2px rgba(102,126,234,0.2));
 }
 
 .fp-time-field input[type="time"] {
     width: 100% !important;
-    padding: 8px 12px !important;
-    border: 2px solid #c3c4c7 !important;
-    border-radius: 6px !important;
-    font-size: 14px !important;
+    padding: 12px 16px !important;
+    border: 2px solid #e2e8f0 !important;
+    border-radius: 12px !important;
+    font-size: 15px !important;
     font-weight: 500 !important;
     box-sizing: border-box !important;
-    transition: all 0.2s ease !important;
-    background: #fff !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%) !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02), inset 0 2px 4px rgba(0,0,0,0.02);
 }
 
 .fp-time-field input[type="time"]:focus {
-    border-color: #0073aa !important;
-    box-shadow: 0 0 0 2px rgba(0,115,170,0.1) !important;
+    border-color: #667eea !important;
+    box-shadow: 0 0 0 3px rgba(102,126,234,0.1), 0 4px 12px rgba(102,126,234,0.15) !important;
     outline: none !important;
+    background: #ffffff !important;
+    transform: translateY(-1px);
+}
+
+.fp-time-field input[type="time"]:hover {
+    border-color: #cbd5e0 !important;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+    transform: translateY(-1px);
 }
 
 .fp-days-field label {
     font-weight: 600 !important;
     display: flex !important;
     align-items: center !important;
-    gap: 6px !important;
-    margin-bottom: 8px !important;
-    color: #1d2327 !important;
-    font-size: 13px !important;
+    gap: 8px !important;
+    margin-bottom: 10px !important;
+    color: #2d3748 !important;
+    font-size: 14px !important;
+    letter-spacing: 0.025em;
 }
 
 .fp-days-field .dashicons {
-    font-size: 16px;
-    color: #72aee6;
+    font-size: 18px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 1px 2px rgba(102,126,234,0.2));
 }
 
-/* Remove button styling */
+/* Modern button styling with gradients and animations */
 .fp-remove-time-slot {
-    background: #fff !important;
-    border: 2px solid #d63638 !important;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%) !important;
+    border: 2px solid #ff6b6b !important;
     color: #d63638 !important;
-    padding: 8px 12px !important;
-    border-radius: 6px !important;
+    padding: 10px 16px !important;
+    border-radius: 12px !important;
     cursor: pointer !important;
-    font-size: 13px !important;
-    font-weight: 500 !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
     display: flex !important;
     align-items: center !important;
-    gap: 6px !important;
-    transition: all 0.2s ease !important;
-    margin-top: 20px;
+    gap: 8px !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    margin-top: 24px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.fp-remove-time-slot::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    transition: left 0.5s;
+}
+
+.fp-remove-time-slot:hover::before {
+    left: 100%;
+}
+
+.fp-remove-time-slot:hover {
+    background: linear-gradient(135deg, #ff6b6b 0%, #d63638 100%) !important;
+    color: #ffffff !important;
+    border-color: #d63638 !important;
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 8px 20px rgba(214,54,56,0.3), 0 2px 10px rgba(214,54,56,0.2);
+}
+
+.fp-remove-time-slot .dashicons {
+    font-size: 16px !important;
+    width: 16px !important;
+    height: 16px !important;
+    transition: transform 0.2s ease;
+}
+
+.fp-remove-time-slot:hover .dashicons {
+    transform: rotate(90deg);
 }
 
 .fp-remove-time-slot:hover {
@@ -851,35 +1079,57 @@
     margin-left: 26px !important;
 }
 
-/* Enhanced overrides section styling */
+/* Enhanced overrides section with modern card design and animations */
 .fp-overrides-section {
-    border: 2px solid #72aee6 !important;
-    background: #f0f6fc !important;
-    padding: 20px !important;
-    border-radius: 6px !important;
-    margin: 15px -20px !important;
+    border: none !important;
+    background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%) !important;
+    padding: 24px !important;
+    border-radius: 16px !important;
+    margin: 20px 0 !important;
     position: relative;
+    box-shadow: 0 8px 32px rgba(102,126,234,0.08), 0 2px 8px rgba(102,126,234,0.04);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
 }
 
 .fp-overrides-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    background-size: 200% 100%;
+    animation: gradientShift 4s ease-in-out infinite;
+}
+
+.fp-overrides-section:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 16px 48px rgba(102,126,234,0.12), 0 4px 16px rgba(102,126,234,0.08);
+}
+
+.fp-overrides-section::after {
     content: "⚙️ Advanced Settings";
     position: absolute;
-    top: -10px;
-    left: 15px;
-    background: #f0f6fc;
-    padding: 0 10px;
+    top: -12px;
+    left: 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #ffffff;
+    padding: 6px 16px;
     font-size: 12px;
-    font-weight: 600;
-    color: #0073aa;
-    border-radius: 12px;
-    border: 2px solid #72aee6;
+    font-weight: 700;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    box-shadow: 0 4px 12px rgba(102,126,234,0.3);
 }
 
 .fp-overrides-section > div {
     display: grid !important;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) !important;
-    gap: 15px !important;
-    margin-bottom: 15px !important;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
+    gap: 20px !important;
+    margin-bottom: 20px !important;
 }
 
 .fp-overrides-section > div:last-child {
@@ -887,140 +1137,222 @@
 }
 
 .fp-overrides-section label {
-    font-weight: 600 !important;
+    font-weight: 700 !important;
     display: block !important;
-    margin-bottom: 6px !important;
-    color: #1d2327 !important;
-    font-size: 13px !important;
+    margin-bottom: 8px !important;
+    color: #2d3748 !important;
+    font-size: 14px !important;
+    letter-spacing: 0.025em;
 }
 
 .fp-overrides-section input,
 .fp-overrides-section select {
     width: 100% !important;
-    padding: 8px 12px !important;
-    border: 2px solid #c3c4c7 !important;
-    border-radius: 6px !important;
-    font-size: 13px !important;
+    padding: 12px 16px !important;
+    border: 2px solid #e2e8f0 !important;
+    border-radius: 12px !important;
+    font-size: 14px !important;
     box-sizing: border-box !important;
-    background: #fff !important;
-    transition: all 0.2s ease !important;
+    background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%) !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02), inset 0 2px 4px rgba(0,0,0,0.02);
 }
 
 .fp-overrides-section input:focus,
 .fp-overrides-section select:focus {
-    border-color: #0073aa !important;
-    box-shadow: 0 0 0 2px rgba(0,115,170,0.1) !important;
+    border-color: #667eea !important;
+    box-shadow: 0 0 0 3px rgba(102,126,234,0.1), 0 4px 12px rgba(102,126,234,0.15) !important;
     outline: none !important;
+    background: #ffffff !important;
+    transform: translateY(-2px);
 }
 
-/* Summary table for time slots */
+.fp-overrides-section input:hover,
+.fp-overrides-section select:hover {
+    border-color: #cbd5e0 !important;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+    transform: translateY(-1px);
+}
+
+/* Enhanced summary table with modern card design */
 .fp-slots-summary {
-    background: #fff;
-    border: 1px solid #c3c4c7;
-    border-radius: 6px;
-    margin-bottom: 20px;
+    background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
+    border: none;
+    border-radius: 16px;
+    margin-bottom: 30px;
     overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fp-slots-summary:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 16px 48px rgba(0,0,0,0.12), 0 4px 16px rgba(0,0,0,0.08);
 }
 
 .fp-slots-summary-header {
-    background: #f6f7f7;
-    padding: 12px 16px;
-    border-bottom: 1px solid #c3c4c7;
-    font-weight: 600;
-    color: #1d2327;
-    font-size: 14px;
+    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+    padding: 16px 20px;
+    border-bottom: none;
+    font-weight: 700;
+    color: #ffffff;
+    font-size: 16px;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
+    position: relative;
+    overflow: hidden;
+}
+
+.fp-slots-summary-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+}
+
+.fp-slots-summary-header:hover::before {
+    left: 100%;
 }
 
 .fp-slots-summary-header .dashicons {
-    font-size: 16px;
-    color: #0073aa;
+    font-size: 20px;
+    color: #ffffff;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
 }
 
 .fp-slots-summary-content {
-    padding: 16px;
+    padding: 20px;
 }
 
 .fp-summary-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 13px;
+    font-size: 14px;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 }
 
 .fp-summary-table th,
 .fp-summary-table td {
-    padding: 8px 12px;
+    padding: 12px 16px;
     text-align: left;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid #f1f3f4;
+    transition: background-color 0.2s ease;
 }
 
 .fp-summary-table th {
-    background: #f9f9f9;
-    font-weight: 600;
-    color: #1d2327;
-    border-bottom: 2px solid #e1e1e1;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    font-weight: 700;
+    color: #2d3748;
+    border-bottom: 2px solid #e2e8f0;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.fp-summary-table tr:hover {
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
 }
 
 .fp-summary-table .fp-days-summary {
     display: flex;
-    gap: 4px;
+    gap: 6px;
     flex-wrap: wrap;
 }
 
 .fp-summary-table .fp-day-badge {
-    background: #72aee6;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: #fff;
-    padding: 2px 6px;
-    border-radius: 10px;
+    padding: 4px 8px;
+    border-radius: 12px;
     font-size: 11px;
-    font-weight: 500;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    box-shadow: 0 2px 4px rgba(102,126,234,0.2);
 }
 
 .fp-summary-table .fp-time-badge {
-    background: #50575e;
+    background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
     color: #fff;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-family: monospace;
-    font-size: 12px;
-    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    box-shadow: 0 2px 4px rgba(45,55,72,0.2);
 }
 
 .fp-summary-table .fp-empty-state {
     text-align: center;
-    color: #666;
+    color: #718096;
     font-style: italic;
-    padding: 20px;
+    padding: 40px 20px;
+    background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+    border-radius: 12px;
+    margin: 20px;
 }
 
-/* Enhanced buttons */
+/* Enhanced add time slot button with modern gradient design */
 .fp-add-time-slot {
-    background: #0073aa !important;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
     border: none !important;
     color: #fff !important;
-    padding: 12px 20px !important;
-    border-radius: 6px !important;
-    font-size: 14px !important;
-    font-weight: 500 !important;
+    padding: 14px 24px !important;
+    border-radius: 12px !important;
+    font-size: 15px !important;
+    font-weight: 600 !important;
     cursor: pointer !important;
     display: inline-flex !important;
     align-items: center !important;
-    gap: 8px !important;
-    transition: all 0.2s ease !important;
+    gap: 10px !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
     text-decoration: none !important;
-    margin-top: 15px;
+    margin-top: 20px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(102,126,234,0.3), 0 2px 8px rgba(102,126,234,0.15);
+    letter-spacing: 0.025em;
+}
+
+.fp-add-time-slot::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+}
+
+.fp-add-time-slot:hover::before {
+    left: 100%;
 }
 
 .fp-add-time-slot:hover {
-    background: #005a87 !important;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0,115,170,0.2);
+    background: linear-gradient(135deg, #5a67d8 0%, #6b46a3 100%) !important;
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 8px 24px rgba(102,126,234,0.4), 0 4px 16px rgba(102,126,234,0.25);
+}
+
+.fp-add-time-slot:active {
+    transform: translateY(-1px) scale(1.01);
 }
 
 .fp-add-time-slot .dashicons {
-    font-size: 16px;
+    font-size: 18px;
+    transition: transform 0.2s ease;
+}
+
+.fp-add-time-slot:hover .dashicons {
+    transform: rotate(90deg);
 }
 
 .fp-remove-time-slot {
@@ -1624,4 +1956,60 @@
     .fp-view-toggle {
         flex-wrap: wrap;
     }
+}
+
+/* Enhanced add override button styling */
+.fp-add-override {
+    background: linear-gradient(135deg, #d63638 0%, #ff6b6b 100%) !important;
+    border: none !important;
+    color: #fff !important;
+    padding: 14px 24px !important;
+    border-radius: 12px !important;
+    font-size: 15px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    text-decoration: none !important;
+    margin-top: 20px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(214,54,56,0.3), 0 2px 8px rgba(214,54,56,0.15);
+    letter-spacing: 0.025em;
+}
+
+.fp-add-override::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+}
+
+.fp-add-override:hover::before {
+    left: 100%;
+}
+
+.fp-add-override:hover {
+    background: linear-gradient(135deg, #c62d2d 0%, #e55a5a 100%) !important;
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 8px 24px rgba(214,54,56,0.4), 0 4px 16px rgba(214,54,56,0.25);
+}
+
+.fp-add-override:active {
+    transform: translateY(-1px) scale(1.01);
+}
+
+.fp-add-override .dashicons {
+    font-size: 18px;
+    transition: transform 0.2s ease;
+}
+
+.fp-add-override:hover .dashicons {
+    transform: rotate(90deg);
 }

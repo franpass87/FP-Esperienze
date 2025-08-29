@@ -330,47 +330,51 @@ class Experience {
                     <?php _e('Recurring Time Slots', 'fp-esperienze'); ?>
                 </h4>
                 
-                <div class="fp-section-description">
-                    <?php _e('Configure weekly recurring time slots for your experience. Each slot can run on multiple days and can have custom settings that override the default product values above.', 'fp-esperienze'); ?>
-                </div>
-                
-                <div id="fp-schedule-builder-container" style="margin-bottom: 20px;">
-                    <?php $this->renderScheduleBuilder($post->ID); ?>
-                </div>
-                
-                <div id="fp-schedule-raw-container" style="display: none;">
-                    <h5><?php _e('Advanced Mode (Raw Schedules)', 'fp-esperienze'); ?></h5>
-                    <div id="fp-schedules-container">
-                        <?php $this->renderSchedulesSection($post->ID); ?>
+                <div class="fp-section-content">
+                    <div class="fp-section-description">
+                        <?php _e('Configure weekly recurring time slots for your experience. Each slot can run on multiple days and can have custom settings that override the default product values above.', 'fp-esperienze'); ?>
                     </div>
-                    <button type="button" class="button" id="fp-add-schedule">
-                        <?php _e('Add Schedule', 'fp-esperienze'); ?>
-                    </button>
+                    
+                    <div id="fp-schedule-builder-container" style="margin-bottom: 20px;">
+                        <?php $this->renderScheduleBuilder($post->ID); ?>
+                    </div>
+                    
+                    <div id="fp-schedule-raw-container" style="display: none;">
+                        <h5><?php _e('Advanced Mode (Raw Schedules)', 'fp-esperienze'); ?></h5>
+                        <div id="fp-schedules-container">
+                            <?php $this->renderSchedulesSection($post->ID); ?>
+                        </div>
+                        <button type="button" class="button" id="fp-add-schedule">
+                            <?php _e('Add Schedule', 'fp-esperienze'); ?>
+                        </button>
+                    </div>
+                    
+                    <p>
+                        <label>
+                            <input type="checkbox" id="fp-toggle-raw-mode"> 
+                            <?php _e('Show Advanced Mode', 'fp-esperienze'); ?>
+                        </label>
+                        <span class="description"><?php _e('Enable to view/edit individual schedule rows directly', 'fp-esperienze'); ?></span>
+                    </p>
                 </div>
-                
-                <p>
-                    <label>
-                        <input type="checkbox" id="fp-toggle-raw-mode"> 
-                        <?php _e('Show Advanced Mode', 'fp-esperienze'); ?>
-                    </label>
-                    <span class="description"><?php _e('Enable to view/edit individual schedule rows directly', 'fp-esperienze'); ?></span>
-                </p>
             </div>
             
             <div class="options_group fp-overrides-section-wrapper">
                 <h4><?php _e('Date-Specific Overrides', 'fp-esperienze'); ?></h4>
                 
-                <div class="fp-section-description">
-                    <?php _e('Add exceptions for specific dates: close the experience, change capacity, or modify prices for particular days.', 'fp-esperienze'); ?>
+                <div class="fp-section-content">
+                    <div class="fp-section-description">
+                        <?php _e('Add exceptions for specific dates: close the experience, change capacity, or modify prices for particular days.', 'fp-esperienze'); ?>
+                    </div>
+                    
+                    <div id="fp-overrides-container">
+                        <?php $this->renderOverridesSection($post->ID); ?>
+                    </div>
+                    <button type="button" class="button fp-add-override" id="fp-add-override">
+                        <span class="dashicons dashicons-plus-alt"></span>
+                        <?php _e('Add Date Override', 'fp-esperienze'); ?>
+                    </button>
                 </div>
-                
-                <div id="fp-overrides-container">
-                    <?php $this->renderOverridesSection($post->ID); ?>
-                </div>
-                <button type="button" class="button fp-add-override" id="fp-add-override">
-                    <span class="dashicons dashicons-plus-alt"></span>
-                    <?php _e('Add Date Override', 'fp-esperienze'); ?>
-                </button>
             </div>
             
             <div class="options_group">
