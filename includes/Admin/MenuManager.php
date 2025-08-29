@@ -246,6 +246,7 @@ class MenuManager {
                 'errorLoadingTimeSlots' => __('Error loading time slots', 'fp-esperienze'),
                 'errorReschedulingBooking' => __('Error rescheduling booking', 'fp-esperienze'),
                 'errorCheckingCancellationRules' => __('Error checking cancellation rules', 'fp-esperienze'),
+                'thisBookingCannotBeCancelled' => __('This booking cannot be cancelled.', 'fp-esperienze'),
                 'errorCancellingBooking' => __('Error cancelling booking', 'fp-esperienze'),
                 'confirmCancelBooking' => __('Are you sure you want to cancel this booking?', 'fp-esperienze'),
                 'spotsAvailable' => __('spots available', 'fp-esperienze'),
@@ -649,14 +650,14 @@ class MenuManager {
                         if (response.success) {
                             var info = '<p>' + response.data.message + '</p>';
                             if (!response.data.can_cancel) {
-                                info += '<p><strong><?php _e('This booking cannot be cancelled.', 'fp-esperienze'); ?></strong></p>';
+                                info += '<p><strong>' + fpEsperienzeAdmin.i18n.thisBookingCannotBeCancelled + '</strong></p>';
                                 $('#fp-cancel-form').hide();
                             } else {
                                 $('#fp-cancel-form').show();
                             }
                             $('#fp-cancel-info').html(info);
                         } else {
-                            $('#fp-cancel-info').html('<p><strong><?php _e('Error checking cancellation rules.', 'fp-esperienze'); ?></strong></p>');
+                            $('#fp-cancel-info').html('<p><strong>' + fpEsperienzeAdmin.i18n.errorCheckingCancellationRules + '</strong></p>');
                             $('#fp-cancel-form').hide();
                         }
                         $('#fp-cancel-modal').show();
@@ -3744,11 +3745,11 @@ class MenuManager {
         $start_time = microtime(true);
         
         if (!CapabilityManager::canManageFPEsperienze()) {
-            wp_die('Insufficient permissions');
+            wp_send_json_error(['message' => __('Insufficient permissions.', 'fp-esperienze')]);
         }
         
         if (!wp_verify_nonce($_POST['nonce'] ?? '', 'fp_get_slots')) {
-            wp_die('Security check failed');
+            wp_send_json_error(['message' => __('Security check failed.', 'fp-esperienze')]);
         }
         
         $product_id = absint($_POST['product_id'] ?? 0);
@@ -3772,11 +3773,11 @@ class MenuManager {
         $start_time = microtime(true);
         
         if (!CapabilityManager::canManageFPEsperienze()) {
-            wp_die('Insufficient permissions');
+            wp_send_json_error(['message' => __('Insufficient permissions.', 'fp-esperienze')]);
         }
         
         if (!wp_verify_nonce($_POST['fp_reschedule_nonce'] ?? '', 'fp_reschedule_booking')) {
-            wp_die('Security check failed');
+            wp_send_json_error(['message' => __('Security check failed.', 'fp-esperienze')]);
         }
         
         $booking_id = absint($_POST['booking_id'] ?? 0);
@@ -3804,11 +3805,11 @@ class MenuManager {
      */
     public function ajaxCheckCancellationRules(): void {
         if (!CapabilityManager::canManageFPEsperienze()) {
-            wp_die('Insufficient permissions');
+            wp_send_json_error(['message' => __('Insufficient permissions.', 'fp-esperienze')]);
         }
         
         if (!wp_verify_nonce($_POST['nonce'] ?? '', 'fp_check_cancel')) {
-            wp_die('Security check failed');
+            wp_send_json_error(['message' => __('Security check failed.', 'fp-esperienze')]);
         }
         
         $booking_id = absint($_POST['booking_id'] ?? 0);
@@ -3827,11 +3828,11 @@ class MenuManager {
      */
     public function ajaxCancelBooking(): void {
         if (!CapabilityManager::canManageFPEsperienze()) {
-            wp_die('Insufficient permissions');
+            wp_send_json_error(['message' => __('Insufficient permissions.', 'fp-esperienze')]);
         }
         
         if (!wp_verify_nonce($_POST['fp_cancel_nonce'] ?? '', 'fp_cancel_booking')) {
-            wp_die('Security check failed');
+            wp_send_json_error(['message' => __('Security check failed.', 'fp-esperienze')]);
         }
         
         $booking_id = absint($_POST['booking_id'] ?? 0);
@@ -3880,11 +3881,11 @@ class MenuManager {
      */
     public function ajaxTestWebhook(): void {
         if (!CapabilityManager::canManageFPEsperienze()) {
-            wp_die('Insufficient permissions');
+            wp_send_json_error(['message' => __('Insufficient permissions.', 'fp-esperienze')]);
         }
         
         if (!wp_verify_nonce($_POST['nonce'] ?? '', 'fp_test_webhook')) {
-            wp_die('Security check failed');
+            wp_send_json_error(['message' => __('Security check failed.', 'fp-esperienze')]);
         }
         
         $webhook_url = esc_url_raw($_POST['webhook_url'] ?? '');
@@ -3907,11 +3908,11 @@ class MenuManager {
      */
     public function ajaxCleanupExpiredHolds(): void {
         if (!CapabilityManager::canManageFPEsperienze()) {
-            wp_die('Insufficient permissions');
+            wp_send_json_error(['message' => __('Insufficient permissions.', 'fp-esperienze')]);
         }
         
         if (!wp_verify_nonce($_POST['nonce'] ?? '', 'fp_cleanup_holds')) {
-            wp_die('Security check failed');
+            wp_send_json_error(['message' => __('Security check failed.', 'fp-esperienze')]);
         }
         
         $count = HoldManager::cleanupExpiredHolds();
