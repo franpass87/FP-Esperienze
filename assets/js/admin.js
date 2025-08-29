@@ -6,14 +6,25 @@
     'use strict';
 
     $(document).ready(function() {
+        // Prevent multiple initializations
+        if (window.FPEsperienzeAdmin.initialized) {
+            return;
+        }
+        
         // Initialize admin functionality
         FPEsperienzeAdmin.init();
+        
+        // Mark as initialized
+        window.FPEsperienzeAdmin.initialized = true;
     });
 
     window.FPEsperienzeAdmin = {
         
         // Track unsaved changes
         hasUnsavedChanges: false,
+        
+        // Prevent double initialization
+        initialized: false,
         
         /**
          * Initialize
