@@ -288,30 +288,97 @@
 
 .fp-time-slot-header {
     display: flex;
-    align-items: flex-end;
+    align-items: flex-start;
     gap: 15px;
     margin-bottom: 15px;
     flex-wrap: wrap;
 }
 
+/* Start time field - fixed width */
+.fp-time-slot-header > div:first-child {
+    flex: 0 0 120px;
+    min-width: 120px;
+}
+
+.fp-time-slot-header > div:first-child label {
+    font-weight: 600 !important;
+    display: block !important;
+    margin-bottom: 5px !important;
+    color: #1d2327;
+    font-size: 13px;
+}
+
+.fp-time-slot-header > div:first-child input[type="time"] {
+    width: 100% !important;
+    padding: 6px 8px !important;
+    border: 1px solid #c3c4c7 !important;
+    border-radius: 4px !important;
+    font-size: 13px !important;
+    box-sizing: border-box;
+}
+
+.fp-time-slot-header > div:first-child input[type="time"]:focus {
+    border-color: #72aee6 !important;
+    box-shadow: 0 0 0 1px #72aee6 !important;
+    outline: none !important;
+}
+
+/* Days section - flexible with minimum width */
+.fp-time-slot-header > div:nth-child(2) {
+    flex: 1 1 300px;
+    min-width: 300px;
+}
+
+.fp-time-slot-header > div:nth-child(2) label {
+    font-weight: 600 !important;
+    display: block !important;
+    margin-bottom: 5px !important;
+    color: #1d2327;
+    font-size: 13px;
+}
+
+/* Remove button - fixed width */
+.fp-time-slot-header > div:last-child {
+    flex: 0 0 auto;
+    margin-top: 20px; /* Align with other elements */
+}
+
 .fp-days-checkboxes {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    align-items: center;
+    display: flex !important;
+    gap: 12px !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    margin-top: 5px;
 }
 
 .fp-days-checkboxes label {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    white-space: nowrap;
-    font-size: 12px;
-    margin: 0;
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    white-space: nowrap !important;
+    font-size: 13px !important;
+    margin: 0 !important;
+    padding: 4px 8px;
+    background: #fff;
+    border: 1px solid #e1e1e1;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+    cursor: pointer;
+    min-width: fit-content;
+}
+
+.fp-days-checkboxes label:hover {
+    background: #f8f9fa;
+    border-color: #c3c4c7;
+}
+
+.fp-days-checkboxes label input[type="checkbox"] {
+    margin: 0 !important;
+    flex-shrink: 0;
 }
 
 .fp-override-toggle {
-    border-top: 1px solid #ddd;
+    border-top: 1px solid #e1e1e1;
     padding-top: 15px;
     margin-bottom: 15px;
 }
@@ -319,27 +386,83 @@
 .fp-override-toggle label {
     font-weight: normal;
     margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.fp-override-toggle input[type="checkbox"] {
+    margin: 0 !important;
+}
+
+.fp-override-toggle .description {
+    display: block;
+    font-style: italic;
+    color: #666;
+    margin-top: 5px;
+    font-size: 12px;
 }
 
 .fp-overrides-section {
-    border-top: 1px solid #ddd;
-    padding-top: 15px;
-    background: #fff;
+    border: 1px solid #e1e1e1;
+    background: #fafafa;
     padding: 15px;
     border-radius: 4px;
     margin-top: 10px;
+}
+
+.fp-overrides-section > div {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    margin-bottom: 10px;
+}
+
+.fp-overrides-section > div:last-child {
+    margin-bottom: 0;
+}
+
+.fp-overrides-section label {
+    font-weight: 600 !important;
+    display: block !important;
+    margin-bottom: 5px !important;
+    color: #1d2327;
+    font-size: 13px;
+}
+
+.fp-overrides-section input,
+.fp-overrides-section select {
+    width: 100% !important;
+    padding: 6px 8px !important;
+    border: 1px solid #c3c4c7 !important;
+    border-radius: 4px !important;
+    font-size: 13px !important;
+    box-sizing: border-box;
+}
+
+.fp-overrides-section input:focus,
+.fp-overrides-section select:focus {
+    border-color: #72aee6 !important;
+    box-shadow: 0 0 0 1px #72aee6 !important;
+    outline: none !important;
 }
 
 .fp-remove-time-slot {
     background: #dc3232 !important;
     color: white !important;
     border: none !important;
-    border-radius: 3px;
-    height: fit-content;
-    align-self: flex-end;
-    display: flex;
-    align-items: center;
-    gap: 5px;
+    border-radius: 4px !important;
+    height: 36px !important;
+    padding: 0 12px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+    transition: background-color 0.2s ease;
+    white-space: nowrap;
 }
 
 .fp-remove-time-slot:hover {
@@ -347,7 +470,10 @@
 }
 
 .fp-remove-time-slot .dashicons {
-    font-size: 16px;
+    font-size: 14px !important;
+    width: 14px !important;
+    height: 14px !important;
+}
     width: 16px;
     height: 16px;
 }
@@ -832,6 +958,49 @@
 }
 
 /* Responsive adjustments for builder */
+/* Tablet and smaller desktop screens */
+@media (max-width: 1024px) {
+    .fp-time-slot-header > div:nth-child(2) {
+        min-width: 250px;
+    }
+    
+    .fp-days-checkboxes {
+        gap: 8px !important;
+    }
+    
+    .fp-days-checkboxes label {
+        font-size: 12px !important;
+        padding: 3px 6px;
+    }
+}
+
+/* Large mobile and small tablet */
+@media (max-width: 900px) {
+    .fp-time-slot-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+    
+    .fp-time-slot-header > div:first-child,
+    .fp-time-slot-header > div:nth-child(2),
+    .fp-time-slot-header > div:last-child {
+        flex: none;
+        min-width: auto;
+    }
+    
+    .fp-time-slot-header > div:last-child {
+        margin-top: 0;
+        align-self: flex-start;
+    }
+    
+    .fp-overrides-section > div {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+}
+
+/* Mobile phones */
 @media (max-width: 768px) {
     .fp-time-slot-header {
         flex-direction: column;
@@ -839,16 +1008,25 @@
     }
     
     .fp-days-checkboxes {
-        gap: 8px;
+        gap: 6px !important;
+    }
+    
+    .fp-days-checkboxes label {
+        font-size: 11px !important;
+        padding: 2px 4px;
+        min-width: 0;
+        flex: 1 1 auto;
+        text-align: center;
     }
     
     .fp-overrides-section > div {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr !important;
     }
     
     .fp-remove-time-slot {
-        align-self: stretch;
-        justify-content: center;
+        width: 100% !important;
+        justify-content: center !important;
+        margin-top: 10px;
     }
     
     .fp-modal-content {
