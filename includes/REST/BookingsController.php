@@ -92,6 +92,23 @@ class BookingsController {
                     continue;
                 }
                 
+                // Get order to retrieve customer info and total amount
+                $order = wc_get_order($booking->order_id);
+                $customer_name = '';
+                $customer_email = '';
+                $total_amount = 0;
+                
+                if ($order) {
+                    $customer_name = $order->get_billing_first_name() . ' ' . $order->get_billing_last_name();
+                    $customer_email = $order->get_billing_email();
+                    
+                    // Get order item to calculate total amount for this booking
+                    $order_item = $order->get_item($booking->order_item_id);
+                    if ($order_item) {
+                        $total_amount = $order_item->get_total();
+                    }
+                }
+                
                 $events[] = [
                     'id' => $booking->id,
                     'title' => $product->get_name(),
@@ -103,12 +120,12 @@ class BookingsController {
                         'booking_id' => $booking->id,
                         'product_id' => $booking->product_id,
                         'status' => $booking->status,
-                        'participants' => $booking->adult_count + $booking->child_count,
-                        'adult_count' => $booking->adult_count,
-                        'child_count' => $booking->child_count,
-                        'customer_name' => $booking->customer_name,
-                        'customer_email' => $booking->customer_email,
-                        'total_amount' => $booking->total_amount
+                        'participants' => $booking->adults + $booking->children,
+                        'adult_count' => $booking->adults,
+                        'child_count' => $booking->children,
+                        'customer_name' => trim($customer_name),
+                        'customer_email' => $customer_email,
+                        'total_amount' => $total_amount
                     ]
                 ];
             }

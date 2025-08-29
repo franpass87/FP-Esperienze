@@ -201,10 +201,26 @@ class MenuManager {
         
         // Enqueue bookings calendar script for bookings page
         if (strpos($hook, 'fp-esperienze-bookings') !== false) {
+            // Enqueue FullCalendar dependencies
+            wp_enqueue_script('moment');
+            wp_enqueue_script(
+                'fullcalendar',
+                'https://cdn.jsdelivr.net/npm/fullcalendar@3.10.5/dist/fullcalendar.min.js',
+                ['jquery', 'moment'],
+                '3.10.5',
+                true
+            );
+            wp_enqueue_style(
+                'fullcalendar',
+                'https://cdn.jsdelivr.net/npm/fullcalendar@3.10.5/dist/fullcalendar.min.css',
+                [],
+                '3.10.5'
+            );
+            
             wp_enqueue_script(
                 'fp-admin-bookings',
                 FP_ESPERIENZE_PLUGIN_URL . 'assets/js/admin-bookings.js',
-                ['jquery'],
+                ['jquery', 'fullcalendar'],
                 FP_ESPERIENZE_VERSION,
                 true
             );

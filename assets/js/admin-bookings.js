@@ -8,13 +8,13 @@
     window.FPEsperienzeAdmin = window.FPEsperienzeAdmin || {};
 
     FPEsperienzeAdmin.initBookingsCalendar = function() {
-        if (!$('#fp-bookings-calendar').length) {
+        if (!$('#fp-calendar').length) {
             console.warn('FP Esperienze: Calendar container not found');
             return;
         }
 
         // Initialize FullCalendar
-        $('#fp-bookings-calendar').fullCalendar({
+        $('#fp-calendar').fullCalendar({
             header: {
                 left: 'prev,next today',
                 center: 'title',
@@ -93,7 +93,7 @@
 
         // Add loading indicator
         if (!$('#fp-calendar-loading').length) {
-            $('#fp-bookings-calendar').before(
+            $('#fp-calendar').before(
                 '<div id="fp-calendar-loading" style="display:none; text-align:center; padding:20px;">' +
                 '<div class="spinner is-active"></div>' +
                 '<p>' + (fpEsperienzeAdmin.i18n ? fpEsperienzeAdmin.i18n.loadingEvents : 'Loading events...') + '</p>' +
@@ -105,7 +105,7 @@
     // Initialize when DOM is ready
     $(document).ready(function() {
         // Auto-initialize if calendar view is active
-        if ($('#fp-bookings-calendar').is(':visible')) {
+        if ($('#fp-calendar').is(':visible')) {
             FPEsperienzeAdmin.initBookingsCalendar();
         }
     });

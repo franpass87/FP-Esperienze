@@ -338,6 +338,30 @@ class BookingManager {
         
         return $wpdb->get_results($sql);
     }
+
+    /**
+     * Get bookings by date range for calendar view
+     *
+     * @param string $start_date Start date (Y-m-d format)
+     * @param string $end_date End date (Y-m-d format)
+     * @return array Bookings within date range
+     */
+    public static function getBookingsByDateRange(string $start_date, string $end_date): array {
+        global $wpdb;
+        
+        $table_name = $wpdb->prefix . 'fp_bookings';
+        
+        $sql = $wpdb->prepare(
+            "SELECT * FROM {$table_name} 
+             WHERE booking_date >= %s AND booking_date <= %s 
+             AND status != 'cancelled'
+             ORDER BY booking_date ASC, booking_time ASC",
+            $start_date,
+            $end_date
+        );
+        
+        return $wpdb->get_results($sql);
+    }
     
     /**
      * Get booking by ID
