@@ -274,19 +274,120 @@
             $(document).on('click', '.fp-remove-time-slot', function(e) {
                 e.preventDefault();
                 $(this).closest('.fp-time-slot-row').remove();
+                self.updateSummaryTable();
             });
             
             // Toggle overrides visibility
             $(document).on('change', '.fp-show-overrides-toggle', function() {
                 var overridesSection = $(this).closest('.fp-time-slot-row').find('.fp-overrides-section');
                 if ($(this).is(':checked')) {
-                    overridesSection.show();
+                    overridesSection.slideDown(200);
                 } else {
-                    overridesSection.hide();
+                    overridesSection.slideUp(200);
                     // Clear override values when hiding
                     overridesSection.find('input, select').val('');
                 }
+                self.updateSummaryTable();
             });
+            
+            // Update summary when time or days change
+            $(document).on('change', 'input[name*="[start_time]"], input[name*="[days][]"]', function() {
+                self.updateSummaryTable();
+            });
+            
+            // Update summary when overrides change
+            $(document).on('change', 'input[name*="[duration_min]"], input[name*="[capacity]"]', function() {
+                self.updateSummaryTable();
+            });
+        },
+        
+        /**
+         * Update the summary table
+         */
+        updateSummaryTable: function() {
+            var summaryContainer = $('.fp-slots-summary-content');
+            if (!summaryContainer.length) return;
+            
+            var slots = [];
+            var days = {
+                '1': 'Mon', '2': 'Tue', '3': 'Wed', '4': 'Thu', 
+                '5': 'Fri', '6': 'Sat', '0': 'Sun'
+            };
+            
+            // Collect slot data
+            $('#fp-time-slots-container .fp-time-slot').each(function() {
+                var $slot = $(this);
+                var startTime = $slot.find('input[name*="[start_time]"]').val();
+                var selectedDays = [];
+                
+                $slot.find('input[name*="[days][]"]:checked').each(function() {
+                    selectedDays.push($(this).val());
+                });
+                
+                if (startTime && selectedDays.length > 0) {
+                    var overridesEnabled = $slot.find('.fp-show-overrides-toggle').is(':checked');
+                    var customCount = 0;
+                    
+                    if (overridesEnabled) {
+                        $slot.find('.fp-overrides-section input, .fp-overrides-section select').each(function() {
+                            if ($(this).val() && $(this).val() !== '') {
+                                customCount++;
+                            }
+                        });
+                    }
+                    
+                    var duration = $slot.find('input[name*="[duration_min]"]').val();
+                    var capacity = $slot.find('input[name*="[capacity]"]').val();
+                    
+                    slots.push({
+                        time: startTime,
+                        days: selectedDays,
+                        duration: duration,
+                        capacity: capacity,
+                        customCount: customCount
+                    });
+                }
+            });
+            
+            // Build new summary HTML
+            var summaryHtml;
+            if (slots.length === 0) {
+                summaryHtml = '<div class="fp-summary-table"><div class="fp-empty-state">No time slots configured yet. Click "Add Time Slot" below to get started.</div></div>';
+            } else {
+                summaryHtml = '<table class="fp-summary-table">' +
+                    '<thead><tr>' +
+                        '<th>Time</th>' +
+                        '<th>Days</th>' +
+                        '<th>Duration</th>' +
+                        '<th>Capacity</th>' +
+                        '<th>Customized</th>' +
+                    '</tr></thead><tbody>';
+                
+                slots.forEach(function(slot) {
+                    summaryHtml += '<tr>' +
+                        '<td><span class="fp-time-badge">' + slot.time + '</span></td>' +
+                        '<td><div class="fp-days-summary">';
+                    
+                    // Sort days and show badges
+                    var sortedDays = ['1','2','3','4','5','6','0'].filter(function(day) {
+                        return slot.days.indexOf(day) !== -1;
+                    });
+                    
+                    sortedDays.forEach(function(day) {
+                        summaryHtml += '<span class="fp-day-badge">' + days[day] + '</span>';
+                    });
+                    
+                    summaryHtml += '</div></td>' +
+                        '<td>' + (slot.duration ? slot.duration + ' min' : '<em>Default</em>') + '</td>' +
+                        '<td>' + (slot.capacity ? slot.capacity : '<em>Default</em>') + '</td>' +
+                        '<td>' + (slot.customCount > 0 ? slot.customCount + ' setting' + (slot.customCount > 1 ? 's' : '') : '<em>None</em>') + '</td>' +
+                        '</tr>';
+                });
+                
+                summaryHtml += '</tbody></table>';
+            }
+            
+            summaryContainer.html(summaryHtml);
         },
         
         /**
@@ -323,73 +424,82 @@
             var defaultDuration = $('#_fp_exp_duration').val() || '60';
             var defaultCapacity = $('#_fp_exp_capacity').val() || '10';
             var defaultLanguage = $('#_fp_exp_language').val() || 'en';
-            var defaultMeetingPoint = $('#_fp_exp_meeting_point_id option:selected').text() || 'Default';
+            var defaultMeetingPoint = $('#_fp_exp_meeting_point_id option:selected').text() || 'None';
             var defaultPriceAdult = $('#_regular_price').val() || '0.00';
             var defaultPriceChild = $('#_fp_exp_price_child').val() || '0.00';
             
             var timeSlotHtml = '<div class="fp-time-slot" data-index="' + index + '">' +
-                '<div class="fp-time-slot-row" style="border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; background: #f9f9f9; border-radius: 4px;">' +
-                    '<div class="fp-time-slot-header" style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">' +
-                        '<div style="flex: 0 0 120px;">' +
-                            '<label style="font-weight: bold; display: block; margin-bottom: 5px;">Start Time <span style="color: red;">*</span></label>' +
-                            '<input type="time" name="builder_slots[' + index + '][start_time]" required style="width: 100%;">' +
+                '<div class="fp-time-slot-row">' +
+                    '<div class="fp-time-slot-header">' +
+                        '<div class="fp-time-field">' +
+                            '<label>' +
+                                '<span class="dashicons dashicons-clock"></span>' +
+                                'Start Time <span style="color: red;">*</span>' +
+                            '</label>' +
+                            '<input type="time" name="builder_slots[' + index + '][start_time]" required>' +
                         '</div>' +
-                        '<div style="flex: 1;">' +
-                            '<label style="font-weight: bold; display: block; margin-bottom: 5px;">Days <span style="color: red;">*</span></label>' +
-                            '<div class="fp-days-checkboxes" style="display: flex; gap: 10px; flex-wrap: wrap;">';
-            
+                        '<div class="fp-days-field">' +
+                            '<label>' +
+                                '<span class="dashicons dashicons-calendar-alt"></span>' +
+                                'Days of Week <span style="color: red;">*</span>' +
+                            '</label>' +
+                            '<div class="fp-days-selector">' +
+                                '<div class="fp-days-pills">';
+                                
             for (var dayValue in days) {
-                timeSlotHtml += '<label style="display: flex; align-items: center; gap: 5px; white-space: nowrap;">' +
-                    '<input type="checkbox" name="builder_slots[' + index + '][days][]" value="' + dayValue + '">' +
-                    '<span style="font-size: 12px;">' + days[dayValue] + '</span>' +
-                '</label>';
+                var dayLabel = days[dayValue].substring(0, 3);
+                timeSlotHtml += '<div class="fp-day-pill">' +
+                    '<input type="checkbox" id="day-' + index + '-' + dayValue + '" name="builder_slots[' + index + '][days][]" value="' + dayValue + '">' +
+                    '<label for="day-' + index + '-' + dayValue + '">' + dayLabel + '</label>' +
+                '</div>';
             }
             
-            timeSlotHtml += '</div></div>' +
-                        '<div style="flex: 0 0 auto;">' +
-                            '<button type="button" class="button fp-remove-time-slot" style="color: #a00;">' +
+            timeSlotHtml += '</div></div></div>' +
+                        '<div>' +
+                            '<button type="button" class="fp-remove-time-slot">' +
                                 '<span class="dashicons dashicons-trash"></span> Remove' +
                             '</button>' +
                         '</div>' +
                     '</div>' +
                     
-                    '<div class="fp-override-toggle" style="margin-bottom: 15px;">' +
+                    '<div class="fp-override-toggle">' +
                         '<label>' +
                             '<input type="checkbox" class="fp-show-overrides-toggle">' +
-                            ' Show advanced overrides' +
+                            '<span class="dashicons dashicons-admin-tools"></span>' +
+                            ' Advanced Settings' +
                         '</label>' +
-                        '<span class="description"> Override default values for this time slot</span>' +
+                        '<span class="description">Override default values for this specific time slot</span>' +
                     '</div>' +
                     
                     '<div class="fp-overrides-section" style="display: none;">' +
-                        '<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 10px;">' +
+                        '<div>' +
                             '<div>' +
-                                '<label style="font-weight: bold; display: block; margin-bottom: 5px;">Duration (minutes)</label>' +
-                                '<input type="number" name="builder_slots[' + index + '][duration_min]" min="1" style="width: 100%;" placeholder="Inherit (' + defaultDuration + ')">' +
+                                '<label>Duration (minutes)</label>' +
+                                '<input type="number" name="builder_slots[' + index + '][duration_min]" min="1" placeholder="Default: ' + defaultDuration + '">' +
                             '</div>' +
                             '<div>' +
-                                '<label style="font-weight: bold; display: block; margin-bottom: 5px;">Capacity</label>' +
-                                '<input type="number" name="builder_slots[' + index + '][capacity]" min="1" style="width: 100%;" placeholder="Inherit (' + defaultCapacity + ')">' +
+                                '<label>Capacity</label>' +
+                                '<input type="number" name="builder_slots[' + index + '][capacity]" min="1" placeholder="Default: ' + defaultCapacity + '">' +
                             '</div>' +
                             '<div>' +
-                                '<label style="font-weight: bold; display: block; margin-bottom: 5px;">Language</label>' +
-                                '<input type="text" name="builder_slots[' + index + '][lang]" maxlength="10" style="width: 100%;" placeholder="Inherit (' + defaultLanguage + ')">' +
+                                '<label>Language</label>' +
+                                '<input type="text" name="builder_slots[' + index + '][lang]" maxlength="10" placeholder="Default: ' + defaultLanguage + '">' +
                             '</div>' +
                         '</div>' +
-                        '<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">' +
+                        '<div>' +
                             '<div>' +
-                                '<label style="font-weight: bold; display: block; margin-bottom: 5px;">Meeting Point</label>' +
-                                '<select name="builder_slots[' + index + '][meeting_point_id]" style="width: 100%;">' +
-                                    '<option value="">Inherit (' + defaultMeetingPoint + ')</option>' +
+                                '<label>Meeting Point</label>' +
+                                '<select name="builder_slots[' + index + '][meeting_point_id]">' +
+                                    '<option value="">Default: ' + defaultMeetingPoint + '</option>' +
                                 '</select>' +
                             '</div>' +
                             '<div>' +
-                                '<label style="font-weight: bold; display: block; margin-bottom: 5px;">Adult Price</label>' +
-                                '<input type="number" name="builder_slots[' + index + '][price_adult]" min="0" step="0.01" style="width: 100%;" placeholder="Inherit (' + defaultPriceAdult + ')">' +
+                                '<label>Adult Price</label>' +
+                                '<input type="number" name="builder_slots[' + index + '][price_adult]" min="0" step="0.01" placeholder="Default: ' + defaultPriceAdult + '">' +
                             '</div>' +
                             '<div>' +
-                                '<label style="font-weight: bold; display: block; margin-bottom: 5px;">Child Price</label>' +
-                                '<input type="number" name="builder_slots[' + index + '][price_child]" min="0" step="0.01" style="width: 100%;" placeholder="Inherit (' + defaultPriceChild + ')">' +
+                                '<label>Child Price</label>' +
+                                '<input type="number" name="builder_slots[' + index + '][price_child]" min="0" step="0.01" placeholder="Default: ' + defaultPriceChild + '">' +
                             '</div>' +
                         '</div>' +
                     '</div>' +
@@ -400,6 +510,9 @@
             
             // Populate meeting points dropdown
             this.populateMeetingPointsDropdown(container.find('.fp-time-slot').last().find('select[name*="meeting_point_id"]'));
+            
+            // Update summary table
+            this.updateSummaryTable();
         },
         
         /**
@@ -542,13 +655,15 @@
             
             var row = $('<div class="fp-override-row" data-index="' + index + '">' +
                 '<input type="hidden" name="overrides[' + index + '][id]" value="">' +
-                '<input type="date" name="overrides[' + index + '][date]" required>' +
-                '<label><input type="checkbox" name="overrides[' + index + '][is_closed]" value="1"> Closed</label>' +
-                '<input type="number" name="overrides[' + index + '][capacity_override]" placeholder="Capacity Override" min="0" step="1">' +
-                '<input type="number" name="overrides[' + index + '][price_adult]" placeholder="Adult Price" min="0" step="0.01">' +
-                '<input type="number" name="overrides[' + index + '][price_child]" placeholder="Child Price" min="0" step="0.01">' +
-                '<input type="text" name="overrides[' + index + '][reason]" placeholder="Reason">' +
-                '<button type="button" class="button fp-remove-override">Remove</button>' +
+                '<input type="date" name="overrides[' + index + '][date]" required aria-label="Override date">' +
+                '<label>' +
+                    '<input type="checkbox" name="overrides[' + index + '][is_closed]" value="1"> Closed' +
+                '</label>' +
+                '<input type="number" name="overrides[' + index + '][capacity_override]" placeholder="Capacity" min="0" step="1" aria-label="Capacity override">' +
+                '<input type="number" name="overrides[' + index + '][price_adult]" placeholder="Adult €" min="0" step="0.01" aria-label="Adult price override">' +
+                '<input type="number" name="overrides[' + index + '][price_child]" placeholder="Child €" min="0" step="0.01" aria-label="Child price override">' +
+                '<input type="text" name="overrides[' + index + '][reason]" placeholder="Reason (optional)" aria-label="Reason for this override">' +
+                '<button type="button" class="fp-remove-override" aria-label="Remove this override">Remove</button>' +
                 '</div>');
             
             container.append(row);
