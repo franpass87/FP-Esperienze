@@ -294,13 +294,21 @@ class HoldManager {
             $booking_id = $wpdb->insert_id;
             
             // Remove the hold
-            $wpdb->delete(
+            $hold_delete_result = $wpdb->delete(
                 $holds_table,
                 ['id' => $hold->id],
                 ['%d']
             );
             
-            // Clean up other expired holds for this slot
+            if ($hold_delete_result === false) {
+                $wpdb->query('ROLLBACK');
+                return [
+                    'success' => false,
+                    'message' => __('Failed to remove hold after booking creation.', 'fp-esperienze')
+                ];
+            }
+            
+            // Clean up other expired holds for this slot (this is not critical, so we don't rollback on failure)
             $wpdb->query($wpdb->prepare(
                 "DELETE FROM $holds_table 
                  WHERE product_id = %d AND slot_start = %s AND expires_at <= %s",
