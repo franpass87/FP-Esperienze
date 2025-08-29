@@ -6,14 +6,25 @@
     'use strict';
 
     $(document).ready(function() {
+        // Prevent multiple initializations
+        if (window.FPEsperienzeAdmin.initialized) {
+            return;
+        }
+        
         // Initialize admin functionality
         FPEsperienzeAdmin.init();
+        
+        // Mark as initialized
+        window.FPEsperienzeAdmin.initialized = true;
     });
 
     window.FPEsperienzeAdmin = {
         
         // Track unsaved changes
         hasUnsavedChanges: false,
+        
+        // Prevent double initialization
+        initialized: false,
         
         /**
          * Initialize
@@ -285,12 +296,16 @@
             // Toggle overrides visibility
             $(document).on('change', '.fp-show-overrides-toggle', function() {
                 var overridesSection = $(this).closest('.fp-time-slot-row').find('.fp-overrides-section');
+                var advancedEnabledField = $(this).closest('.fp-time-slot-row').find('.fp-advanced-enabled');
+                
                 if ($(this).is(':checked')) {
                     overridesSection.slideDown(200);
+                    advancedEnabledField.val('1');
                 } else {
                     overridesSection.slideUp(200);
                     // Clear override values when hiding
                     overridesSection.find('input, select').val('');
+                    advancedEnabledField.val('0');
                 }
                 self.updateSummaryTable();
             });
@@ -564,6 +579,7 @@
                             ' Advanced Settings' +
                         '</label>' +
                         '<span class="description">Override default values for this specific time slot</span>' +
+                        '<input type="hidden" name="builder_slots[' + index + '][advanced_enabled]" value="0" class="fp-advanced-enabled">' +
                     '</div>' +
                     
                     '<div class="fp-overrides-section" style="display: none;">' +
@@ -574,7 +590,7 @@
                             '</div>' +
                             '<div>' +
                                 '<label>Capacity</label>' +
-                                '<input type="number" name="builder_slots[' + index + '][capacity]" min="1" placeholder="Default: ' + defaultCapacity + '">' +
+                                '<input type="number" name="builder_slots[' + index + '][capacity]" placeholder="Default: ' + defaultCapacity + '">' +
                             '</div>' +
                             '<div>' +
                                 '<label>Language</label>' +

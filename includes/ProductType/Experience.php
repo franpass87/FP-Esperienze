@@ -674,14 +674,16 @@ class Experience {
             
             <div class="fp-override-toggle">
                 <label>
-                    <input type="checkbox" class="fp-show-overrides-toggle" <?php checked(!empty($overrides)); ?>>
+                    <input type="checkbox" class="fp-show-overrides-toggle" <?php checked($this->hasActualOverrides($overrides, $index, $product_id)); ?>>
                     <span class="dashicons dashicons-admin-tools"></span>
                     <?php _e('Advanced Settings', 'fp-esperienze'); ?>
                 </label>
                 <span class="description"><?php _e('Override default values for this specific time slot', 'fp-esperienze'); ?></span>
+                <!-- Hidden field to track if advanced settings are enabled for this slot -->
+                <input type="hidden" name="builder_slots[<?php echo esc_attr($index); ?>][advanced_enabled]" value="<?php echo $this->hasActualOverrides($overrides, $index, $product_id) ? '1' : '0'; ?>" class="fp-advanced-enabled">
             </div>
             
-            <div class="fp-overrides-section" style="<?php echo empty($overrides) ? 'display: none;' : ''; ?>">
+            <div class="fp-overrides-section" style="<?php echo $this->hasActualOverrides($overrides, $index, $product_id) ? '' : 'display: none;'; ?>">
                 <div>
                     <div>
                         <label>
@@ -701,8 +703,7 @@ class Experience {
                         <input type="number" 
                                name="builder_slots[<?php echo esc_attr($index); ?>][capacity]" 
                                value="<?php echo esc_attr($overrides['capacity'] ?? ''); ?>" 
-                               placeholder="<?php echo esc_attr(sprintf(__('Default: %s', 'fp-esperienze'), $default_capacity)); ?>" 
-                               min="1">
+                               placeholder="<?php echo esc_attr(sprintf(__('Default: %s', 'fp-esperienze'), $default_capacity)); ?>">
                     </div>
                     
                     <div>
@@ -1153,12 +1154,15 @@ class Experience {
             }
             
             // Get override values or null for inheritance
-            $duration_override = !empty($slot_data['duration_min']) ? (int) $slot_data['duration_min'] : null;
-            $capacity_override = !empty($slot_data['capacity']) ? (int) $slot_data['capacity'] : null;
-            $lang_override = !empty($slot_data['lang']) ? sanitize_text_field($slot_data['lang']) : null;
-            $meeting_point_override = !empty($slot_data['meeting_point_id']) ? (int) $slot_data['meeting_point_id'] : null;
-            $price_adult_override = !empty($slot_data['price_adult']) ? (float) $slot_data['price_adult'] : null;
-            $price_child_override = !empty($slot_data['price_child']) ? (float) $slot_data['price_child'] : null;
+            // Only process overrides if advanced settings are explicitly enabled
+            $advanced_enabled = !empty($slot_data['advanced_enabled']) && $slot_data['advanced_enabled'] === '1';
+            
+            $duration_override = ($advanced_enabled && !empty($slot_data['duration_min'])) ? (int) $slot_data['duration_min'] : null;
+            $capacity_override = ($advanced_enabled && !empty($slot_data['capacity'])) ? (int) $slot_data['capacity'] : null;
+            $lang_override = ($advanced_enabled && !empty($slot_data['lang'])) ? sanitize_text_field($slot_data['lang']) : null;
+            $meeting_point_override = ($advanced_enabled && !empty($slot_data['meeting_point_id'])) ? (int) $slot_data['meeting_point_id'] : null;
+            $price_adult_override = ($advanced_enabled && !empty($slot_data['price_adult'])) ? (float) $slot_data['price_adult'] : null;
+            $price_child_override = ($advanced_enabled && !empty($slot_data['price_child'])) ? (float) $slot_data['price_child'] : null;
             
             // Track existing schedule IDs for this slot
             $existing_slot_ids = !empty($slot_data['schedule_ids']) ? array_map('intval', $slot_data['schedule_ids']) : [];
@@ -1793,5 +1797,56 @@ class Experience {
                 display: none !important;
             }
         ');
+    }
+    
+    /**
+     * Check if overrides contain actual differences from product defaults
+     *
+     * @param array $overrides Override values from the slot
+     * @param int $index Slot index (for debugging)
+     * @param int $product_id Product ID
+     * @return bool True if there are actual overrides that differ from defaults
+     */
+    private function hasActualOverrides(array $overrides, int $index, int $product_id): bool {
+        // If no overrides array provided, definitely no overrides
+        if (empty($overrides)) {
+            return false;
+        }
+        
+        // Get product defaults
+        $default_duration = get_post_meta($product_id, '_fp_exp_duration', true) ?: 60;
+        $default_capacity = get_post_meta($product_id, '_fp_exp_capacity', true) ?: 10;
+        $default_lang = get_post_meta($product_id, '_fp_exp_language', true) ?: 'en';
+        $default_meeting_point = get_post_meta($product_id, '_fp_exp_meeting_point_id', true);
+        $default_price_adult = get_post_meta($product_id, '_regular_price', true) ?: 0.00;
+        $default_price_child = get_post_meta($product_id, '_fp_exp_price_child', true) ?: 0.00;
+        
+        // Check each override field for actual differences
+        if (isset($overrides['duration_min']) && $overrides['duration_min'] != $default_duration) {
+            return true;
+        }
+        
+        if (isset($overrides['capacity']) && $overrides['capacity'] != $default_capacity) {
+            return true;
+        }
+        
+        if (isset($overrides['lang']) && $overrides['lang'] != $default_lang) {
+            return true;
+        }
+        
+        if (isset($overrides['meeting_point_id']) && $overrides['meeting_point_id'] != $default_meeting_point) {
+            return true;
+        }
+        
+        if (isset($overrides['price_adult']) && abs((float)$overrides['price_adult'] - (float)$default_price_adult) >= 0.01) {
+            return true;
+        }
+        
+        if (isset($overrides['price_child']) && abs((float)$overrides['price_child'] - (float)$default_price_child) >= 0.01) {
+            return true;
+        }
+        
+        // No actual differences found
+        return false;
     }
 }
