@@ -310,22 +310,22 @@ class Installer {
         
         try {
             // Step 1: Alter table structure to allow NULL values
-            $wpdb->query("
-                ALTER TABLE `{$table_name}` 
+            $wpdb->query($wpdb->prepare("
+                ALTER TABLE %i 
                 MODIFY `duration_min` int(11) NULL,
                 MODIFY `capacity` int(11) NULL,
                 MODIFY `lang` varchar(10) NULL,
                 MODIFY `price_adult` decimal(10,2) NULL,
                 MODIFY `price_child` decimal(10,2) NULL
-            ");
+            ", $table_name));
             
             // Step 2: Set values to NULL where they match product defaults to enable inheritance
             // Get all products with schedules
-            $products_with_schedules = $wpdb->get_results("
+            $products_with_schedules = $wpdb->get_results($wpdb->prepare("
                 SELECT DISTINCT s.product_id 
-                FROM `{$table_name}` s 
+                FROM %i s 
                 WHERE s.is_active = 1
-            ");
+            ", $table_name));
             
             foreach ($products_with_schedules as $product) {
                 $product_id = $product->product_id;
@@ -340,42 +340,42 @@ class Installer {
                 // Set fields to NULL where they match defaults
                 if ($default_duration) {
                     $wpdb->query($wpdb->prepare("
-                        UPDATE `{$table_name}` 
+                        UPDATE %i 
                         SET duration_min = NULL 
                         WHERE product_id = %d AND duration_min = %d
-                    ", $product_id, $default_duration));
+                    ", $table_name, $product_id, $default_duration));
                 }
                 
                 if ($default_capacity) {
                     $wpdb->query($wpdb->prepare("
-                        UPDATE `{$table_name}` 
+                        UPDATE %i 
                         SET capacity = NULL 
                         WHERE product_id = %d AND capacity = %d
-                    ", $product_id, $default_capacity));
+                    ", $table_name, $product_id, $default_capacity));
                 }
                 
                 if ($default_lang) {
                     $wpdb->query($wpdb->prepare("
-                        UPDATE `{$table_name}` 
+                        UPDATE %i 
                         SET lang = NULL 
                         WHERE product_id = %d AND lang = %s
-                    ", $product_id, $default_lang));
+                    ", $table_name, $product_id, $default_lang));
                 }
                 
                 if ($default_price_adult) {
                     $wpdb->query($wpdb->prepare("
-                        UPDATE `{$table_name}` 
+                        UPDATE %i 
                         SET price_adult = NULL 
                         WHERE product_id = %d AND ABS(price_adult - %f) < 0.01
-                    ", $product_id, $default_price_adult));
+                    ", $table_name, $product_id, $default_price_adult));
                 }
                 
                 if ($default_price_child) {
                     $wpdb->query($wpdb->prepare("
-                        UPDATE `{$table_name}` 
+                        UPDATE %i 
                         SET price_child = NULL 
                         WHERE product_id = %d AND ABS(price_child - %f) < 0.01
-                    ", $product_id, $default_price_child));
+                    ", $table_name, $product_id, $default_price_child));
                 }
             }
             
@@ -468,12 +468,13 @@ class Installer {
             foreach ($table_indexes as $index_name => $index_sql) {
                 // Check if index already exists
                 $existing_index = $wpdb->get_var($wpdb->prepare(
-                    "SHOW INDEX FROM {$table} WHERE Key_name = %s",
+                    "SHOW INDEX FROM %i WHERE Key_name = %s",
+                    $table,
                     'idx_' . $index_name
                 ));
                 
                 if (!$existing_index) {
-                    $full_sql = "ALTER TABLE {$table} {$index_sql}";
+                    $full_sql = $wpdb->prepare("ALTER TABLE %i {$index_sql}", $table);
                     $wpdb->query($full_sql);
                     
                     if (defined('WP_DEBUG') && WP_DEBUG) {
