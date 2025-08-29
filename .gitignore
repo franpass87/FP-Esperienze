@@ -46,4 +46,5 @@ error_log
 
 # Test files (should be removed in production)
 test-*.php
+test-*.html
 verify-experience-fix.php
