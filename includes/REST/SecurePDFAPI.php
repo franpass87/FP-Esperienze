@@ -25,7 +25,8 @@ class SecurePDFAPI {
      * Constructor
      */
     public function __construct() {
-        add_action('rest_api_init', [$this, 'registerRoutes']);
+        // Register routes immediately since this is already called from rest_api_init
+        $this->registerRoutes();
     }
 
     /**
