@@ -392,6 +392,15 @@
     .fp-overrides-section > div {
         grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important;
     }
+    
+    .fp-summary-table {
+        font-size: 12px;
+    }
+    
+    .fp-summary-table th,
+    .fp-summary-table td {
+        padding: 8px 6px;
+    }
 }
 
 @media (max-width: 768px) {
@@ -408,12 +417,14 @@
     
     .fp-days-pills {
         gap: 4px !important;
+        justify-content: center !important;
     }
     
     .fp-day-pill label {
         min-width: 28px !important;
         height: 28px !important;
         font-size: 11px !important;
+        padding: 0 6px !important;
     }
     
     .fp-override-toggle,
@@ -423,12 +434,119 @@
     }
     
     .fp-summary-table {
-        font-size: 12px;
+        font-size: 11px;
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
     }
     
     .fp-summary-table th,
     .fp-summary-table td {
-        padding: 6px 8px;
+        padding: 6px 4px;
+        min-width: 60px;
+    }
+    
+    .fp-time-field label,
+    .fp-days-field label {
+        font-size: 12px !important;
+    }
+    
+    .fp-time-field input[type="time"] {
+        padding: 6px 10px !important;
+        font-size: 14px !important;
+    }
+    
+    .fp-remove-time-slot {
+        padding: 6px 10px !important;
+        font-size: 12px !important;
+        margin-top: 10px !important;
+    }
+    
+    .fp-override-row {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px !important;
+    }
+    
+    .fp-override-row input[type="date"] {
+        grid-column: 1 / -1;
+    }
+    
+    .fp-override-row .fp-remove-override {
+        grid-column: 1 / -1;
+        justify-self: center;
+        padding: 8px 16px !important;
+    }
+    
+    .fp-add-time-slot,
+    .fp-add-override {
+        width: 100%;
+        justify-content: center;
+        padding: 14px 20px !important;
+        font-size: 14px !important;
+    }
+    
+    /* Hide summary table on very small screens */
+    @media (max-width: 480px) {
+        .fp-slots-summary {
+            display: none;
+        }
+    }
+}
+
+/* Improved focus states for accessibility */
+.fp-day-pill input[type="checkbox"]:focus + label {
+    outline: 2px solid #0073aa;
+    outline-offset: 2px;
+    z-index: 1;
+    position: relative;
+}
+
+.fp-time-field input[type="time"]:focus,
+.fp-overrides-section input:focus,
+.fp-overrides-section select:focus,
+.fp-override-row input:focus {
+    outline: 2px solid #0073aa;
+    outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .fp-day-pill label {
+        border-width: 3px !important;
+    }
+    
+    .fp-day-pill input[type="checkbox"]:checked + label {
+        border-color: #000 !important;
+        background: #000 !important;
+        color: #fff !important;
+    }
+    
+    .fp-time-badge,
+    .fp-day-badge {
+        border: 2px solid #000;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .fp-day-pill label,
+    .fp-remove-time-slot,
+    .fp-remove-override,
+    .fp-add-time-slot,
+    .fp-add-override,
+    .fp-time-field input[type="time"],
+    .fp-overrides-section input,
+    .fp-overrides-section select,
+    .fp-override-row input {
+        transition: none !important;
+    }
+    
+    .fp-day-pill label:hover,
+    .fp-remove-time-slot:hover,
+    .fp-remove-override:hover,
+    .fp-add-time-slot:hover,
+    .fp-add-override:hover {
+        transform: none !important;
     }
 }
 

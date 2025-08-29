@@ -12,6 +12,9 @@
 
     window.FPEsperienzeAdmin = {
         
+        // Track unsaved changes
+        hasUnsavedChanges: false,
+        
         /**
          * Initialize
          */
@@ -254,6 +257,8 @@
             $('form#post').on('submit', function() {
                 if ($('#product-type').val() === 'experience') {
                     self.generateSchedulesFromBuilder();
+                    // Clear unsaved changes flag on successful submission
+                    self.clearUnsavedChanges();
                 }
             });
         },
@@ -299,6 +304,87 @@
             $(document).on('change', 'input[name*="[duration_min]"], input[name*="[capacity]"]', function() {
                 self.updateSummaryTable();
             });
+            
+            // Validate time slots before form submission
+            $('form#post').on('submit', function(e) {
+                if (!self.validateTimeSlots()) {
+                    e.preventDefault();
+                    return false;
+                }
+            });
+            
+            // Auto-save functionality for better UX
+            $(document).on('change', '#fp-time-slots-container input, #fp-time-slots-container select', function() {
+                self.markAsChanged();
+            });
+        },
+        
+        /**
+         * Validate time slots before saving
+         */
+        validateTimeSlots: function() {
+            var hasErrors = false;
+            var errorMessages = [];
+            
+            $('#fp-time-slots-container .fp-time-slot').each(function() {
+                var $slot = $(this);
+                var startTime = $slot.find('input[name*="[start_time]"]').val();
+                var selectedDays = $slot.find('input[name*="[days][]"]:checked').length;
+                
+                if (!startTime) {
+                    hasErrors = true;
+                    $slot.find('input[name*="[start_time]"]').css('border-color', '#d63638');
+                    errorMessages.push('All time slots must have a start time.');
+                } else {
+                    $slot.find('input[name*="[start_time]"]').css('border-color', '');
+                }
+                
+                if (selectedDays === 0) {
+                    hasErrors = true;
+                    $slot.find('.fp-days-pills').css('border', '2px solid #d63638');
+                    errorMessages.push('All time slots must have at least one day selected.');
+                } else {
+                    $slot.find('.fp-days-pills').css('border', '');
+                }
+            });
+            
+            if (hasErrors) {
+                var uniqueMessages = [...new Set(errorMessages)];
+                alert('Please fix the following errors:\n\n' + uniqueMessages.join('\n'));
+                return false;
+            }
+            
+            return true;
+        },
+        
+        /**
+         * Mark form as changed for unsaved changes warning
+         */
+        markAsChanged: function() {
+            if (!this.hasUnsavedChanges) {
+                this.hasUnsavedChanges = true;
+                this.showUnsavedChangesWarning();
+            }
+        },
+        
+        /**
+         * Show unsaved changes warning
+         */
+        showUnsavedChangesWarning: function() {
+            window.addEventListener('beforeunload', function(e) {
+                if (FPEsperienzeAdmin.hasUnsavedChanges) {
+                    e.preventDefault();
+                    e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+                    return e.returnValue;
+                }
+            });
+        },
+        
+        /**
+         * Clear unsaved changes flag
+         */
+        clearUnsavedChanges: function() {
+            this.hasUnsavedChanges = false;
         },
         
         /**
