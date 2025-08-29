@@ -969,31 +969,18 @@ class Experience {
                                    value="<?php echo esc_attr($extra->id); ?>"
                                    <?php checked(in_array($extra->id, $selected_extra_ids)); ?>>
                             <strong><?php echo esc_html($extra->name); ?></strong>
-                            (<?php echo wc_price($extra->price); ?> 
+                            <?php if (function_exists('wc_price')) : ?>
+                                (<?php echo wc_price($extra->price); ?> 
+                            <?php else : ?>
+                                (<?php echo '$' . number_format($extra->price, 2); ?> 
+                            <?php endif; ?>
                             <?php echo esc_html($extra->billing_type === 'per_person' ? __('per person', 'fp-esperienze') : __('per booking', 'fp-esperienze')); ?>)
                             <?php if ($extra->description) : ?>
                                 <br><span class="description"><?php echo esc_html($extra->description); ?></span>
                             <?php endif; ?>
-                        </label><br>
+                        </label>
                     <?php endforeach; ?>
                 </div>
-                
-                <style>
-                .fp-extra-checkbox {
-                    display: block;
-                    margin: 8px 0;
-                    padding: 8px;
-                    border: 1px solid #ddd;
-                    border-radius: 4px;
-                    background: #f9f9f9;
-                }
-                .fp-extra-checkbox:hover {
-                    background: #f0f0f0;
-                }
-                .fp-extra-checkbox input {
-                    margin-right: 8px;
-                }
-                </style>
             <?php endif; ?>
         </div>
         <?php
