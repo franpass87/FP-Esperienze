@@ -242,7 +242,15 @@ class MenuManager {
                 'voidVoucher' => __('Are you sure you want to void this voucher?', 'fp-esperienze'),
                 'selectTimeSlot' => __('Select time slot', 'fp-esperienze'),
                 'loadingEvents' => __('Loading events...', 'fp-esperienze'),
-                'errorFetchingEvents' => __('There was an error while fetching events. Please try again.', 'fp-esperienze')
+                'errorFetchingEvents' => __('There was an error while fetching events. Please try again.', 'fp-esperienze'),
+                'errorLoadingTimeSlots' => __('Error loading time slots', 'fp-esperienze'),
+                'errorReschedulingBooking' => __('Error rescheduling booking', 'fp-esperienze'),
+                'errorCheckingCancellationRules' => __('Error checking cancellation rules', 'fp-esperienze'),
+                'errorCancellingBooking' => __('Error cancelling booking', 'fp-esperienze'),
+                'confirmCancelBooking' => __('Are you sure you want to cancel this booking?', 'fp-esperienze'),
+                'spotsAvailable' => __('spots available', 'fp-esperienze'),
+                'confirmDeleteMeetingPoint' => __('Are you sure you want to delete the meeting point', 'fp-esperienze'),
+                'actionCannotBeUndone' => __('This action cannot be undone and will fail if the meeting point is currently in use.', 'fp-esperienze')
             ],
             'ajax_url' => admin_url('admin-ajax.php'),
             'rest_url' => rest_url('fp-esperienze/v1/'),
@@ -579,21 +587,21 @@ class MenuManager {
                     success: function(response) {
                         if (response.success) {
                             var timeSelect = $('#reschedule-time');
-                            timeSelect.html('<option value=""><?php _e('Select time slot', 'fp-esperienze'); ?></option>');
+                            timeSelect.html('<option value="">' + fpEsperienzeAdmin.i18n.selectTimeSlot + '</option>');
                             
                             $.each(response.data.slots, function(index, slot) {
                                 if (slot.is_available) {
                                     timeSelect.append('<option value="' + slot.start_time + '">' + 
                                         slot.start_time + ' - ' + slot.end_time + 
-                                        ' (' + slot.available + ' <?php _e('spots available', 'fp-esperienze'); ?>)</option>');
+                                        ' (' + slot.available + ' ' + fpEsperienzeAdmin.i18n.spotsAvailable + ')</option>');
                                 }
                             });
                         } else {
-                            alert(response.data.message || '<?php _e('Error loading time slots', 'fp-esperienze'); ?>');
+                            alert(response.data.message || fpEsperienzeAdmin.i18n.errorLoadingTimeSlots);
                         }
                     },
                     error: function() {
-                        alert('<?php _e('Error loading time slots', 'fp-esperienze'); ?>');
+                        alert(fpEsperienzeAdmin.i18n.errorLoadingTimeSlots);
                     }
                 });
             });
@@ -614,11 +622,11 @@ class MenuManager {
                             alert(response.data.message);
                             location.reload();
                         } else {
-                            alert(response.data.message || '<?php _e('Error rescheduling booking', 'fp-esperienze'); ?>');
+                            alert(response.data.message || fpEsperienzeAdmin.i18n.errorReschedulingBooking);
                         }
                     },
                     error: function() {
-                        alert('<?php _e('Error rescheduling booking', 'fp-esperienze'); ?>');
+                        alert(fpEsperienzeAdmin.i18n.errorReschedulingBooking);
                     }
                 });
             });
@@ -654,7 +662,7 @@ class MenuManager {
                         $('#fp-cancel-modal').show();
                     },
                     error: function() {
-                        alert('<?php _e('Error checking cancellation rules', 'fp-esperienze'); ?>');
+                        alert(fpEsperienzeAdmin.i18n.errorCheckingCancellationRules);
                     }
                 });
             });
@@ -663,7 +671,7 @@ class MenuManager {
             $('#fp-cancel-form').submit(function(e) {
                 e.preventDefault();
                 
-                if (!confirm('<?php _e('Are you sure you want to cancel this booking?', 'fp-esperienze'); ?>')) {
+                if (!confirm(fpEsperienzeAdmin.i18n.confirmCancelBooking)) {
                     return;
                 }
                 
@@ -679,11 +687,11 @@ class MenuManager {
                             alert(response.data.message);
                             location.reload();
                         } else {
-                            alert(response.data.message || '<?php _e('Error cancelling booking', 'fp-esperienze'); ?>');
+                            alert(response.data.message || fpEsperienzeAdmin.i18n.errorCancellingBooking);
                         }
                     },
                     error: function() {
-                        alert('<?php _e('Error cancelling booking', 'fp-esperienze'); ?>');
+                        alert(fpEsperienzeAdmin.i18n.errorCancellingBooking);
                     }
                 });
             });
@@ -918,7 +926,7 @@ class MenuManager {
         
         <script>
         function confirmDelete(id, name) {
-            if (confirm('<?php echo esc_js(__('Are you sure you want to delete the meeting point', 'fp-esperienze')); ?> "' + name + '"?\n\n<?php echo esc_js(__('This action cannot be undone and will fail if the meeting point is currently in use.', 'fp-esperienze')); ?>')) {
+            if (confirm(fpEsperienzeAdmin.i18n.confirmDeleteMeetingPoint + ' "' + name + '"?\n\n' + fpEsperienzeAdmin.i18n.actionCannotBeUndone)) {
                 document.getElementById('delete-meeting-point-id').value = id;
                 document.getElementById('delete-meeting-point-form').submit();
             }
