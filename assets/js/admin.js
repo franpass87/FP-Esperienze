@@ -300,6 +300,16 @@
                 self.updateSummaryTable();
             });
             
+            // Handle day pill clicks - click on label should toggle the checkbox
+            $(document).on('click', '.fp-day-pill label', function(e) {
+                // Don't prevent default - let the label naturally trigger the checkbox
+                // But ensure we update the summary after the checkbox state changes
+                var self_ref = self;
+                setTimeout(function() {
+                    self_ref.updateSummaryTable();
+                }, 10);
+            });
+            
             // Update summary when overrides change
             $(document).on('change', 'input[name*="[duration_min]"], input[name*="[capacity]"]', function() {
                 self.updateSummaryTable();
@@ -326,7 +336,7 @@
             var hasErrors = false;
             var errorMessages = [];
             
-            $('#fp-time-slots-container .fp-time-slot').each(function() {
+            $('#fp-time-slots-container .fp-time-slot-row').each(function() {
                 var $slot = $(this);
                 var startTime = $slot.find('input[name*="[start_time]"]').val();
                 var selectedDays = $slot.find('input[name*="[days][]"]:checked').length;
@@ -401,7 +411,7 @@
             };
             
             // Collect slot data
-            $('#fp-time-slots-container .fp-time-slot').each(function() {
+            $('#fp-time-slots-container .fp-time-slot-row').each(function() {
                 var $slot = $(this);
                 var startTime = $slot.find('input[name*="[start_time]"]').val();
                 var selectedDays = [];
@@ -494,7 +504,7 @@
          */
         addTimeSlot: function() {
             var container = $('#fp-time-slots-container');
-            var index = container.find('.fp-time-slot').length;
+            var index = container.find('.fp-time-slot-row').length;
             
             var days = {
                 '1': 'Monday',
@@ -514,8 +524,7 @@
             var defaultPriceAdult = $('#_regular_price').val() || '0.00';
             var defaultPriceChild = $('#_fp_exp_price_child').val() || '0.00';
             
-            var timeSlotHtml = '<div class="fp-time-slot" data-index="' + index + '">' +
-                '<div class="fp-time-slot-row">' +
+            var timeSlotHtml = '<div class="fp-time-slot-row" data-index="' + index + '">' +
                     '<div class="fp-time-slot-header">' +
                         '<div class="fp-time-field">' +
                             '<label>' +
@@ -595,7 +604,7 @@
             container.append(timeSlotHtml);
             
             // Populate meeting points dropdown
-            this.populateMeetingPointsDropdown(container.find('.fp-time-slot').last().find('select[name*="meeting_point_id"]'));
+            this.populateMeetingPointsDropdown(container.find('.fp-time-slot-row').last().find('select[name*="meeting_point_id"]'));
             
             // Update summary table
             this.updateSummaryTable();
@@ -626,7 +635,7 @@
             var scheduleIndex = 0;
             
             // Process each time slot
-            $('#fp-time-slots-container .fp-time-slot').each(function() {
+            $('#fp-time-slots-container .fp-time-slot-row').each(function() {
                 var timeSlot = $(this);
                 var startTime = timeSlot.find('input[name*="[start_time]"]').val();
                 var selectedDays = [];
