@@ -383,8 +383,6 @@ class Experience {
                     <?php $this->renderExtrasSection($post->ID); ?>
                 </div>
             </div>
-
-            ?>
         </div>
         
         <div id="dynamic_pricing_product_data" class="panel woocommerce_options_panel">
