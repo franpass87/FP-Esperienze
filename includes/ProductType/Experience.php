@@ -999,7 +999,8 @@ class Experience {
         }
         
         // Only proceed if this is an experience product
-        if (!isset($_POST['product-type']) || $_POST['product-type'] !== 'experience') {
+        $product_type = sanitize_text_field($_POST['product-type'] ?? '');
+        if ($product_type !== 'experience') {
             return;
         }
         
@@ -1054,7 +1055,8 @@ class Experience {
      */
     public function ensureProductType(int $product_id): void {
         // Only proceed if we're saving an experience product
-        if (!isset($_POST['product-type']) || $_POST['product-type'] !== 'experience') {
+        $product_type = sanitize_text_field($_POST['product-type'] ?? '');
+        if ($product_type !== 'experience') {
             return;
         }
         
@@ -1082,12 +1084,29 @@ class Experience {
         
         // Save new rules
         foreach ($_POST['pricing_rules'] as $rule_data) {
-            if (empty($rule_data['rule_name']) || empty($rule_data['rule_type'])) {
+            // Sanitize rule data
+            $sanitized_rule = [
+                'rule_name' => sanitize_text_field($rule_data['rule_name'] ?? ''),
+                'rule_type' => sanitize_text_field($rule_data['rule_type'] ?? ''),
+                'product_id' => $product_id
+            ];
+            
+            if (empty($sanitized_rule['rule_name']) || empty($sanitized_rule['rule_type'])) {
                 continue;
             }
             
-            $rule_data['product_id'] = $product_id;
-            DynamicPricingManager::saveRule($rule_data);
+            // Copy other sanitized fields if they exist
+            foreach ($rule_data as $key => $value) {
+                if (!in_array($key, ['rule_name', 'rule_type', 'product_id'])) {
+                    if (is_numeric($value)) {
+                        $sanitized_rule[$key] = is_float($value) ? floatval($value) : absint($value);
+                    } else {
+                        $sanitized_rule[$key] = sanitize_text_field($value);
+                    }
+                }
+            }
+            
+            DynamicPricingManager::saveRule($sanitized_rule);
         }
     }
     
@@ -1821,28 +1840,28 @@ class Experience {
         $default_price_adult = get_post_meta($product_id, '_regular_price', true) ?: 0.00;
         $default_price_child = get_post_meta($product_id, '_fp_exp_price_child', true) ?: 0.00;
         
-        // Check each override field for actual differences
-        if (isset($overrides['duration_min']) && $overrides['duration_min'] != $default_duration) {
+        // Check each override field for actual non-empty differences
+        if (!empty($overrides['duration_min']) && $overrides['duration_min'] != $default_duration) {
             return true;
         }
         
-        if (isset($overrides['capacity']) && $overrides['capacity'] != $default_capacity) {
+        if (!empty($overrides['capacity']) && $overrides['capacity'] != $default_capacity) {
             return true;
         }
         
-        if (isset($overrides['lang']) && $overrides['lang'] != $default_lang) {
+        if (!empty($overrides['lang']) && $overrides['lang'] != $default_lang) {
             return true;
         }
         
-        if (isset($overrides['meeting_point_id']) && $overrides['meeting_point_id'] != $default_meeting_point) {
+        if (!empty($overrides['meeting_point_id']) && $overrides['meeting_point_id'] != $default_meeting_point) {
             return true;
         }
         
-        if (isset($overrides['price_adult']) && abs((float)$overrides['price_adult'] - (float)$default_price_adult) >= 0.01) {
+        if (!empty($overrides['price_adult']) && abs((float)$overrides['price_adult'] - (float)$default_price_adult) >= 0.01) {
             return true;
         }
         
-        if (isset($overrides['price_child']) && abs((float)$overrides['price_child'] - (float)$default_price_child) >= 0.01) {
+        if (!empty($overrides['price_child']) && abs((float)$overrides['price_child'] - (float)$default_price_child) >= 0.01) {
             return true;
         }
         
