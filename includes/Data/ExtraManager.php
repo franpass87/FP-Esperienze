@@ -23,7 +23,7 @@ class ExtraManager {
     public static function getAllExtras(bool $active_only = false): array {
         global $wpdb;
         
-        $table_name = esc_sql($wpdb->prefix . 'fp_extras');
+        $table_name = $wpdb->prefix . 'fp_extras';
         
         if ($active_only) {
             $results = $wpdb->get_results($wpdb->prepare(
@@ -31,7 +31,9 @@ class ExtraManager {
                 1
             ));
         } else {
-            $results = $wpdb->get_results("SELECT * FROM `{$table_name}` ORDER BY name ASC");
+            $results = $wpdb->get_results($wpdb->prepare(
+                "SELECT * FROM `{$table_name}` ORDER BY name ASC"
+            ));
         }
         
         return $results ?: [];

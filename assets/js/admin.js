@@ -7,7 +7,7 @@
 
     $(document).ready(function() {
         // Prevent multiple initializations
-        if (window.FPEsperienzeAdmin.initialized) {
+        if (window.FPEsperienzeAdmin && window.FPEsperienzeAdmin.initialized) {
             return;
         }
         
