@@ -149,14 +149,15 @@ class OverrideManager {
     public static function getGlobalClosures(): array {
         global $wpdb;
         
-        $table_name = esc_sql($wpdb->prefix . 'fp_overrides');
-        $results = $wpdb->get_results(
+        $table_name = $wpdb->prefix . 'fp_overrides';
+        $results = $wpdb->get_results($wpdb->prepare(
             "SELECT o.*, p.post_title as product_name 
              FROM `{$table_name}` o 
              LEFT JOIN {$wpdb->posts} p ON o.product_id = p.ID 
-             WHERE o.is_closed = 1 
-             ORDER BY o.date DESC"
-        );
+             WHERE o.is_closed = %d 
+             ORDER BY o.date DESC",
+            1
+        ));
         
         return $results ?: [];
     }

@@ -48,7 +48,11 @@ class Qr {
         $filename = 'qr-' . $voucher_data['code'] . '-' . time() . '.png';
         $file_path = $qr_dir . $filename;
         
-        file_put_contents($file_path, $qr_image);
+        $result = file_put_contents($file_path, $qr_image);
+        
+        if ($result === false) {
+            throw new \Exception('Failed to save QR code image to: ' . $file_path);
+        }
         
         return $file_path;
     }

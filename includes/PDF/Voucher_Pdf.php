@@ -53,7 +53,11 @@ class Voucher_Pdf {
         $filename = 'voucher-' . $voucher_data['code'] . '-' . time() . '.pdf';
         $file_path = $voucher_dir . $filename;
         
-        file_put_contents($file_path, $dompdf->output());
+        $result = file_put_contents($file_path, $dompdf->output());
+        
+        if ($result === false) {
+            throw new \Exception('Failed to save PDF voucher to: ' . $file_path);
+        }
         
         return $file_path;
     }

@@ -746,7 +746,7 @@
                 '<select name="schedules[' + index + '][day_of_week]" required>' + dayOptions + '</select>' +
                 '<input type="time" name="schedules[' + index + '][start_time]" required>' +
                 '<input type="number" name="schedules[' + index + '][duration_min]" value="60" min="1" step="1" required>' +
-                '<input type="number" name="schedules[' + index + '][capacity]" value="10" min="1" step="1" required>' +
+                '<input type="number" name="schedules[' + index + '][capacity]" placeholder="10" min="1" step="1" required>' +
                 '<input type="text" name="schedules[' + index + '][lang]" value="en" maxlength="10">' +
                 '<select name="schedules[' + index + '][meeting_point_id]"></select>' +
                 '<input type="number" name="schedules[' + index + '][price_adult]" min="0" step="0.01">' +
