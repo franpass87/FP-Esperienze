@@ -300,19 +300,50 @@
             
             // Toggle overrides visibility
             $(document).on('change', '.fp-show-overrides-toggle', function() {
-                var overridesSection = $(this).closest('.fp-time-slot-row').find('.fp-overrides-section');
-                var advancedEnabledField = $(this).closest('.fp-time-slot-row').find('.fp-advanced-enabled');
+                var $this = $(this);
+                var $timeSlotRow = $this.closest('.fp-time-slot-row');
+                var $overridesSection = $timeSlotRow.find('.fp-overrides-section');
+                var $advancedEnabledField = $timeSlotRow.find('.fp-advanced-enabled');
                 
-                if ($(this).is(':checked')) {
-                    overridesSection.slideDown(200);
-                    advancedEnabledField.val('1');
+                if ($this.is(':checked')) {
+                    // Ensure the parent container can accommodate the expansion
+                    $timeSlotRow.css('overflow', 'visible');
+                    $overridesSection.slideDown({
+                        duration: 300,
+                        easing: 'swing',
+                        start: function() {
+                            // Ensure proper layout during animation
+                            $(this).css('overflow', 'visible');
+                        },
+                        complete: function() {
+                            // Ensure proper spacing after animation
+                            $(this).css({
+                                'overflow': 'visible',
+                                'height': 'auto'
+                            });
+                            // Force layout recalculation
+                            $timeSlotRow.trigger('resize');
+                        }
+                    });
+                    $advancedEnabledField.val('1');
                 } else {
-                    overridesSection.slideUp(200);
-                    // Clear override values when hiding
-                    overridesSection.find('input, select').val('');
-                    advancedEnabledField.val('0');
+                    $overridesSection.slideUp({
+                        duration: 300,
+                        easing: 'swing',
+                        complete: function() {
+                            // Clear override values when hiding
+                            $(this).find('input, select').val('');
+                            // Reset container overflow
+                            $timeSlotRow.css('overflow', 'visible');
+                        }
+                    });
+                    $advancedEnabledField.val('0');
                 }
-                self.updateSummaryTable();
+                
+                // Update summary table after a short delay to ensure DOM is updated
+                setTimeout(function() {
+                    self.updateSummaryTable();
+                }, 350);
             });
             
             // Update summary when time or days change

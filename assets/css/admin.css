@@ -224,6 +224,18 @@
     overflow-y: visible;
 }
 
+/* Time slots container specific styling */
+#fp-time-slots-container {
+    margin-bottom: 20px;
+    max-width: 100%;
+    overflow: visible;
+    clear: both;
+}
+
+#fp-time-slots-container .fp-time-slot {
+    margin-bottom: 8px;
+}
+
 #fp-add-schedule,
 #fp-add-override {
     background: #0073aa;
@@ -427,6 +439,15 @@
     
     .fp-overrides-section > div {
         grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important;
+    }
+    
+    /* Ensure proper spacing for time slot sections */
+    .fp-time-slot-row {
+        margin-bottom: 40px !important;
+    }
+    
+    .fp-overrides-section {
+        margin: 20px 0 32px 0 !important;
     }
 }
     
@@ -701,13 +722,17 @@
 .fp-time-slot-row {
     border: none;
     padding: 24px;
-    margin-bottom: 24px;
+    margin-bottom: 32px;
     background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
     border-radius: 16px;
     box-shadow: 0 4px 16px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.03);
     position: relative;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    overflow: hidden;
+    overflow: visible;
+    clear: both;
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .fp-time-slot-row::before {
@@ -1058,12 +1083,15 @@
 .fp-override-toggle {
     border-top: 1px solid #e1e1e1;
     padding-top: 15px;
-    margin-bottom: 15px;
+    margin-bottom: 0;
     background: #f9f9f9;
-    margin: 15px -20px 15px -20px;
-    padding: 15px 20px;
+    margin: 15px -24px 0 -24px;
+    padding: 15px 24px;
     border-top: 1px solid #e1e1e1;
     border-bottom: 1px solid #e1e1e1;
+    clear: both;
+    position: relative;
+    z-index: 1;
 }
 
 .fp-override-toggle label {
@@ -1102,11 +1130,14 @@
     background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%) !important;
     padding: 24px !important;
     border-radius: 16px !important;
-    margin: 20px 0 !important;
+    margin: 20px 0 24px 0 !important;
     position: relative;
     box-shadow: 0 8px 32px rgba(102,126,234,0.08), 0 2px 8px rgba(102,126,234,0.04);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     overflow: hidden;
+    clear: both;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .fp-overrides-section::before {
