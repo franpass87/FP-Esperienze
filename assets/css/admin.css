@@ -1,5 +1,65 @@
 /* FP Esperienze Admin Styles with Modern Design System */
 
+/* CSS Custom Properties for Consistent Theme */
+:root {
+    /* Primary colors */
+    --fp-primary-blue: #667eea;
+    --fp-primary-purple: #764ba2;
+    --fp-primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    
+    /* Secondary colors */
+    --fp-danger-red: #d63638;
+    --fp-danger-light: #ff6b6b;
+    --fp-success-green: #4CAF50;
+    --fp-warning-yellow: #ffb900;
+    
+    /* Neutral colors */
+    --fp-gray-50: #f8f9fa;
+    --fp-gray-100: #e9ecef;
+    --fp-gray-200: #e2e8f0;
+    --fp-gray-300: #cbd5e0;
+    --fp-gray-400: #a0aec0;
+    --fp-gray-500: #718096;
+    --fp-gray-600: #4a5568;
+    --fp-gray-700: #2d3748;
+    --fp-gray-800: #1a202c;
+    --fp-gray-900: #171923;
+    
+    /* Spacing */
+    --fp-space-xs: 4px;
+    --fp-space-sm: 8px;
+    --fp-space-md: 12px;
+    --fp-space-lg: 16px;
+    --fp-space-xl: 20px;
+    --fp-space-2xl: 24px;
+    --fp-space-3xl: 32px;
+    
+    /* Typography */
+    --fp-font-sm: 12px;
+    --fp-font-base: 14px;
+    --fp-font-lg: 16px;
+    --fp-font-xl: 18px;
+    --fp-font-2xl: 20px;
+    
+    /* Border radius */
+    --fp-radius-sm: 6px;
+    --fp-radius-md: 8px;
+    --fp-radius-lg: 12px;
+    --fp-radius-xl: 16px;
+    --fp-radius-full: 50px;
+    
+    /* Shadows */
+    --fp-shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+    --fp-shadow-md: 0 4px 16px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.03);
+    --fp-shadow-lg: 0 8px 32px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04);
+    --fp-shadow-xl: 0 20px 48px rgba(0,0,0,0.15), 0 8px 24px rgba(0,0,0,0.1);
+    
+    /* Transitions */
+    --fp-transition-fast: 0.15s ease;
+    --fp-transition-base: 0.2s ease;
+    --fp-transition-slow: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 /* CSS Animations and Keyframes */
 @keyframes gradientShift {
     0%, 100% { background-position: 0% 50%; }
@@ -25,6 +85,53 @@
         opacity: 1;
         transform: translateY(0);
     }
+}
+
+@keyframes slideInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes bounceIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.3);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.05);
+    }
+    70% {
+        transform: scale(0.9);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes pulseGlow {
+    0%, 100% {
+        box-shadow: 0 0 5px rgba(102,126,234,0.3);
+    }
+    50% {
+        box-shadow: 0 0 20px rgba(102,126,234,0.6);
+    }
+}
+
+/* Enhanced animation classes */
+.fp-animation-bounce-in {
+    animation: bounceIn 0.5s ease-out;
+}
+
+.fp-animation-pulse-glow {
+    animation: pulseGlow 2s ease-in-out infinite;
 }
 
 /* Utility classes */
@@ -286,22 +393,24 @@
     display: block !important;
 }
 
-/* Enhanced override row styling */
+/* Enhanced override row styling with consistent theming */
 .fp-override-row {
     display: grid !important;
     grid-template-columns: minmax(140px, 1fr) auto minmax(80px, 120px) minmax(80px, 120px) minmax(80px, 120px) minmax(150px, 1fr) auto !important;
-    gap: 10px !important;
+    gap: var(--fp-space-md) !important;
     align-items: center !important;
-    margin-bottom: 12px !important;
-    padding: 14px !important;
-    border: 1px solid #cbd5e0 !important;
-    border-radius: 8px !important;
-    background: #fff !important;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
+    margin-bottom: var(--fp-space-md) !important;
+    padding: var(--fp-space-lg) !important;
+    border: 1px solid var(--fp-gray-300) !important;
+    border-radius: var(--fp-radius-md) !important;
+    background: linear-gradient(145deg, #ffffff 0%, var(--fp-gray-50) 100%) !important;
+    box-shadow: var(--fp-shadow-sm) !important;
     position: relative;
     overflow: hidden !important;
     max-width: 100% !important;
     box-sizing: border-box !important;
+    transition: var(--fp-transition-slow);
+    animation: slideInDown 0.4s ease-out;
 }
 
 .fp-override-row::before {
@@ -311,84 +420,118 @@
     left: 0;
     width: 3px;
     height: 100%;
-    background: linear-gradient(to bottom, #667eea, #764ba2);
-    border-radius: 8px 0 0 8px;
+    background: var(--fp-primary-gradient);
+    border-radius: var(--fp-radius-md) 0 0 var(--fp-radius-md);
+    transition: var(--fp-transition-base);
+}
+
+.fp-override-row:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--fp-shadow-md);
+    border-color: var(--fp-primary-blue);
+}
+
+.fp-override-row:hover::before {
+    width: 6px;
 }
 
 .fp-override-row input[type="date"] {
     width: 100% !important;
     max-width: 140px !important;
-    padding: 8px 10px !important;
-    border: 1px solid #cbd5e0 !important;
-    border-radius: 6px !important;
-    font-size: 13px !important;
+    padding: var(--fp-space-sm) var(--fp-space-md) !important;
+    border: 2px solid var(--fp-gray-300) !important;
+    border-radius: var(--fp-radius-sm) !important;
+    font-size: var(--fp-font-sm) !important;
     font-weight: 500 !important;
     box-sizing: border-box !important;
     background: #fff !important;
-    transition: all 0.2s ease !important;
+    transition: var(--fp-transition-base) !important;
 }
 
 .fp-override-row input[type="date"]:focus {
-    border-color: #667eea !important;
-    box-shadow: 0 0 0 2px rgba(102,126,234,0.15) !important;
+    border-color: var(--fp-primary-blue) !important;
+    box-shadow: 0 0 0 3px rgba(102,126,234,0.15) !important;
     outline: none !important;
 }
 
 .fp-override-row label {
     display: flex !important;
     align-items: center !important;
-    gap: 6px !important;
-    font-size: 12px !important;
-    font-weight: 500 !important;
-    color: #2d3748 !important;
+    gap: var(--fp-space-sm) !important;
+    font-size: var(--fp-font-sm) !important;
+    font-weight: 600 !important;
+    color: var(--fp-gray-700) !important;
     margin: 0 !important;
     cursor: pointer !important;
     white-space: nowrap !important;
+    transition: var(--fp-transition-base);
+}
+
+.fp-override-row label:hover {
+    color: var(--fp-primary-blue);
 }
 
 .fp-override-row input[type="checkbox"] {
     margin: 0 !important;
-    transform: scale(1.1);
+    transform: scale(1.2);
+    accent-color: var(--fp-primary-blue);
 }
 
 .fp-override-row input[type="number"],
 .fp-override-row input[type="text"] {
     width: 100% !important;
     max-width: 120px !important;
-    padding: 8px 10px !important;
-    border: 1px solid #cbd5e0 !important;
-    border-radius: 6px !important;
-    font-size: 13px !important;
+    padding: var(--fp-space-sm) var(--fp-space-md) !important;
+    border: 2px solid var(--fp-gray-300) !important;
+    border-radius: var(--fp-radius-sm) !important;
+    font-size: var(--fp-font-sm) !important;
     box-sizing: border-box !important;
     background: #fff !important;
-    transition: all 0.2s ease !important;
+    transition: var(--fp-transition-base) !important;
 }
 
 .fp-override-row input[type="number"]:focus,
 .fp-override-row input[type="text"]:focus {
-    border-color: #667eea !important;
-    box-shadow: 0 0 0 2px rgba(102,126,234,0.15) !important;
+    border-color: var(--fp-primary-blue) !important;
+    box-shadow: 0 0 0 3px rgba(102,126,234,0.15) !important;
     outline: none !important;
 }
 
 .fp-override-row .fp-remove-override {
     background: #fff !important;
-    border: 1px solid #dc3545 !important;
-    color: #dc3545 !important;
-    padding: 8px 12px !important;
-    border-radius: 6px !important;
+    border: 2px solid var(--fp-danger-red) !important;
+    color: var(--fp-danger-red) !important;
+    padding: var(--fp-space-sm) var(--fp-space-md) !important;
+    border-radius: var(--fp-radius-sm) !important;
     cursor: pointer !important;
-    font-size: 12px !important;
-    font-weight: 500 !important;
+    font-size: var(--fp-font-sm) !important;
+    font-weight: 600 !important;
     white-space: nowrap !important;
-    transition: all 0.2s ease !important;
+    transition: var(--fp-transition-base) !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.fp-override-row .fp-remove-override::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: var(--fp-danger-red);
+    transition: var(--fp-transition-base);
+    z-index: -1;
 }
 
 .fp-override-row .fp-remove-override:hover {
-    background: #dc3545 !important;
     color: #fff !important;
     transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(220,53,69,0.2);
+    box-shadow: 0 4px 12px rgba(214,54,56,0.25);
+}
+
+.fp-override-row .fp-remove-override:hover::before {
+    left: 0;
 }
 
 /* Enhanced add override button */
@@ -629,15 +772,16 @@
 
 /* Enhanced Visual Hierarchy for Sections with Modern Design */
 .fp-schedules-section {
-    background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
+    background: linear-gradient(145deg, #ffffff 0%, var(--fp-gray-50) 100%);
     border: none;
-    border-radius: 16px;
+    border-radius: var(--fp-radius-xl);
     padding: 0;
-    margin-bottom: 30px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04);
+    margin-bottom: var(--fp-space-3xl);
+    box-shadow: var(--fp-shadow-lg);
     overflow: hidden;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: var(--fp-transition-slow);
     position: relative;
+    animation: slideInDown 0.6s ease-out;
 }
 
 .fp-schedules-section::before {
@@ -647,23 +791,23 @@
     left: 0;
     right: 0;
     height: 4px;
-    background: linear-gradient(90deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    background: var(--fp-primary-gradient);
     background-size: 200% 100%;
     animation: gradientShift 4s ease-in-out infinite;
 }
 
 .fp-schedules-section:hover {
     transform: translateY(-6px);
-    box-shadow: 0 20px 48px rgba(0,0,0,0.15), 0 8px 24px rgba(0,0,0,0.1);
+    box-shadow: var(--fp-shadow-xl);
 }
 
 .fp-schedules-section h4 {
-    margin: 0 0 24px 0;
-    padding: 24px 28px 20px;
+    margin: 0 0 var(--fp-space-2xl) 0;
+    padding: var(--fp-space-2xl) 28px var(--fp-space-xl);
     border-bottom: none;
-    font-size: 20px;
+    font-size: var(--fp-font-2xl);
     font-weight: 700;
-    color: #1a202c;
+    color: var(--fp-gray-800);
     display: flex;
     align-items: center;
     gap: 14px;
@@ -675,7 +819,7 @@
     content: "\f507"; /* dashicons-clock */
     font-family: "dashicons";
     font-size: 22px;
-    background: linear-gradient(135deg, #667eea, #764ba2);
+    background: var(--fp-primary-gradient);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -683,19 +827,14 @@
     animation: iconPulse 2s ease-in-out infinite;
 }
 
-@keyframes iconPulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.1); }
-}
-
 .fp-schedules-section .fp-section-description {
-    margin: 0 28px 24px;
+    margin: 0 28px var(--fp-space-2xl);
     background: linear-gradient(135deg, #f0f6fc 0%, #e6f3ff 100%);
-    border-left: 4px solid #667eea;
-    padding: 16px 20px;
-    border-radius: 0 12px 12px 0;
-    font-size: 14px;
-    color: #4a5568;
+    border-left: 4px solid var(--fp-primary-blue);
+    padding: var(--fp-space-lg) var(--fp-space-xl);
+    border-radius: 0 var(--fp-radius-lg) var(--fp-radius-lg) 0;
+    font-size: var(--fp-font-base);
+    color: var(--fp-gray-600);
     line-height: 1.6;
     position: relative;
     overflow: hidden;
@@ -708,7 +847,7 @@
     left: 0;
     width: 4px;
     height: 100%;
-    background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+    background: var(--fp-primary-gradient);
     border-radius: 0 0 0 0;
 }
 
@@ -721,18 +860,19 @@
 /* Enhanced content area styling */
 .fp-time-slot-row {
     border: none;
-    padding: 24px;
-    margin-bottom: 32px;
-    background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
-    border-radius: 16px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.03);
+    padding: var(--fp-space-2xl);
+    margin-bottom: var(--fp-space-3xl);
+    background: linear-gradient(145deg, #ffffff 0%, var(--fp-gray-50) 100%);
+    border-radius: var(--fp-radius-xl);
+    box-shadow: var(--fp-shadow-md);
     position: relative;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: var(--fp-transition-slow);
     overflow: visible;
     clear: both;
     display: block;
     width: 100%;
     box-sizing: border-box;
+    animation: bounceIn 0.5s ease-out;
 }
 
 .fp-time-slot-row::before {
@@ -742,7 +882,7 @@
     left: 0;
     width: 6px;
     height: 100%;
-    background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+    background: var(--fp-primary-gradient);
     border-radius: 0 3px 3px 0;
 }
 
@@ -752,15 +892,16 @@
 }
 
 .fp-overrides-section-wrapper {
-    background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
+    background: linear-gradient(145deg, #ffffff 0%, var(--fp-gray-50) 100%);
     border: none;
-    border-radius: 16px;
+    border-radius: var(--fp-radius-xl);
     padding: 0;
-    margin-bottom: 30px;
+    margin-bottom: var(--fp-space-3xl);
     box-shadow: 0 8px 32px rgba(214,54,56,0.08), 0 2px 8px rgba(214,54,56,0.04);
     overflow: hidden;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: var(--fp-transition-slow);
     position: relative;
+    animation: slideInDown 0.6s ease-out 0.2s both;
 }
 
 .fp-overrides-section-wrapper::before {
@@ -770,7 +911,7 @@
     left: 0;
     right: 0;
     height: 4px;
-    background: linear-gradient(90deg, #ff6b6b 0%, #d63638 50%, #ff8a80 100%);
+    background: linear-gradient(90deg, var(--fp-danger-light) 0%, var(--fp-danger-red) 50%, #ff8a80 100%);
     background-size: 200% 100%;
     animation: gradientShift 4s ease-in-out infinite;
 }
@@ -781,12 +922,12 @@
 }
 
 .fp-overrides-section-wrapper h4 {
-    margin: 0 0 24px 0;
-    padding: 24px 28px 20px;
+    margin: 0 0 var(--fp-space-2xl) 0;
+    padding: var(--fp-space-2xl) 28px var(--fp-space-xl);
     border-bottom: none;
-    font-size: 20px;
+    font-size: var(--fp-font-2xl);
     font-weight: 700;
-    color: #1a202c;
+    color: var(--fp-gray-800);
     display: flex;
     align-items: center;
     gap: 14px;
@@ -798,7 +939,7 @@
     content: "\f145"; /* dashicons-calendar-alt */
     font-family: "dashicons";
     font-size: 22px;
-    background: linear-gradient(135deg, #d63638, #ff6b6b);
+    background: linear-gradient(135deg, var(--fp-danger-red), var(--fp-danger-light));
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -1124,20 +1265,22 @@
     margin-left: 26px !important;
 }
 
-/* Enhanced overrides section with modern card design and animations */
+/* Enhanced overrides section with smooth animations */
 .fp-overrides-section {
     border: none !important;
-    background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%) !important;
-    padding: 24px !important;
-    border-radius: 16px !important;
-    margin: 20px 0 24px 0 !important;
+    background: linear-gradient(145deg, #ffffff 0%, var(--fp-gray-50) 100%) !important;
+    padding: var(--fp-space-2xl) !important;
+    border-radius: var(--fp-radius-xl) !important;
+    margin: var(--fp-space-xl) 0 var(--fp-space-2xl) 0 !important;
     position: relative;
-    box-shadow: 0 8px 32px rgba(102,126,234,0.08), 0 2px 8px rgba(102,126,234,0.04);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: var(--fp-shadow-lg);
+    transition: var(--fp-transition-slow);
     overflow: hidden;
     clear: both;
     width: 100%;
     box-sizing: border-box;
+    transform-origin: top;
+    animation: slideInDown 0.5s ease-out;
 }
 
 .fp-overrides-section::before {
@@ -1147,13 +1290,13 @@
     left: 0;
     right: 0;
     height: 4px;
-    background: linear-gradient(90deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    background: var(--fp-primary-gradient);
     background-size: 200% 100%;
     animation: gradientShift 4s ease-in-out infinite;
 }
 
 .fp-overrides-section:hover {
-    transform: translateY(-4px);
+    transform: translateY(-2px);
     box-shadow: 0 16px 48px rgba(102,126,234,0.12), 0 4px 16px rgba(102,126,234,0.08);
 }
 
@@ -1161,23 +1304,24 @@
     content: "⚙️ Advanced Settings";
     position: absolute;
     top: -12px;
-    left: 20px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    left: var(--fp-space-xl);
+    background: var(--fp-primary-gradient);
     color: #ffffff;
-    padding: 6px 16px;
-    font-size: 12px;
+    padding: var(--fp-space-sm) var(--fp-space-lg);
+    font-size: var(--fp-font-sm);
     font-weight: 700;
-    border-radius: 20px;
+    border-radius: var(--fp-radius-full);
     text-transform: uppercase;
     letter-spacing: 0.05em;
     box-shadow: 0 4px 12px rgba(102,126,234,0.3);
+    animation: bounceIn 0.6s ease-out 0.3s both;
 }
 
 .fp-overrides-section > div {
     display: grid !important;
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)) !important;
-    gap: 16px !important;
-    margin-bottom: 16px !important;
+    gap: var(--fp-space-lg) !important;
+    margin-bottom: var(--fp-space-lg) !important;
 }
 
 .fp-overrides-section > div:last-child {
@@ -1187,38 +1331,39 @@
 .fp-overrides-section label {
     font-weight: 600 !important;
     display: block !important;
-    margin-bottom: 6px !important;
-    color: #2d3748 !important;
-    font-size: 13px !important;
+    margin-bottom: var(--fp-space-sm) !important;
+    color: var(--fp-gray-700) !important;
+    font-size: var(--fp-font-sm) !important;
     letter-spacing: 0.025em;
+    transition: var(--fp-transition-base);
 }
 
 .fp-overrides-section input,
 .fp-overrides-section select {
     width: 100% !important;
     max-width: 180px !important;
-    padding: 10px 12px !important;
-    border: 1px solid #cbd5e0 !important;
-    border-radius: 8px !important;
-    font-size: 13px !important;
+    padding: var(--fp-space-md) var(--fp-space-md) !important;
+    border: 2px solid var(--fp-gray-300) !important;
+    border-radius: var(--fp-radius-md) !important;
+    font-size: var(--fp-font-sm) !important;
     box-sizing: border-box !important;
     background: #ffffff !important;
-    transition: all 0.2s ease !important;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    transition: var(--fp-transition-base) !important;
+    box-shadow: var(--fp-shadow-sm);
 }
 
 .fp-overrides-section input:focus,
 .fp-overrides-section select:focus {
-    border-color: #667eea !important;
-    box-shadow: 0 0 0 2px rgba(102,126,234,0.15) !important;
+    border-color: var(--fp-primary-blue) !important;
+    box-shadow: 0 0 0 3px rgba(102,126,234,0.15), var(--fp-shadow-sm) !important;
     outline: none !important;
     background: #ffffff !important;
 }
 
-.fp-overrides-section input:hover,
-.fp-overrides-section select:hover {
-    border-color: #a0aec0 !important;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+.fp-overrides-section input:hover:not(:focus),
+.fp-overrides-section select:hover:not(:focus) {
+    border-color: var(--fp-gray-400) !important;
+    box-shadow: var(--fp-shadow-md);
 }
 
 /* Enhanced summary table with modern card design */
@@ -1348,24 +1493,26 @@
 
 /* Enhanced add time slot button with modern gradient design */
 .fp-add-time-slot {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    background: var(--fp-primary-gradient) !important;
     border: none !important;
     color: #fff !important;
-    padding: 14px 24px !important;
-    border-radius: 12px !important;
-    font-size: 15px !important;
+    padding: var(--fp-space-lg) var(--fp-space-2xl) !important;
+    border-radius: var(--fp-radius-lg) !important;
+    font-size: var(--fp-font-lg) !important;
     font-weight: 600 !important;
     cursor: pointer !important;
     display: inline-flex !important;
     align-items: center !important;
-    gap: 10px !important;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    gap: var(--fp-space-md) !important;
+    transition: var(--fp-transition-slow) !important;
     text-decoration: none !important;
-    margin-top: 20px;
+    margin-top: var(--fp-space-xl);
     position: relative;
     overflow: hidden;
     box-shadow: 0 4px 12px rgba(102,126,234,0.3), 0 2px 8px rgba(102,126,234,0.15);
     letter-spacing: 0.025em;
+    text-transform: uppercase;
+    animation: fadeInUp 0.6s ease-out 0.4s both;
 }
 
 .fp-add-time-slot::before {
@@ -1376,7 +1523,7 @@
     width: 100%;
     height: 100%;
     background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-    transition: left 0.5s;
+    transition: var(--fp-transition-slow);
 }
 
 .fp-add-time-slot:hover::before {
@@ -1395,11 +1542,69 @@
 
 .fp-add-time-slot .dashicons {
     font-size: 18px;
-    transition: transform 0.2s ease;
+    transition: var(--fp-transition-base);
 }
 
 .fp-add-time-slot:hover .dashicons {
-    transform: rotate(90deg);
+    transform: rotate(90deg) scale(1.1);
+}
+
+/* Enhanced add override button styling */
+.fp-add-override {
+    background: linear-gradient(135deg, var(--fp-danger-red) 0%, var(--fp-danger-light) 100%) !important;
+    border: none !important;
+    color: #fff !important;
+    padding: var(--fp-space-lg) var(--fp-space-2xl) !important;
+    border-radius: var(--fp-radius-lg) !important;
+    font-size: var(--fp-font-lg) !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: var(--fp-space-md) !important;
+    transition: var(--fp-transition-slow) !important;
+    text-decoration: none !important;
+    margin-top: var(--fp-space-xl);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(214,54,56,0.3), 0 2px 8px rgba(214,54,56,0.15);
+    letter-spacing: 0.025em;
+    text-transform: uppercase;
+    animation: fadeInUp 0.6s ease-out 0.5s both;
+}
+
+.fp-add-override::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: var(--fp-transition-slow);
+}
+
+.fp-add-override:hover::before {
+    left: 100%;
+}
+
+.fp-add-override:hover {
+    background: linear-gradient(135deg, #c62d2d 0%, #e55a5a 100%) !important;
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 8px 24px rgba(214,54,56,0.4), 0 4px 16px rgba(214,54,56,0.25);
+}
+
+.fp-add-override:active {
+    transform: translateY(-1px) scale(1.01);
+}
+
+.fp-add-override .dashicons {
+    font-size: 18px;
+    transition: var(--fp-transition-base);
+}
+
+.fp-add-override:hover .dashicons {
+    transform: rotate(90deg) scale(1.1);
 }
 
 .fp-remove-time-slot {
@@ -2027,61 +2232,7 @@
     }
 }
 
-/* Enhanced add override button styling */
-.fp-add-override {
-    background: linear-gradient(135deg, #d63638 0%, #ff6b6b 100%) !important;
-    border: none !important;
-    color: #fff !important;
-    padding: 14px 24px !important;
-    border-radius: 12px !important;
-    font-size: 15px !important;
-    font-weight: 600 !important;
-    cursor: pointer !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    gap: 10px !important;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-    text-decoration: none !important;
-    margin-top: 20px;
-    position: relative;
-    overflow: hidden;
-    box-shadow: 0 4px 12px rgba(214,54,56,0.3), 0 2px 8px rgba(214,54,56,0.15);
-    letter-spacing: 0.025em;
-}
-
-.fp-add-override::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-    transition: left 0.5s;
-}
-
-.fp-add-override:hover::before {
-    left: 100%;
-}
-
-.fp-add-override:hover {
-    background: linear-gradient(135deg, #c62d2d 0%, #e55a5a 100%) !important;
-    transform: translateY(-3px) scale(1.02);
-    box-shadow: 0 8px 24px rgba(214,54,56,0.4), 0 4px 16px rgba(214,54,56,0.25);
-}
-
-.fp-add-override:active {
-    transform: translateY(-1px) scale(1.01);
-}
-
-.fp-add-override .dashicons {
-    font-size: 18px;
-    transition: transform 0.2s ease;
-}
-
-.fp-add-override:hover .dashicons {
-    transform: rotate(90deg);
-}
+/* Remove duplicate add override button styling - already defined above */
 
 /* Extras section styling */
 .fp-extras-selection {
