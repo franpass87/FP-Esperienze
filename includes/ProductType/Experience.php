@@ -598,7 +598,7 @@ class Experience {
                 <div id="fp-time-slots-container">
                     <?php foreach ($aggregated['time_slots'] as $index => $slot): ?>
                         <div class="fp-time-slot" data-index="<?php echo esc_attr($index); ?>">
-                            <?php $this->renderTimeSlot($slot, $index, $days, $meeting_points, $default_duration, $default_capacity, $default_language, $default_meeting_point, $default_price_adult, $default_price_child); ?>
+                            <?php $this->renderTimeSlot($slot, $index, $days, $meeting_points, $default_duration, $default_capacity, $default_language, $default_meeting_point, $default_price_adult, $default_price_child, $product_id); ?>
                         </div>
                     <?php endforeach; ?>
                 </div>
@@ -618,7 +618,7 @@ class Experience {
     /**
      * Render a single time slot in the builder
      */
-    private function renderTimeSlot($slot, $index, $days, $meeting_points, $default_duration, $default_capacity, $default_language, $default_meeting_point, $default_price_adult, $default_price_child): void {
+    private function renderTimeSlot($slot, $index, $days, $meeting_points, $default_duration, $default_capacity, $default_language, $default_meeting_point, $default_price_adult, $default_price_child, $product_id): void {
         $overrides = $slot['overrides'] ?? [];
         ?>
         <div class="fp-time-slot-row">

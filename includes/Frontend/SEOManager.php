@@ -270,11 +270,11 @@ class SEOManager {
             ];
         }
         
-        if ($meeting_point->latitude && $meeting_point->longitude) {
+        if ($meeting_point->lat && $meeting_point->lng) {
             $location['geo'] = [
                 '@type' => 'GeoCoordinates',
-                'latitude' => $meeting_point->latitude,
-                'longitude' => $meeting_point->longitude,
+                'latitude' => $meeting_point->lat,
+                'longitude' => $meeting_point->lng,
             ];
         }
         
