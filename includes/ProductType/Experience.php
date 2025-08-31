@@ -273,6 +273,26 @@ class Experience {
                 ]
             ]);
 
+            // What's included
+            woocommerce_wp_textarea_input([
+                'id'          => '_fp_exp_included',
+                'label'       => __("What's Included", 'fp-esperienze'),
+                'placeholder' => __("Professional guide\nAll activities as described\nSmall group experience", 'fp-esperienze'),
+                'desc_tip'    => true,
+                'description' => __('List what is included in the experience (one item per line)', 'fp-esperienze'),
+                'rows'        => 5
+            ]);
+
+            // What's excluded  
+            woocommerce_wp_textarea_input([
+                'id'          => '_fp_exp_excluded',
+                'label'       => __("What's Not Included", 'fp-esperienze'),
+                'placeholder' => __("Hotel pickup and drop-off\nFood and drinks\nPersonal expenses\nGratuities", 'fp-esperienze'),
+                'desc_tip'    => true,
+                'description' => __('List what is not included in the experience (one item per line)', 'fp-esperienze'),
+                'rows'        => 5
+            ]);
+
             ?>
             
             <div class="options_group">
@@ -1032,6 +1052,18 @@ class Experience {
         foreach ($fields as $field) {
             if (isset($_POST[$field])) {
                 update_post_meta($post_id, $field, sanitize_text_field($_POST[$field]));
+            }
+        }
+        
+        // Save textarea fields with appropriate sanitization
+        $textarea_fields = [
+            '_fp_exp_included',
+            '_fp_exp_excluded'
+        ];
+        
+        foreach ($textarea_fields as $field) {
+            if (isset($_POST[$field])) {
+                update_post_meta($post_id, $field, sanitize_textarea_field($_POST[$field]));
             }
         }
         
