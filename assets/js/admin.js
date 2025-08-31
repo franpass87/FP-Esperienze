@@ -5,8 +5,13 @@
 (function($) {
     'use strict';
 
+    // Prevent multiple script execution
+    if (window.FPEsperienzeAdmin && window.FPEsperienzeAdmin.initialized) {
+        return;
+    }
+
     $(document).ready(function() {
-        // Prevent multiple initializations
+        // Double-check initialization on DOM ready
         if (window.FPEsperienzeAdmin && window.FPEsperienzeAdmin.initialized) {
             return;
         }
@@ -295,19 +300,91 @@
             
             // Toggle overrides visibility
             $(document).on('change', '.fp-show-overrides-toggle', function() {
-                var overridesSection = $(this).closest('.fp-time-slot-row').find('.fp-overrides-section');
-                var advancedEnabledField = $(this).closest('.fp-time-slot-row').find('.fp-advanced-enabled');
+                var $this = $(this);
+                var $timeSlotRow = $this.closest('.fp-time-slot-row');
+                var $overridesSection = $timeSlotRow.find('.fp-overrides-section');
+                var $advancedEnabledField = $timeSlotRow.find('.fp-advanced-enabled');
                 
-                if ($(this).is(':checked')) {
-                    overridesSection.slideDown(200);
-                    advancedEnabledField.val('1');
+                if ($this.is(':checked')) {
+                    // Ensure the parent container can accommodate the expansion
+                    $timeSlotRow.css('overflow', 'visible');
+                    
+                    // Enhanced slide down animation
+                    $overridesSection.slideDown({
+                        duration: 400,
+                        easing: 'easeOutQuart',
+                        start: function() {
+                            // Ensure proper layout during animation
+                            $(this).css({
+                                'overflow': 'visible',
+                                'transform': 'scale(0.95)',
+                                'opacity': '0'
+                            });
+                        },
+                        progress: function(animation, progress) {
+                            // Smooth scale and fade in animation
+                            var scale = 0.95 + (0.05 * progress);
+                            $(this).css({
+                                'transform': 'scale(' + scale + ')',
+                                'opacity': progress
+                            });
+                        },
+                        complete: function() {
+                            // Ensure proper spacing after animation
+                            $(this).css({
+                                'overflow': 'visible',
+                                'height': 'auto',
+                                'transform': 'scale(1)',
+                                'opacity': '1'
+                            });
+                            // Force layout recalculation
+                            $timeSlotRow.trigger('resize');
+                            // Add a subtle bounce effect
+                            $(this).addClass('fp-animation-bounce-in');
+                            setTimeout(function() {
+                                $overridesSection.removeClass('fp-animation-bounce-in');
+                            }, 500);
+                        }
+                    });
+                    $advancedEnabledField.val('1');
                 } else {
-                    overridesSection.slideUp(200);
-                    // Clear override values when hiding
-                    overridesSection.find('input, select').val('');
-                    advancedEnabledField.val('0');
+                    // Enhanced slide up animation
+                    $overridesSection.slideUp({
+                        duration: 300,
+                        easing: 'easeInQuart',
+                        start: function() {
+                            $(this).css({
+                                'transform': 'scale(1)',
+                                'opacity': '1'
+                            });
+                        },
+                        progress: function(animation, progress) {
+                            // Smooth scale and fade out animation
+                            var scale = 1 - (0.05 * progress);
+                            var opacity = 1 - progress;
+                            $(this).css({
+                                'transform': 'scale(' + scale + ')',
+                                'opacity': opacity
+                            });
+                        },
+                        complete: function() {
+                            // Clear override values when hiding
+                            $(this).find('input, select').val('');
+                            // Reset container overflow and styles
+                            $timeSlotRow.css('overflow', 'visible');
+                            $(this).css({
+                                'transform': 'scale(1)',
+                                'opacity': '1'
+                            });
+                        }
+                    });
+                    $advancedEnabledField.val('0');
                 }
-                self.updateSummaryTable();
+                
+                // Update summary table after animation completes
+                setTimeout(function() {
+                    self.updateSummaryTable();
+                }, 450);
             });
             
             // Update summary when time or days change
@@ -705,15 +782,21 @@
         bindOverrideEvents: function() {
             var self = this;
             
+            // Unbind existing events to prevent double binding
+            $(document).off('click.fp-override', '#fp-add-override');
+            $(document).off('click.fp-override', '.fp-remove-override');
+            
             // Add override
-            $(document).on('click', '#fp-add-override', function(e) {
+            $(document).on('click.fp-override', '#fp-add-override', function(e) {
                 e.preventDefault();
+                e.stopPropagation();
                 self.addOverrideRow();
             });
             
             // Remove override
-            $(document).on('click', '.fp-remove-override', function(e) {
+            $(document).on('click.fp-override', '.fp-remove-override', function(e) {
                 e.preventDefault();
+                e.stopPropagation();
                 $(this).closest('.fp-override-row').remove();
             });
         },
@@ -758,13 +841,18 @@
         },
         
         /**
-         * Add override row
+         * Add override row with enhanced animation
          */
         addOverrideRow: function() {
             var container = $('#fp-overrides-container');
+            if (!container.length) {
+                console.warn('FP Esperienze: Override container not found');
+                return;
+            }
+            
             var index = container.find('.fp-override-row').length;
             
-            var row = $('<div class="fp-override-row" data-index="' + index + '">' +
+            var row = $('<div class="fp-override-row" data-index="' + index + '" style="opacity: 0; transform: translateY(-10px);">' +
                 '<input type="hidden" name="overrides[' + index + '][id]" value="">' +
                 '<input type="date" name="overrides[' + index + '][date]" required aria-label="Override date">' +
                 '<label>' +
@@ -778,6 +866,22 @@
                 '</div>');
             
             container.append(row);
+            
+            // Smooth animation for the new row
+            setTimeout(function() {
+                row.animate({
+                    opacity: 1,
+                    transform: 'translateY(0px)'
+                }, 300, 'easeOutCubic', function() {
+                    // Focus on the date input after animation
+                    row.find('input[type="date"]').focus();
+                    // Add a subtle glow effect
+                    row.addClass('fp-animation-pulse-glow');
+                    setTimeout(function() {
+                        row.removeClass('fp-animation-pulse-glow');
+                    }, 2000);
+                });
+            }, 50);
         }
     };
 
