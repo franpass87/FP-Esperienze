@@ -5,8 +5,13 @@
 (function($) {
     'use strict';
 
+    // Prevent multiple script execution
+    if (window.FPEsperienzeAdmin && window.FPEsperienzeAdmin.initialized) {
+        return;
+    }
+
     $(document).ready(function() {
-        // Prevent multiple initializations
+        // Double-check initialization on DOM ready
         if (window.FPEsperienzeAdmin && window.FPEsperienzeAdmin.initialized) {
             return;
         }
@@ -705,15 +710,21 @@
         bindOverrideEvents: function() {
             var self = this;
             
+            // Unbind existing events to prevent double binding
+            $(document).off('click.fp-override', '#fp-add-override');
+            $(document).off('click.fp-override', '.fp-remove-override');
+            
             // Add override
-            $(document).on('click', '#fp-add-override', function(e) {
+            $(document).on('click.fp-override', '#fp-add-override', function(e) {
                 e.preventDefault();
+                e.stopPropagation();
                 self.addOverrideRow();
             });
             
             // Remove override
-            $(document).on('click', '.fp-remove-override', function(e) {
+            $(document).on('click.fp-override', '.fp-remove-override', function(e) {
                 e.preventDefault();
+                e.stopPropagation();
                 $(this).closest('.fp-override-row').remove();
             });
         },
@@ -762,6 +773,11 @@
          */
         addOverrideRow: function() {
             var container = $('#fp-overrides-container');
+            if (!container.length) {
+                console.warn('FP Esperienze: Override container not found');
+                return;
+            }
+            
             var index = container.find('.fp-override-row').length;
             
             var row = $('<div class="fp-override-row" data-index="' + index + '">' +
@@ -778,6 +794,11 @@
                 '</div>');
             
             container.append(row);
+            
+            // Add a slight delay to ensure DOM is updated before any animations
+            setTimeout(function() {
+                row.find('input[type="date"]').focus();
+            }, 100);
         }
     };
 

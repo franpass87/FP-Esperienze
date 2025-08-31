@@ -185,8 +185,7 @@
 }
 
 /* Schedule management */
-.fp-schedule-row,
-.fp-override-row {
+.fp-schedule-row {
     display: flex;
     align-items: center;
     gap: 10px;
@@ -198,15 +197,12 @@
 }
 
 .fp-schedule-row input,
-.fp-schedule-row select,
-.fp-override-row input,
-.fp-override-row select {
+.fp-schedule-row select {
     flex: 1;
     min-width: 100px;
 }
 
-.fp-schedule-row .fp-remove-schedule,
-.fp-override-row .fp-remove-override {
+.fp-schedule-row .fp-remove-schedule {
     flex: 0 0 auto;
     background: #dc3232;
     color: white;
@@ -216,14 +212,16 @@
     cursor: pointer;
 }
 
-.fp-schedule-row .fp-remove-schedule:hover,
-.fp-override-row .fp-remove-override:hover {
+.fp-schedule-row .fp-remove-schedule:hover {
     background: #c62d2d;
 }
 
 #fp-schedules-container,
 #fp-overrides-container {
     margin-bottom: 15px;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: visible;
 }
 
 #fp-add-schedule,
@@ -279,7 +277,7 @@
 /* Enhanced override row styling */
 .fp-override-row {
     display: grid !important;
-    grid-template-columns: 140px auto 120px 120px 120px 1fr auto !important;
+    grid-template-columns: minmax(140px, 1fr) auto minmax(80px, 120px) minmax(80px, 120px) minmax(80px, 120px) minmax(150px, 1fr) auto !important;
     gap: 10px !important;
     align-items: center !important;
     margin-bottom: 12px !important;
@@ -289,6 +287,9 @@
     background: #fff !important;
     box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
     position: relative;
+    overflow: hidden !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
 }
 
 .fp-override-row::before {
