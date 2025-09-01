@@ -306,85 +306,17 @@
                 var $advancedEnabledField = $timeSlotRow.find('.fp-advanced-enabled');
                 
                 if ($this.is(':checked')) {
-                    // Ensure the parent container can accommodate the expansion
-                    $timeSlotRow.css('overflow', 'visible');
-                    
-                    // Enhanced slide down animation
-                    $overridesSection.slideDown({
-                        duration: 400,
-                        easing: 'easeOutQuart',
-                        start: function() {
-                            // Ensure proper layout during animation
-                            $(this).css({
-                                'overflow': 'visible',
-                                'transform': 'scale(0.95)',
-                                'opacity': '0'
-                            });
-                        },
-                        progress: function(animation, progress) {
-                            // Smooth scale and fade in animation
-                            var scale = 0.95 + (0.05 * progress);
-                            $(this).css({
-                                'transform': 'scale(' + scale + ')',
-                                'opacity': progress
-                            });
-                        },
-                        complete: function() {
-                            // Ensure proper spacing after animation
-                            $(this).css({
-                                'overflow': 'visible',
-                                'height': 'auto',
-                                'transform': 'scale(1)',
-                                'opacity': '1'
-                            });
-                            // Force layout recalculation
-                            $timeSlotRow.trigger('resize');
-                            // Add a subtle bounce effect
-                            $(this).addClass('fp-animation-bounce-in');
-                            setTimeout(function() {
-                                $overridesSection.removeClass('fp-animation-bounce-in');
-                            }, 500);
-                        }
-                    });
+                    $overridesSection.show();
                     $advancedEnabledField.val('1');
                 } else {
-                    // Enhanced slide up animation
-                    $overridesSection.slideUp({
-                        duration: 300,
-                        easing: 'easeInQuart',
-                        start: function() {
-                            $(this).css({
-                                'transform': 'scale(1)',
-                                'opacity': '1'
-                            });
-                        },
-                        progress: function(animation, progress) {
-                            // Smooth scale and fade out animation
-                            var scale = 1 - (0.05 * progress);
-                            var opacity = 1 - progress;
-                            $(this).css({
-                                'transform': 'scale(' + scale + ')',
-                                'opacity': opacity
-                            });
-                        },
-                        complete: function() {
-                            // Clear override values when hiding
-                            $(this).find('input, select').val('');
-                            // Reset container overflow and styles
-                            $timeSlotRow.css('overflow', 'visible');
-                            $(this).css({
-                                'transform': 'scale(1)',
-                                'opacity': '1'
-                            });
-                        }
-                    });
+                    $overridesSection.hide();
+                    // Clear override values when hiding
+                    $overridesSection.find('input, select').val('');
                     $advancedEnabledField.val('0');
                 }
                 
-                // Update summary table after animation completes
-                setTimeout(function() {
-                    self.updateSummaryTable();
-                }, 450);
+                // Update summary table immediately
+                self.updateSummaryTable();
             });
             
             // Update summary when time or days change
@@ -841,7 +773,7 @@
         },
         
         /**
-         * Add override row with enhanced animation
+         * Add override row
          */
         addOverrideRow: function() {
             var container = $('#fp-overrides-container');
@@ -852,7 +784,7 @@
             
             var index = container.find('.fp-override-row').length;
             
-            var row = $('<div class="fp-override-row" data-index="' + index + '" style="opacity: 0; transform: translateY(-10px);">' +
+            var row = $('<div class="fp-override-row" data-index="' + index + '">' +
                 '<input type="hidden" name="overrides[' + index + '][id]" value="">' +
                 '<input type="date" name="overrides[' + index + '][date]" required aria-label="Override date">' +
                 '<label>' +
@@ -867,21 +799,8 @@
             
             container.append(row);
             
-            // Smooth animation for the new row
-            setTimeout(function() {
-                row.animate({
-                    opacity: 1,
-                    transform: 'translateY(0px)'
-                }, 300, 'easeOutCubic', function() {
-                    // Focus on the date input after animation
-                    row.find('input[type="date"]').focus();
-                    // Add a subtle glow effect
-                    row.addClass('fp-animation-pulse-glow');
-                    setTimeout(function() {
-                        row.removeClass('fp-animation-pulse-glow');
-                    }, 2000);
-                });
-            }, 50);
+            // Focus on the date input
+            row.find('input[type="date"]').focus();
         }
     };
 

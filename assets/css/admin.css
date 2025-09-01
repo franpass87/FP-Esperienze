@@ -98,41 +98,9 @@
     }
 }
 
-@keyframes bounceIn {
-    0% {
-        opacity: 0;
-        transform: scale(0.3);
-    }
-    50% {
-        opacity: 1;
-        transform: scale(1.05);
-    }
-    70% {
-        transform: scale(0.9);
-    }
-    100% {
-        opacity: 1;
-        transform: scale(1);
-    }
-}
+/* Remove unused keyframes for override functionality */
 
-@keyframes pulseGlow {
-    0%, 100% {
-        box-shadow: 0 0 5px rgba(102,126,234,0.3);
-    }
-    50% {
-        box-shadow: 0 0 20px rgba(102,126,234,0.6);
-    }
-}
-
-/* Enhanced animation classes */
-.fp-animation-bounce-in {
-    animation: bounceIn 0.5s ease-out;
-}
-
-.fp-animation-pulse-glow {
-    animation: pulseGlow 2s ease-in-out infinite;
-}
+/* Remove unused animation classes for override functionality */
 
 /* Utility classes */
 .fp-hidden {
@@ -409,8 +377,6 @@
     overflow: hidden !important;
     max-width: 100% !important;
     box-sizing: border-box !important;
-    transition: var(--fp-transition-slow);
-    animation: slideInDown 0.4s ease-out;
 }
 
 .fp-override-row::before {
@@ -426,7 +392,6 @@
 }
 
 .fp-override-row:hover {
-    transform: translateY(-2px);
     box-shadow: var(--fp-shadow-md);
     border-color: var(--fp-primary-blue);
 }
@@ -526,7 +491,6 @@
 
 .fp-override-row .fp-remove-override:hover {
     color: #fff !important;
-    transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(214,54,56,0.25);
 }
 
@@ -872,7 +836,6 @@
     display: block;
     width: 100%;
     box-sizing: border-box;
-    animation: bounceIn 0.5s ease-out;
 }
 
 .fp-time-slot-row::before {
@@ -887,7 +850,6 @@
 }
 
 .fp-time-slot-row:hover {
-    transform: translateY(-4px);
     box-shadow: 0 12px 32px rgba(0,0,0,0.12), 0 4px 16px rgba(0,0,0,0.08);
 }
 
@@ -1265,7 +1227,7 @@
     margin-left: 26px !important;
 }
 
-/* Enhanced overrides section with smooth animations */
+/* Enhanced overrides section - simplified without animations */
 .fp-overrides-section {
     border: none !important;
     background: linear-gradient(145deg, #ffffff 0%, var(--fp-gray-50) 100%) !important;
@@ -1274,13 +1236,10 @@
     margin: var(--fp-space-xl) 0 var(--fp-space-2xl) 0 !important;
     position: relative;
     box-shadow: var(--fp-shadow-lg);
-    transition: var(--fp-transition-slow);
     overflow: hidden;
     clear: both;
     width: 100%;
     box-sizing: border-box;
-    transform-origin: top;
-    animation: slideInDown 0.5s ease-out;
 }
 
 .fp-overrides-section::before {
