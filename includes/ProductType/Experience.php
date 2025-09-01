@@ -1208,12 +1208,36 @@ class Experience {
             // Only process overrides if advanced settings are explicitly enabled
             $advanced_enabled = !empty($slot_data['advanced_enabled']) && $slot_data['advanced_enabled'] === '1';
             
-            $duration_override = ($advanced_enabled && !empty($slot_data['duration_min'])) ? (int) $slot_data['duration_min'] : null;
-            $capacity_override = ($advanced_enabled && !empty($slot_data['capacity'])) ? (int) $slot_data['capacity'] : null;
-            $lang_override = ($advanced_enabled && !empty($slot_data['lang'])) ? sanitize_text_field($slot_data['lang']) : null;
-            $meeting_point_override = ($advanced_enabled && !empty($slot_data['meeting_point_id'])) ? (int) $slot_data['meeting_point_id'] : null;
-            $price_adult_override = ($advanced_enabled && !empty($slot_data['price_adult'])) ? (float) $slot_data['price_adult'] : null;
-            $price_child_override = ($advanced_enabled && !empty($slot_data['price_child'])) ? (float) $slot_data['price_child'] : null;
+            // Process overrides with better validation - allow empty strings as "reset to default"
+            $duration_override = null;
+            if ($advanced_enabled && isset($slot_data['duration_min']) && $slot_data['duration_min'] !== '') {
+                $duration_override = max(1, (int) $slot_data['duration_min']); // Ensure minimum 1 minute
+            }
+            
+            $capacity_override = null;
+            if ($advanced_enabled && isset($slot_data['capacity']) && $slot_data['capacity'] !== '') {
+                $capacity_override = max(1, (int) $slot_data['capacity']); // Ensure minimum 1 person
+            }
+            
+            $lang_override = null;
+            if ($advanced_enabled && isset($slot_data['lang']) && $slot_data['lang'] !== '') {
+                $lang_override = sanitize_text_field($slot_data['lang']);
+            }
+            
+            $meeting_point_override = null;
+            if ($advanced_enabled && isset($slot_data['meeting_point_id']) && $slot_data['meeting_point_id'] !== '') {
+                $meeting_point_override = (int) $slot_data['meeting_point_id'];
+            }
+            
+            $price_adult_override = null;
+            if ($advanced_enabled && isset($slot_data['price_adult']) && $slot_data['price_adult'] !== '') {
+                $price_adult_override = max(0, (float) $slot_data['price_adult']); // Ensure non-negative
+            }
+            
+            $price_child_override = null;
+            if ($advanced_enabled && isset($slot_data['price_child']) && $slot_data['price_child'] !== '') {
+                $price_child_override = max(0, (float) $slot_data['price_child']); // Ensure non-negative
+            }
             
             // Track existing schedule IDs for this slot
             $existing_slot_ids = !empty($slot_data['schedule_ids']) ? array_map('intval', $slot_data['schedule_ids']) : [];
@@ -1872,28 +1896,40 @@ class Experience {
         $default_price_adult = get_post_meta($product_id, '_regular_price', true) ?: 0.00;
         $default_price_child = get_post_meta($product_id, '_fp_exp_price_child', true) ?: 0.00;
         
-        // Check each override field for actual non-empty differences
-        if (!empty($overrides['duration_min']) && $overrides['duration_min'] != $default_duration) {
+        // Check each override field for actual differences (including empty values as valid overrides)
+        // Duration override: check if set and different from default
+        if (isset($overrides['duration_min']) && $overrides['duration_min'] !== '' && 
+            (int)$overrides['duration_min'] !== (int)$default_duration) {
             return true;
         }
         
-        if (!empty($overrides['capacity']) && $overrides['capacity'] != $default_capacity) {
+        // Capacity override: check if set and different from default
+        if (isset($overrides['capacity']) && $overrides['capacity'] !== '' && 
+            (int)$overrides['capacity'] !== (int)$default_capacity) {
             return true;
         }
         
-        if (!empty($overrides['lang']) && $overrides['lang'] != $default_lang) {
+        // Language override: check if set and different from default
+        if (isset($overrides['lang']) && $overrides['lang'] !== '' && 
+            trim($overrides['lang']) !== trim($default_lang)) {
             return true;
         }
         
-        if (!empty($overrides['meeting_point_id']) && $overrides['meeting_point_id'] != $default_meeting_point) {
+        // Meeting point override: check if set and different from default
+        if (isset($overrides['meeting_point_id']) && $overrides['meeting_point_id'] !== '' && 
+            (int)$overrides['meeting_point_id'] !== (int)$default_meeting_point) {
             return true;
         }
         
-        if (!empty($overrides['price_adult']) && abs((float)$overrides['price_adult'] - (float)$default_price_adult) >= 0.01) {
+        // Adult price override: check if set and different from default (with float comparison)
+        if (isset($overrides['price_adult']) && $overrides['price_adult'] !== '' && 
+            abs((float)$overrides['price_adult'] - (float)$default_price_adult) >= 0.01) {
             return true;
         }
         
-        if (!empty($overrides['price_child']) && abs((float)$overrides['price_child'] - (float)$default_price_child) >= 0.01) {
+        // Child price override: check if set and different from default (with float comparison)
+        if (isset($overrides['price_child']) && $overrides['price_child'] !== '' && 
+            abs((float)$overrides['price_child'] - (float)$default_price_child) >= 0.01) {
             return true;
         }
         
