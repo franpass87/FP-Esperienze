@@ -209,7 +209,7 @@
 #fp-time-slots-container {
     margin-bottom: 20px;
     max-width: 100%;
-    overflow: visible;
+    overflow: hidden; /* Changed from visible to hidden to prevent overflow */
     clear: both;
 }
 
@@ -556,6 +556,7 @@
     padding: 0;
     margin-bottom: 20px;
     box-shadow: 0 1px 1px rgba(0,0,0,0.04);
+    overflow: hidden; /* Ensure content stays within bounds */
 }
 
 .fp-schedules-section h4 {
@@ -601,6 +602,8 @@
     padding: 15px;
     margin-bottom: 15px;
     background: #fff;
+    border-radius: 4px;
+    overflow: hidden; /* Ensure content stays within bounds */
 }
 
 .fp-overrides-section-wrapper {
@@ -608,6 +611,8 @@
     border: 1px solid #ccd0d4;
     padding: 0;
     margin-bottom: 15px;
+    overflow: hidden; /* Ensure content stays within bounds */
+    border-radius: 4px;
 }
 
 .fp-overrides-section-wrapper h4 {
@@ -778,17 +783,15 @@
 /* Enhanced override toggle styling with auto-enable feedback */
 .fp-override-toggle {
     border-top: 1px solid #e1e1e1;
-    padding-top: 15px;
-    margin-bottom: 0;
-    background: #f9f9f9;
-    margin: 15px -24px 0 -24px;
-    padding: 15px 24px;
-    border-top: 1px solid #e1e1e1;
     border-bottom: 1px solid #e1e1e1;
+    background: #f9f9f9;
+    margin: 15px 0 0 0;
+    padding: 15px 20px;
     clear: both;
     position: relative;
     z-index: 1;
     transition: background-color 0.3s ease;
+    border-radius: 4px;
 }
 
 .fp-override-toggle.auto-enabled {
@@ -839,8 +842,10 @@
 .fp-overrides-section {
     border: 1px solid #ccd0d4;
     background: #fff;
-    padding: 10px;
-    margin: 10px 0;
+    padding: 15px;
+    margin: 15px 0;
+    border-radius: 4px;
+    overflow: hidden; /* Ensure content stays within bounds */
 }
 
 .fp-overrides-section > div {
