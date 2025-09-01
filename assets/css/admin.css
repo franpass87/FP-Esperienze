@@ -357,35 +357,20 @@
     font-size: 16px;
 }
 
-/* Responsive improvements */
+/* WordPress standard responsive styles */
 @media (max-width: 1200px) {
-    .fp-override-row {
-        grid-template-columns: 1fr !important;
-        gap: 8px !important;
-    }
-    
     .fp-override-row input[type="date"],
     .fp-override-row input[type="number"],
     .fp-override-row input[type="text"] {
-        max-width: none !important;
+        max-width: none;
     }
     
     .fp-time-slot-header {
-        grid-template-columns: 1fr !important;
-        gap: 15px !important;
-    }
-    
-    .fp-overrides-section > div {
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important;
-    }
-    
-    /* Ensure proper spacing for time slot sections */
-    .fp-time-slot-row {
-        margin-bottom: 40px !important;
+        margin-bottom: 15px;
     }
     
     .fp-overrides-section {
-        margin: 20px 0 32px 0 !important;
+        margin: 10px 0;
     }
 }
     
@@ -402,32 +387,30 @@
 @media (max-width: 768px) {
     .fp-schedules-section,
     .fp-overrides-section-wrapper {
-        padding: 15px;
-        margin-bottom: 15px;
+        padding: 10px;
+        margin-bottom: 10px;
     }
     
     .fp-time-slot-row {
-        padding: 15px;
-        margin-bottom: 15px;
+        padding: 10px;
+        margin-bottom: 10px;
     }
     
     .fp-days-pills {
-        gap: 4px !important;
-        justify-content: center !important;
+        margin-bottom: 5px;
     }
     
-    .fp-day-pill label {
-        min-width: 28px !important;
-        height: 28px !important;
-        font-size: 11px !important;
-        padding: 0 6px !important;
+    .fp-day-pill {
+        margin-right: 5px;
+        margin-bottom: 3px;
     }
     
     .fp-override-toggle,
     .fp-overrides-section {
-        margin: 10px -15px !important;
-        padding: 15px !important;
+        margin: 10px 0;
+        padding: 10px;
     }
+}
     
     .fp-summary-table {
         font-size: 11px;
@@ -1491,97 +1474,44 @@
 }
 
 /* Responsive adjustments for builder */
-/* Tablet and smaller desktop screens */
+/* WordPress standard responsive */
 @media (max-width: 1024px) {
     .fp-time-slot-header {
-        grid-template-columns: 120px 1fr auto;
-        gap: 15px;
-    }
-    
-    .fp-time-slot-header > div:nth-child(2) {
-        min-width: 250px;
+        margin-bottom: 10px;
     }
     
     .fp-days-pills {
-        gap: 6px !important;
-    }
-    
-    .fp-day-pill label {
-        min-width: 35px !important;
-        height: 35px !important;
-        font-size: 12px !important;
-        padding: 0 8px !important;
+        margin-bottom: 5px;
     }
 }
+}
 
-/* Large mobile and small tablet */
 @media (max-width: 900px) {
-    .fp-time-slot-header {
-        display: flex;
-        flex-direction: column;
-        align-items: stretch;
-        gap: 12px;
-    }
-    
-    .fp-time-slot-header > div:first-child,
-    .fp-time-slot-header > div:nth-child(2),
-    .fp-time-slot-header > div:last-child {
-        flex: none;
-        min-width: auto;
-    }
-    
-    .fp-time-slot-header > div:last-child {
-        margin-top: 0;
-        align-self: flex-start;
-    }
-    
-    .fp-overrides-section > div {
-        grid-template-columns: repeat(2, 1fr) !important;
-        gap: 12px;
+    .fp-time-slot-header > div {
+        margin-bottom: 10px;
     }
 }
 
 /* Mobile phones */
 @media (max-width: 768px) {
-    .fp-time-slot-header {
-        display: flex;
-        flex-direction: column;
-        align-items: stretch;
+    .fp-time-slot-header > div {
+        margin-bottom: 10px;
     }
     
-    .fp-days-pills {
-        gap: 4px !important;
-        justify-content: center !important;
-    }
-    
-    .fp-day-pill label {
-        min-width: 32px !important;
-        height: 32px !important;
-        font-size: 11px !important;
-        padding: 0 6px !important;
-    }
-    
-    .fp-days-checkboxes label {
-        font-size: 11px !important;
-        padding: 2px 4px;
-        min-width: 0;
-        flex: 1 1 auto;
-        text-align: center;
-    }
-    
-    .fp-overrides-section > div {
-        grid-template-columns: 1fr !important;
+    .fp-day-pill {
+        margin-right: 5px;
+        margin-bottom: 3px;
     }
     
     .fp-overrides-section input,
     .fp-overrides-section select {
-        max-width: none !important;
+        max-width: none;
     }
     
     .fp-remove-time-slot {
-        width: 100% !important;
-        justify-content: center !important;
+        width: 100%;
         margin-top: 10px;
+    }
     }
     
     .fp-modal-content {
