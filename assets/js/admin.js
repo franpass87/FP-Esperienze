@@ -324,6 +324,7 @@
                 var $timeSlotRow = $(this).closest('.fp-time-slot-row');
                 var $toggle = $timeSlotRow.find('.fp-show-overrides-toggle');
                 var $advancedEnabledField = $timeSlotRow.find('.fp-advanced-enabled');
+                var $overrideToggle = $timeSlotRow.find('.fp-override-toggle');
                 
                 // Check if any override fields have values
                 var hasOverrideValues = false;
@@ -338,10 +339,17 @@
                 if (hasOverrideValues && !$toggle.is(':checked')) {
                     $toggle.prop('checked', true);
                     $advancedEnabledField.val('1');
+                    $overrideToggle.addClass('auto-enabled');
+                    
+                    // Show a subtle indication that auto-enable happened
+                    setTimeout(function() {
+                        $overrideToggle.removeClass('auto-enabled');
+                    }, 2000);
                 } else if (!hasOverrideValues && $toggle.is(':checked')) {
                     // Auto-disable if no values and currently enabled
                     $toggle.prop('checked', false);
                     $advancedEnabledField.val('0');
+                    $overrideToggle.removeClass('auto-enabled');
                 }
                 
                 // Update summary table

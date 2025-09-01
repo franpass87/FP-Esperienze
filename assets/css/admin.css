@@ -775,7 +775,7 @@
     font-size: 16px;
 }
 
-/* Enhanced override toggle styling */
+/* Enhanced override toggle styling with auto-enable feedback */
 .fp-override-toggle {
     border-top: 1px solid #e1e1e1;
     padding-top: 15px;
@@ -788,6 +788,12 @@
     clear: both;
     position: relative;
     z-index: 1;
+    transition: background-color 0.3s ease;
+}
+
+.fp-override-toggle.auto-enabled {
+    background: #e8f5e8;
+    border-color: #46b450;
 }
 
 .fp-override-toggle label {
@@ -799,11 +805,21 @@
     cursor: pointer !important;
     font-size: 13px !important;
     color: #1d2327 !important;
+    transition: color 0.3s ease;
+}
+
+.fp-override-toggle.auto-enabled label {
+    color: #0a4b0a !important;
 }
 
 .fp-override-toggle label .dashicons {
     font-size: 16px;
     color: #72aee6;
+    transition: color 0.3s ease;
+}
+
+.fp-override-toggle.auto-enabled label .dashicons {
+    color: #46b450;
 }
 
 .fp-override-toggle input[type="checkbox"] {
