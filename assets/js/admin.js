@@ -310,12 +310,49 @@
                     $advancedEnabledField.val('1');
                 } else {
                     $overridesSection.hide();
-                    // Clear override values when hiding
-                    $overridesSection.find('input, select').val('');
+                    // Don't automatically clear values - let user decide
+                    // Only clear the advanced enabled flag
                     $advancedEnabledField.val('0');
                 }
                 
                 // Update summary table immediately
+                self.updateSummaryTable();
+            });
+            
+            // Handle override field changes to auto-enable advanced mode if values are entered
+            $(document).on('input change', '.fp-overrides-section input, .fp-overrides-section select', function() {
+                var $timeSlotRow = $(this).closest('.fp-time-slot-row');
+                var $toggle = $timeSlotRow.find('.fp-show-overrides-toggle');
+                var $advancedEnabledField = $timeSlotRow.find('.fp-advanced-enabled');
+                var $overrideToggle = $timeSlotRow.find('.fp-override-toggle');
+                
+                // Check if any override fields have values
+                var hasOverrideValues = false;
+                $timeSlotRow.find('.fp-overrides-section input, .fp-overrides-section select').each(function() {
+                    if ($(this).val() && $(this).val() !== '') {
+                        hasOverrideValues = true;
+                        return false; // break
+                    }
+                });
+                
+                // Auto-enable advanced mode if values are present
+                if (hasOverrideValues && !$toggle.is(':checked')) {
+                    $toggle.prop('checked', true);
+                    $advancedEnabledField.val('1');
+                    $overrideToggle.addClass('auto-enabled');
+                    
+                    // Show a subtle indication that auto-enable happened
+                    setTimeout(function() {
+                        $overrideToggle.removeClass('auto-enabled');
+                    }, 2000);
+                } else if (!hasOverrideValues && $toggle.is(':checked')) {
+                    // Auto-disable if no values and currently enabled
+                    $toggle.prop('checked', false);
+                    $advancedEnabledField.val('0');
+                    $overrideToggle.removeClass('auto-enabled');
+                }
+                
+                // Update summary table
                 self.updateSummaryTable();
             });
             
@@ -334,8 +371,8 @@
                 }, 10);
             });
             
-            // Update summary when overrides change
-            $(document).on('change', 'input[name*="[duration_min]"], input[name*="[capacity]"]', function() {
+            // Update summary when any override values change
+            $(document).on('change', 'input[name*="[duration_min]"], input[name*="[capacity]"], input[name*="[lang]"], select[name*="[meeting_point_id]"], input[name*="[price_adult]"], input[name*="[price_child]"]', function() {
                 self.updateSummaryTable();
             });
             
@@ -674,9 +711,11 @@
                     return; // Skip invalid slots
                 }
                 
-                // Get override values
+                // Get override values - always check if advanced settings are enabled
                 var overrides = {};
-                if (timeSlot.find('.fp-show-overrides-toggle').is(':checked')) {
+                var advancedEnabled = timeSlot.find('.fp-advanced-enabled').val() === '1';
+                
+                if (advancedEnabled) {
                     var duration = timeSlot.find('input[name*="[duration_min]"]').val();
                     var capacity = timeSlot.find('input[name*="[capacity]"]').val();
                     var lang = timeSlot.find('input[name*="[lang]"]').val();
@@ -684,11 +723,14 @@
                     var priceAdult = timeSlot.find('input[name*="[price_adult]"]').val();
                     var priceChild = timeSlot.find('input[name*="[price_child]"]').val();
                     
-                    if (duration) overrides.duration_min = duration;
-                    if (capacity) overrides.capacity = capacity;
-                    if (lang) overrides.lang = lang;
-                    if (meetingPoint) overrides.meeting_point_id = meetingPoint;
-                    if (priceAdult) overrides.price_adult = priceAdult;
+                    // Include values even if empty (they might be intentional "reset to default")
+                    if (duration !== undefined) overrides.duration_min = duration;
+                    if (capacity !== undefined) overrides.capacity = capacity;
+                    if (lang !== undefined) overrides.lang = lang;
+                    if (meetingPoint !== undefined) overrides.meeting_point_id = meetingPoint;
+                    if (priceAdult !== undefined) overrides.price_adult = priceAdult;
+                    if (priceChild !== undefined) overrides.price_child = priceChild;
+                }
                     if (priceChild) overrides.price_child = priceChild;
                 }
                 

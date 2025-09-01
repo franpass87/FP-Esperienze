@@ -153,29 +153,14 @@ class ScheduleHelper {
         
         // Convert groups to time slots and identify non-aggregatable schedules
         foreach ($groups as $group) {
-            if (count($group['days']) > 1 || self::isInheritableSlot($group, $product_id)) {
-                // Can be represented as a time slot with multiple days
-                $time_slots[] = [
-                    'start_time' => $group['start_time'],
-                    'days' => $group['days'],
-                    'overrides' => self::extractOverrides($group, $product_id),
-                    'schedule_ids' => $group['schedule_ids']
-                ];
-            } else {
-                // Keep as raw schedule (single day with specific overrides)
-                foreach ($group['schedule_ids'] as $i => $schedule_id) {
-                    $schedule = null;
-                    foreach ($schedules as $s) {
-                        if ($s->id == $schedule_id) {
-                            $schedule = $s;
-                            break;
-                        }
-                    }
-                    if ($schedule) {
-                        $raw_schedules[] = $schedule;
-                    }
-                }
-            }
+            // Always try to create a time slot if it has valid data
+            // Single day slots with overrides can still be represented in the builder
+            $time_slots[] = [
+                'start_time' => $group['start_time'],
+                'days' => $group['days'],
+                'overrides' => self::extractOverrides($group, $product_id),
+                'schedule_ids' => $group['schedule_ids']
+            ];
         }
         
         return [
@@ -200,14 +185,14 @@ class ScheduleHelper {
         $default_price_adult = get_post_meta($product_id, '_regular_price', true) ?: 0.00;
         $default_price_child = get_post_meta($product_id, '_fp_exp_price_child', true) ?: 0.00;
         
-        // Check if all values match defaults (can inherit)
+        // Check if all values match defaults (can inherit) - handle null values as "use default"
         return (
-            $group['duration_min'] == $default_duration &&
-            $group['capacity'] == $default_capacity &&
-            $group['lang'] == $default_lang &&
-            $group['meeting_point_id'] == $default_meeting_point &&
-            abs($group['price_adult'] - $default_price_adult) < 0.01 &&
-            abs($group['price_child'] - $default_price_child) < 0.01
+            ($group['duration_min'] === null || (int)$group['duration_min'] === (int)$default_duration) &&
+            ($group['capacity'] === null || (int)$group['capacity'] === (int)$default_capacity) &&
+            ($group['lang'] === null || trim($group['lang']) === trim($default_lang)) &&
+            ($group['meeting_point_id'] === null || (int)$group['meeting_point_id'] === (int)$default_meeting_point) &&
+            ($group['price_adult'] === null || abs((float)$group['price_adult'] - (float)$default_price_adult) < 0.01) &&
+            ($group['price_child'] === null || abs((float)$group['price_child'] - (float)$default_price_child) < 0.01)
         );
     }
     
@@ -229,28 +214,34 @@ class ScheduleHelper {
         $default_price_adult = get_post_meta($product_id, '_regular_price', true) ?: 0.00;
         $default_price_child = get_post_meta($product_id, '_fp_exp_price_child', true) ?: 0.00;
         
-        // Only include overrides that differ from defaults
-        if ($group['duration_min'] != $default_duration) {
+        // Only include overrides that differ from defaults (handle null values properly)
+        if (isset($group['duration_min']) && $group['duration_min'] !== null && 
+            (int)$group['duration_min'] !== (int)$default_duration) {
             $overrides['duration_min'] = $group['duration_min'];
         }
         
-        if ($group['capacity'] != $default_capacity) {
+        if (isset($group['capacity']) && $group['capacity'] !== null && 
+            (int)$group['capacity'] !== (int)$default_capacity) {
             $overrides['capacity'] = $group['capacity'];
         }
         
-        if ($group['lang'] != $default_lang) {
+        if (isset($group['lang']) && $group['lang'] !== null && 
+            trim($group['lang']) !== trim($default_lang)) {
             $overrides['lang'] = $group['lang'];
         }
         
-        if ($group['meeting_point_id'] != $default_meeting_point) {
+        if (isset($group['meeting_point_id']) && $group['meeting_point_id'] !== null && 
+            (int)$group['meeting_point_id'] !== (int)$default_meeting_point) {
             $overrides['meeting_point_id'] = $group['meeting_point_id'];
         }
         
-        if (abs($group['price_adult'] - $default_price_adult) >= 0.01) {
+        if (isset($group['price_adult']) && $group['price_adult'] !== null && 
+            abs((float)$group['price_adult'] - (float)$default_price_adult) >= 0.01) {
             $overrides['price_adult'] = $group['price_adult'];
         }
         
-        if (abs($group['price_child'] - $default_price_child) >= 0.01) {
+        if (isset($group['price_child']) && $group['price_child'] !== null && 
+            abs((float)$group['price_child'] - (float)$default_price_child) >= 0.01) {
             $overrides['price_child'] = $group['price_child'];
         }
         
