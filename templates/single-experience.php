@@ -291,12 +291,22 @@ jQuery(document).ready(function($) {
                 <!-- Meeting Point Reviews -->
                 <?php if ($meeting_point && !empty($meeting_point->place_id)) : ?>
                     <?php 
-                    // Load Google Places Manager
-                    $places_manager = new GooglePlacesManager();
+                    // Load Google Places Manager with error handling
+                    $places_manager = null;
                     $place_data = null;
                     
-                    if ($places_manager->isEnabled()) {
-                        $place_data = $places_manager->getPlaceDetails($meeting_point->place_id);
+                    try {
+                        if (class_exists('FP\Esperienze\Integrations\GooglePlacesManager')) {
+                            $places_manager = new GooglePlacesManager();
+                            if ($places_manager->isEnabled()) {
+                                $place_data = $places_manager->getPlaceDetails($meeting_point->place_id);
+                            }
+                        }
+                    } catch (Exception $e) {
+                        // Log error but don't break the page
+                        if (defined('WP_DEBUG') && WP_DEBUG) {
+                            error_log('FP Esperienze: GooglePlacesManager error: ' . $e->getMessage());
+                        }
                     }
                     ?>
                     
