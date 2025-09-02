@@ -2838,3 +2838,36 @@
         justify-content: space-between;
     }
 }
+
+/* Missing clean CSS classes for complete functionality */
+.fp-show-overrides-toggle-clean {
+    margin: 10px 0;
+}
+
+.fp-advanced-enabled-clean {
+    /* Hidden input field - no visual styling needed */
+}
+
+.fp-override-toggle-clean {
+    background: #f6f7f7;
+    padding: 15px 20px;
+    border-bottom: 1px solid #e5e5e5;
+    margin: 0;
+}
+
+.fp-override-toggle-clean label {
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    margin: 0;
+}
+
+.fp-override-toggle-clean .description {
+    font-size: 12px;
+    color: #666;
+    font-style: italic;
+    margin-top: 5px;
+    margin-left: 26px;
+}
