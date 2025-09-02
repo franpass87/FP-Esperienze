@@ -608,28 +608,169 @@ class Experience {
         ];
         
         ?>
-        <div id="fp-schedule-builder">
+        <div id="fp-schedule-builder" class="fp-schedule-builder-refactored">
             <!-- Summary table -->
             <?php $this->renderSlotsSummaryTable($aggregated['time_slots'], $days); ?>
             
-            <div class="fp-builder-section">
-                <div id="fp-time-slots-container">
+            <!-- Time slots container with clean structure -->
+            <div id="fp-time-slots-container" class="fp-time-slots-container-clean">
+                <?php if (empty($aggregated['time_slots'])): ?>
+                    <div class="fp-empty-slots-message">
+                        <p><?php _e('No time slots configured yet. Add your first time slot below.', 'fp-esperienze'); ?></p>
+                    </div>
+                <?php else: ?>
                     <?php foreach ($aggregated['time_slots'] as $index => $slot): ?>
-                        <div class="fp-time-slot-card" data-index="<?php echo esc_attr($index); ?>">
-                            <?php $this->renderTimeSlot($slot, $index, $days, $meeting_points, $default_duration, $default_capacity, $default_language, $default_meeting_point, $default_price_adult, $default_price_child, $product_id); ?>
+                        <div class="fp-time-slot-card fp-time-slot-card-clean" data-index="<?php echo esc_attr($index); ?>">
+                            <?php $this->renderTimeSlotCardClean($slot, $index, $days, $meeting_points, $default_duration, $default_capacity, $default_language, $default_meeting_point, $default_price_adult, $default_price_child, $product_id); ?>
                         </div>
                     <?php endforeach; ?>
-                </div>
-                
-                <button type="button" class="button fp-add-time-slot" id="fp-add-time-slot">
-                    <span class="dashicons dashicons-plus-alt"></span>
-                    <?php _e('Add Time Slot', 'fp-esperienze'); ?>
-                </button>
+                <?php endif; ?>
             </div>
+            
+            <button type="button" class="button fp-add-time-slot" id="fp-add-time-slot">
+                <span class="dashicons dashicons-plus-alt"></span>
+                <?php _e('Add Time Slot', 'fp-esperienze'); ?>
+            </button>
         </div>
         
         <!-- Hidden container for generated schedule inputs -->
         <div id="fp-generated-schedules" style="display: none;"></div>
+        <?php
+    }
+    
+    /**
+     * Render a clean time slot card - REFACTORED VERSION
+     */
+    private function renderTimeSlotCardClean($slot, $index, $days, $meeting_points, $default_duration, $default_capacity, $default_language, $default_meeting_point, $default_price_adult, $default_price_child, $product_id): void {
+        $overrides = $slot['overrides'] ?? [];
+        $has_overrides = $this->hasActualOverrides($overrides, $index, $product_id);
+        ?>
+        <div class="fp-time-slot-content-clean">
+            <!-- Time slot header -->
+            <div class="fp-time-slot-header-clean">
+                <div class="fp-time-field-clean">
+                    <label for="time-<?php echo esc_attr($index); ?>">
+                        <span class="dashicons dashicons-clock"></span>
+                        <?php _e('Start Time', 'fp-esperienze'); ?> <span class="required">*</span>
+                    </label>
+                    <input type="time" 
+                           id="time-<?php echo esc_attr($index); ?>"
+                           name="builder_slots[<?php echo esc_attr($index); ?>][start_time]" 
+                           value="<?php echo esc_attr($slot['start_time'] ?? ''); ?>" 
+                           required>
+                </div>
+                
+                <div class="fp-days-field-clean">
+                    <label>
+                        <span class="dashicons dashicons-calendar-alt"></span>
+                        <?php _e('Days of Week', 'fp-esperienze'); ?> <span class="required">*</span>
+                    </label>
+                    <div class="fp-days-pills-clean">
+                        <?php foreach ($days as $day_value => $day_label): ?>
+                            <div class="fp-day-pill-clean">
+                                <input type="checkbox" 
+                                       id="day-<?php echo esc_attr($index); ?>-<?php echo esc_attr($day_value); ?>"
+                                       name="builder_slots[<?php echo esc_attr($index); ?>][days][]" 
+                                       value="<?php echo esc_attr($day_value); ?>"
+                                       <?php checked(in_array($day_value, $slot['days'] ?? [])); ?>>
+                                <label for="day-<?php echo esc_attr($index); ?>-<?php echo esc_attr($day_value); ?>">
+                                    <?php echo esc_html(substr($day_label, 0, 3)); ?>
+                                </label>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                
+                <div class="fp-slot-actions-clean">
+                    <button type="button" class="fp-remove-time-slot-clean button">
+                        <span class="dashicons dashicons-trash"></span>
+                        <?php _e('Remove', 'fp-esperienze'); ?>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Advanced settings toggle -->
+            <div class="fp-override-toggle-clean">
+                <label>
+                    <input type="checkbox" class="fp-show-overrides-toggle-clean" <?php checked($has_overrides); ?>>
+                    <span class="dashicons dashicons-admin-tools"></span>
+                    <?php _e('Advanced Settings', 'fp-esperienze'); ?>
+                </label>
+                <span class="description"><?php _e('Override default values for this specific time slot', 'fp-esperienze'); ?></span>
+                <input type="hidden" name="builder_slots[<?php echo esc_attr($index); ?>][advanced_enabled]" value="<?php echo $has_overrides ? '1' : '0'; ?>" class="fp-advanced-enabled-clean">
+            </div>
+            
+            <!-- Advanced settings section -->
+            <div class="fp-overrides-section-clean" style="<?php echo $has_overrides ? 'display: block;' : 'display: none;'; ?>">
+                <div class="fp-overrides-grid-clean">
+                    <div class="fp-override-field-clean">
+                        <label><?php _e('Duration (minutes)', 'fp-esperienze'); ?></label>
+                        <input type="number" 
+                               name="builder_slots[<?php echo esc_attr($index); ?>][duration_min]" 
+                               value="<?php echo esc_attr($overrides['duration_min'] ?? ''); ?>" 
+                               placeholder="<?php echo esc_attr($default_duration); ?>" 
+                               min="1">
+                    </div>
+                    
+                    <div class="fp-override-field-clean">
+                        <label><?php _e('Capacity', 'fp-esperienze'); ?></label>
+                        <input type="number" 
+                               name="builder_slots[<?php echo esc_attr($index); ?>][capacity]" 
+                               value="<?php echo esc_attr($overrides['capacity'] ?? ''); ?>" 
+                               placeholder="<?php echo esc_attr($default_capacity); ?>" 
+                               min="1">
+                    </div>
+                    
+                    <div class="fp-override-field-clean">
+                        <label><?php _e('Language', 'fp-esperienze'); ?></label>
+                        <input type="text" 
+                               name="builder_slots[<?php echo esc_attr($index); ?>][lang]" 
+                               value="<?php echo esc_attr($overrides['lang'] ?? ''); ?>" 
+                               placeholder="<?php echo esc_attr($default_language); ?>" 
+                               maxlength="10">
+                    </div>
+                    
+                    <div class="fp-override-field-clean">
+                        <label><?php _e('Meeting Point', 'fp-esperienze'); ?></label>
+                        <select name="builder_slots[<?php echo esc_attr($index); ?>][meeting_point_id]">
+                            <option value=""><?php _e('Use default', 'fp-esperienze'); ?></option>
+                            <?php foreach ($meeting_points as $mp_id => $mp_name): ?>
+                                <option value="<?php echo esc_attr($mp_id); ?>" <?php selected($overrides['meeting_point_id'] ?? '', $mp_id); ?>>
+                                    <?php echo esc_html($mp_name); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    
+                    <div class="fp-override-field-clean">
+                        <label><?php _e('Adult Price', 'fp-esperienze'); ?> (<?php echo get_woocommerce_currency_symbol(); ?>)</label>
+                        <input type="number" 
+                               name="builder_slots[<?php echo esc_attr($index); ?>][price_adult]" 
+                               value="<?php echo esc_attr($overrides['price_adult'] ?? ''); ?>" 
+                               placeholder="<?php echo esc_attr($default_price_adult); ?>" 
+                               min="0" 
+                               step="0.01">
+                    </div>
+                    
+                    <div class="fp-override-field-clean">
+                        <label><?php _e('Child Price', 'fp-esperienze'); ?> (<?php echo get_woocommerce_currency_symbol(); ?>)</label>
+                        <input type="number" 
+                               name="builder_slots[<?php echo esc_attr($index); ?>][price_child]" 
+                               value="<?php echo esc_attr($overrides['price_child'] ?? ''); ?>" 
+                               placeholder="<?php echo esc_attr($default_price_child); ?>" 
+                               min="0" 
+                               step="0.01">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Store schedule IDs for updates -->
+            <?php if (!empty($slot['schedule_ids'])): ?>
+                <?php foreach ($slot['schedule_ids'] as $schedule_id): ?>
+                    <input type="hidden" name="builder_slots[<?php echo esc_attr($index); ?>][schedule_ids][]" value="<?php echo esc_attr($schedule_id); ?>">
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
         <?php
     }
     
@@ -910,21 +1051,119 @@ class Experience {
             return strcmp($a->date ?? '', $b->date ?? '');
         });
         
-        if (empty($overrides)) {
-            ?>
-            <div class="fp-overrides-empty">
-                <p><?php _e('No date overrides configured. Add exceptions below for specific dates when you need to close, change capacity, or modify pricing.', 'fp-esperienze'); ?></p>
-            </div>
-            <?php
-        } else {
-            ?>
-            <div class="fp-overrides-container">
+        ?>
+        <div class="fp-overrides-container-clean">
+            <?php if (empty($overrides)): ?>
+                <div class="fp-overrides-empty-clean">
+                    <p><?php _e('No date overrides configured. Add exceptions below for specific dates when you need to close, change capacity, or modify pricing.', 'fp-esperienze'); ?></p>
+                </div>
+            <?php else: ?>
                 <?php foreach ($overrides as $index => $override): ?>
-                    <?php $this->renderOverrideCard($override, $index); ?>
+                    <?php $this->renderOverrideCardClean($override, $index); ?>
                 <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
+        <?php
+    }
+    
+    /**
+     * Render a clean override card - REFACTORED VERSION
+     *
+     * @param object $override Override object
+     * @param int $index Index
+     */
+    private function renderOverrideCardClean($override, int $index): void {
+        $price_override = $override->price_override_json ? json_decode($override->price_override_json, true) : [];
+        $date = $override->date ?? '';
+        $is_closed = !empty($override->is_closed);
+        $capacity_override = $override->capacity_override ?? '';
+        $reason = $override->reason ?? '';
+        $adult_price = $price_override['adult'] ?? '';
+        $child_price = $price_override['child'] ?? '';
+        
+        ?>
+        <div class="fp-override-card-clean<?php echo $is_closed ? ' is-closed' : ''; ?>" data-index="<?php echo esc_attr($index); ?>">
+            <input type="hidden" name="overrides[<?php echo esc_attr($index); ?>][id]" value="<?php echo esc_attr($override->id ?? ''); ?>">
+            
+            <!-- Override header -->
+            <div class="fp-override-header-clean">
+                <div class="fp-override-date-field-clean">
+                    <label for="override-date-<?php echo esc_attr($index); ?>">
+                        <span class="dashicons dashicons-calendar-alt"></span>
+                        <?php _e('Date', 'fp-esperienze'); ?> <span class="required">*</span>
+                    </label>
+                    <input type="date" 
+                           id="override-date-<?php echo esc_attr($index); ?>"
+                           name="overrides[<?php echo esc_attr($index); ?>][date]" 
+                           value="<?php echo esc_attr($date); ?>"
+                           required>
+                </div>
+                
+                <div class="fp-override-actions-clean">
+                    <div class="fp-override-checkbox-clean">
+                        <input type="checkbox" 
+                               name="overrides[<?php echo esc_attr($index); ?>][is_closed]" 
+                               value="1" 
+                               id="override-closed-<?php echo esc_attr($index); ?>"
+                               <?php checked($is_closed); ?>>
+                        <label for="override-closed-<?php echo esc_attr($index); ?>"><?php _e('Closed', 'fp-esperienze'); ?></label>
+                    </div>
+                    
+                    <button type="button" class="fp-override-remove-clean button">
+                        <span class="dashicons dashicons-trash"></span>
+                        <?php _e('Remove', 'fp-esperienze'); ?>
+                    </button>
+                </div>
             </div>
-            <?php
-        }
+            
+            <!-- Override fields -->
+            <div class="fp-override-fields-clean<?php echo $is_closed ? ' is-closed' : ''; ?>">
+                <div class="fp-override-grid-clean">
+                    <div class="fp-override-field-clean">
+                        <label for="override-capacity-<?php echo esc_attr($index); ?>"><?php _e('Capacity Override', 'fp-esperienze'); ?></label>
+                        <input type="number" 
+                               id="override-capacity-<?php echo esc_attr($index); ?>"
+                               name="overrides[<?php echo esc_attr($index); ?>][capacity_override]" 
+                               value="<?php echo esc_attr($capacity_override); ?>"
+                               placeholder="<?php esc_attr_e('Leave empty = use default', 'fp-esperienze'); ?>" 
+                               min="0" 
+                               step="1">
+                    </div>
+                    
+                    <div class="fp-override-field-clean">
+                        <label for="override-reason-<?php echo esc_attr($index); ?>"><?php _e('Reason/Note', 'fp-esperienze'); ?></label>
+                        <input type="text" 
+                               id="override-reason-<?php echo esc_attr($index); ?>"
+                               name="overrides[<?php echo esc_attr($index); ?>][reason]" 
+                               value="<?php echo esc_attr($reason); ?>"
+                               placeholder="<?php esc_attr_e('Optional note (e.g., Holiday, Maintenance)', 'fp-esperienze'); ?>">
+                    </div>
+                    
+                    <div class="fp-override-field-clean">
+                        <label for="override-adult-price-<?php echo esc_attr($index); ?>"><?php _e('Adult Price', 'fp-esperienze'); ?> (<?php echo get_woocommerce_currency_symbol(); ?>)</label>
+                        <input type="number" 
+                               id="override-adult-price-<?php echo esc_attr($index); ?>"
+                               name="overrides[<?php echo esc_attr($index); ?>][price_adult]" 
+                               value="<?php echo esc_attr($adult_price); ?>"
+                               placeholder="<?php esc_attr_e('Leave empty = use default', 'fp-esperienze'); ?>" 
+                               min="0" 
+                               step="0.01">
+                    </div>
+                    
+                    <div class="fp-override-field-clean">
+                        <label for="override-child-price-<?php echo esc_attr($index); ?>"><?php _e('Child Price', 'fp-esperienze'); ?> (<?php echo get_woocommerce_currency_symbol(); ?>)</label>
+                        <input type="number" 
+                               id="override-child-price-<?php echo esc_attr($index); ?>"
+                               name="overrides[<?php echo esc_attr($index); ?>][price_child]" 
+                               value="<?php echo esc_attr($child_price); ?>"
+                               placeholder="<?php esc_attr_e('Leave empty = use default', 'fp-esperienze'); ?>" 
+                               min="0" 
+                               step="0.01">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <?php
     }
     
     /**

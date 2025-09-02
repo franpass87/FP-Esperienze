@@ -2518,3 +2518,323 @@
     font-style: italic;
     margin-top: 4px;
 }
+
+/* ========================================
+   REFACTORED CLEAN STYLES FOR TIME SLOTS AND OVERRIDES
+   ======================================== */
+
+/* Schedule builder clean */
+.fp-schedule-builder-refactored {
+    margin: 20px 0;
+}
+
+/* Time slots container clean */
+.fp-time-slots-container-clean {
+    margin: 20px 0;
+}
+
+.fp-empty-slots-message {
+    text-align: center;
+    padding: 40px 20px;
+    background: #f8f9fa;
+    border: 2px dashed #ddd;
+    border-radius: 8px;
+    color: #6c757d;
+    font-style: italic;
+}
+
+/* Time slot card clean */
+.fp-time-slot-card-clean {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    overflow: hidden;
+    transition: all 0.2s ease;
+}
+
+.fp-time-slot-card-clean:hover {
+    border-color: #0073aa;
+    box-shadow: 0 2px 8px rgba(0, 115, 170, 0.1);
+}
+
+.fp-time-slot-content-clean {
+    padding: 0;
+}
+
+.fp-time-slot-header-clean {
+    background: #f6f7f7;
+    padding: 20px;
+    border-bottom: 1px solid #e5e5e5;
+    display: grid;
+    grid-template-columns: 200px 1fr auto;
+    gap: 20px;
+    align-items: flex-start;
+}
+
+.fp-time-field-clean label,
+.fp-days-field-clean label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #23282d;
+}
+
+.fp-time-field-clean input[type="time"] {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.fp-days-pills-clean {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.fp-day-pill-clean {
+    position: relative;
+}
+
+.fp-day-pill-clean input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    cursor: pointer;
+}
+
+.fp-day-pill-clean label {
+    display: inline-block;
+    padding: 6px 12px;
+    background: #f1f1f1;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin: 0;
+}
+
+.fp-day-pill-clean input[type="checkbox"]:checked + label {
+    background: #0073aa;
+    color: #fff;
+    border-color: #0073aa;
+}
+
+.fp-day-pill-clean input[type="checkbox"]:focus + label {
+    outline: 2px solid #005177;
+    outline-offset: 2px;
+}
+
+.fp-slot-actions-clean .fp-remove-time-slot-clean {
+    background: #dc3545;
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: background-color 0.2s ease;
+}
+
+.fp-slot-actions-clean .fp-remove-time-slot-clean:hover {
+    background: #c82333;
+}
+
+/* Override toggle clean */
+.fp-override-toggle-clean {
+    padding: 15px 20px;
+    background: #fafafa;
+    border-bottom: 1px solid #e5e5e5;
+}
+
+.fp-override-toggle-clean label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+    margin: 0;
+    cursor: pointer;
+}
+
+.fp-override-toggle-clean .description {
+    display: block;
+    margin-top: 5px;
+    color: #666;
+    font-size: 13px;
+}
+
+/* Override section clean */
+.fp-overrides-section-clean {
+    padding: 20px;
+    background: #f9f9f9;
+    border-top: 1px solid #e5e5e5;
+}
+
+.fp-overrides-grid-clean {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+.fp-override-field-clean label {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 5px;
+    color: #23282d;
+}
+
+.fp-override-field-clean input,
+.fp-override-field-clean select {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.fp-override-field-clean input:focus,
+.fp-override-field-clean select:focus {
+    border-color: #0073aa;
+    outline: none;
+    box-shadow: 0 0 0 1px #0073aa;
+}
+
+/* Overrides container clean */
+.fp-overrides-container-clean {
+    margin: 20px 0;
+}
+
+.fp-overrides-empty-clean {
+    text-align: center;
+    padding: 40px 20px;
+    background: #f8f9fa;
+    border: 2px dashed #ddd;
+    border-radius: 8px;
+    color: #6c757d;
+    font-style: italic;
+}
+
+/* Override card clean */
+.fp-override-card-clean {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    overflow: hidden;
+    transition: all 0.2s ease;
+}
+
+.fp-override-card-clean:hover {
+    border-color: #0073aa;
+    box-shadow: 0 2px 8px rgba(0, 115, 170, 0.1);
+}
+
+.fp-override-card-clean.is-closed {
+    border-left: 4px solid #dc3545;
+    background: #fff5f5;
+}
+
+.fp-override-header-clean {
+    background: #f6f7f7;
+    padding: 15px 20px;
+    border-bottom: 1px solid #e5e5e5;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 20px;
+    align-items: flex-start;
+}
+
+.fp-override-date-field-clean label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #23282d;
+}
+
+.fp-override-date-field-clean input[type="date"] {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    width: 200px;
+}
+
+.fp-override-actions-clean {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.fp-override-checkbox-clean {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.fp-override-checkbox-clean label {
+    font-weight: 500;
+    margin: 0;
+}
+
+.fp-override-remove-clean {
+    background: #dc3545;
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: background-color 0.2s ease;
+}
+
+.fp-override-remove-clean:hover {
+    background: #c82333;
+}
+
+.fp-override-fields-clean {
+    padding: 20px;
+}
+
+.fp-override-fields-clean.is-closed {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.fp-override-grid-clean {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+/* Required field styling */
+.required {
+    color: #dc3545;
+    font-weight: bold;
+}
+
+/* Responsive design for clean styles */
+@media (max-width: 768px) {
+    .fp-time-slot-header-clean {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .fp-override-header-clean {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .fp-overrides-grid-clean {
+        grid-template-columns: 1fr;
+    }
+    
+    .fp-override-actions-clean {
+        justify-content: space-between;
+    }
+}
