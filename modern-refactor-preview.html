@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FP Esperienze - Modern Schedule Builder Refactor Preview</title>
+    <link rel="stylesheet" href="assets/css/admin.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+            background: #f1f1f1;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .preview-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+        
+        .preview-section {
+            margin-bottom: 40px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .preview-header {
+            background: #f9f9f9;
+            border-bottom: 1px solid #ddd;
+            padding: 15px 20px;
+            font-weight: 600;
+            color: #1d2327;
+        }
+        
+        .preview-content {
+            padding: 20px;
+        }
+        
+        /* WordPress Dashicons mock */
+        .dashicons {
+            width: 20px;
+            height: 20px;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        
+        .dashicons:before {
+            content: "●";
+            color: #8c8f94;
+        }
+        
+        .dashicons-calendar-alt:before { content: "📅"; }
+        .dashicons-clock:before { content: "🕐"; }
+        .dashicons-trash:before { content: "🗑️"; }
+        .dashicons-plus-alt:before { content: "➕"; }
+        .dashicons-admin-tools:before { content: "⚙️"; }
+    </style>
+</head>
+<body>
+    <div class="preview-container">
+        <h1>FP Esperienze - Modern Schedule Builder Refactor</h1>
+        <p>This preview shows the new modern design for date overrides and time slots sections.</p>
+        
+        <!-- Date Overrides Section -->
+        <div class="preview-section">
+            <div class="preview-header">📅 Date-Specific Overrides (Modern Design)</div>
+            <div class="preview-content">
+                <fieldset class="options_group fp-overrides-section-wrapper fp-section-fieldset">
+                    <div class="fp-section-content">
+                        <div class="fp-section-description">
+                            Add exceptions for specific dates: close the experience, change capacity, or modify prices for particular days.
+                        </div>
+                        
+                        <div id="fp-overrides-container" class="fp-overrides-container">
+                            <!-- Sample Override Card 1 -->
+                            <div class="fp-override-card" data-index="0">
+                                <input type="hidden" name="overrides[0][id]" value="">
+                                
+                                <div class="fp-override-header">
+                                    <div class="fp-override-date-field">
+                                        <span class="dashicons dashicons-calendar-alt"></span>
+                                        <input type="date" 
+                                               name="overrides[0][date]" 
+                                               class="fp-override-input fp-override-date" 
+                                               value="2024-02-14"
+                                               required 
+                                               aria-label="Override date">
+                                    </div>
+                                    <div class="fp-override-actions">
+                                        <div class="fp-override-checkbox">
+                                            <input type="checkbox" 
+                                                   name="overrides[0][is_closed]" 
+                                                   value="1" 
+                                                   id="override-closed-0">
+                                            <label for="override-closed-0">Closed</label>
+                                        </div>
+                                        <button type="button" class="fp-override-remove" aria-label="Remove this override">
+                                            <span class="dashicons dashicons-trash"></span>
+                                            Remove
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="fp-override-fields">
+                                    <div class="fp-override-field">
+                                        <label>Capacity Override</label>
+                                        <input type="number" 
+                                               name="overrides[0][capacity_override]" 
+                                               class="fp-override-input" 
+                                               placeholder="Leave empty = use default" 
+                                               min="0" 
+                                               step="1">
+                                    </div>
+                                    
+                                    <div class="fp-override-field">
+                                        <label>Adult Price (€)</label>
+                                        <input type="number" 
+                                               name="overrides[0][price_adult]" 
+                                               class="fp-override-input" 
+                                               value="75.00"
+                                               placeholder="Leave empty = use default" 
+                                               min="0" 
+                                               step="0.01">
+                                    </div>
+                                    
+                                    <div class="fp-override-field">
+                                        <label>Child Price (€)</label>
+                                        <input type="number" 
+                                               name="overrides[0][price_child]" 
+                                               class="fp-override-input" 
+                                               value="40.00"
+                                               placeholder="Leave empty = use default" 
+                                               min="0" 
+                                               step="0.01">
+                                    </div>
+                                    
+                                    <div class="fp-override-field">
+                                        <label>Reason (Optional)</label>
+                                        <input type="text" 
+                                               name="overrides[0][reason]" 
+                                               class="fp-override-input" 
+                                               value="Valentine's Day Special"
+                                               placeholder="Holiday, Maintenance, etc.">
+                                    </div>
+                                </div>
+                                
+                                <div class="fp-override-status modified"></div>
+                            </div>
+                            
+                            <!-- Sample Override Card 2 - Closed -->
+                            <div class="fp-override-card is-closed" data-index="1">
+                                <input type="hidden" name="overrides[1][id]" value="">
+                                
+                                <div class="fp-override-header">
+                                    <div class="fp-override-date-field">
+                                        <span class="dashicons dashicons-calendar-alt"></span>
+                                        <input type="date" 
+                                               name="overrides[1][date]" 
+                                               class="fp-override-input fp-override-date" 
+                                               value="2024-12-25"
+                                               required 
+                                               aria-label="Override date">
+                                    </div>
+                                    <div class="fp-override-actions">
+                                        <div class="fp-override-checkbox">
+                                            <input type="checkbox" 
+                                                   name="overrides[1][is_closed]" 
+                                                   value="1" 
+                                                   id="override-closed-1"
+                                                   checked>
+                                            <label for="override-closed-1">Closed</label>
+                                        </div>
+                                        <button type="button" class="fp-override-remove" aria-label="Remove this override">
+                                            <span class="dashicons dashicons-trash"></span>
+                                            Remove
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="fp-override-fields is-closed">
+                                    <div class="fp-override-field">
+                                        <label>Capacity Override</label>
+                                        <input type="number" 
+                                               name="overrides[1][capacity_override]" 
+                                               class="fp-override-input" 
+                                               placeholder="Leave empty = use default" 
+                                               min="0" 
+                                               step="1">
+                                    </div>
+                                    
+                                    <div class="fp-override-field">
+                                        <label>Adult Price (€)</label>
+                                        <input type="number" 
+                                               name="overrides[1][price_adult]" 
+                                               class="fp-override-input" 
+                                               placeholder="Leave empty = use default" 
+                                               min="0" 
+                                               step="0.01">
+                                    </div>
+                                    
+                                    <div class="fp-override-field">
+                                        <label>Child Price (€)</label>
+                                        <input type="number" 
+                                               name="overrides[1][price_child]" 
+                                               class="fp-override-input" 
+                                               placeholder="Leave empty = use default" 
+                                               min="0" 
+                                               step="0.01">
+                                    </div>
+                                    
+                                    <div class="fp-override-field">
+                                        <label>Reason (Optional)</label>
+                                        <input type="text" 
+                                               name="overrides[1][reason]" 
+                                               class="fp-override-input" 
+                                               value="Christmas Day - Closed"
+                                               placeholder="Holiday, Maintenance, etc.">
+                                    </div>
+                                </div>
+                                
+                                <div class="fp-override-status closed"></div>
+                            </div>
+                        </div>
+                        
+                        <button type="button" class="fp-add-override" id="fp-add-override">
+                            <span class="dashicons dashicons-plus-alt"></span>
+                            Add Date Override
+                        </button>
+                    </div>
+                </fieldset>
+            </div>
+        </div>
+        
+        <!-- Time Slots Section -->
+        <div class="preview-section">
+            <div class="preview-header">🕐 Time Slots (Modern Design)</div>
+            <div class="preview-content">
+                <div id="fp-time-slots-container">
+                    <!-- Sample Time Slot Card 1 -->
+                    <div class="fp-time-slot-card" data-index="0">
+                        <div class="fp-time-slot-header">
+                            <div class="fp-time-field">
+                                <label>
+                                    <span class="dashicons dashicons-clock"></span>
+                                    Start Time <span class="required">*</span>
+                                </label>
+                                <input type="time" 
+                                       name="builder_slots[0][start_time]" 
+                                       value="09:00" 
+                                       required>
+                            </div>
+                            
+                            <div class="fp-days-field">
+                                <label>
+                                    <span class="dashicons dashicons-calendar-alt"></span>
+                                    Days of Week <span class="required">*</span>
+                                </label>
+                                <div class="fp-days-selector">
+                                    <div class="fp-days-pills">
+                                        <div class="fp-day-pill">
+                                            <input type="checkbox" id="day-0-1" name="builder_slots[0][days][]" value="1" checked>
+                                            <label for="day-0-1">Mon</label>
+                                        </div>
+                                        <div class="fp-day-pill">
+                                            <input type="checkbox" id="day-0-2" name="builder_slots[0][days][]" value="2">
+                                            <label for="day-0-2">Tue</label>
+                                        </div>
+                                        <div class="fp-day-pill">
+                                            <input type="checkbox" id="day-0-3" name="builder_slots[0][days][]" value="3" checked>
+                                            <label for="day-0-3">Wed</label>
+                                        </div>
+                                        <div class="fp-day-pill">
+                                            <input type="checkbox" id="day-0-4" name="builder_slots[0][days][]" value="4">
+                                            <label for="day-0-4">Thu</label>
+                                        </div>
+                                        <div class="fp-day-pill">
+                                            <input type="checkbox" id="day-0-5" name="builder_slots[0][days][]" value="5" checked>
+                                            <label for="day-0-5">Fri</label>
+                                        </div>
+                                        <div class="fp-day-pill">
+                                            <input type="checkbox" id="day-0-6" name="builder_slots[0][days][]" value="6">
+                                            <label for="day-0-6">Sat</label>
+                                        </div>
+                                        <div class="fp-day-pill">
+                                            <input type="checkbox" id="day-0-0" name="builder_slots[0][days][]" value="0">
+                                            <label for="day-0-0">Sun</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <button type="button" class="fp-remove-time-slot">
+                                    <span class="dashicons dashicons-trash"></span>
+                                    Remove
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="fp-override-toggle">
+                            <label>
+                                <input type="checkbox" class="fp-show-overrides-toggle">
+                                <span class="dashicons dashicons-admin-tools"></span>
+                                Advanced Settings
+                            </label>
+                            <span class="description">Override default values for this specific time slot</span>
+                        </div>
+                        
+                        <div class="fp-overrides-section">
+                            <div class="fp-overrides-grid">
+                                <div class="fp-override-field">
+                                    <label>Duration (minutes)</label>
+                                    <input type="number" name="builder_slots[0][duration_min]" min="1" placeholder="Default: 60">
+                                </div>
+                                <div class="fp-override-field">
+                                    <label>Capacity</label>
+                                    <input type="number" name="builder_slots[0][capacity]" placeholder="Default: 10">
+                                </div>
+                                <div class="fp-override-field">
+                                    <label>Language</label>
+                                    <input type="text" name="builder_slots[0][lang]" maxlength="10" placeholder="Default: en">
+                                </div>
+                                <div class="fp-override-field">
+                                    <label>Meeting Point</label>
+                                    <select name="builder_slots[0][meeting_point_id]">
+                                        <option value="">Use default</option>
+                                        <option value="1">Main Plaza</option>
+                                        <option value="2">Hotel Pickup</option>
+                                    </select>
+                                </div>
+                                <div class="fp-override-field">
+                                    <label>Adult Price</label>
+                                    <input type="number" name="builder_slots[0][price_adult]" min="0" step="0.01" placeholder="Default: 50.00">
+                                </div>
+                                <div class="fp-override-field">
+                                    <label>Child Price</label>
+                                    <input type="number" name="builder_slots[0][price_child]" min="0" step="0.01" placeholder="Default: 25.00">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Sample Time Slot Card 2 with overrides -->
+                    <div class="fp-time-slot-card has-overrides" data-index="1">
+                        <div class="fp-time-slot-header">
+                            <div class="fp-time-field">
+                                <label>
+                                    <span class="dashicons dashicons-clock"></span>
+                                    Start Time <span class="required">*</span>
+                                </label>
+                                <input type="time" 
+                                       name="builder_slots[1][start_time]" 
+                                       value="14:30" 
+                                       required>
+                            </div>
+                            
+                            <div class="fp-days-field">
+                                <label>
+                                    <span class="dashicons dashicons-calendar-alt"></span>
+                                    Days of Week <span class="required">*</span>
+                                </label>
+                                <div class="fp-days-selector">
+                                    <div class="fp-days-pills">
+                                        <div class="fp-day-pill">
+                                            <input type="checkbox" id="day-1-1" name="builder_slots[1][days][]" value="1">
+                                            <label for="day-1-1">Mon</label>
+                                        </div>
+                                        <div class="fp-day-pill">
+                                            <input type="checkbox" id="day-1-2" name="builder_slots[1][days][]" value="2" checked>
+                                            <label for="day-1-2">Tue</label>
+                                        </div>
+                                        <div class="fp-day-pill">
+                                            <input type="checkbox" id="day-1-3" name="builder_slots[1][days][]" value="3">
+                                            <label for="day-1-3">Wed</label>
+                                        </div>
+                                        <div class="fp-day-pill">
+                                            <input type="checkbox" id="day-1-4" name="builder_slots[1][days][]" value="4" checked>
+                                            <label for="day-1-4">Thu</label>
+                                        </div>
+                                        <div class="fp-day-pill">
+                                            <input type="checkbox" id="day-1-5" name="builder_slots[1][days][]" value="5">
+                                            <label for="day-1-5">Fri</label>
+                                        </div>
+                                        <div class="fp-day-pill">
+                                            <input type="checkbox" id="day-1-6" name="builder_slots[1][days][]" value="6" checked>
+                                            <label for="day-1-6">Sat</label>
+                                        </div>
+                                        <div class="fp-day-pill">
+                                            <input type="checkbox" id="day-1-0" name="builder_slots[1][days][]" value="0" checked>
+                                            <label for="day-1-0">Sun</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <button type="button" class="fp-remove-time-slot">
+                                    <span class="dashicons dashicons-trash"></span>
+                                    Remove
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="fp-override-toggle">
+                            <label>
+                                <input type="checkbox" class="fp-show-overrides-toggle" checked>
+                                <span class="dashicons dashicons-admin-tools"></span>
+                                Advanced Settings
+                            </label>
+                            <span class="description">Override default values for this specific time slot</span>
+                        </div>
+                        
+                        <div class="fp-overrides-section active">
+                            <div class="fp-overrides-grid">
+                                <div class="fp-override-field">
+                                    <label>Duration (minutes)</label>
+                                    <input type="number" name="builder_slots[1][duration_min]" min="1" value="90" placeholder="Default: 60">
+                                </div>
+                                <div class="fp-override-field">
+                                    <label>Capacity</label>
+                                    <input type="number" name="builder_slots[1][capacity]" value="15" placeholder="Default: 10">
+                                </div>
+                                <div class="fp-override-field">
+                                    <label>Language</label>
+                                    <input type="text" name="builder_slots[1][lang]" maxlength="10" value="it" placeholder="Default: en">
+                                </div>
+                                <div class="fp-override-field">
+                                    <label>Meeting Point</label>
+                                    <select name="builder_slots[1][meeting_point_id]">
+                                        <option value="">Use default</option>
+                                        <option value="1">Main Plaza</option>
+                                        <option value="2" selected>Hotel Pickup</option>
+                                    </select>
+                                </div>
+                                <div class="fp-override-field">
+                                    <label>Adult Price</label>
+                                    <input type="number" name="builder_slots[1][price_adult]" min="0" step="0.01" value="65.00" placeholder="Default: 50.00">
+                                </div>
+                                <div class="fp-override-field">
+                                    <label>Child Price</label>
+                                    <input type="number" name="builder_slots[1][price_child]" min="0" step="0.01" value="35.00" placeholder="Default: 25.00">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button type="button" class="fp-add-time-slot" id="fp-add-time-slot">
+                    <span class="dashicons dashicons-plus-alt"></span>
+                    Add Time Slot
+                </button>
+            </div>
+        </div>
+        
+        <!-- Empty State Preview -->
+        <div class="preview-section">
+            <div class="preview-header">📝 Empty State Examples</div>
+            <div class="preview-content">
+                <h4>Empty Overrides State</h4>
+                <div class="fp-overrides-empty">
+                    <p>No date overrides configured. Add exceptions below for specific dates when you need to close, change capacity, or modify pricing.</p>
+                </div>
+                
+                <button type="button" class="fp-add-override" id="fp-add-override-example">
+                    <span class="dashicons dashicons-plus-alt"></span>
+                    Add Date Override
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Simple interactive demo
+        document.addEventListener('DOMContentLoaded', function() {
+            // Toggle override sections
+            document.querySelectorAll('.fp-override-toggle input[type="checkbox"]').forEach(function(checkbox) {
+                checkbox.addEventListener('change', function() {
+                    const overridesSection = this.closest('.fp-time-slot-card').querySelector('.fp-overrides-section');
+                    if (this.checked) {
+                        overridesSection.classList.add('active');
+                        overridesSection.style.display = 'block';
+                        this.closest('.fp-time-slot-card').classList.add('has-overrides');
+                    } else {
+                        overridesSection.classList.remove('active');
+                        overridesSection.style.display = 'none';
+                        this.closest('.fp-time-slot-card').classList.remove('has-overrides');
+                    }
+                });
+            });
+            
+            // Handle closed checkbox
+            document.querySelectorAll('.fp-override-checkbox input[type="checkbox"]').forEach(function(checkbox) {
+                checkbox.addEventListener('change', function() {
+                    const card = this.closest('.fp-override-card');
+                    const fields = card.querySelector('.fp-override-fields');
+                    const status = card.querySelector('.fp-override-status');
+                    
+                    if (this.checked) {
+                        card.classList.add('is-closed');
+                        fields.classList.add('is-closed');
+                        status.className = 'fp-override-status closed';
+                    } else {
+                        card.classList.remove('is-closed');
+                        fields.classList.remove('is-closed');
+                        status.className = 'fp-override-status normal';
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

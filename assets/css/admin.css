@@ -470,44 +470,7 @@
     margin-bottom: 20px;
 }
 
-.fp-overrides-table-wrapper {
-    border: 1px solid #e1e5e9;
-    border-radius: 6px;
-    overflow: hidden;
-    background: #fff;
-}
-
-.fp-overrides-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 0;
-}
-
-.fp-overrides-table th {
-    background: #f6f7f7;
-    border-bottom: 1px solid #e1e5e9;
-    padding: 12px;
-    text-align: left;
-    font-size: 12px;
-    font-weight: 600;
-    color: #1d2327;
-    white-space: nowrap;
-}
-
-.fp-overrides-table td {
-    border-bottom: 1px solid #f0f0f1;
-    padding: 12px;
-    vertical-align: middle;
-    font-size: 13px;
-}
-
-.fp-overrides-table tbody tr:hover {
-    background: #f6f7f7;
-}
-
-.fp-overrides-table tbody tr:last-child td {
-    border-bottom: none;
-}
+/* Legacy table styles removed - now using modern card layout */
 
 /* Override input styling */
 .fp-override-input {
@@ -633,87 +596,247 @@
     font-style: italic;
 }
 
-/* WordPress standard override row styling - Updated for better accessibility */
-.fp-override-row {
-    margin-bottom: 10px;
-    padding: 10px;
-    border: 1px solid #ccd0d4;
+/* ========================================
+   MODERN DATE OVERRIDES SECTION - REFACTORED 
+   ======================================== */
+
+/* Override container and wrapper */
+.fp-overrides-section-wrapper {
     background: #fff;
+    border: 1px solid #c3c4c7;
     border-radius: 4px;
-    display: grid;
-    grid-template-columns: 140px auto 100px 80px 80px 150px 100px;
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+
+.fp-overrides-section-wrapper .fp-section-content {
+    padding: 20px;
+}
+
+.fp-section-description {
+    background: #f6f7f7;
+    border-left: 4px solid #0073aa;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: #50575e;
+}
+
+/* Modern override grid layout */
+.fp-overrides-container {
+    display: flex;
+    flex-direction: column;
     gap: 12px;
-    align-items: center;
+    margin-bottom: 20px;
+}
+
+.fp-override-card {
+    background: #fff;
+    border: 1px solid #e1e5e9;
+    border-radius: 6px;
+    padding: 16px;
     transition: all 0.2s ease;
+    position: relative;
 }
 
-.fp-override-row:hover {
+.fp-override-card:hover {
     border-color: #8c8f94;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.fp-override-row.has-changes {
-    border-left: 4px solid #d54e21;
+.fp-override-card.has-changes {
+    border-left: 4px solid #d63638;
     background: #fef7f1;
 }
 
-.fp-override-row.distant-date {
-    border-left: 4px solid #dba617;
-    background: #fffbf0;
+.fp-override-card.is-closed {
+    border-left: 4px solid #d54e21;
+    background: #fff8f5;
 }
 
-.fp-override-row input[type="date"] {
-    width: 140px;
-    padding: 3px 5px;
-    border: 1px solid #ddd;
+/* Override card header */
+.fp-override-header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    margin-bottom: 16px;
+    gap: 16px;
+}
+
+.fp-override-date-field {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.fp-override-date-field .dashicons {
+    color: #646970;
+    font-size: 16px;
+}
+
+.fp-override-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Override card content grid */
+.fp-override-fields {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.fp-override-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.fp-override-field label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #1d2327;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.fp-override-field.is-closed {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+/* Modern form inputs */
+.fp-override-input {
+    padding: 8px 12px;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
     font-size: 13px;
+    transition: all 0.2s ease;
+    background: #fff;
 }
 
-.fp-override-row input[type="date"]:focus {
-    border-color: #0073aa;
+.fp-override-input:focus {
+    border-color: #2271b1;
+    box-shadow: 0 0 0 1px #2271b1;
     outline: none;
 }
 
-.fp-override-row label {
+.fp-override-input::placeholder {
+    color: #8c8f94;
+    font-style: italic;
+}
+
+.fp-override-input[type="date"] {
+    font-family: inherit;
+}
+
+/* Checkbox styling */
+.fp-override-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+}
+
+.fp-override-checkbox input[type="checkbox"] {
+    margin: 0;
+    transform: scale(1.1);
+}
+
+.fp-override-checkbox label {
     font-size: 13px;
-    font-weight: normal;
-    color: #23282d;
-    margin: 0 5px 0 0;
+    font-weight: 500;
+    color: #1d2327;
     cursor: pointer;
+    text-transform: none;
+    letter-spacing: normal;
 }
 
-.fp-override-row input[type="checkbox"] {
-    margin: 0 5px 0 0;
+/* Status indicator */
+.fp-override-status {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #00a32a;
 }
 
-.fp-override-row input[type="number"],
-.fp-override-row input[type="text"] {
-    width: 120px;
-    padding: 3px 5px;
-    border: 1px solid #ddd;
-    font-size: 13px;
+.fp-override-status.closed {
+    background: #d63638;
 }
 
-.fp-override-row input[type="number"]:focus,
-.fp-override-row input[type="text"]:focus {
-    border-color: #0073aa;
-    outline: none;
+.fp-override-status.modified {
+    background: #d54e21;
 }
 
-.fp-override-row .fp-remove-override {
+/* Modern remove button */
+.fp-override-remove {
     background: #fff;
     border: 1px solid #d63638;
     color: #d63638;
-    padding: 3px 8px;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
     cursor: pointer;
-    font-size: 13px;
-    font-weight: 500 !important;
-    white-space: nowrap !important;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
 }
 
-.fp-override-row .fp-remove-override:hover {
-    background: #d63638 !important;
-    color: #fff !important;
+.fp-override-remove:hover {
+    background: #d63638;
+    color: #fff;
+    transform: translateY(-1px);
+}
+
+.fp-override-remove .dashicons {
+    font-size: 14px;
+}
+
+/* Empty state styling */
+.fp-overrides-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: #646970;
+    font-style: italic;
+}
+
+.fp-overrides-empty p {
+    margin: 0 0 16px 0;
+    font-size: 14px;
+}
+
+/* Add override button */
+.fp-add-override {
+    background: #2271b1;
+    color: #fff;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.fp-add-override:hover {
+    background: #135e96;
+    transform: translateY(-1px);
+}
+
+.fp-add-override .dashicons {
+    font-size: 16px;
 }
 
 /* Enhanced add override button */
@@ -1088,72 +1211,380 @@
     padding: 0 20px 20px;
 }
 
-/* WordPress standard time slot styling */
-.fp-time-slot-row {
-    border: 1px solid #ccd0d4;
-    padding: 15px;
-    margin-bottom: 15px;
+/* ========================================
+   MODERN TIME SLOTS SECTION - REFACTORED 
+   ======================================== */
+
+/* Time slots container */
+#fp-time-slots-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+/* Modern time slot card */
+.fp-time-slot-card {
     background: #fff;
+    border: 1px solid #e1e5e9;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.2s ease;
 }
 
-.fp-overrides-section-wrapper {
-    background: #fff;
-    border: 1px solid #ccd0d4;
-    padding: 0;
-    margin-bottom: 15px;
+.fp-time-slot-card:hover {
+    border-color: #8c8f94;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
 }
 
-.fp-overrides-section-wrapper h4 {
-    margin: 0;
-    padding: 15px;
-    border-bottom: 1px solid #ccd0d4;
-    font-size: 14px;
-    font-weight: 600;
-    color: #23282d;
-    background: #f9f9f9;
+.fp-time-slot-card.has-overrides {
+    border-left: 4px solid #0073aa;
 }
 
-/* Section descriptions */
-.fp-section-description {
-    background: #f9f9f9;
-    border-left: 3px solid #0073aa;
-    padding: 10px 15px;
-    margin-bottom: 15px;
-    font-size: 13px;
-    color: #444;
-}
-
+/* Time slot header */
 .fp-time-slot-header {
-    margin-bottom: 15px;
+    padding: 20px;
+    background: #f6f7f7;
+    border-bottom: 1px solid #e1e5e9;
+    display: grid;
+    grid-template-columns: 180px 1fr auto;
+    gap: 20px;
+    align-items: end;
 }
 
-/* WordPress standard day selector */
+.fp-time-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.fp-time-field label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #1d2327;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.fp-time-field .required {
+    color: #d63638;
+}
+
+.fp-time-field input[type="time"] {
+    padding: 10px 12px;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    background: #fff;
+    transition: all 0.2s ease;
+}
+
+.fp-time-field input[type="time"]:focus {
+    border-color: #2271b1;
+    box-shadow: 0 0 0 1px #2271b1;
+    outline: none;
+}
+
+/* Days selector modern design */
+.fp-days-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.fp-days-field label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #1d2327;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
 .fp-days-selector {
-    margin-top: 5px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .fp-days-pills {
-    display: block;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
 }
 
 .fp-day-pill {
-    display: inline-block;
-    margin-right: 10px;
-    margin-bottom: 5px;
+    position: relative;
 }
 
 .fp-day-pill input[type="checkbox"] {
-    margin-right: 5px;
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
 }
 
 .fp-day-pill label {
-    font-weight: normal;
-    margin: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 36px;
+    padding: 0 8px;
+    background: #f6f7f7;
+    border: 2px solid #e1e5e9;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #646970;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    user-select: none;
+}
+
+.fp-day-pill input[type="checkbox"]:checked + label {
+    background: #2271b1;
+    border-color: #2271b1;
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 4px rgba(34, 113, 177, 0.3);
+}
+
+.fp-day-pill label:hover {
+    border-color: #8c8f94;
+    transform: translateY(-1px);
+}
+
+/* Remove time slot button */
+.fp-remove-time-slot {
+    background: #fff;
+    border: 1px solid #d63638;
+    color: #d63638;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+    height: fit-content;
+}
+
+.fp-remove-time-slot:hover {
+    background: #d63638;
+    color: #fff;
+    transform: translateY(-1px);
+}
+
+.fp-remove-time-slot .dashicons {
+    font-size: 14px;
+}
+
+/* Override toggle modern design */
+.fp-override-toggle {
+    padding: 16px 20px;
+    background: #f9f9f9;
+    border-bottom: 1px solid #e1e5e9;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     cursor: pointer;
 }
 
-.fp-day-pill input[type="checkbox"]:focus + label {
+.fp-override-toggle:hover {
+    background: #f0f0f1;
+}
+
+.fp-override-toggle label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #1d2327;
+    cursor: pointer;
+    margin: 0;
+}
+
+.fp-override-toggle input[type="checkbox"] {
+    margin: 0;
+    transform: scale(1.1);
+}
+
+.fp-override-toggle .description {
+    font-size: 12px;
+    color: #646970;
+    font-style: italic;
+}
+
+/* Override section modern grid */
+.fp-overrides-section {
+    padding: 20px;
+    background: #fff;
+    display: none;
+}
+
+.fp-overrides-section.active {
+    display: block;
+}
+
+.fp-overrides-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+}
+
+.fp-overrides-grid .fp-override-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.fp-overrides-grid .fp-override-field label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #1d2327;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.fp-overrides-grid input,
+.fp-overrides-grid select {
+    padding: 8px 12px;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    font-size: 13px;
+    background: #fff;
+    transition: all 0.2s ease;
+}
+
+.fp-overrides-grid input:focus,
+.fp-overrides-grid select:focus {
+    border-color: #2271b1;
+    box-shadow: 0 0 0 1px #2271b1;
     outline: none;
+}
+
+.fp-overrides-grid input::placeholder {
+    color: #8c8f94;
+    font-style: italic;
+}
+
+/* Add time slot button */
+.fp-add-time-slot {
+    background: #2271b1;
+    color: #fff;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.fp-add-time-slot:hover {
+    background: #135e96;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(34, 113, 177, 0.3);
+}
+
+.fp-add-time-slot .dashicons {
+    font-size: 16px;
+}
+
+/* ========================================
+   RESPONSIVE DESIGN - MODERN BREAKPOINTS 
+   ======================================== */
+
+/* Tablet and smaller screens */
+@media (max-width: 1024px) {
+    .fp-time-slot-header {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    
+    .fp-override-fields {
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 12px;
+    }
+    
+    .fp-overrides-grid {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 12px;
+    }
+}
+
+/* Mobile screens */
+@media (max-width: 768px) {
+    .fp-override-header {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    
+    .fp-override-actions {
+        justify-content: flex-end;
+    }
+    
+    .fp-override-fields {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    
+    .fp-overrides-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    
+    .fp-days-pills {
+        justify-content: center;
+    }
+    
+    .fp-time-slot-header {
+        padding: 16px;
+    }
+    
+    .fp-overrides-section {
+        padding: 16px;
+    }
+    
+    .fp-override-card {
+        padding: 12px;
+    }
+}
+
+/* Small mobile screens */
+@media (max-width: 480px) {
+    .fp-overrides-section-wrapper .fp-section-content,
+    .fp-schedules-section .fp-section-content {
+        padding: 16px;
+    }
+    
+    .fp-day-pill label {
+        min-width: 32px;
+        height: 32px;
+        font-size: 10px;
+    }
+    
+    .fp-add-time-slot,
+    .fp-add-override {
+        width: 100%;
+        justify-content: center;
+    }
+}
     box-shadow: 0 0 0 2px rgba(0, 115, 170, 0.3);
 }
 
