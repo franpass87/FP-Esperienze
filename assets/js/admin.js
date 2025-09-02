@@ -285,11 +285,11 @@
         bindScheduleBuilderEvents: function() {
             var self = this;
             
-            // Add time slot
-            $(document).on('click', '#fp-add-time-slot', function(e) {
-                e.preventDefault();
-                self.addTimeSlot();
-            });
+            // Legacy time slot handlers - DISABLED for clean version
+            // $(document).on('click', '#fp-add-time-slot', function(e) {
+            //     e.preventDefault();
+            //     self.addTimeSlot();
+            // });
             
             // Remove time slot
             $(document).on('click', '.fp-remove-time-slot', function(e) {
@@ -664,7 +664,7 @@
             console.log('FP Esperienze: Initializing clean schedule builder');
             
             // Time slot management - clean version
-            $(document).on('click', '.fp-add-time-slot', function(e) {
+            $(document).on('click', '#fp-add-time-slot, #fp-add-time-slot-empty', function(e) {
                 e.preventDefault();
                 console.log('FP Esperienze: Add time slot clicked');
                 self.addTimeSlotCardClean();
@@ -684,7 +684,7 @@
             });
             
             // Override management - clean version
-            $(document).on('click', '.fp-add-override', function(e) {
+            $(document).on('click', '#fp-add-override', function(e) {
                 e.preventDefault();
                 console.log('FP Esperienze: Add override clicked');
                 self.addOverrideCardClean();
@@ -719,68 +719,21 @@
         },
 
         /**
-         * Bind modern override events - SIMPLIFIED
+         * Bind modern override events - SIMPLIFIED - DISABLED (using clean version instead)
          */
         bindModernOverrideEvents: function() {
-            var self = this;
-            
-            // Remove any existing bindings to prevent conflicts
-            $(document).off('.fp-override-modern');
-            
-            // Add override button
-            $(document).on('click.fp-override-modern', '#fp-add-override', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                self.addOverrideCard();
-            });
-            
-            // Remove override button
-            $(document).on('click.fp-override-modern', '.fp-override-remove', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                self.removeOverrideCard($(this));
-            });
-            
-            // Track changes
-            $(document).on('change.fp-override-modern input.fp-override-modern', '.fp-override-input', function() {
-                self.trackOverrideChanges($(this));
-                self.hasUnsavedChanges = true;
-            });
-            
-            // Handle closed checkbox
-            $(document).on('change.fp-override-modern', '.fp-override-checkbox input[type="checkbox"]', function() {
-                self.handleOverrideClosed($(this));
-                self.hasUnsavedChanges = true;
-            });
+            // DISABLED - Modern handler conflicts with clean version
+            // Using initModernScheduleBuilder clean handlers instead
+            return;
         },
 
         /**
-         * Bind modern time slot events - SIMPLIFIED
+         * Bind modern time slot events - SIMPLIFIED - DISABLED (using clean version instead)
          */
         bindModernTimeSlotEvents: function() {
-            var self = this;
-            
-            // Remove any existing bindings
-            $(document).off('.fp-timeslot-modern');
-            
-            // Add time slot button
-            $(document).on('click.fp-timeslot-modern', '#fp-add-time-slot, #fp-add-time-slot-empty', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                self.addTimeSlotCard();
-            });
-            
-            // Remove time slot button
-            $(document).on('click.fp-timeslot-modern', '.fp-remove-time-slot', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                self.removeTimeSlotCard($(this));
-            });
-            
-            // Override toggle
-            $(document).on('change.fp-timeslot-modern', '.fp-override-toggle input[type="checkbox"]', function() {
-                self.toggleTimeSlotOverrides($(this));
-            });
+            // DISABLED - Modern handler conflicts with clean version
+            // Using initModernScheduleBuilder clean handlers instead
+            return;
         },
 
         /**
@@ -1398,7 +1351,7 @@
          * Add time slot card - CLEAN VERSION
          */
         addTimeSlotCardClean: function() {
-            var container = $('.fp-time-slots-container-clean');
+            var container = $('#fp-time-slots-container');
             if (!container.length) {
                 console.warn('FP Esperienze: Time slots container not found');
                 return;
@@ -1507,7 +1460,7 @@
          */
         removeTimeSlotCardClean: function($button) {
             var $card = $button.closest('.fp-time-slot-card-clean');
-            var container = $('.fp-time-slots-container-clean');
+            var container = $('#fp-time-slots-container');
             
             $card.fadeOut(300, function() {
                 $card.remove();
@@ -1543,7 +1496,7 @@
          * Add override card - CLEAN VERSION
          */
         addOverrideCardClean: function() {
-            var container = $('.fp-overrides-container-clean');
+            var container = $('#fp-overrides-container .fp-overrides-container-clean');
             if (!container.length) {
                 console.warn('FP Esperienze: Override container not found');
                 return;
@@ -1616,7 +1569,7 @@
          */
         removeOverrideCardClean: function($button) {
             var $card = $button.closest('.fp-override-card-clean');
-            var container = $('.fp-overrides-container-clean');
+            var container = $('#fp-overrides-container .fp-overrides-container-clean');
             
             $card.fadeOut(300, function() {
                 $card.remove();
