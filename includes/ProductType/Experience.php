@@ -345,10 +345,8 @@ class Experience {
                 ?>
             </div>
             
-            <div class="options_group fp-schedules-section">
-                <h4>
-                    <?php _e('Recurring Time Slots', 'fp-esperienze'); ?>
-                </h4>
+            <fieldset class="options_group fp-schedules-section fp-section-fieldset">
+                <legend class="fp-section-legend"><?php _e('Recurring Time Slots', 'fp-esperienze'); ?></legend>
                 
                 <div class="fp-section-content">
                     <div class="fp-section-description">
@@ -377,10 +375,10 @@ class Experience {
                         <span class="description"><?php _e('Enable to view/edit individual schedule rows directly', 'fp-esperienze'); ?></span>
                     </p>
                 </div>
-            </div>
+            </fieldset>
             
-            <div class="options_group fp-overrides-section-wrapper">
-                <h4><?php _e('Date-Specific Overrides', 'fp-esperienze'); ?></h4>
+            <fieldset class="options_group fp-overrides-section-wrapper fp-section-fieldset">
+                <legend class="fp-section-legend"><?php _e('Date-Specific Overrides', 'fp-esperienze'); ?></legend>
                 
                 <div class="fp-section-content">
                     <div class="fp-section-description">
@@ -390,12 +388,12 @@ class Experience {
                     <div id="fp-overrides-container">
                         <?php $this->renderOverridesSection($post->ID); ?>
                     </div>
-                    <button type="button" class="button fp-add-override" id="fp-add-override">
+                    <button type="button" class="button fp-primary-button fp-add-override" id="fp-add-override">
                         <span class="dashicons dashicons-plus-alt"></span>
                         <?php _e('Add Date Override', 'fp-esperienze'); ?>
                     </button>
                 </div>
-            </div>
+            </fieldset>
             
             <div class="options_group">
                 <h4><?php _e('Extras', 'fp-esperienze'); ?></h4>
@@ -804,10 +802,28 @@ class Experience {
             </div>
             <div class="fp-slots-summary-content">
                 <?php if (empty($time_slots)): ?>
-                    <div class="fp-summary-table">
-                        <div class="fp-empty-state">
-                            <?php _e('No time slots configured yet. Click "Add Time Slot" below to get started.', 'fp-esperienze'); ?>
+                    <div class="fp-empty-state">
+                        <div class="fp-empty-state-icon">
+                            <span class="dashicons dashicons-clock"></span>
                         </div>
+                        <div class="fp-empty-state-title">
+                            <?php _e('No time slots configured yet', 'fp-esperienze'); ?>
+                        </div>
+                        <div class="fp-empty-state-description">
+                            <?php _e('Create recurring weekly time slots to make your experience bookable. Each slot can have different settings and run on multiple days.', 'fp-esperienze'); ?>
+                        </div>
+                        <div class="fp-empty-state-examples">
+                            <h5><?php _e('Examples:', 'fp-esperienze'); ?></h5>
+                            <ul>
+                                <li><?php _e('Morning tour: 09:00 on Mon, Wed, Fri', 'fp-esperienze'); ?></li>
+                                <li><?php _e('Afternoon tour: 14:30 on Tue, Thu, Sat', 'fp-esperienze'); ?></li>
+                                <li><?php _e('Weekend special: 10:00 on Sat, Sun with different pricing', 'fp-esperienze'); ?></li>
+                            </ul>
+                        </div>
+                        <button type="button" class="fp-primary-button" id="fp-add-time-slot-empty">
+                            <span class="dashicons dashicons-plus-alt"></span>
+                            <?php _e('Add Your First Time Slot', 'fp-esperienze'); ?>
+                        </button>
                     </div>
                 <?php else: ?>
                     <table class="fp-summary-table">
@@ -889,69 +905,241 @@ class Experience {
     private function renderOverridesSection(int $product_id): void {
         $overrides = OverrideManager::getOverrides($product_id);
         
-        foreach ($overrides as $index => $override) {
-            $this->renderOverrideRow($override, $index);
+        // Sort overrides by date
+        usort($overrides, function($a, $b) {
+            return strcmp($a->date ?? '', $b->date ?? '');
+        });
+        
+        if (empty($overrides)) {
+            ?>
+            <div class="fp-overrides-empty">
+                <p><?php _e('No date overrides configured. Add exceptions below for specific dates when you need to close, change capacity, or modify pricing.', 'fp-esperienze'); ?></p>
+            </div>
+            <?php
+        } else {
+            ?>
+            <div class="fp-overrides-table-wrapper">
+                <table class="fp-overrides-table" role="table" aria-label="<?php esc_attr_e('Date-specific overrides', 'fp-esperienze'); ?>">
+                    <thead>
+                        <tr role="row">
+                            <th scope="col"><?php _e('Date', 'fp-esperienze'); ?></th>
+                            <th scope="col"><?php _e('Status', 'fp-esperienze'); ?></th>
+                            <th scope="col"><?php _e('Capacity', 'fp-esperienze'); ?></th>
+                            <th scope="col"><?php _e('Adult Price', 'fp-esperienze'); ?></th>
+                            <th scope="col"><?php _e('Child Price', 'fp-esperienze'); ?></th>
+                            <th scope="col"><?php _e('Reason', 'fp-esperienze'); ?></th>
+                            <th scope="col"><?php _e('Actions', 'fp-esperienze'); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($overrides as $index => $override): ?>
+                            <tr role="row" class="fp-override-table-row" data-date="<?php echo esc_attr($override->date ?? ''); ?>">
+                                <?php $this->renderOverrideTableRow($override, $index); ?>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+            <?php
         }
     }
     
     /**
-     * Render a single override row
+     * Render a single override table row
+     *
+     * @param object $override Override object
+     * @param int $index Row index
+     */
+    private function renderOverrideTableRow($override, int $index): void {
+        $price_override = $override->price_override_json ? json_decode($override->price_override_json, true) : [];
+        $date = $override->date ?? '';
+        $today = date('Y-m-d');
+        $distant_future = date('Y-m-d', strtotime('+5 years'));
+        $is_distant = $date > $distant_future;
+        $is_past = $date < $today;
+        
+        ?>
+        <input type="hidden" name="overrides[<?php echo esc_attr($index); ?>][id]" value="<?php echo esc_attr($override->id ?? ''); ?>">
+        
+        <td>
+            <input type="date" 
+                   name="overrides[<?php echo esc_attr($index); ?>][date]" 
+                   value="<?php echo esc_attr($date); ?>" 
+                   required
+                   class="fp-override-input fp-override-date"
+                   aria-label="<?php esc_attr_e('Override date', 'fp-esperienze'); ?>"
+                   data-original-value="<?php echo esc_attr($date); ?>">
+            <?php if ($is_distant): ?>
+                <div class="fp-date-warning show">
+                    <span class="dashicons dashicons-warning"></span>
+                    <?php _e('This date is very far in the future. Please verify it\'s correct.', 'fp-esperienze'); ?>
+                </div>
+            <?php endif; ?>
+            <?php if ($is_past): ?>
+                <div class="fp-date-warning show" style="border-color: #8c8f94; color: #646970;">
+                    <span class="dashicons dashicons-info"></span>
+                    <?php _e('This date is in the past.', 'fp-esperienze'); ?>
+                </div>
+            <?php endif; ?>
+        </td>
+        
+        <td>
+            <div class="fp-override-checkbox">
+                <input type="checkbox" 
+                       name="overrides[<?php echo esc_attr($index); ?>][is_closed]" 
+                       value="1" 
+                       id="override-closed-<?php echo esc_attr($index); ?>"
+                       <?php checked($override->is_closed ?? 0, 1); ?>
+                       data-original-checked="<?php echo $override->is_closed ?? 0; ?>">
+                <label for="override-closed-<?php echo esc_attr($index); ?>">
+                    <?php _e('Closed', 'fp-esperienze'); ?>
+                </label>
+            </div>
+        </td>
+        
+        <td>
+            <input type="number" 
+                   name="overrides[<?php echo esc_attr($index); ?>][capacity_override]" 
+                   value="<?php echo esc_attr($override->capacity_override ?? ''); ?>" 
+                   placeholder="<?php esc_attr_e('Leave empty = use default', 'fp-esperienze'); ?>" 
+                   min="0" 
+                   step="1"
+                   class="fp-override-input fp-override-number"
+                   aria-label="<?php esc_attr_e('Capacity override', 'fp-esperienze'); ?>"
+                   data-original-value="<?php echo esc_attr($override->capacity_override ?? ''); ?>">
+        </td>
+        
+        <td>
+            <input type="number" 
+                   name="overrides[<?php echo esc_attr($index); ?>][price_adult]" 
+                   value="<?php echo esc_attr($price_override['adult'] ?? ''); ?>" 
+                   placeholder="<?php esc_attr_e('Leave empty = use default', 'fp-esperienze'); ?>" 
+                   min="0" 
+                   step="0.01"
+                   class="fp-override-input fp-override-number"
+                   aria-label="<?php esc_attr_e('Adult price override', 'fp-esperienze'); ?>"
+                   data-original-value="<?php echo esc_attr($price_override['adult'] ?? ''); ?>">
+        </td>
+        
+        <td>
+            <input type="number" 
+                   name="overrides[<?php echo esc_attr($index); ?>][price_child]" 
+                   value="<?php echo esc_attr($price_override['child'] ?? ''); ?>" 
+                   placeholder="<?php esc_attr_e('Leave empty = use default', 'fp-esperienze'); ?>" 
+                   min="0" 
+                   step="0.01"
+                   class="fp-override-input fp-override-number"
+                   aria-label="<?php esc_attr_e('Child price override', 'fp-esperienze'); ?>"
+                   data-original-value="<?php echo esc_attr($price_override['child'] ?? ''); ?>">
+        </td>
+        
+        <td>
+            <input type="text" 
+                   name="overrides[<?php echo esc_attr($index); ?>][reason]" 
+                   value="<?php echo esc_attr($override->reason ?? ''); ?>" 
+                   placeholder="<?php esc_attr_e('Optional: Holiday, Maintenance, etc.', 'fp-esperienze'); ?>"
+                   class="fp-override-input fp-override-reason"
+                   aria-label="<?php esc_attr_e('Reason for this override', 'fp-esperienze'); ?>"
+                   data-original-value="<?php echo esc_attr($override->reason ?? ''); ?>">
+        </td>
+        
+        <td>
+            <button type="button" class="fp-override-remove" aria-label="<?php esc_attr_e('Remove this override', 'fp-esperienze'); ?>">
+                <span class="dashicons dashicons-trash"></span>
+                <?php _e('Remove', 'fp-esperienze'); ?>
+            </button>
+        </td>
+        <?php
+    }
+
+    /**
+     * Render a single override row (legacy format for non-table view)
      *
      * @param object $override Override object
      * @param int $index Row index
      */
     private function renderOverrideRow($override, int $index): void {
         $price_override = $override->price_override_json ? json_decode($override->price_override_json, true) : [];
+        $date = $override->date ?? '';
+        $today = date('Y-m-d');
+        $distant_future = date('Y-m-d', strtotime('+5 years'));
+        $is_distant = $date > $distant_future;
+        $is_past = $date < $today;
+        
+        $row_classes = ['fp-override-row'];
+        if ($is_distant) $row_classes[] = 'distant-date';
         
         ?>
-        <div class="fp-override-row" data-index="<?php echo esc_attr($index); ?>">
+        <div class="<?php echo esc_attr(implode(' ', $row_classes)); ?>" data-index="<?php echo esc_attr($index); ?>" data-date="<?php echo esc_attr($date); ?>">
             <input type="hidden" name="overrides[<?php echo esc_attr($index); ?>][id]" value="<?php echo esc_attr($override->id ?? ''); ?>">
             
-            <input type="date" 
-                   name="overrides[<?php echo esc_attr($index); ?>][date]" 
-                   value="<?php echo esc_attr($override->date ?? ''); ?>" 
-                   required
-                   aria-label="<?php esc_attr_e('Override date', 'fp-esperienze'); ?>">
+            <div>
+                <input type="date" 
+                       name="overrides[<?php echo esc_attr($index); ?>][date]" 
+                       value="<?php echo esc_attr($date); ?>" 
+                       required
+                       class="fp-override-input"
+                       aria-label="<?php esc_attr_e('Override date', 'fp-esperienze'); ?>"
+                       data-original-value="<?php echo esc_attr($date); ?>">
+                <?php if ($is_distant): ?>
+                    <div class="fp-date-warning show">
+                        <?php _e('Very distant date - please verify', 'fp-esperienze'); ?>
+                    </div>
+                <?php endif; ?>
+            </div>
             
-            <label>
+            <div class="fp-override-checkbox">
                 <input type="checkbox" 
                        name="overrides[<?php echo esc_attr($index); ?>][is_closed]" 
                        value="1" 
-                       <?php checked($override->is_closed ?? 0, 1); ?>>
-                <?php _e('Closed', 'fp-esperienze'); ?>
-            </label>
+                       id="override-closed-<?php echo esc_attr($index); ?>"
+                       <?php checked($override->is_closed ?? 0, 1); ?>
+                       data-original-checked="<?php echo $override->is_closed ?? 0; ?>">
+                <label for="override-closed-<?php echo esc_attr($index); ?>">
+                    <?php _e('Closed', 'fp-esperienze'); ?>
+                </label>
+            </div>
             
             <input type="number" 
                    name="overrides[<?php echo esc_attr($index); ?>][capacity_override]" 
                    value="<?php echo esc_attr($override->capacity_override ?? ''); ?>" 
-                   placeholder="<?php esc_attr_e('Capacity', 'fp-esperienze'); ?>" 
+                   placeholder="<?php esc_attr_e('Capacity (empty = default)', 'fp-esperienze'); ?>" 
                    min="0" 
                    step="1"
-                   aria-label="<?php esc_attr_e('Capacity override', 'fp-esperienze'); ?>">
+                   class="fp-override-input"
+                   aria-label="<?php esc_attr_e('Capacity override', 'fp-esperienze'); ?>"
+                   data-original-value="<?php echo esc_attr($override->capacity_override ?? ''); ?>">
             
             <input type="number" 
                    name="overrides[<?php echo esc_attr($index); ?>][price_adult]" 
                    value="<?php echo esc_attr($price_override['adult'] ?? ''); ?>" 
-                   placeholder="<?php esc_attr_e('Adult €', 'fp-esperienze'); ?>" 
+                   placeholder="<?php esc_attr_e('Adult € (empty = default)', 'fp-esperienze'); ?>" 
                    min="0" 
                    step="0.01"
-                   aria-label="<?php esc_attr_e('Adult price override', 'fp-esperienze'); ?>">
+                   class="fp-override-input"
+                   aria-label="<?php esc_attr_e('Adult price override', 'fp-esperienze'); ?>"
+                   data-original-value="<?php echo esc_attr($price_override['adult'] ?? ''); ?>">
             
             <input type="number" 
                    name="overrides[<?php echo esc_attr($index); ?>][price_child]" 
                    value="<?php echo esc_attr($price_override['child'] ?? ''); ?>" 
-                   placeholder="<?php esc_attr_e('Child €', 'fp-esperienze'); ?>" 
+                   placeholder="<?php esc_attr_e('Child € (empty = default)', 'fp-esperienze'); ?>" 
                    min="0" 
                    step="0.01"
-                   aria-label="<?php esc_attr_e('Child price override', 'fp-esperienze'); ?>">
+                   class="fp-override-input"
+                   aria-label="<?php esc_attr_e('Child price override', 'fp-esperienze'); ?>"
+                   data-original-value="<?php echo esc_attr($price_override['child'] ?? ''); ?>">
             
             <input type="text" 
                    name="overrides[<?php echo esc_attr($index); ?>][reason]" 
                    value="<?php echo esc_attr($override->reason ?? ''); ?>" 
                    placeholder="<?php esc_attr_e('Reason (optional)', 'fp-esperienze'); ?>"
-                   aria-label="<?php esc_attr_e('Reason for this override', 'fp-esperienze'); ?>">
+                   class="fp-override-input"
+                   aria-label="<?php esc_attr_e('Reason for this override', 'fp-esperienze'); ?>"
+                   data-original-value="<?php echo esc_attr($override->reason ?? ''); ?>">
             
-            <button type="button" class="fp-remove-override" aria-label="<?php esc_attr_e('Remove this override', 'fp-esperienze'); ?>">
+            <button type="button" class="fp-override-remove" aria-label="<?php esc_attr_e('Remove this override', 'fp-esperienze'); ?>">
+                <span class="dashicons dashicons-trash"></span>
                 <?php _e('Remove', 'fp-esperienze'); ?>
             </button>
         </div>
@@ -1853,7 +2041,11 @@ class Experience {
             'strings' => [
                 'experience_type' => __('Experience', 'fp-esperienze'),
                 'select_date' => __('Select Date', 'fp-esperienze'),
-                'loading' => __('Loading...', 'fp-esperienze')
+                'loading' => __('Loading...', 'fp-esperienze'),
+                'confirm_remove_override' => __('Are you sure you want to remove this date override?', 'fp-esperienze'),
+                'distant_date_warning' => __('This date is very far in the future. Please verify it\'s correct.', 'fp-esperienze'),
+                'unsaved_changes' => __('You have unsaved changes. Are you sure you want to leave?', 'fp-esperienze'),
+                'validation_error' => __('Please fix the validation errors before saving.', 'fp-esperienze')
             ]
         ]);
         
