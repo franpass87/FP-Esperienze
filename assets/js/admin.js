@@ -757,21 +757,211 @@
             var self = this;
             
             // Unbind existing events to prevent double binding
-            $(document).off('click.fp-override', '#fp-add-override');
-            $(document).off('click.fp-override', '.fp-remove-override');
+            $(document).off('click.fp-override', '#fp-add-override, #fp-add-time-slot-empty');
+            $(document).off('click.fp-override', '.fp-remove-override, .fp-override-remove');
+            $(document).off('change.fp-override', '.fp-override-input');
+            $(document).off('input.fp-override', '.fp-override-input');
             
-            // Add override
-            $(document).on('click.fp-override', '#fp-add-override', function(e) {
+            // Add override (both main button and empty state button)
+            $(document).on('click.fp-override', '#fp-add-override, #fp-add-time-slot-empty', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
-                self.addOverrideRow();
+                
+                if ($(this).attr('id') === 'fp-add-time-slot-empty') {
+                    // This is the empty state button for time slots
+                    self.addTimeSlot();
+                } else {
+                    // This is the add override button
+                    self.addOverrideRow();
+                }
             });
             
-            // Remove override
-            $(document).on('click.fp-override', '.fp-remove-override', function(e) {
+            // Remove override (both table and row format)
+            $(document).on('click.fp-override', '.fp-remove-override, .fp-override-remove', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
-                $(this).closest('.fp-override-row').remove();
+                
+                var $row = $(this).closest('.fp-override-row, tr');
+                var dateValue = $row.find('input[name*="[date]"]').val();
+                
+                // Confirm removal if there's a date value
+                if (dateValue) {
+                    if (!confirm(fp_esperienze_admin.strings.confirm_remove_override || 'Are you sure you want to remove this date override?')) {
+                        return;
+                    }
+                }
+                
+                $row.remove();
+                self.updateOverrideNumbers();
+            });
+            
+            // Track changes and validate dates
+            $(document).on('change.fp-override input.fp-override', '.fp-override-input', function() {
+                var $input = $(this);
+                var $row = $input.closest('.fp-override-row, tr');
+                
+                // Track if value has changed from original
+                var originalValue = $input.data('original-value') || '';
+                var currentValue = $input.val();
+                var hasChanged = originalValue !== currentValue;
+                
+                // Mark row as changed
+                if (hasChanged) {
+                    $row.addClass('has-changes');
+                } else {
+                    // Check if any other fields in this row have changes
+                    var anyChanges = false;
+                    $row.find('.fp-override-input').each(function() {
+                        var orig = $(this).data('original-value') || '';
+                        var curr = $(this).val();
+                        if (orig !== curr) {
+                            anyChanges = true;
+                            return false;
+                        }
+                    });
+                    
+                    if (!anyChanges) {
+                        $row.removeClass('has-changes');
+                    }
+                }
+                
+                // Validate date if this is a date input
+                if ($input.attr('type') === 'date') {
+                    self.validateOverrideDate($input);
+                }
+                
+                // Sort overrides by date
+                self.sortOverridesByDate();
+            });
+            
+            // Handle checkbox changes for original state tracking
+            $(document).on('change.fp-override', 'input[name*="[is_closed]"]', function() {
+                var $checkbox = $(this);
+                var $row = $checkbox.closest('.fp-override-row, tr');
+                var originalChecked = $checkbox.data('original-checked') == '1';
+                var currentChecked = $checkbox.is(':checked');
+                
+                if (originalChecked !== currentChecked) {
+                    $row.addClass('has-changes');
+                } else {
+                    // Check other fields for changes
+                    var anyChanges = false;
+                    $row.find('.fp-override-input').each(function() {
+                        var orig = $(this).data('original-value') || '';
+                        var curr = $(this).val();
+                        if (orig !== curr) {
+                            anyChanges = true;
+                            return false;
+                        }
+                    });
+                    
+                    if (!anyChanges) {
+                        $row.removeClass('has-changes');
+                    }
+                }
+            });
+        },
+        
+        /**
+         * Validate override date
+         */
+        validateOverrideDate: function($dateInput) {
+            var dateValue = $dateInput.val();
+            var $row = $dateInput.closest('.fp-override-row, tr');
+            var $warning = $row.find('.fp-date-warning');
+            
+            if (!dateValue) {
+                $warning.removeClass('show');
+                $row.removeClass('distant-date');
+                return;
+            }
+            
+            var selectedDate = new Date(dateValue);
+            var today = new Date();
+            var fiveYearsFromNow = new Date();
+            fiveYearsFromNow.setFullYear(today.getFullYear() + 5);
+            
+            // Check for very distant dates
+            if (selectedDate > fiveYearsFromNow) {
+                if (!$warning.length) {
+                    $dateInput.after('<div class="fp-date-warning"><span class="dashicons dashicons-warning"></span> ' + 
+                        (fp_esperienze_admin.strings.distant_date_warning || 'This date is very far in the future. Please verify it\'s correct.') + '</div>');
+                } else {
+                    $warning.addClass('show');
+                }
+                $row.addClass('distant-date');
+            } else {
+                $warning.removeClass('show');
+                $row.removeClass('distant-date');
+            }
+        },
+        
+        /**
+         * Sort overrides by date
+         */
+        sortOverridesByDate: function() {
+            var $container = $('#fp-overrides-container');
+            var $tableBody = $container.find('tbody');
+            
+            if ($tableBody.length) {
+                // Sort table rows
+                var $rows = $tableBody.find('tr').get();
+                $rows.sort(function(a, b) {
+                    var dateA = $(a).find('input[name*="[date]"]').val() || '';
+                    var dateB = $(b).find('input[name*="[date]"]').val() || '';
+                    return dateA.localeCompare(dateB);
+                });
+                
+                $.each($rows, function(index, row) {
+                    $tableBody.append(row);
+                });
+            } else {
+                // Sort div rows
+                var $rows = $container.find('.fp-override-row').get();
+                $rows.sort(function(a, b) {
+                    var dateA = $(a).data('date') || $(a).find('input[name*="[date]"]').val() || '';
+                    var dateB = $(b).data('date') || $(b).find('input[name*="[date]"]').val() || '';
+                    return dateA.localeCompare(dateB);
+                });
+                
+                $.each($rows, function(index, row) {
+                    $container.append(row);
+                });
+            }
+        },
+        
+        /**
+         * Update override row numbers after sorting or removal
+         */
+        updateOverrideNumbers: function() {
+            var $container = $('#fp-overrides-container');
+            var $rows = $container.find('.fp-override-row, tbody tr');
+            
+            $rows.each(function(index) {
+                var $row = $(this);
+                $row.find('input, select').each(function() {
+                    var name = $(this).attr('name');
+                    if (name && name.includes('overrides[')) {
+                        var newName = name.replace(/overrides\[\d+\]/, 'overrides[' + index + ']');
+                        $(this).attr('name', newName);
+                    }
+                });
+                
+                $row.find('label[for]').each(function() {
+                    var forAttr = $(this).attr('for');
+                    if (forAttr && forAttr.includes('override-closed-')) {
+                        $(this).attr('for', 'override-closed-' + index);
+                    }
+                });
+                
+                $row.find('input[id]').each(function() {
+                    var id = $(this).attr('id');
+                    if (id && id.includes('override-closed-')) {
+                        $(this).attr('id', 'override-closed-' + index);
+                    }
+                });
+                
+                $row.attr('data-index', index);
             });
         },
         
@@ -824,25 +1014,96 @@
                 return;
             }
             
-            var index = container.find('.fp-override-row').length;
+            var $tableBody = container.find('tbody');
+            var $emptyState = container.find('.fp-overrides-empty');
+            var index = container.find('.fp-override-row, tbody tr').length;
             
-            var row = $('<div class="fp-override-row" data-index="' + index + '">' +
-                '<input type="hidden" name="overrides[' + index + '][id]" value="">' +
-                '<input type="date" name="overrides[' + index + '][date]" required aria-label="Override date">' +
-                '<label>' +
-                    '<input type="checkbox" name="overrides[' + index + '][is_closed]" value="1"> Closed' +
-                '</label>' +
-                '<input type="number" name="overrides[' + index + '][capacity_override]" placeholder="Capacity" min="0" step="1" aria-label="Capacity override">' +
-                '<input type="number" name="overrides[' + index + '][price_adult]" placeholder="Adult €" min="0" step="0.01" aria-label="Adult price override">' +
-                '<input type="number" name="overrides[' + index + '][price_child]" placeholder="Child €" min="0" step="0.01" aria-label="Child price override">' +
-                '<input type="text" name="overrides[' + index + '][reason]" placeholder="Reason (optional)" aria-label="Reason for this override">' +
-                '<button type="button" class="fp-remove-override" aria-label="Remove this override">Remove</button>' +
-                '</div>');
+            // Hide empty state if it exists
+            if ($emptyState.length) {
+                $emptyState.hide();
+                
+                // Create table structure if it doesn't exist
+                if (!$tableBody.length) {
+                    container.append(
+                        '<div class="fp-overrides-table-wrapper">' +
+                        '<table class="fp-overrides-table" role="table" aria-label="Date-specific overrides">' +
+                        '<thead><tr role="row">' +
+                        '<th scope="col">Date</th>' +
+                        '<th scope="col">Status</th>' +
+                        '<th scope="col">Capacity</th>' +
+                        '<th scope="col">Adult Price</th>' +
+                        '<th scope="col">Child Price</th>' +
+                        '<th scope="col">Reason</th>' +
+                        '<th scope="col">Actions</th>' +
+                        '</tr></thead>' +
+                        '<tbody></tbody>' +
+                        '</table></div>'
+                    );
+                    $tableBody = container.find('tbody');
+                }
+            }
             
-            container.append(row);
-            
-            // Focus on the date input
-            row.find('input[type="date"]').focus();
+            if ($tableBody.length) {
+                // Add table row
+                var row = $('<tr role="row" class="fp-override-table-row" data-date="">' +
+                    '<td>' +
+                        '<input type="hidden" name="overrides[' + index + '][id]" value="">' +
+                        '<input type="date" name="overrides[' + index + '][date]" required class="fp-override-input fp-override-date" aria-label="Override date" data-original-value="">' +
+                    '</td>' +
+                    '<td>' +
+                        '<div class="fp-override-checkbox">' +
+                            '<input type="checkbox" name="overrides[' + index + '][is_closed]" value="1" id="override-closed-' + index + '" data-original-checked="0">' +
+                            '<label for="override-closed-' + index + '">Closed</label>' +
+                        '</div>' +
+                    '</td>' +
+                    '<td>' +
+                        '<input type="number" name="overrides[' + index + '][capacity_override]" placeholder="Leave empty = use default" min="0" step="1" class="fp-override-input fp-override-number" aria-label="Capacity override" data-original-value="">' +
+                    '</td>' +
+                    '<td>' +
+                        '<input type="number" name="overrides[' + index + '][price_adult]" placeholder="Leave empty = use default" min="0" step="0.01" class="fp-override-input fp-override-number" aria-label="Adult price override" data-original-value="">' +
+                    '</td>' +
+                    '<td>' +
+                        '<input type="number" name="overrides[' + index + '][price_child]" placeholder="Leave empty = use default" min="0" step="0.01" class="fp-override-input fp-override-number" aria-label="Child price override" data-original-value="">' +
+                    '</td>' +
+                    '<td>' +
+                        '<input type="text" name="overrides[' + index + '][reason]" placeholder="Optional: Holiday, Maintenance, etc." class="fp-override-input fp-override-reason" aria-label="Reason for this override" data-original-value="">' +
+                    '</td>' +
+                    '<td>' +
+                        '<button type="button" class="fp-override-remove" aria-label="Remove this override">' +
+                            '<span class="dashicons dashicons-trash"></span> Remove' +
+                        '</button>' +
+                    '</td>' +
+                    '</tr>');
+                
+                $tableBody.append(row);
+                
+                // Focus on the date input
+                row.find('input[type="date"]').focus();
+            } else {
+                // Add legacy row format
+                var row = $('<div class="fp-override-row" data-index="' + index + '">' +
+                    '<input type="hidden" name="overrides[' + index + '][id]" value="">' +
+                    '<div>' +
+                        '<input type="date" name="overrides[' + index + '][date]" required class="fp-override-input" aria-label="Override date" data-original-value="">' +
+                    '</div>' +
+                    '<div class="fp-override-checkbox">' +
+                        '<input type="checkbox" name="overrides[' + index + '][is_closed]" value="1" id="override-closed-' + index + '" data-original-checked="0">' +
+                        '<label for="override-closed-' + index + '">Closed</label>' +
+                    '</div>' +
+                    '<input type="number" name="overrides[' + index + '][capacity_override]" placeholder="Capacity (empty = default)" min="0" step="1" class="fp-override-input" aria-label="Capacity override" data-original-value="">' +
+                    '<input type="number" name="overrides[' + index + '][price_adult]" placeholder="Adult € (empty = default)" min="0" step="0.01" class="fp-override-input" aria-label="Adult price override" data-original-value="">' +
+                    '<input type="number" name="overrides[' + index + '][price_child]" placeholder="Child € (empty = default)" min="0" step="0.01" class="fp-override-input" aria-label="Child price override" data-original-value="">' +
+                    '<input type="text" name="overrides[' + index + '][reason]" placeholder="Reason (optional)" class="fp-override-input" aria-label="Reason for this override" data-original-value="">' +
+                    '<button type="button" class="fp-override-remove" aria-label="Remove this override">' +
+                        '<span class="dashicons dashicons-trash"></span> Remove' +
+                    '</button>' +
+                    '</div>');
+                
+                container.append(row);
+                
+                // Focus on the date input
+                row.find('input[type="date"]').focus();
+            }
         }
     };
 
