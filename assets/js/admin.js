@@ -563,113 +563,14 @@
         /**
          * Add a new time slot to the builder
          */
+        /**
+         * Legacy addTimeSlot function - DEPRECATED
+         * Use addTimeSlotCard() instead for new modern design
+         */
         addTimeSlot: function() {
-            var container = $('#fp-time-slots-container');
-            var index = container.find('.fp-time-slot-row').length;
-            
-            var days = {
-                '1': 'Monday',
-                '2': 'Tuesday', 
-                '3': 'Wednesday',
-                '4': 'Thursday',
-                '5': 'Friday',
-                '6': 'Saturday',
-                '0': 'Sunday'
-            };
-            
-            // Get product defaults for placeholders
-            var defaultDuration = $('#_fp_exp_duration').val() || '60';
-            var defaultCapacity = $('#_fp_exp_capacity').val() || '10';
-            var defaultLanguage = $('#_fp_exp_language').val() || 'en';
-            var defaultMeetingPoint = $('#_fp_exp_meeting_point_id option:selected').text() || 'None';
-            var defaultPriceAdult = $('#_regular_price').val() || '0.00';
-            var defaultPriceChild = $('#_fp_exp_price_child').val() || '0.00';
-            
-            var timeSlotHtml = '<div class="fp-time-slot-row" data-index="' + index + '">' +
-                    '<div class="fp-time-slot-header">' +
-                        '<div class="fp-time-field">' +
-                            '<label>' +
-                                '<span class="dashicons dashicons-clock"></span>' +
-                                'Start Time <span style="color: red;">*</span>' +
-                            '</label>' +
-                            '<input type="time" name="builder_slots[' + index + '][start_time]" required>' +
-                        '</div>' +
-                        '<div class="fp-days-field">' +
-                            '<label>' +
-                                '<span class="dashicons dashicons-calendar-alt"></span>' +
-                                'Days of Week <span style="color: red;">*</span>' +
-                            '</label>' +
-                            '<div class="fp-days-selector">' +
-                                '<div class="fp-days-pills">';
-                                
-            for (var dayValue in days) {
-                var dayLabel = days[dayValue].substring(0, 3);
-                timeSlotHtml += '<div class="fp-day-pill">' +
-                    '<input type="checkbox" id="day-' + index + '-' + dayValue + '" name="builder_slots[' + index + '][days][]" value="' + dayValue + '">' +
-                    '<label for="day-' + index + '-' + dayValue + '">' + dayLabel + '</label>' +
-                '</div>';
-            }
-            
-            timeSlotHtml += '</div></div></div>' +
-                        '<div>' +
-                            '<button type="button" class="fp-remove-time-slot">' +
-                                '<span class="dashicons dashicons-trash"></span> Remove' +
-                            '</button>' +
-                        '</div>' +
-                    '</div>' +
-                    
-                    '<div class="fp-override-toggle">' +
-                        '<label>' +
-                            '<input type="checkbox" class="fp-show-overrides-toggle">' +
-                            '<span class="dashicons dashicons-admin-tools"></span>' +
-                            ' Advanced Settings' +
-                        '</label>' +
-                        '<span class="description">Override default values for this specific time slot</span>' +
-                        '<input type="hidden" name="builder_slots[' + index + '][advanced_enabled]" value="0" class="fp-advanced-enabled">' +
-                    '</div>' +
-                    
-                    '<div class="fp-overrides-section" style="display: none;">' +
-                        '<div>' +
-                            '<div>' +
-                                '<label>Duration (minutes)</label>' +
-                                '<input type="number" name="builder_slots[' + index + '][duration_min]" min="1" placeholder="Default: ' + defaultDuration + '">' +
-                            '</div>' +
-                            '<div>' +
-                                '<label>Capacity</label>' +
-                                '<input type="number" name="builder_slots[' + index + '][capacity]" placeholder="Default: ' + defaultCapacity + '">' +
-                            '</div>' +
-                            '<div>' +
-                                '<label>Language</label>' +
-                                '<input type="text" name="builder_slots[' + index + '][lang]" maxlength="10" placeholder="Default: ' + defaultLanguage + '">' +
-                            '</div>' +
-                        '</div>' +
-                        '<div>' +
-                            '<div>' +
-                                '<label>Meeting Point</label>' +
-                                '<select name="builder_slots[' + index + '][meeting_point_id]">' +
-                                    '<option value="">Default: ' + defaultMeetingPoint + '</option>' +
-                                '</select>' +
-                            '</div>' +
-                            '<div>' +
-                                '<label>Adult Price</label>' +
-                                '<input type="number" name="builder_slots[' + index + '][price_adult]" min="0" step="0.01" placeholder="Default: ' + defaultPriceAdult + '">' +
-                            '</div>' +
-                            '<div>' +
-                                '<label>Child Price</label>' +
-                                '<input type="number" name="builder_slots[' + index + '][price_child]" min="0" step="0.01" placeholder="Default: ' + defaultPriceChild + '">' +
-                            '</div>' +
-                        '</div>' +
-                    '</div>' +
-                '</div>' +
-            '</div>';
-            
-            container.append(timeSlotHtml);
-            
-            // Populate meeting points dropdown
-            this.populateMeetingPointsDropdown(container.find('.fp-time-slot-row').last().find('select[name*="meeting_point_id"]'));
-            
-            // Update summary table
-            this.updateSummaryTable();
+            // Redirect to modern implementation
+            console.warn('FP Esperienze: addTimeSlot is deprecated, using modern addTimeSlotCard instead');
+            this.addTimeSlotCard();
         },
         
         /**
@@ -730,8 +631,6 @@
                     if (meetingPoint !== undefined) overrides.meeting_point_id = meetingPoint;
                     if (priceAdult !== undefined) overrides.price_adult = priceAdult;
                     if (priceChild !== undefined) overrides.price_child = priceChild;
-                }
-                    if (priceChild) overrides.price_child = priceChild;
                 }
                 
                 // Generate schedule input for each selected day
@@ -1440,103 +1339,14 @@
         /**
          * Add override row
          */
+        /**
+         * Legacy addOverrideRow function - DEPRECATED
+         * Use addOverrideCard() instead for new modern design
+         */
         addOverrideRow: function() {
-            var container = $('#fp-overrides-container');
-            if (!container.length) {
-                console.warn('FP Esperienze: Override container not found');
-                return;
-            }
-            
-            var $tableBody = container.find('tbody');
-            var $emptyState = container.find('.fp-overrides-empty');
-            var index = container.find('.fp-override-row, tbody tr').length;
-            
-            // Hide empty state if it exists
-            if ($emptyState.length) {
-                $emptyState.hide();
-                
-                // Create table structure if it doesn't exist
-                if (!$tableBody.length) {
-                    container.append(
-                        '<div class="fp-overrides-table-wrapper">' +
-                        '<table class="fp-overrides-table" role="table" aria-label="Date-specific overrides">' +
-                        '<thead><tr role="row">' +
-                        '<th scope="col">Date</th>' +
-                        '<th scope="col">Status</th>' +
-                        '<th scope="col">Capacity</th>' +
-                        '<th scope="col">Adult Price</th>' +
-                        '<th scope="col">Child Price</th>' +
-                        '<th scope="col">Reason</th>' +
-                        '<th scope="col">Actions</th>' +
-                        '</tr></thead>' +
-                        '<tbody></tbody>' +
-                        '</table></div>'
-                    );
-                    $tableBody = container.find('tbody');
-                }
-            }
-            
-            if ($tableBody.length) {
-                // Add table row
-                var row = $('<tr role="row" class="fp-override-table-row" data-date="">' +
-                    '<td>' +
-                        '<input type="hidden" name="overrides[' + index + '][id]" value="">' +
-                        '<input type="date" name="overrides[' + index + '][date]" required class="fp-override-input fp-override-date" aria-label="Override date" data-original-value="">' +
-                    '</td>' +
-                    '<td>' +
-                        '<div class="fp-override-checkbox">' +
-                            '<input type="checkbox" name="overrides[' + index + '][is_closed]" value="1" id="override-closed-' + index + '" data-original-checked="0">' +
-                            '<label for="override-closed-' + index + '">Closed</label>' +
-                        '</div>' +
-                    '</td>' +
-                    '<td>' +
-                        '<input type="number" name="overrides[' + index + '][capacity_override]" placeholder="Leave empty = use default" min="0" step="1" class="fp-override-input fp-override-number" aria-label="Capacity override" data-original-value="">' +
-                    '</td>' +
-                    '<td>' +
-                        '<input type="number" name="overrides[' + index + '][price_adult]" placeholder="Leave empty = use default" min="0" step="0.01" class="fp-override-input fp-override-number" aria-label="Adult price override" data-original-value="">' +
-                    '</td>' +
-                    '<td>' +
-                        '<input type="number" name="overrides[' + index + '][price_child]" placeholder="Leave empty = use default" min="0" step="0.01" class="fp-override-input fp-override-number" aria-label="Child price override" data-original-value="">' +
-                    '</td>' +
-                    '<td>' +
-                        '<input type="text" name="overrides[' + index + '][reason]" placeholder="Optional: Holiday, Maintenance, etc." class="fp-override-input fp-override-reason" aria-label="Reason for this override" data-original-value="">' +
-                    '</td>' +
-                    '<td>' +
-                        '<button type="button" class="fp-override-remove" aria-label="Remove this override">' +
-                            '<span class="dashicons dashicons-trash"></span> Remove' +
-                        '</button>' +
-                    '</td>' +
-                    '</tr>');
-                
-                $tableBody.append(row);
-                
-                // Focus on the date input
-                row.find('input[type="date"]').focus();
-            } else {
-                // Add legacy row format
-                var row = $('<div class="fp-override-row" data-index="' + index + '">' +
-                    '<input type="hidden" name="overrides[' + index + '][id]" value="">' +
-                    '<div>' +
-                        '<input type="date" name="overrides[' + index + '][date]" required class="fp-override-input" aria-label="Override date" data-original-value="">' +
-                    '</div>' +
-                    '<div class="fp-override-checkbox">' +
-                        '<input type="checkbox" name="overrides[' + index + '][is_closed]" value="1" id="override-closed-' + index + '" data-original-checked="0">' +
-                        '<label for="override-closed-' + index + '">Closed</label>' +
-                    '</div>' +
-                    '<input type="number" name="overrides[' + index + '][capacity_override]" placeholder="Capacity (empty = default)" min="0" step="1" class="fp-override-input" aria-label="Capacity override" data-original-value="">' +
-                    '<input type="number" name="overrides[' + index + '][price_adult]" placeholder="Adult € (empty = default)" min="0" step="0.01" class="fp-override-input" aria-label="Adult price override" data-original-value="">' +
-                    '<input type="number" name="overrides[' + index + '][price_child]" placeholder="Child € (empty = default)" min="0" step="0.01" class="fp-override-input" aria-label="Child price override" data-original-value="">' +
-                    '<input type="text" name="overrides[' + index + '][reason]" placeholder="Reason (optional)" class="fp-override-input" aria-label="Reason for this override" data-original-value="">' +
-                    '<button type="button" class="fp-override-remove" aria-label="Remove this override">' +
-                        '<span class="dashicons dashicons-trash"></span> Remove' +
-                    '</button>' +
-                    '</div>');
-                
-                container.append(row);
-                
-                // Focus on the date input
-                row.find('input[type="date"]').focus();
-            }
+            // Redirect to modern implementation
+            console.warn('FP Esperienze: addOverrideRow is deprecated, using modern addOverrideCard instead');
+            this.addOverrideCard();
         }
     };
 
