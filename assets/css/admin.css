@@ -1934,26 +1934,61 @@
     height: 16px;
 }
 
-#fp-add-time-slot {
-    background: #2271b1;
-    color: white;
+/* Enhanced main action buttons */
+#fp-add-time-slot,
+.fp-add-time-slot {
+    background: linear-gradient(135deg, #2271b1 0%, #135e96 100%);
+    color: #fff;
     border: none;
-    padding: 8px 15px;
-    border-radius: 3px;
+    padding: 14px 24px;
+    border-radius: 8px;
     cursor: pointer;
-    display: flex;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-flex;
     align-items: center;
-    gap: 5px;
+    gap: 10px;
+    transition: all 0.3s ease;
+    box-shadow: 0 3px 6px rgba(34, 113, 177, 0.2);
+    width: 100%;
+    justify-content: center;
+    margin-top: 15px;
 }
 
-#fp-add-time-slot:hover {
-    background: #135e96;
+#fp-add-time-slot:hover,
+.fp-add-time-slot:hover {
+    background: linear-gradient(135deg, #135e96 0%, #0f4c75 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(34, 113, 177, 0.3);
 }
 
-#fp-add-time-slot .dashicons {
-    font-size: 16px;
-    width: 16px;
-    height: 16px;
+#fp-add-override,
+.fp-add-override {
+    background: linear-gradient(135deg, #d63638 0%, #b32d2e 100%);
+    color: #fff;
+    border: none;
+    padding: 14px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.3s ease;
+    box-shadow: 0 3px 6px rgba(214, 54, 56, 0.2);
+    width: 100%;
+    justify-content: center;
+    margin-top: 15px;
+}
+
+#fp-add-override:hover,
+.fp-add-override:hover {
+    background: linear-gradient(135deg, #b32d2e 0%, #941a1c 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(214, 54, 56, 0.3);
 }
 
 #fp-schedule-raw-container {
@@ -2550,12 +2585,14 @@
     border-radius: 8px;
     margin-bottom: 20px;
     overflow: hidden;
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .fp-time-slot-card-clean:hover {
     border-color: #0073aa;
-    box-shadow: 0 2px 8px rgba(0, 115, 170, 0.1);
+    box-shadow: 0 4px 12px rgba(0, 115, 170, 0.15);
+    transform: translateY(-2px);
 }
 
 .fp-time-slot-content-clean {
@@ -2563,7 +2600,7 @@
 }
 
 .fp-time-slot-header-clean {
-    background: #f6f7f7;
+    background: linear-gradient(135deg, #f8f9fa 0%, #f1f3f4 100%);
     padding: 20px;
     border-bottom: 1px solid #e5e5e5;
     display: grid;
@@ -2582,10 +2619,18 @@
 
 .fp-time-field-clean input[type="time"] {
     width: 100%;
-    padding: 8px 12px;
+    padding: 10px 12px;
     border: 1px solid #ddd;
-    border-radius: 4px;
+    border-radius: 6px;
     font-size: 14px;
+    transition: all 0.2s ease;
+    background: #fff;
+}
+
+.fp-time-field-clean input[type="time"]:focus {
+    border-color: #0073aa;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0, 115, 170, 0.2);
 }
 
 .fp-days-pills-clean {
@@ -2609,21 +2654,25 @@
 
 .fp-day-pill-clean label {
     display: inline-block;
-    padding: 6px 12px;
-    background: #f1f1f1;
+    padding: 8px 14px;
+    background: linear-gradient(135deg, #f1f1f1 0%, #e8e8e8 100%);
     border: 1px solid #ddd;
-    border-radius: 4px;
+    border-radius: 6px;
     font-size: 12px;
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
     margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .fp-day-pill-clean input[type="checkbox"]:checked + label {
-    background: #0073aa;
+    background: linear-gradient(135deg, #0073aa 0%, #005177 100%);
     color: #fff;
-    border-color: #0073aa;
+    border-color: #005177;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 115, 170, 0.3);
 }
 
 .fp-day-pill-clean input[type="checkbox"]:focus + label {
@@ -2632,18 +2681,22 @@
 }
 
 .fp-slot-actions-clean .fp-remove-time-slot-clean {
-    background: #dc3545;
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
     color: #fff;
     border: none;
-    padding: 8px 16px;
-    border-radius: 4px;
+    padding: 10px 16px;
+    border-radius: 6px;
     cursor: pointer;
     font-size: 13px;
-    transition: background-color 0.2s ease;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
 }
 
 .fp-slot-actions-clean .fp-remove-time-slot-clean:hover {
-    background: #c82333;
+    background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
 }
 
 /* Override toggle clean */
@@ -2692,17 +2745,19 @@
 .fp-override-field-clean input,
 .fp-override-field-clean select {
     width: 100%;
-    padding: 8px 12px;
+    padding: 10px 12px;
     border: 1px solid #ddd;
-    border-radius: 4px;
+    border-radius: 6px;
     font-size: 14px;
+    transition: all 0.2s ease;
+    background: #fff;
 }
 
 .fp-override-field-clean input:focus,
 .fp-override-field-clean select:focus {
     border-color: #0073aa;
     outline: none;
-    box-shadow: 0 0 0 1px #0073aa;
+    box-shadow: 0 0 0 2px rgba(0, 115, 170, 0.2);
 }
 
 /* Overrides container clean */
@@ -2725,14 +2780,16 @@
     background: #fff;
     border: 1px solid #ddd;
     border-radius: 8px;
-    margin-bottom: 15px;
+    margin-bottom: 20px;
     overflow: hidden;
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .fp-override-card-clean:hover {
     border-color: #0073aa;
-    box-shadow: 0 2px 8px rgba(0, 115, 170, 0.1);
+    box-shadow: 0 4px 12px rgba(0, 115, 170, 0.15);
+    transform: translateY(-2px);
 }
 
 .fp-override-card-clean.is-closed {
@@ -2741,8 +2798,8 @@
 }
 
 .fp-override-header-clean {
-    background: #f6f7f7;
-    padding: 15px 20px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #f1f3f4 100%);
+    padding: 18px 20px;
     border-bottom: 1px solid #e5e5e5;
     display: grid;
     grid-template-columns: 1fr auto;
@@ -2758,11 +2815,19 @@
 }
 
 .fp-override-date-field-clean input[type="date"] {
-    padding: 8px 12px;
+    padding: 10px 12px;
     border: 1px solid #ddd;
-    border-radius: 4px;
+    border-radius: 6px;
     font-size: 14px;
     width: 200px;
+    transition: all 0.2s ease;
+    background: #fff;
+}
+
+.fp-override-date-field-clean input[type="date"]:focus {
+    border-color: #0073aa;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0, 115, 170, 0.2);
 }
 
 .fp-override-actions-clean {
@@ -2783,18 +2848,22 @@
 }
 
 .fp-override-remove-clean {
-    background: #dc3545;
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
     color: #fff;
     border: none;
-    padding: 8px 16px;
-    border-radius: 4px;
+    padding: 10px 16px;
+    border-radius: 6px;
     cursor: pointer;
     font-size: 13px;
-    transition: background-color 0.2s ease;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
 }
 
 .fp-override-remove-clean:hover {
-    background: #c82333;
+    background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
 }
 
 .fp-override-fields-clean {
@@ -2849,10 +2918,15 @@
 }
 
 .fp-override-toggle-clean {
-    background: #f6f7f7;
-    padding: 15px 20px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    padding: 16px 20px;
     border-bottom: 1px solid #e5e5e5;
     margin: 0;
+    transition: all 0.2s ease;
+}
+
+.fp-override-toggle-clean:hover {
+    background: linear-gradient(135deg, #f1f3f4 0%, #e1e5e9 100%);
 }
 
 .fp-override-toggle-clean label {
