@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<ruleset name="FP Esperienze Coding Standards">
+    <description>Coding standards for FP Esperienze plugin</description>
+
+    <!-- Use WordPress Coding Standards -->
+    <rule ref="WordPress">
+        <!-- Allow short array syntax -->
+        <exclude name="Generic.Arrays.DisallowShortArraySyntax"/>
+        
+        <!-- Allow multiple assignments -->
+        <exclude name="Squiz.PHP.DisallowMultipleAssignments"/>
+        
+        <!-- Allow ternary operators -->
+        <exclude name="WordPress.PHP.DisallowShortTernary"/>
+        
+        <!-- Allow yoda conditions to be optional -->
+        <exclude name="WordPress.PHP.YodaConditions"/>
+    </rule>
+
+    <!-- Check PHP files only -->
+    <arg name="extensions" value="php"/>
+    
+    <!-- Show progress -->
+    <arg value="p"/>
+    
+    <!-- Show colors in output -->
+    <arg name="colors"/>
+    
+    <!-- Files to check -->
+    <file>includes/</file>
+    
+    <!-- Exclude vendor directories -->
+    <exclude-pattern>*/vendor/*</exclude-pattern>
+    <exclude-pattern>*/node_modules/*</exclude-pattern>
+    
+    <!-- Allow short array syntax for PHP 5.4+ -->
+    <rule ref="Generic.Arrays.DisallowLongArraySyntax"/>
+    
+    <!-- Require PHP 8.1+ -->
+    <config name="minimum_supported_wp_version" value="6.5"/>
+    <config name="testVersion" value="8.1-"/>
+    <rule ref="PHPCompatibilityWP"/>
+</ruleset>

@@ -95,6 +95,13 @@ class AssetOptimizer {
             'admin' => [
                 self::$assets_dir . 'js/admin.js'
             ],
+            'admin-modular' => [
+                self::$assets_dir . 'js/modules/error-handler.js',
+                self::$assets_dir . 'js/modules/performance.js',
+                self::$assets_dir . 'js/modules/accessibility.js',
+                self::$assets_dir . 'js/modules/schedule-builder.js',
+                self::$assets_dir . 'js/admin-modular.js'
+            ],
             'booking-widget' => [
                 self::$assets_dir . 'js/booking-widget.js'
             ],
