@@ -1,63 +1,42 @@
 /* FP Esperienze Admin Styles with Modern Design System */
 
-/* WordPress standard styling - no custom properties */
+/* ========================================
+   FP ESPERIENZE ADMIN STYLES - OPTIMIZED
+   Modern Design System with Performance Focus
+   ======================================== */
 
+/* ========================================
+   CORE UTILITY CLASSES - CONSOLIDATED
+   ======================================== */
 
+/* Base utilities */
+.fp-hidden { display: none !important; }
+.fp-visible { display: block !important; }
+.fp-clearfix::after { content: ""; display: table; clear: both; }
+.fp-inline-form { display: inline-block; }
 
-/* Remove unused keyframes for override functionality */
+/* Status indicators */
+.fp-status-success { color: #00a32a; font-weight: 600; }
+.fp-status-error { color: #d63638; font-weight: 600; }
+.fp-status-warning { color: #dba617; font-weight: 600; }
 
-/* Remove unused animation classes for override functionality */
+/* Form utilities */
+.fp-narrow-input { width: 60px !important; }
+.fp-centered-cell { text-align: center; padding: 20px; }
+.fp-error-text { color: #dc3232; }
+.fp-voucher-actions-spacing { margin-top: 4px; }
 
-/* Utility classes */
-.fp-hidden {
-    display: none !important;
-}
-
-.fp-visible {
-    display: block !important;
-}
-
-.fp-clearfix::after {
-    content: "";
-    display: table;
-    clear: both;
-}
-
-.fp-inline-form {
-    display: inline-block;
-}
-
-.fp-status-success {
-    color: #00a32a;
-    font-weight: 600;
-}
-
-.fp-status-error {
-    color: #d63638;
-    font-weight: 600;
-}
-
-.fp-status-warning {
-    color: #dba617;
-    font-weight: 600;
-}
-
-/* Additional utility classes */
-.fp-narrow-input {
-    width: 60px !important;
-}
-
-.fp-centered-cell {
-    text-align: center;
-    padding: 20px;
-}
-
-.fp-error-text {
-    color: #dc3232;
-}
-
-.fp-voucher-actions-spacing {
-    margin-top: 4px;
+/* Screen reader support */
+.fp-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
 }
 
 /* Setup Wizard */
@@ -915,41 +894,83 @@
     }
 }
 
-/* Screen reader only text */
-.fp-sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
+/* ========================================
+   PERFORMANCE OPTIMIZATIONS
+   ======================================== */
+
+/* Hardware acceleration for smooth animations */
+.fp-time-slot-card-clean,
+.fp-override-card-clean,
+.fp-day-pill-clean label,
+.fp-remove-time-slot-clean,
+.fp-override-remove-clean,
+#fp-add-time-slot,
+#fp-add-override {
+    transform: translateZ(0);
+    will-change: transform, opacity;
 }
 
-/* Loading states */
+/* Optimized transitions with GPU acceleration */
+.fp-time-slot-card-clean {
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                border-color 0.2s ease;
+}
+
+.fp-day-pill-clean label {
+    transition: background 0.15s ease,
+                transform 0.15s ease,
+                box-shadow 0.15s ease;
+}
+
+/* Loading states with optimized animations */
 .fp-loading {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    color: #646970;
-    font-style: italic;
+    position: relative;
+    pointer-events: none;
+    opacity: 0.7;
 }
 
-.fp-loading::before {
-    content: "";
+.fp-loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: 15px;
     width: 16px;
     height: 16px;
-    border: 2px solid #f3f4f6;
-    border-top: 2px solid #2271b1;
+    margin-top: -8px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
     border-radius: 50%;
-    animation: fp-spin 1s linear infinite;
+    animation: fp-optimized-spin 0.8s linear infinite;
 }
 
-@keyframes fp-spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+@keyframes fp-optimized-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Enhanced error states with visual feedback */
+.fp-error-field {
+    border-color: #dc3545 !important;
+    box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.2) !important;
+    animation: fp-error-shake 0.4s ease-in-out;
+}
+
+@keyframes fp-error-shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-4px); }
+    75% { transform: translateX(4px); }
+}
+
+/* Success feedback animation */
+.fp-success-feedback {
+    animation: fp-success-pulse 0.6s ease-in-out;
+}
+
+@keyframes fp-success-pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
 }
 
 /* Responsive improvements */
@@ -1934,13 +1955,194 @@
     height: 16px;
 }
 
-/* Enhanced main action buttons */
+/* ========================================
+   ENHANCED USER FEEDBACK SYSTEM
+   ======================================== */
+
+/* Feedback notifications */
+.fp-user-feedback {
+    z-index: 999999;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fp-feedback-success {
+    border-left-color: #00a32a;
+    color: #00a32a;
+}
+
+.fp-feedback-error {
+    border-left-color: #d63638;
+    color: #d63638;
+}
+
+.fp-feedback-warning {
+    border-left-color: #dba617;
+    color: #dba617;
+}
+
+.fp-feedback-info {
+    border-left-color: #72aee6;
+    color: #72aee6;
+}
+
+/* Field error messages */
+.fp-field-error-message {
+    animation: fp-error-fade-in 0.3s ease-out;
+}
+
+@keyframes fp-error-fade-in {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Focus management */
+.fp-time-slot-card-clean.fp-focused {
+    border-color: #72aee6;
+    box-shadow: 0 0 0 2px rgba(114, 174, 230, 0.2);
+}
+
+/* New card highlight effect */
+.fp-time-slot-card-clean.fp-newly-added {
+    border-color: #00a32a;
+    box-shadow: 0 0 0 2px rgba(0, 163, 42, 0.2);
+}
+
+.fp-time-slot-card-clean.fp-newly-added::before {
+    opacity: 1;
+    background: linear-gradient(90deg, #00a32a 0%, #046b2f 100%);
+}
+
+/* Container state indicators */
+#fp-time-slots-container[data-slot-count="0"] .fp-summary-info {
+    display: none;
+}
+
+#fp-overrides-container[data-override-count="0"] .fp-override-summary {
+    display: none;
+}
+
+/* Enhanced button states */
+#fp-add-time-slot[aria-expanded="true"] .dashicons-plus-alt::before {
+    content: "\f132"; /* dashicons-plus-alt2 */
+}
+
+#fp-add-override[aria-expanded="true"] .dashicons-plus-alt::before {
+    content: "\f132"; /* dashicons-plus-alt2 */
+}
+
+/* Loading button specific styling */
+.fp-loading.button {
+    position: relative;
+    color: transparent !important;
+}
+
+.fp-loading.button::after {
+    color: currentColor;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+/* Validation states */
+.fp-days-pills-clean.fp-error-field {
+    border: 2px solid #dc3545;
+    border-radius: 6px;
+    padding: 4px;
+    background: rgba(220, 53, 69, 0.05);
+}
+
+.fp-time-field-clean input.fp-error-field {
+    border-color: #dc3545 !important;
+    box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.2) !important;
+}
+
+/* Card state animations */
+.fp-time-slot-card-clean.fp-error-shake {
+    animation: fp-error-shake 0.4s ease-in-out;
+}
+
+.fp-override-card-clean.fp-error-shake {
+    animation: fp-error-shake 0.4s ease-in-out;
+}
+
+/* Improved hover states with performance */
+.fp-time-slot-card-clean:hover,
+.fp-override-card-clean:hover {
+    transform: translateY(-2px);
+}
+
+/* Better focus indicators for accessibility */
+.fp-day-pill-clean input:focus + label {
+    outline: 3px solid #005177;
+    outline-offset: 2px;
+    z-index: 10;
+    position: relative;
+}
+
+/* High contrast improvements */
+@media (prefers-contrast: high) {
+    .fp-time-slot-card-clean::before,
+    .fp-override-card-clean::before {
+        height: 5px;
+    }
+    
+    .fp-day-pill-clean input:checked + label {
+        border: 3px solid #000;
+    }
+    
+    .fp-error-field {
+        border: 3px solid #dc3545 !important;
+    }
+}
+
+/* Reduced motion optimizations */
+@media (prefers-reduced-motion: reduce) {
+    .fp-time-slot-card-clean,
+    .fp-override-card-clean,
+    .fp-day-pill-clean label,
+    .fp-user-feedback {
+        transition: none !important;
+        animation: none !important;
+        transform: none !important;
+    }
+    
+    .fp-loading::after {
+        animation: none;
+        border: 2px solid currentColor;
+        border-radius: 50%;
+    }
+}
+
+/* Performance optimization for low-end devices */
+body.fp-reduced-animations .fp-time-slot-card-clean,
+body.fp-reduced-animations .fp-override-card-clean,
+body.fp-reduced-animations .fp-day-pill-clean label,
+body.fp-reduced-animations .fp-user-feedback,
+body.fp-reduced-animations #fp-add-time-slot,
+body.fp-reduced-animations #fp-add-override {
+    transition: none !important;
+    animation: none !important;
+    transform: none !important;
+}
+
+body.fp-reduced-animations .fp-loading::after {
+    animation: none;
+    border: 2px solid currentColor;
+    border-radius: 50%;
+}
+
+/* ========================================
+   ENHANCED MAIN ACTION BUTTONS
+   ======================================== */
+
+/* Time slot button with premium styling */
 #fp-add-time-slot,
 .fp-add-time-slot {
     background: linear-gradient(135deg, #2271b1 0%, #135e96 100%);
     color: #fff;
     border: none;
-    padding: 14px 24px;
+    padding: 16px 24px;
     border-radius: 8px;
     cursor: pointer;
     font-size: 14px;
@@ -1948,99 +2150,60 @@
     text-decoration: none;
     display: inline-flex;
     align-items: center;
-    gap: 10px;
-    transition: all 0.3s ease;
-    box-shadow: 0 3px 6px rgba(34, 113, 177, 0.2);
-    width: 100%;
     justify-content: center;
-    margin-top: 15px;
+    gap: 10px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 3px 8px rgba(34, 113, 177, 0.3);
+    width: 100%;
+    margin-top: 20px;
+    position: relative;
+    overflow: hidden;
+}
+
+#fp-add-time-slot::before,
+.fp-add-time-slot::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s ease;
 }
 
 #fp-add-time-slot:hover,
 .fp-add-time-slot:hover {
     background: linear-gradient(135deg, #135e96 0%, #0f4c75 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(34, 113, 177, 0.3);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 16px rgba(34, 113, 177, 0.4);
+}
+
+#fp-add-time-slot:hover::before,
+.fp-add-time-slot:hover::before {
+    left: 100%;
 }
 
 #fp-add-time-slot:focus,
 .fp-add-time-slot:focus {
-    outline: 2px solid #2271b1;
+    outline: 3px solid #72aee6;
     outline-offset: 2px;
     background: linear-gradient(135deg, #135e96 0%, #0f4c75 100%);
 }
 
 #fp-add-time-slot:active,
 .fp-add-time-slot:active {
-    transform: translateY(0);
-    box-shadow: 0 2px 4px rgba(34, 113, 177, 0.4);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(34, 113, 177, 0.5);
 }
 
-/* Loading state for buttons */
-#fp-add-time-slot.fp-loading,
-.fp-add-time-slot.fp-loading,
-.fp-remove-time-slot-clean.fp-loading {
-    pointer-events: none;
-    opacity: 0.7;
-    transform: none !important;
-    cursor: not-allowed;
-}
-
-#fp-add-time-slot.fp-loading::after,
-.fp-add-time-slot.fp-loading::after,
-.fp-remove-time-slot-clean.fp-loading::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    right: 15px;
-    width: 16px;
-    height: 16px;
-    margin-top: -8px;
-    border: 2px solid transparent;
-    border-top: 2px solid currentColor;
-    border-radius: 50%;
-    animation: fp-button-spin 1s linear infinite;
-}
-
-@keyframes fp-button-spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-/* Error states */
-.fp-error-field {
-    border-color: #dc3545 !important;
-    box-shadow: 0 0 0 1px #dc3545 !important;
-}
-
-.fp-error-field:focus {
-    border-color: #dc3545 !important;
-    box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.25) !important;
-    outline: none !important;
-}
-
-/* Accessibility improvements */
-.fp-day-pill-clean label:focus-within {
-    outline: 2px solid #005177;
-    outline-offset: 2px;
-}
-
-/* Smooth transitions for all interactive elements */
-.fp-time-slot-card-clean,
-.fp-time-slot-card-clean *,
-.fp-day-pill-clean label,
-.fp-remove-time-slot-clean,
-#fp-add-time-slot,
-.fp-add-time-slot {
-    transition: all 0.2s ease;
-}
-
+/* Override button with distinct styling */
 #fp-add-override,
 .fp-add-override {
     background: linear-gradient(135deg, #d63638 0%, #b32d2e 100%);
     color: #fff;
     border: none;
-    padding: 14px 24px;
+    padding: 16px 24px;
     border-radius: 8px;
     cursor: pointer;
     font-size: 14px;
@@ -2048,32 +2211,97 @@
     text-decoration: none;
     display: inline-flex;
     align-items: center;
-    gap: 10px;
-    transition: all 0.3s ease;
-    box-shadow: 0 3px 6px rgba(214, 54, 56, 0.2);
-    width: 100%;
     justify-content: center;
-    margin-top: 15px;
+    gap: 10px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 3px 8px rgba(214, 54, 56, 0.3);
+    width: 100%;
+    margin-top: 20px;
+    position: relative;
+    overflow: hidden;
+}
+
+#fp-add-override::before,
+.fp-add-override::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s ease;
 }
 
 #fp-add-override:hover,
 .fp-add-override:hover {
     background: linear-gradient(135deg, #b32d2e 0%, #941a1c 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(214, 54, 56, 0.3);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 16px rgba(214, 54, 56, 0.4);
+}
+
+#fp-add-override:hover::before,
+.fp-add-override:hover::before {
+    left: 100%;
 }
 
 #fp-add-override:focus,
 .fp-add-override:focus {
-    outline: 2px solid #d63638;
+    outline: 3px solid #d63638;
     outline-offset: 2px;
     background: linear-gradient(135deg, #b32d2e 0%, #941a1c 100%);
 }
 
 #fp-add-override:active,
 .fp-add-override:active {
-    transform: translateY(0);
-    box-shadow: 0 2px 4px rgba(214, 54, 56, 0.4);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(214, 54, 56, 0.5);
+}
+
+/* Loading states for buttons */
+#fp-add-time-slot.fp-loading,
+.fp-add-time-slot.fp-loading,
+#fp-add-override.fp-loading,
+.fp-add-override.fp-loading,
+.fp-remove-time-slot-clean.fp-loading,
+.fp-override-remove-clean.fp-loading {
+    pointer-events: none;
+    opacity: 0.8;
+    transform: none !important;
+    cursor: not-allowed;
+}
+
+#fp-add-time-slot.fp-loading::after,
+.fp-add-time-slot.fp-loading::after,
+#fp-add-override.fp-loading::after,
+.fp-add-override.fp-loading::after,
+.fp-remove-time-slot-clean.fp-loading::after,
+.fp-override-remove-clean.fp-loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: 20px;
+    width: 18px;
+    height: 18px;
+    margin-top: -9px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: fp-button-spin 0.8s linear infinite;
+}
+
+@keyframes fp-button-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Button icon styling */
+#fp-add-time-slot .dashicons,
+.fp-add-time-slot .dashicons,
+#fp-add-override .dashicons,
+.fp-add-override .dashicons {
+    font-size: 18px;
+    font-weight: normal;
 }
 
 #fp-schedule-raw-container {

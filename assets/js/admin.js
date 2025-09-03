@@ -43,6 +43,9 @@
             if ($('#fp-time-slots-container').length) {
                 this.enhanceAccessibility();
             }
+            
+            // Initialize enhanced features
+            this.initializeEnhancements();
         },
 
         /**
@@ -1452,21 +1455,24 @@
         // ========================================
         
         /**
-         * Add time slot card - CLEAN VERSION - ENHANCED
+         * Add time slot card - ENHANCED VERSION with comprehensive improvements
          */
         addTimeSlotCardClean: function() {
-            console.log('FP Esperienze: Starting to add time slot card');
-            
-            var container = $('#fp-time-slots-container');
-            if (!container.length) {
-                console.error('FP Esperienze: Time slots container not found');
-                alert('Error: Time slots container not found. Please refresh the page.');
-                return;
-            }
+            console.log('FP Esperienze: Starting to add time slot card with enhanced features');
             
             try {
-                // Hide empty state if exists
-                container.find('.fp-empty-slots-message').hide();
+                var container = $('#fp-time-slots-container');
+                if (!container.length) {
+                    console.error('FP Esperienze: Time slots container not found');
+                    this.showUserFeedback('Error: Unable to find time slots container. Please refresh the page.', 'error');
+                    return;
+                }
+                
+                // Hide empty state with smooth transition
+                var $emptyState = container.find('.fp-empty-slots-message');
+                if ($emptyState.length) {
+                    $emptyState.fadeOut(200);
+                }
                 
                 var index = container.find('.fp-time-slot-card-clean').length;
                 console.log('FP Esperienze: Creating time slot card with index:', index);
@@ -1474,46 +1480,84 @@
                 var cardHtml = this.createTimeSlotCardHTMLClean(index);
                 if (!cardHtml) {
                     console.error('FP Esperienze: Failed to create card HTML');
+                    this.showUserFeedback('Error creating time slot card. Please try again.', 'error');
                     return;
                 }
                 
-                // Add the card with smooth animation
+                // Create card with enhanced animation
                 var $newCard = $(cardHtml);
                 $newCard.css({
                     'opacity': '0',
-                    'transform': 'translateY(20px)'
+                    'transform': 'translateY(20px) scale(0.95)',
+                    'transition': 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
                 });
+                
                 container.append($newCard);
                 
-                // Animate in with improved timing
-                $newCard.animate({
-                    opacity: 1
-                }, 300, function() {
-                    // Reset transform after opacity animation
-                    $newCard.css('transform', 'translateY(0)');
+                // Trigger reflow and animate in
+                requestAnimationFrame(function() {
+                    $newCard.css({
+                        'opacity': '1',
+                        'transform': 'translateY(0) scale(1)'
+                    });
                 });
                 
-                // Focus on the time input for better UX
+                // Enhanced focus management with delay
                 setTimeout(function() {
                     var $timeInput = $newCard.find('input[type="time"]');
                     if ($timeInput.length) {
                         $timeInput.focus();
-                        // Scroll into view if needed
+                        // Smooth scroll into view
                         $newCard[0].scrollIntoView({ 
                             behavior: 'smooth', 
-                            block: 'nearest' 
+                            block: 'nearest',
+                            inline: 'nearest'
                         });
+                        
+                        // Add subtle highlight effect
+                        $newCard.addClass('fp-newly-added');
+                        setTimeout(function() {
+                            $newCard.removeClass('fp-newly-added');
+                        }, 2000);
                     }
-                }, 350);
+                }, 400);
                 
                 console.log('FP Esperienze: Successfully added time slot card', index);
                 
-                // Update visual feedback
+                // Update visual feedback and show success message
                 this.updateSlotCountFeedback();
+                this.showUserFeedback('Time slot added successfully! Configure the time and days.', 'success');
+                
+                // Track for analytics (if needed)
+                this.trackUserAction('time_slot_added', { index: index });
                 
             } catch (error) {
                 console.error('FP Esperienze: Error in addTimeSlotCardClean:', error);
-                alert('Error adding time slot. Please try again.');
+                this.showUserFeedback('An unexpected error occurred while adding the time slot. Please try again.', 'error');
+            }
+        },
+
+        /**
+         * Track user actions for analytics and debugging
+         */
+        trackUserAction: function(action, data = {}) {
+            try {
+                // Store action in session for debugging
+                if (window.sessionStorage) {
+                    var actions = JSON.parse(sessionStorage.getItem('fp_user_actions') || '[]');
+                    actions.push({
+                        action: action,
+                        data: data,
+                        timestamp: new Date().toISOString()
+                    });
+                    // Keep only last 50 actions
+                    if (actions.length > 50) {
+                        actions = actions.slice(-50);
+                    }
+                    sessionStorage.setItem('fp_user_actions', JSON.stringify(actions));
+                }
+            } catch (error) {
+                console.warn('FP Esperienze: Error tracking user action:', error);
             }
         },
         
@@ -1752,61 +1796,299 @@
         },
         
         /**
-         * Enhanced accessibility support
+         * Enhanced accessibility support with comprehensive ARIA
          */
         enhanceAccessibility: function() {
-            // Add ARIA labels and roles
-            $('#fp-time-slots-container').attr({
-                'role': 'region',
-                'aria-label': 'Time slots configuration'
-            });
-            
-            $('#fp-add-time-slot').attr({
-                'aria-describedby': 'fp-add-time-slot-desc'
-            });
-            
-            // Add keyboard support for day pills
-            $(document).on('keydown.fp-accessibility', '.fp-day-pill-clean label', function(e) {
-                if (e.key === ' ' || e.key === 'Enter') {
-                    e.preventDefault();
-                    $(this).find('input').click();
-                }
-            });
-            
-            // Announce changes to screen readers
-            $(document).on('change.fp-accessibility', '.fp-day-pill-clean input', function() {
-                var dayName = $(this).closest('label').text().trim();
-                var isChecked = $(this).is(':checked');
-                var message = dayName + ' ' + (isChecked ? 'selected' : 'deselected');
-                this.setAttribute('aria-label', message);
-            });
-        },
-        updateSlotCountFeedback: function() {
-            var container = $('#fp-time-slots-container');
-            var count = container.find('.fp-time-slot-card-clean').length;
-            var button = $('#fp-add-time-slot');
-            
-            if (count > 0) {
-                var currentText = button.find('span:not(.dashicons)').text() || button.text();
-                if (currentText.indexOf('Another') === -1) {
-                    button.find('span:not(.dashicons)').text('Add Another Time Slot');
-                }
+            try {
+                // Add comprehensive ARIA support
+                $('#fp-time-slots-container').attr({
+                    'role': 'region',
+                    'aria-label': 'Time slots configuration',
+                    'aria-live': 'polite'
+                });
+                
+                $('#fp-overrides-container').attr({
+                    'role': 'region',
+                    'aria-label': 'Date overrides configuration',
+                    'aria-live': 'polite'
+                });
+                
+                // Enhanced button accessibility
+                $('#fp-add-time-slot').attr({
+                    'aria-describedby': 'fp-add-time-slot-desc',
+                    'aria-expanded': 'false'
+                });
+                
+                // Add keyboard navigation enhancement
+                this.enhanceKeyboardNavigation();
+                
+                // Announce changes to screen readers
+                this.setupScreenReaderAnnouncements();
+                
+                console.log('FP Esperienze: Enhanced accessibility features activated');
+            } catch (error) {
+                console.warn('FP Esperienze: Accessibility enhancement failed:', error);
             }
         },
 
         /**
-         * Update override count feedback - VISUAL ENHANCEMENT
+         * Enhanced keyboard navigation support
+         */
+        enhanceKeyboardNavigation: function() {
+            // Keyboard support for day pills
+            $(document).on('keydown.fp-accessibility', '.fp-day-pill-clean label', function(e) {
+                if (e.key === ' ' || e.key === 'Enter') {
+                    e.preventDefault();
+                    $(this).closest('.fp-day-pill-clean').find('input').click();
+                    // Announce state change
+                    var dayName = $(this).text().trim();
+                    var isChecked = $(this).closest('.fp-day-pill-clean').find('input').is(':checked');
+                    this.announceToScreenReader(dayName + ' ' + (isChecked ? 'selected' : 'deselected'));
+                }
+            });
+            
+            // Enhanced focus management
+            $(document).on('focus.fp-accessibility', '.fp-time-slot-card-clean input, .fp-time-slot-card-clean button', function() {
+                $(this).closest('.fp-time-slot-card-clean').addClass('fp-focused');
+            });
+            
+            $(document).on('blur.fp-accessibility', '.fp-time-slot-card-clean input, .fp-time-slot-card-clean button', function() {
+                var $card = $(this).closest('.fp-time-slot-card-clean');
+                setTimeout(function() {
+                    if (!$card.find(':focus').length) {
+                        $card.removeClass('fp-focused');
+                    }
+                }, 100);
+            });
+        },
+
+        /**
+         * Screen reader announcements for dynamic changes
+         */
+        setupScreenReaderAnnouncements: function() {
+            // Create live region for announcements
+            if (!$('#fp-sr-announcements').length) {
+                $('body').append('<div id="fp-sr-announcements" class="fp-sr-only" aria-live="polite" aria-atomic="true"></div>');
+            }
+        },
+
+        /**
+         * Announce changes to screen readers
+         */
+        announceToScreenReader: function(message) {
+            var $announcer = $('#fp-sr-announcements');
+            if ($announcer.length) {
+                $announcer.text(message);
+                // Clear after announcement
+                setTimeout(function() {
+                    $announcer.empty();
+                }, 1000);
+            }
+        },
+        /**
+         * Enhanced user feedback system
+         */
+        showUserFeedback: function(message, type = 'info', duration = 3000) {
+            try {
+                // Remove existing feedback
+                $('.fp-user-feedback').remove();
+                
+                var iconClass = {
+                    'success': 'dashicons-yes-alt',
+                    'error': 'dashicons-warning',
+                    'warning': 'dashicons-flag',
+                    'info': 'dashicons-info'
+                }[type] || 'dashicons-info';
+                
+                var feedbackHtml = '<div class="fp-user-feedback fp-feedback-' + type + '" style="position: fixed; top: 32px; right: 20px; z-index: 999999; background: #fff; border-left: 4px solid; padding: 12px 16px; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); max-width: 350px; opacity: 0; transform: translateX(100%);">' +
+                    '<div style="display: flex; align-items: center; gap: 8px;">' +
+                        '<span class="dashicons ' + iconClass + '"></span>' +
+                        '<span>' + message + '</span>' +
+                    '</div>' +
+                '</div>';
+                
+                var $feedback = $(feedbackHtml);
+                $('body').append($feedback);
+                
+                // Animate in
+                requestAnimationFrame(function() {
+                    $feedback.css({
+                        'opacity': '1',
+                        'transform': 'translateX(0)',
+                        'transition': 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                    });
+                });
+                
+                // Announce to screen readers
+                this.announceToScreenReader(message);
+                
+                // Auto-remove
+                setTimeout(function() {
+                    $feedback.css({
+                        'opacity': '0',
+                        'transform': 'translateX(100%)'
+                    });
+                    setTimeout(function() {
+                        $feedback.remove();
+                    }, 300);
+                }, duration);
+                
+                return $feedback;
+            } catch (error) {
+                console.error('FP Esperienze: Error showing user feedback:', error);
+            }
+        },
+
+        /**
+         * Performance-optimized debounce function
+         */
+        debounce: function(func, wait, immediate) {
+            var timeout;
+            return function() {
+                var context = this, args = arguments;
+                var later = function() {
+                    timeout = null;
+                    if (!immediate) func.apply(context, args);
+                };
+                var callNow = immediate && !timeout;
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+                if (callNow) func.apply(context, args);
+            };
+        },
+
+        /**
+         * Enhanced visual feedback and button state management
+         */
+        updateSlotCountFeedback: function() {
+            try {
+                var container = $('#fp-time-slots-container');
+                var count = container.find('.fp-time-slot-card-clean').length;
+                var button = $('#fp-add-time-slot');
+                
+                if (count > 0) {
+                    var currentText = button.find('span:not(.dashicons)').text() || button.text();
+                    if (currentText.indexOf('Another') === -1) {
+                        button.find('span:not(.dashicons)').text('Add Another Time Slot');
+                    }
+                    button.attr('aria-expanded', 'true');
+                } else {
+                    button.find('span:not(.dashicons)').text('Add Time Slot');
+                    button.attr('aria-expanded', 'false');
+                }
+                
+                // Update container state for CSS targeting
+                container.attr('data-slot-count', count);
+                
+                // Announce change to screen readers
+                if (count > 0) {
+                    this.announceToScreenReader(count + ' time slot' + (count === 1 ? '' : 's') + ' configured');
+                }
+            } catch (error) {
+                console.warn('FP Esperienze: Error updating slot count feedback:', error);
+            }
+        },
+
+        /**
+         * Enhanced override count feedback with better UX
          */
         updateOverrideCountFeedback: function() {
-            var container = $('#fp-overrides-container .fp-overrides-container-clean');
-            var count = container.find('.fp-override-card-clean').length;
-            var button = $('#fp-add-override');
-            
-            if (count > 0) {
-                var currentText = button.find('span:not(.dashicons)').text() || button.text();
-                if (currentText.indexOf('Another') === -1) {
-                    button.find('span:not(.dashicons)').text('Add Another Date Override');
+            try {
+                var container = $('#fp-overrides-container .fp-overrides-container-clean');
+                var count = container.find('.fp-override-card-clean').length;
+                var button = $('#fp-add-override');
+                
+                if (count > 0) {
+                    var currentText = button.find('span:not(.dashicons)').text() || button.text();
+                    if (currentText.indexOf('Another') === -1) {
+                        button.find('span:not(.dashicons)').text('Add Another Date Override');
+                    }
+                    button.attr('aria-expanded', 'true');
+                } else {
+                    button.find('span:not(.dashicons)').text('Add Date Override');
+                    button.attr('aria-expanded', 'false');
                 }
+                
+                // Update container state
+                container.attr('data-override-count', count);
+                
+                // Announce change to screen readers
+                if (count > 0) {
+                    this.announceToScreenReader(count + ' date override' + (count === 1 ? '' : 's') + ' configured');
+                }
+            } catch (error) {
+                console.warn('FP Esperienze: Error updating override count feedback:', error);
+            }
+        },
+
+        /**
+         * Enhanced form validation with better user feedback
+         */
+        validateTimeSlotInputsEnhanced: function($card) {
+            try {
+                var isValid = true;
+                var errors = [];
+                
+                // Clear previous error states
+                $card.find('.fp-error-field').removeClass('fp-error-field');
+                $card.find('.fp-field-error-message').remove();
+                
+                // Validate time input
+                var $timeInput = $card.find('input[type="time"]');
+                if ($timeInput.length && !$timeInput.val()) {
+                    errors.push('Start time is required');
+                    $timeInput.addClass('fp-error-field');
+                    this.showFieldError($timeInput, 'Please select a start time');
+                    isValid = false;
+                }
+                
+                // Validate at least one day selected
+                var checkedDays = $card.find('.fp-day-pill-clean input:checked').length;
+                if (checkedDays === 0) {
+                    errors.push('Select at least one day of the week');
+                    $card.find('.fp-days-pills-clean').addClass('fp-error-field');
+                    this.showFieldError($card.find('.fp-days-pills-clean'), 'Please select at least one day');
+                    isValid = false;
+                }
+                
+                // Show consolidated error feedback
+                if (!isValid) {
+                    this.showUserFeedback('Please fix the validation errors in the time slot configuration', 'error');
+                    $card.addClass('fp-error-shake');
+                    setTimeout(function() {
+                        $card.removeClass('fp-error-shake');
+                    }, 400);
+                } else {
+                    $card.addClass('fp-success-feedback');
+                    setTimeout(function() {
+                        $card.removeClass('fp-success-feedback');
+                    }, 600);
+                }
+                
+                return isValid;
+            } catch (error) {
+                console.error('FP Esperienze: Error validating time slot inputs:', error);
+                return false;
+            }
+        },
+
+        /**
+         * Show field-specific error messages
+         */
+        showFieldError: function($field, message) {
+            try {
+                var $errorMsg = $('<div class="fp-field-error-message" style="color: #dc3545; font-size: 12px; margin-top: 4px;">' + message + '</div>');
+                $field.after($errorMsg);
+                
+                // Auto-remove on focus/change
+                $field.one('focus change', function() {
+                    $errorMsg.fadeOut(200, function() {
+                        $errorMsg.remove();
+                    });
+                    $field.removeClass('fp-error-field');
+                });
+            } catch (error) {
+                console.warn('FP Esperienze: Error showing field error:', error);
             }
         },
         
@@ -1892,19 +2174,272 @@
         },
         
         /**
-         * Handle override closed checkbox - CLEAN VERSION
+         * Performance monitoring and optimization
+         */
+        initPerformanceMonitoring: function() {
+            try {
+                // Track performance metrics
+                this.performanceMetrics = {
+                    startTime: performance.now(),
+                    interactions: 0,
+                    errors: 0
+                };
+                
+                // Monitor frame rate for smooth animations
+                this.monitorFrameRate();
+                
+                // Optimize heavy operations
+                this.debouncedValidation = this.debounce(this.validateTimeSlotInputsEnhanced, 300);
+                this.debouncedSummaryUpdate = this.debounce(this.updateSummaryTable, 200);
+                
+                console.log('FP Esperienze: Performance monitoring initialized');
+            } catch (error) {
+                console.warn('FP Esperienze: Performance monitoring setup failed:', error);
+            }
+        },
+
+        /**
+         * Monitor frame rate for smooth animations
+         */
+        monitorFrameRate: function() {
+            let frameCount = 0;
+            let lastTime = performance.now();
+            
+            const checkFrameRate = (currentTime) => {
+                frameCount++;
+                
+                if (currentTime - lastTime >= 1000) {
+                    const fps = Math.round((frameCount * 1000) / (currentTime - lastTime));
+                    
+                    // Adjust animation complexity based on performance
+                    if (fps < 30) {
+                        document.body.classList.add('fp-reduced-animations');
+                        console.warn('FP Esperienze: Low frame rate detected, reducing animations');
+                    } else if (fps > 50) {
+                        document.body.classList.remove('fp-reduced-animations');
+                    }
+                    
+                    frameCount = 0;
+                    lastTime = currentTime;
+                }
+                
+                if (this.performanceMetrics) {
+                    requestAnimationFrame(checkFrameRate);
+                }
+            };
+            
+            requestAnimationFrame(checkFrameRate);
+        },
+
+        /**
+         * Enhanced error recovery system
+         */
+        initErrorRecovery: function() {
+            try {
+                // Global error handler for uncaught exceptions
+                window.addEventListener('error', (event) => {
+                    if (event.filename && event.filename.includes('admin.js')) {
+                        console.error('FP Esperienze: Uncaught error:', event.error);
+                        this.handleCriticalError('Unexpected error occurred', event.error);
+                    }
+                });
+                
+                // Promise rejection handler
+                window.addEventListener('unhandledrejection', (event) => {
+                    console.error('FP Esperienze: Unhandled promise rejection:', event.reason);
+                    this.handleCriticalError('Promise rejection', event.reason);
+                });
+                
+                // Set up periodic health checks
+                this.startHealthChecks();
+                
+                console.log('FP Esperienze: Error recovery system initialized');
+            } catch (error) {
+                console.warn('FP Esperienze: Error recovery setup failed:', error);
+            }
+        },
+
+        /**
+         * Handle critical errors with recovery options
+         */
+        handleCriticalError: function(message, error) {
+            try {
+                this.performanceMetrics.errors++;
+                
+                // Show user-friendly error with recovery options
+                this.showUserFeedback(
+                    'A system error occurred. The interface will attempt to recover automatically.',
+                    'error',
+                    5000
+                );
+                
+                // Attempt automatic recovery
+                setTimeout(() => {
+                    this.attemptRecovery();
+                }, 1000);
+                
+                // Log detailed error information
+                console.error('FP Esperienze Critical Error:', {
+                    message: message,
+                    error: error,
+                    timestamp: new Date().toISOString(),
+                    userAgent: navigator.userAgent,
+                    url: window.location.href
+                });
+                
+            } catch (recoveryError) {
+                console.error('FP Esperienze: Error recovery failed:', recoveryError);
+                // Fallback: show basic alert
+                alert('A critical error occurred. Please refresh the page.');
+            }
+        },
+
+        /**
+         * Attempt to recover from errors
+         */
+        attemptRecovery: function() {
+            try {
+                console.log('FP Esperienze: Attempting automatic recovery...');
+                
+                // Re-validate container existence
+                this.validateContainers();
+                
+                // Re-bind critical event handlers
+                this.rebindCriticalEvents();
+                
+                // Clear any stuck loading states
+                $('.fp-loading').removeClass('fp-loading');
+                
+                // Announce recovery to user
+                this.showUserFeedback('System recovered successfully. You can continue working.', 'success');
+                
+                console.log('FP Esperienze: Recovery completed successfully');
+                
+            } catch (error) {
+                console.error('FP Esperienze: Recovery attempt failed:', error);
+                this.showUserFeedback('Unable to recover automatically. Please refresh the page.', 'warning', 8000);
+            }
+        },
+
+        /**
+         * Re-bind critical event handlers after recovery
+         */
+        rebindCriticalEvents: function() {
+            try {
+                // Unbind all existing clean handlers
+                $(document).off('.fp-clean');
+                
+                // Re-initialize the modern schedule builder
+                this.initModernScheduleBuilder();
+                
+                console.log('FP Esperienze: Critical events re-bound successfully');
+            } catch (error) {
+                console.error('FP Esperienze: Failed to re-bind critical events:', error);
+                throw error;
+            }
+        },
+
+        /**
+         * Periodic health checks
+         */
+        startHealthChecks: function() {
+            setInterval(() => {
+                try {
+                    this.performHealthCheck();
+                } catch (error) {
+                    console.warn('FP Esperienze: Health check failed:', error);
+                }
+            }, 30000); // Check every 30 seconds
+        },
+
+        /**
+         * Perform system health check
+         */
+        performHealthCheck: function() {
+            // Check if critical containers exist
+            const criticalElements = [
+                '#fp-time-slots-container',
+                '#fp-add-time-slot',
+                '#fp-add-override'
+            ];
+            
+            let missingElements = [];
+            criticalElements.forEach(selector => {
+                if (!$(selector).length) {
+                    missingElements.push(selector);
+                }
+            });
+            
+            if (missingElements.length > 0) {
+                console.warn('FP Esperienze: Missing critical elements:', missingElements);
+                // Don't auto-recover from missing DOM elements as this might be expected
+            }
+            
+            // Check for memory leaks (basic check)
+            if (this.performanceMetrics.interactions > 1000) {
+                console.warn('FP Esperienze: High interaction count, possible memory leak');
+            }
+        },
+
+        /**
+         * Handle override closed checkbox - ENHANCED VERSION
          */
         handleOverrideClosedClean: function($checkbox) {
-            var $card = $checkbox.closest('.fp-override-card-clean');
-            var $fields = $card.find('.fp-override-fields-clean');
-            var isChecked = $checkbox.is(':checked');
-            
-            if (isChecked) {
-                $card.addClass('is-closed');
-                $fields.addClass('is-closed');
-            } else {
-                $card.removeClass('is-closed');
-                $fields.removeClass('is-closed');
+            try {
+                var $card = $checkbox.closest('.fp-override-card-clean');
+                var $fields = $card.find('.fp-override-fields-clean');
+                var isChecked = $checkbox.is(':checked');
+                
+                if (isChecked) {
+                    $card.addClass('is-closed');
+                    $fields.addClass('is-closed');
+                    this.announceToScreenReader('Date marked as closed');
+                } else {
+                    $card.removeClass('is-closed');
+                    $fields.removeClass('is-closed');
+                    this.announceToScreenReader('Date reopened for bookings');
+                }
+                
+                // Track the interaction
+                if (this.performanceMetrics) {
+                    this.performanceMetrics.interactions++;
+                }
+                
+            } catch (error) {
+                console.error('FP Esperienze: Error handling override closed:', error);
+                this.showUserFeedback('Error updating closed status. Please try again.', 'error');
+            }
+        },
+
+        /**
+         * Initialize enhanced features on page load
+         */
+        initializeEnhancements: function() {
+            try {
+                // Initialize performance monitoring
+                this.initPerformanceMonitoring();
+                
+                // Initialize error recovery
+                this.initErrorRecovery();
+                
+                // Add version info for debugging
+                window.FPEsperienzeVersion = {
+                    version: '2.0.0-enhanced',
+                    features: [
+                        'enhanced-accessibility',
+                        'performance-monitoring', 
+                        'error-recovery',
+                        'visual-feedback',
+                        'smooth-animations'
+                    ],
+                    initialized: new Date().toISOString()
+                };
+                
+                console.log('FP Esperienze: Enhanced features initialized', window.FPEsperienzeVersion);
+                
+            } catch (error) {
+                console.error('FP Esperienze: Failed to initialize enhancements:', error);
+                // Continue with basic functionality even if enhancements fail
             }
         }
     };
