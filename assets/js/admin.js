@@ -663,45 +663,118 @@
             
             console.log('FP Esperienze: Initializing clean schedule builder');
             
-            // Time slot management - clean version
-            $(document).on('click', '#fp-add-time-slot, #fp-add-time-slot-empty', function(e) {
+            // Unbind any existing handlers to prevent conflicts
+            $(document).off('click.fp-clean', '#fp-add-time-slot, #fp-add-time-slot-empty');
+            $(document).off('click.fp-clean', '.fp-remove-time-slot-clean');
+            $(document).off('change.fp-clean', '.fp-show-overrides-toggle-clean');
+            $(document).off('click.fp-clean', '#fp-add-override');
+            $(document).off('click.fp-clean', '.fp-override-remove-clean');
+            $(document).off('change.fp-clean', '.fp-override-checkbox-clean input[type="checkbox"]');
+            
+            // Time slot management - clean version with namespace
+            $(document).on('click.fp-clean', '#fp-add-time-slot, #fp-add-time-slot-empty', function(e) {
                 e.preventDefault();
+                e.stopPropagation();
                 console.log('FP Esperienze: Add time slot clicked');
-                self.addTimeSlotCardClean();
+                try {
+                    self.addTimeSlotCardClean();
+                } catch (error) {
+                    console.error('FP Esperienze: Error adding time slot:', error);
+                }
             });
             
-            $(document).on('click', '.fp-remove-time-slot-clean', function(e) {
+            $(document).on('click.fp-clean', '.fp-remove-time-slot-clean', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
                 console.log('FP Esperienze: Remove time slot clicked');
-                self.removeTimeSlotCardClean($(this));
+                try {
+                    self.removeTimeSlotCardClean($(this));
+                } catch (error) {
+                    console.error('FP Esperienze: Error removing time slot:', error);
+                }
             });
             
-            // Override toggle - clean version
-            $(document).on('change', '.fp-show-overrides-toggle-clean', function() {
+            // Override toggle - clean version with namespace
+            $(document).on('change.fp-clean', '.fp-show-overrides-toggle-clean', function() {
                 console.log('FP Esperienze: Toggle overrides');
-                self.toggleTimeSlotOverridesClean($(this));
+                try {
+                    self.toggleTimeSlotOverridesClean($(this));
+                } catch (error) {
+                    console.error('FP Esperienze: Error toggling overrides:', error);
+                }
             });
             
-            // Override management - clean version
-            $(document).on('click', '#fp-add-override', function(e) {
+            // Override management - clean version with namespace
+            $(document).on('click.fp-clean', '#fp-add-override', function(e) {
                 e.preventDefault();
+                e.stopPropagation();
                 console.log('FP Esperienze: Add override clicked');
-                self.addOverrideCardClean();
+                try {
+                    self.addOverrideCardClean();
+                } catch (error) {
+                    console.error('FP Esperienze: Error adding override:', error);
+                }
             });
             
-            $(document).on('click', '.fp-override-remove-clean', function(e) {
+            $(document).on('click.fp-clean', '.fp-override-remove-clean', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
                 console.log('FP Esperienze: Remove override clicked');
-                self.removeOverrideCardClean($(this));
+                try {
+                    self.removeOverrideCardClean($(this));
+                } catch (error) {
+                    console.error('FP Esperienze: Error removing override:', error);
+                }
             });
             
-            // Override closed checkbox - clean version
-            $(document).on('change', '.fp-override-checkbox-clean input[type="checkbox"]', function() {
+            // Override closed checkbox - clean version with namespace
+            $(document).on('change.fp-clean', '.fp-override-checkbox-clean input[type="checkbox"]', function() {
                 console.log('FP Esperienze: Override closed checkbox changed');
-                self.handleOverrideClosedClean($(this));
+                try {
+                    self.handleOverrideClosedClean($(this));
+                } catch (error) {
+                    console.error('FP Esperienze: Error handling override closed:', error);
+                }
             });
+            
+            // Validate containers on initialization
+            this.validateContainers();
+        },
+
+        /**
+         * Validate containers are present - ENHANCED ERROR CHECKING
+         */
+        validateContainers: function() {
+            var timeSlotsContainer = $('#fp-time-slots-container');
+            var overridesContainer = $('#fp-overrides-container .fp-overrides-container-clean');
+            
+            if (!timeSlotsContainer.length) {
+                console.warn('FP Esperienze: Time slots container #fp-time-slots-container not found');
+            } else {
+                console.log('FP Esperienze: Time slots container validated');
+            }
+            
+            if (!overridesContainer.length) {
+                console.warn('FP Esperienze: Overrides container .fp-overrides-container-clean not found');
+            } else {
+                console.log('FP Esperienze: Overrides container validated');
+            }
+            
+            // Check if buttons are present
+            var addTimeSlotBtn = $('#fp-add-time-slot');
+            var addOverrideBtn = $('#fp-add-override');
+            
+            if (!addTimeSlotBtn.length) {
+                console.warn('FP Esperienze: Add time slot button #fp-add-time-slot not found');
+            } else {
+                console.log('FP Esperienze: Add time slot button validated');
+            }
+            
+            if (!addOverrideBtn.length) {
+                console.warn('FP Esperienze: Add override button #fp-add-override not found');
+            } else {
+                console.log('FP Esperienze: Add override button validated');
+            }
         },
 
         /**
@@ -1348,111 +1421,142 @@
         // ========================================
         
         /**
-         * Add time slot card - CLEAN VERSION
+         * Add time slot card - CLEAN VERSION - ENHANCED
          */
         addTimeSlotCardClean: function() {
+            console.log('FP Esperienze: Starting to add time slot card');
+            
             var container = $('#fp-time-slots-container');
             if (!container.length) {
-                console.warn('FP Esperienze: Time slots container not found');
+                console.error('FP Esperienze: Time slots container not found');
+                alert('Error: Time slots container not found. Please refresh the page.');
                 return;
             }
             
-            // Hide empty state if exists
-            container.find('.fp-empty-slots-message').hide();
-            
-            var index = container.find('.fp-time-slot-card-clean').length;
-            var cardHtml = this.createTimeSlotCardHTMLClean(index);
-            container.append(cardHtml);
-            
-            // Focus on the time input
-            var $newCard = container.find('.fp-time-slot-card-clean').last();
-            $newCard.find('input[type="time"]').focus();
-            
-            console.log('FP Esperienze: Added time slot card', index);
+            try {
+                // Hide empty state if exists
+                container.find('.fp-empty-slots-message').hide();
+                
+                var index = container.find('.fp-time-slot-card-clean').length;
+                console.log('FP Esperienze: Creating time slot card with index:', index);
+                
+                var cardHtml = this.createTimeSlotCardHTMLClean(index);
+                if (!cardHtml) {
+                    console.error('FP Esperienze: Failed to create card HTML');
+                    return;
+                }
+                
+                // Add the card with animation
+                var $newCard = $(cardHtml);
+                $newCard.css('opacity', '0');
+                container.append($newCard);
+                
+                // Animate in
+                $newCard.animate({opacity: 1}, 300);
+                
+                // Focus on the time input
+                setTimeout(function() {
+                    $newCard.find('input[type="time"]').focus();
+                }, 350);
+                
+                console.log('FP Esperienze: Successfully added time slot card', index);
+                
+                // Update visual feedback
+                this.updateSlotCountFeedback();
+                
+            } catch (error) {
+                console.error('FP Esperienze: Error in addTimeSlotCardClean:', error);
+                alert('Error adding time slot. Please try again.');
+            }
         },
         
         /**
-         * Create time slot card HTML - CLEAN VERSION
+         * Create time slot card HTML - CLEAN VERSION - ENHANCED
          */
         createTimeSlotCardHTMLClean: function(index) {
-            var days = {
-                '1': 'Mon', '2': 'Tue', '3': 'Wed', '4': 'Thu', 
-                '5': 'Fri', '6': 'Sat', '0': 'Sun'
-            };
-            
-            var daysHtml = '';
-            for (var dayValue in days) {
-                daysHtml += '<div class="fp-day-pill-clean">' +
-                    '<input type="checkbox" id="day-' + index + '-' + dayValue + '" name="builder_slots[' + index + '][days][]" value="' + dayValue + '">' +
-                    '<label for="day-' + index + '-' + dayValue + '">' + days[dayValue] + '</label>' +
-                '</div>';
-            }
-            
-            return '<div class="fp-time-slot-card-clean" data-index="' + index + '">' +
-                '<div class="fp-time-slot-content-clean">' +
-                    '<div class="fp-time-slot-header-clean">' +
-                        '<div class="fp-time-field-clean">' +
-                            '<label for="time-' + index + '">' +
-                                '<span class="dashicons dashicons-clock"></span>' +
-                                'Start Time <span class="required">*</span>' +
-                            '</label>' +
-                            '<input type="time" id="time-' + index + '" name="builder_slots[' + index + '][start_time]" required>' +
+            try {
+                var days = {
+                    '1': 'Mon', '2': 'Tue', '3': 'Wed', '4': 'Thu', 
+                    '5': 'Fri', '6': 'Sat', '0': 'Sun'
+                };
+                
+                var daysHtml = '';
+                for (var dayValue in days) {
+                    daysHtml += '<div class="fp-day-pill-clean">' +
+                        '<input type="checkbox" id="day-' + index + '-' + dayValue + '" name="builder_slots[' + index + '][days][]" value="' + dayValue + '">' +
+                        '<label for="day-' + index + '-' + dayValue + '">' + days[dayValue] + '</label>' +
+                    '</div>';
+                }
+                
+                return '<div class="fp-time-slot-card-clean" data-index="' + index + '">' +
+                    '<div class="fp-time-slot-content-clean">' +
+                        '<div class="fp-time-slot-header-clean">' +
+                            '<div class="fp-time-field-clean">' +
+                                '<label for="time-' + index + '">' +
+                                    '<span class="dashicons dashicons-clock"></span>' +
+                                    'Start Time <span class="required">*</span>' +
+                                '</label>' +
+                                '<input type="time" id="time-' + index + '" name="builder_slots[' + index + '][start_time]" required>' +
+                            '</div>' +
+                            '<div class="fp-days-field-clean">' +
+                                '<label>' +
+                                    '<span class="dashicons dashicons-calendar-alt"></span>' +
+                                    'Days of Week <span class="required">*</span>' +
+                                '</label>' +
+                                '<div class="fp-days-pills-clean">' + daysHtml + '</div>' +
+                            '</div>' +
+                            '<div class="fp-slot-actions-clean">' +
+                                '<button type="button" class="fp-remove-time-slot-clean button">' +
+                                    '<span class="dashicons dashicons-trash"></span>' +
+                                    'Remove' +
+                                '</button>' +
+                            '</div>' +
                         '</div>' +
-                        '<div class="fp-days-field-clean">' +
+                        '<div class="fp-override-toggle-clean">' +
                             '<label>' +
-                                '<span class="dashicons dashicons-calendar-alt"></span>' +
-                                'Days of Week <span class="required">*</span>' +
+                                '<input type="checkbox" class="fp-show-overrides-toggle-clean">' +
+                                '<span class="dashicons dashicons-admin-tools"></span>' +
+                                'Advanced Settings' +
                             '</label>' +
-                            '<div class="fp-days-pills-clean">' + daysHtml + '</div>' +
+                            '<span class="description">Override default values for this specific time slot</span>' +
+                            '<input type="hidden" name="builder_slots[' + index + '][advanced_enabled]" value="0" class="fp-advanced-enabled-clean">' +
                         '</div>' +
-                        '<div class="fp-slot-actions-clean">' +
-                            '<button type="button" class="fp-remove-time-slot-clean button">' +
-                                '<span class="dashicons dashicons-trash"></span>' +
-                                'Remove' +
-                            '</button>' +
-                        '</div>' +
-                    '</div>' +
-                    '<div class="fp-override-toggle-clean">' +
-                        '<label>' +
-                            '<input type="checkbox" class="fp-show-overrides-toggle-clean">' +
-                            '<span class="dashicons dashicons-admin-tools"></span>' +
-                            'Advanced Settings' +
-                        '</label>' +
-                        '<span class="description">Override default values for this specific time slot</span>' +
-                        '<input type="hidden" name="builder_slots[' + index + '][advanced_enabled]" value="0" class="fp-advanced-enabled-clean">' +
-                    '</div>' +
-                    '<div class="fp-overrides-section-clean" style="display: none;">' +
-                        '<div class="fp-overrides-grid-clean">' +
-                            '<div class="fp-override-field-clean">' +
-                                '<label>Duration (minutes)</label>' +
-                                '<input type="number" name="builder_slots[' + index + '][duration_min]" min="1">' +
-                            '</div>' +
-                            '<div class="fp-override-field-clean">' +
-                                '<label>Capacity</label>' +
-                                '<input type="number" name="builder_slots[' + index + '][capacity]" min="1">' +
-                            '</div>' +
-                            '<div class="fp-override-field-clean">' +
-                                '<label>Language</label>' +
-                                '<input type="text" name="builder_slots[' + index + '][lang]" maxlength="10">' +
-                            '</div>' +
-                            '<div class="fp-override-field-clean">' +
-                                '<label>Meeting Point</label>' +
-                                '<select name="builder_slots[' + index + '][meeting_point_id]">' +
-                                    '<option value="">Use default</option>' +
-                                '</select>' +
-                            '</div>' +
-                            '<div class="fp-override-field-clean">' +
-                                '<label>Adult Price</label>' +
-                                '<input type="number" name="builder_slots[' + index + '][price_adult]" min="0" step="0.01">' +
-                            '</div>' +
-                            '<div class="fp-override-field-clean">' +
-                                '<label>Child Price</label>' +
-                                '<input type="number" name="builder_slots[' + index + '][price_child]" min="0" step="0.01">' +
+                        '<div class="fp-overrides-section-clean" style="display: none;">' +
+                            '<div class="fp-overrides-grid-clean">' +
+                                '<div class="fp-override-field-clean">' +
+                                    '<label>Duration (minutes)</label>' +
+                                    '<input type="number" name="builder_slots[' + index + '][duration_min]" min="1" placeholder="Default: 60">' +
+                                '</div>' +
+                                '<div class="fp-override-field-clean">' +
+                                    '<label>Capacity</label>' +
+                                    '<input type="number" name="builder_slots[' + index + '][capacity]" min="1" placeholder="Default: 10">' +
+                                '</div>' +
+                                '<div class="fp-override-field-clean">' +
+                                    '<label>Language</label>' +
+                                    '<input type="text" name="builder_slots[' + index + '][lang]" maxlength="10" placeholder="Default: en">' +
+                                '</div>' +
+                                '<div class="fp-override-field-clean">' +
+                                    '<label>Meeting Point</label>' +
+                                    '<select name="builder_slots[' + index + '][meeting_point_id]">' +
+                                        '<option value="">Use default</option>' +
+                                    '</select>' +
+                                '</div>' +
+                                '<div class="fp-override-field-clean">' +
+                                    '<label>Adult Price</label>' +
+                                    '<input type="number" name="builder_slots[' + index + '][price_adult]" min="0" step="0.01" placeholder="Default: Product price">' +
+                                '</div>' +
+                                '<div class="fp-override-field-clean">' +
+                                    '<label>Child Price</label>' +
+                                    '<input type="number" name="builder_slots[' + index + '][price_child]" min="0" step="0.01" placeholder="Default: Product price">' +
+                                '</div>' +
                             '</div>' +
                         '</div>' +
                     '</div>' +
-                '</div>' +
-            '</div>';
+                '</div>';
+            } catch (error) {
+                console.error('FP Esperienze: Error creating time slot card HTML:', error);
+                return null;
+            }
         },
         
         /**
@@ -1461,6 +1565,7 @@
         removeTimeSlotCardClean: function($button) {
             var $card = $button.closest('.fp-time-slot-card-clean');
             var container = $('#fp-time-slots-container');
+            var self = this;
             
             $card.fadeOut(300, function() {
                 $card.remove();
@@ -1471,6 +1576,13 @@
                         '<p>No time slots configured yet. Add your first time slot below.</p>' +
                     '</div>';
                     container.prepend(emptyMessage);
+                    
+                    // Reset button text
+                    var button = $('#fp-add-time-slot');
+                    button.find('span:not(.dashicons)').text('Add Time Slot');
+                } else {
+                    // Update button text if only one left
+                    self.updateSlotCountFeedback();
                 }
             });
         },
@@ -1493,75 +1605,138 @@
         },
         
         /**
-         * Add override card - CLEAN VERSION
+         * Add override card - CLEAN VERSION - ENHANCED
          */
         addOverrideCardClean: function() {
+            console.log('FP Esperienze: Starting to add override card');
+            
             var container = $('#fp-overrides-container .fp-overrides-container-clean');
             if (!container.length) {
-                console.warn('FP Esperienze: Override container not found');
+                console.error('FP Esperienze: Override container not found');
+                alert('Error: Override container not found. Please refresh the page.');
                 return;
             }
             
-            // Hide empty state if exists
-            container.find('.fp-overrides-empty-clean').hide();
+            try {
+                // Hide empty state if exists
+                container.find('.fp-overrides-empty-clean').hide();
+                
+                var index = container.find('.fp-override-card-clean').length;
+                console.log('FP Esperienze: Creating override card with index:', index);
+                
+                var cardHtml = this.createOverrideCardHTMLClean(index);
+                if (!cardHtml) {
+                    console.error('FP Esperienze: Failed to create override card HTML');
+                    return;
+                }
+                
+                // Add the card with animation
+                var $newCard = $(cardHtml);
+                $newCard.css('opacity', '0');
+                container.append($newCard);
+                
+                // Animate in
+                $newCard.animate({opacity: 1}, 300);
+                
+                // Focus on the date input
+                setTimeout(function() {
+                    $newCard.find('input[type="date"]').focus();
+                }, 350);
+                
+                console.log('FP Esperienze: Successfully added override card', index);
+                
+                // Update visual feedback
+                this.updateOverrideCountFeedback();
+                
+            } catch (error) {
+                console.error('FP Esperienze: Error in addOverrideCardClean:', error);
+                alert('Error adding override. Please try again.');
+            }
+        },
+
+        /**
+         * Update slot count feedback - VISUAL ENHANCEMENT
+         */
+        updateSlotCountFeedback: function() {
+            var container = $('#fp-time-slots-container');
+            var count = container.find('.fp-time-slot-card-clean').length;
+            var button = $('#fp-add-time-slot');
             
-            var index = container.find('.fp-override-card-clean').length;
-            var cardHtml = this.createOverrideCardHTMLClean(index);
-            container.append(cardHtml);
+            if (count > 0) {
+                var currentText = button.find('span:not(.dashicons)').text() || button.text();
+                if (currentText.indexOf('Another') === -1) {
+                    button.find('span:not(.dashicons)').text('Add Another Time Slot');
+                }
+            }
+        },
+
+        /**
+         * Update override count feedback - VISUAL ENHANCEMENT
+         */
+        updateOverrideCountFeedback: function() {
+            var container = $('#fp-overrides-container .fp-overrides-container-clean');
+            var count = container.find('.fp-override-card-clean').length;
+            var button = $('#fp-add-override');
             
-            // Focus on the date input
-            var $newCard = container.find('.fp-override-card-clean').last();
-            $newCard.find('input[type="date"]').focus();
-            
-            console.log('FP Esperienze: Added override card', index);
+            if (count > 0) {
+                var currentText = button.find('span:not(.dashicons)').text() || button.text();
+                if (currentText.indexOf('Another') === -1) {
+                    button.find('span:not(.dashicons)').text('Add Another Date Override');
+                }
+            }
         },
         
         /**
-         * Create override card HTML - CLEAN VERSION
+         * Create override card HTML - CLEAN VERSION - ENHANCED
          */
         createOverrideCardHTMLClean: function(index) {
-            return '<div class="fp-override-card-clean" data-index="' + index + '">' +
-                '<input type="hidden" name="overrides[' + index + '][id]" value="">' +
-                '<div class="fp-override-header-clean">' +
-                    '<div class="fp-override-date-field-clean">' +
-                        '<label for="override-date-' + index + '">' +
-                            '<span class="dashicons dashicons-calendar-alt"></span>' +
-                            'Date <span class="required">*</span>' +
-                        '</label>' +
-                        '<input type="date" id="override-date-' + index + '" name="overrides[' + index + '][date]" required>' +
-                    '</div>' +
-                    '<div class="fp-override-actions-clean">' +
-                        '<div class="fp-override-checkbox-clean">' +
-                            '<input type="checkbox" name="overrides[' + index + '][is_closed]" value="1" id="override-closed-' + index + '">' +
-                            '<label for="override-closed-' + index + '">Closed</label>' +
+            try {
+                return '<div class="fp-override-card-clean" data-index="' + index + '">' +
+                    '<input type="hidden" name="overrides[' + index + '][id]" value="">' +
+                    '<div class="fp-override-header-clean">' +
+                        '<div class="fp-override-date-field-clean">' +
+                            '<label for="override-date-' + index + '">' +
+                                '<span class="dashicons dashicons-calendar-alt"></span>' +
+                                'Date <span class="required">*</span>' +
+                            '</label>' +
+                            '<input type="date" id="override-date-' + index + '" name="overrides[' + index + '][date]" required>' +
                         '</div>' +
-                        '<button type="button" class="fp-override-remove-clean button">' +
-                            '<span class="dashicons dashicons-trash"></span>' +
-                            'Remove' +
-                        '</button>' +
-                    '</div>' +
-                '</div>' +
-                '<div class="fp-override-fields-clean">' +
-                    '<div class="fp-override-grid-clean">' +
-                        '<div class="fp-override-field-clean">' +
-                            '<label for="override-capacity-' + index + '">Capacity Override</label>' +
-                            '<input type="number" id="override-capacity-' + index + '" name="overrides[' + index + '][capacity_override]" min="0" step="1" placeholder="Leave empty = use default">' +
-                        '</div>' +
-                        '<div class="fp-override-field-clean">' +
-                            '<label for="override-reason-' + index + '">Reason/Note</label>' +
-                            '<input type="text" id="override-reason-' + index + '" name="overrides[' + index + '][reason]" placeholder="Optional note (e.g., Holiday, Maintenance)">' +
-                        '</div>' +
-                        '<div class="fp-override-field-clean">' +
-                            '<label for="override-adult-price-' + index + '">Adult Price</label>' +
-                            '<input type="number" id="override-adult-price-' + index + '" name="overrides[' + index + '][price_adult]" min="0" step="0.01" placeholder="Leave empty = use default">' +
-                        '</div>' +
-                        '<div class="fp-override-field-clean">' +
-                            '<label for="override-child-price-' + index + '">Child Price</label>' +
-                            '<input type="number" id="override-child-price-' + index + '" name="overrides[' + index + '][price_child]" min="0" step="0.01" placeholder="Leave empty = use default">' +
+                        '<div class="fp-override-actions-clean">' +
+                            '<div class="fp-override-checkbox-clean">' +
+                                '<input type="checkbox" name="overrides[' + index + '][is_closed]" value="1" id="override-closed-' + index + '">' +
+                                '<label for="override-closed-' + index + '">Closed</label>' +
+                            '</div>' +
+                            '<button type="button" class="fp-override-remove-clean button">' +
+                                '<span class="dashicons dashicons-trash"></span>' +
+                                'Remove' +
+                            '</button>' +
                         '</div>' +
                     '</div>' +
-                '</div>' +
-            '</div>';
+                    '<div class="fp-override-fields-clean">' +
+                        '<div class="fp-override-grid-clean">' +
+                            '<div class="fp-override-field-clean">' +
+                                '<label for="override-capacity-' + index + '">Capacity Override</label>' +
+                                '<input type="number" id="override-capacity-' + index + '" name="overrides[' + index + '][capacity_override]" min="0" step="1" placeholder="Leave empty = use default">' +
+                            '</div>' +
+                            '<div class="fp-override-field-clean">' +
+                                '<label for="override-reason-' + index + '">Reason/Note</label>' +
+                                '<input type="text" id="override-reason-' + index + '" name="overrides[' + index + '][reason]" placeholder="Optional note (e.g., Holiday, Maintenance)">' +
+                            '</div>' +
+                            '<div class="fp-override-field-clean">' +
+                                '<label for="override-adult-price-' + index + '">Adult Price</label>' +
+                                '<input type="number" id="override-adult-price-' + index + '" name="overrides[' + index + '][price_adult]" min="0" step="0.01" placeholder="Leave empty = use default">' +
+                            '</div>' +
+                            '<div class="fp-override-field-clean">' +
+                                '<label for="override-child-price-' + index + '">Child Price</label>' +
+                                '<input type="number" id="override-child-price-' + index + '" name="overrides[' + index + '][price_child]" min="0" step="0.01" placeholder="Leave empty = use default">' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>';
+            } catch (error) {
+                console.error('FP Esperienze: Error creating override card HTML:', error);
+                return null;
+            }
         },
         
         /**
@@ -1570,6 +1745,7 @@
         removeOverrideCardClean: function($button) {
             var $card = $button.closest('.fp-override-card-clean');
             var container = $('#fp-overrides-container .fp-overrides-container-clean');
+            var self = this;
             
             $card.fadeOut(300, function() {
                 $card.remove();
@@ -1580,6 +1756,13 @@
                         '<p>No date overrides configured. Add exceptions below for specific dates when you need to close, change capacity, or modify pricing.</p>' +
                     '</div>';
                     container.prepend(emptyMessage);
+                    
+                    // Reset button text
+                    var button = $('#fp-add-override');
+                    button.find('span:not(.dashicons)').text('Add Date Override');
+                } else {
+                    // Update button text if only one left
+                    self.updateOverrideCountFeedback();
                 }
             });
         },

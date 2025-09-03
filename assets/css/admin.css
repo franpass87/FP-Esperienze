@@ -1963,6 +1963,19 @@
     box-shadow: 0 6px 12px rgba(34, 113, 177, 0.3);
 }
 
+#fp-add-time-slot:focus,
+.fp-add-time-slot:focus {
+    outline: 2px solid #2271b1;
+    outline-offset: 2px;
+    background: linear-gradient(135deg, #135e96 0%, #0f4c75 100%);
+}
+
+#fp-add-time-slot:active,
+.fp-add-time-slot:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(34, 113, 177, 0.4);
+}
+
 #fp-add-override,
 .fp-add-override {
     background: linear-gradient(135deg, #d63638 0%, #b32d2e 100%);
@@ -1989,6 +2002,19 @@
     background: linear-gradient(135deg, #b32d2e 0%, #941a1c 100%);
     transform: translateY(-2px);
     box-shadow: 0 6px 12px rgba(214, 54, 56, 0.3);
+}
+
+#fp-add-override:focus,
+.fp-add-override:focus {
+    outline: 2px solid #d63638;
+    outline-offset: 2px;
+    background: linear-gradient(135deg, #b32d2e 0%, #941a1c 100%);
+}
+
+#fp-add-override:active,
+.fp-add-override:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(214, 54, 56, 0.4);
 }
 
 #fp-schedule-raw-container {
@@ -2570,28 +2596,64 @@
 
 .fp-empty-slots-message {
     text-align: center;
-    padding: 40px 20px;
-    background: #f8f9fa;
-    border: 2px dashed #ddd;
-    border-radius: 8px;
-    color: #6c757d;
+    padding: 50px 30px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #f1f3f4 100%);
+    border: 2px dashed #c3c4c7;
+    border-radius: 12px;
+    color: #50575e;
     font-style: italic;
+    margin: 20px 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.fp-empty-slots-message::before {
+    content: '⏰';
+    display: block;
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.6;
+}
+
+.fp-empty-slots-message p {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.5;
 }
 
 /* Time slot card clean */
 .fp-time-slot-card-clean {
     background: #fff;
-    border: 1px solid #ddd;
-    border-radius: 8px;
+    border: 1px solid #e1e5e9;
+    border-radius: 12px;
     margin-bottom: 20px;
     overflow: hidden;
-    transition: all 0.3s ease;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    position: relative;
+}
+
+.fp-time-slot-card-clean::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #0073aa 0%, #135e96 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
 }
 
 .fp-time-slot-card-clean:hover {
     border-color: #0073aa;
-    box-shadow: 0 4px 12px rgba(0, 115, 170, 0.15);
+    box-shadow: 0 8px 25px rgba(0, 115, 170, 0.15);
+    transform: translateY(-2px);
+}
+
+.fp-time-slot-card-clean:hover::before {
+    opacity: 1;
+}
     transform: translateY(-2px);
 }
 
@@ -2667,6 +2729,13 @@
     letter-spacing: 0.5px;
 }
 
+.fp-day-pill-clean label:hover {
+    background: linear-gradient(135deg, #e8e8e8 0%, #ddd 100%);
+    border-color: #ccc;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
 .fp-day-pill-clean input[type="checkbox"]:checked + label {
     background: linear-gradient(135deg, #0073aa 0%, #005177 100%);
     color: #fff;
@@ -2691,6 +2760,22 @@
     font-weight: 600;
     transition: all 0.2s ease;
     box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
+}
+
+.fp-slot-actions-clean .fp-remove-time-slot-clean:hover {
+    background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+}
+
+.fp-slot-actions-clean .fp-remove-time-slot-clean:focus {
+    outline: 2px solid #dc3545;
+    outline-offset: 2px;
+}
+
+.fp-slot-actions-clean .fp-remove-time-slot-clean:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(220, 53, 69, 0.4);
 }
 
 .fp-slot-actions-clean .fp-remove-time-slot-clean:hover {
@@ -2767,34 +2852,72 @@
 
 .fp-overrides-empty-clean {
     text-align: center;
-    padding: 40px 20px;
-    background: #f8f9fa;
-    border: 2px dashed #ddd;
-    border-radius: 8px;
-    color: #6c757d;
+    padding: 50px 30px;
+    background: linear-gradient(135deg, #fff5f5 0%, #fef2f2 100%);
+    border: 2px dashed #f5c6cb;
+    border-radius: 12px;
+    color: #721c24;
     font-style: italic;
+    margin: 20px 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.fp-overrides-empty-clean::before {
+    content: '📅';
+    display: block;
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.6;
+}
+
+.fp-overrides-empty-clean p {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.5;
 }
 
 /* Override card clean */
 .fp-override-card-clean {
     background: #fff;
-    border: 1px solid #ddd;
-    border-radius: 8px;
+    border: 1px solid #e1e5e9;
+    border-radius: 12px;
     margin-bottom: 20px;
     overflow: hidden;
-    transition: all 0.3s ease;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    position: relative;
+}
+
+.fp-override-card-clean::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #d63638 0%, #b32d2e 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
 }
 
 .fp-override-card-clean:hover {
-    border-color: #0073aa;
-    box-shadow: 0 4px 12px rgba(0, 115, 170, 0.15);
+    border-color: #d63638;
+    box-shadow: 0 8px 25px rgba(214, 54, 56, 0.15);
     transform: translateY(-2px);
+}
+
+.fp-override-card-clean:hover::before {
+    opacity: 1;
 }
 
 .fp-override-card-clean.is-closed {
     border-left: 4px solid #dc3545;
     background: #fff5f5;
+}
+
+.fp-override-card-clean.is-closed::before {
+    opacity: 1;
 }
 
 .fp-override-header-clean {
@@ -2864,6 +2987,16 @@
     background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
     transform: translateY(-1px);
     box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+}
+
+.fp-override-remove-clean:focus {
+    outline: 2px solid #dc3545;
+    outline-offset: 2px;
+}
+
+.fp-override-remove-clean:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(220, 53, 69, 0.4);
 }
 
 .fp-override-fields-clean {
