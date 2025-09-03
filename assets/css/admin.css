@@ -1976,6 +1976,65 @@
     box-shadow: 0 2px 4px rgba(34, 113, 177, 0.4);
 }
 
+/* Loading state for buttons */
+#fp-add-time-slot.fp-loading,
+.fp-add-time-slot.fp-loading,
+.fp-remove-time-slot-clean.fp-loading {
+    pointer-events: none;
+    opacity: 0.7;
+    transform: none !important;
+    cursor: not-allowed;
+}
+
+#fp-add-time-slot.fp-loading::after,
+.fp-add-time-slot.fp-loading::after,
+.fp-remove-time-slot-clean.fp-loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: 15px;
+    width: 16px;
+    height: 16px;
+    margin-top: -8px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: fp-button-spin 1s linear infinite;
+}
+
+@keyframes fp-button-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Error states */
+.fp-error-field {
+    border-color: #dc3545 !important;
+    box-shadow: 0 0 0 1px #dc3545 !important;
+}
+
+.fp-error-field:focus {
+    border-color: #dc3545 !important;
+    box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.25) !important;
+    outline: none !important;
+}
+
+/* Accessibility improvements */
+.fp-day-pill-clean label:focus-within {
+    outline: 2px solid #005177;
+    outline-offset: 2px;
+}
+
+/* Smooth transitions for all interactive elements */
+.fp-time-slot-card-clean,
+.fp-time-slot-card-clean *,
+.fp-day-pill-clean label,
+.fp-remove-time-slot-clean,
+#fp-add-time-slot,
+.fp-add-time-slot {
+    transition: all 0.2s ease;
+}
+
 #fp-add-override,
 .fp-add-override {
     background: linear-gradient(135deg, #d63638 0%, #b32d2e 100%);
@@ -2654,8 +2713,6 @@
 .fp-time-slot-card-clean:hover::before {
     opacity: 1;
 }
-    transform: translateY(-2px);
-}
 
 .fp-time-slot-content-clean {
     padding: 0;
@@ -2776,12 +2833,6 @@
 .fp-slot-actions-clean .fp-remove-time-slot-clean:active {
     transform: translateY(0);
     box-shadow: 0 1px 2px rgba(220, 53, 69, 0.4);
-}
-
-.fp-slot-actions-clean .fp-remove-time-slot-clean:hover {
-    background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
 }
 
 /* Override toggle clean */

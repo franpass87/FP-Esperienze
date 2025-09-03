@@ -38,6 +38,11 @@
             this.handleProductTypeChange();
             this.bindEvents();
             this.initBookingsPage();
+            
+            // Initialize enhanced schedule builder features
+            if ($('#fp-time-slots-container').length) {
+                this.enhanceAccessibility();
+            }
         },
 
         /**
@@ -663,6 +668,9 @@
             
             console.log('FP Esperienze: Initializing clean schedule builder');
             
+            // Validate containers first
+            this.validateContainers();
+            
             // Unbind any existing handlers to prevent conflicts
             $(document).off('click.fp-clean', '#fp-add-time-slot, #fp-add-time-slot-empty');
             $(document).off('click.fp-clean', '.fp-remove-time-slot-clean');
@@ -671,15 +679,27 @@
             $(document).off('click.fp-clean', '.fp-override-remove-clean');
             $(document).off('change.fp-clean', '.fp-override-checkbox-clean input[type="checkbox"]');
             
-            // Time slot management - clean version with namespace
+            // Time slot management - clean version with namespace and enhanced error handling
             $(document).on('click.fp-clean', '#fp-add-time-slot, #fp-add-time-slot-empty', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
                 console.log('FP Esperienze: Add time slot clicked');
+                
+                // Disable button temporarily to prevent double clicks
+                var $button = $(this);
+                var originalText = $button.text();
+                $button.prop('disabled', true).addClass('fp-loading');
+                
                 try {
                     self.addTimeSlotCardClean();
+                    // Re-enable button with success feedback
+                    setTimeout(function() {
+                        $button.prop('disabled', false).removeClass('fp-loading');
+                    }, 300);
                 } catch (error) {
                     console.error('FP Esperienze: Error adding time slot:', error);
+                    alert('Error adding time slot. Please try again.');
+                    $button.prop('disabled', false).removeClass('fp-loading');
                 }
             });
             
@@ -687,10 +707,21 @@
                 e.preventDefault();
                 e.stopPropagation();
                 console.log('FP Esperienze: Remove time slot clicked');
-                try {
-                    self.removeTimeSlotCardClean($(this));
-                } catch (error) {
-                    console.error('FP Esperienze: Error removing time slot:', error);
+                
+                var $button = $(this);
+                var $card = $button.closest('.fp-time-slot-card-clean');
+                
+                // Add confirmation for destructive action
+                if (confirm('Are you sure you want to remove this time slot?')) {
+                    $button.prop('disabled', true).addClass('fp-loading');
+                    
+                    try {
+                        self.removeTimeSlotCardClean($button);
+                    } catch (error) {
+                        console.error('FP Esperienze: Error removing time slot:', error);
+                        alert('Error removing time slot. Please try again.');
+                        $button.prop('disabled', false).removeClass('fp-loading');
+                    }
                 }
             });
             
@@ -1446,17 +1477,33 @@
                     return;
                 }
                 
-                // Add the card with animation
+                // Add the card with smooth animation
                 var $newCard = $(cardHtml);
-                $newCard.css('opacity', '0');
+                $newCard.css({
+                    'opacity': '0',
+                    'transform': 'translateY(20px)'
+                });
                 container.append($newCard);
                 
-                // Animate in
-                $newCard.animate({opacity: 1}, 300);
+                // Animate in with improved timing
+                $newCard.animate({
+                    opacity: 1
+                }, 300, function() {
+                    // Reset transform after opacity animation
+                    $newCard.css('transform', 'translateY(0)');
+                });
                 
-                // Focus on the time input
+                // Focus on the time input for better UX
                 setTimeout(function() {
-                    $newCard.find('input[type="time"]').focus();
+                    var $timeInput = $newCard.find('input[type="time"]');
+                    if ($timeInput.length) {
+                        $timeInput.focus();
+                        // Scroll into view if needed
+                        $newCard[0].scrollIntoView({ 
+                            behavior: 'smooth', 
+                            block: 'nearest' 
+                        });
+                    }
                 }, 350);
                 
                 console.log('FP Esperienze: Successfully added time slot card', index);
@@ -1567,21 +1614,35 @@
             var container = $('#fp-time-slots-container');
             var self = this;
             
-            $card.fadeOut(300, function() {
+            // Smooth removal animation
+            $card.animate({
+                opacity: 0,
+                height: 0,
+                marginBottom: 0,
+                paddingTop: 0,
+                paddingBottom: 0
+            }, 400, 'swing', function() {
                 $card.remove();
                 
                 // Show empty state if no cards left
                 if (container.find('.fp-time-slot-card-clean').length === 0) {
-                    var emptyMessage = '<div class="fp-empty-slots-message">' +
+                    var emptyMessage = '<div class="fp-empty-slots-message" style="opacity: 0;">' +
                         '<p>No time slots configured yet. Add your first time slot below.</p>' +
                     '</div>';
-                    container.prepend(emptyMessage);
+                    var $emptyMsg = $(emptyMessage);
+                    container.prepend($emptyMsg);
+                    $emptyMsg.animate({opacity: 1}, 300);
                     
                     // Reset button text
                     var button = $('#fp-add-time-slot');
-                    button.find('span:not(.dashicons)').text('Add Time Slot');
+                    var $buttonText = button.find('span:not(.dashicons)');
+                    if ($buttonText.length) {
+                        $buttonText.text('Add Time Slot');
+                    } else {
+                        button.text('Add Time Slot');
+                    }
                 } else {
-                    // Update button text if only one left
+                    // Update button text if cards remain
                     self.updateSlotCountFeedback();
                 }
             });
@@ -1655,8 +1716,71 @@
         },
 
         /**
-         * Update slot count feedback - VISUAL ENHANCEMENT
+         * Validate form inputs - ENHANCED
          */
+        validateTimeSlotInputs: function($card) {
+            var isValid = true;
+            var errors = [];
+            
+            // Validate time input
+            var $timeInput = $card.find('input[type="time"]');
+            if ($timeInput.length && !$timeInput.val()) {
+                errors.push('Start time is required');
+                $timeInput.addClass('fp-error-field');
+                isValid = false;
+            } else {
+                $timeInput.removeClass('fp-error-field');
+            }
+            
+            // Validate at least one day selected
+            var checkedDays = $card.find('.fp-day-pill-clean input:checked').length;
+            if (checkedDays === 0) {
+                errors.push('Select at least one day of the week');
+                $card.find('.fp-days-selection-clean').addClass('fp-error-field');
+                isValid = false;
+            } else {
+                $card.find('.fp-days-selection-clean').removeClass('fp-error-field');
+            }
+            
+            // Show errors if any
+            if (!isValid) {
+                var errorMsg = 'Please fix the following errors:\n' + errors.join('\n');
+                alert(errorMsg);
+            }
+            
+            return isValid;
+        },
+        
+        /**
+         * Enhanced accessibility support
+         */
+        enhanceAccessibility: function() {
+            // Add ARIA labels and roles
+            $('#fp-time-slots-container').attr({
+                'role': 'region',
+                'aria-label': 'Time slots configuration'
+            });
+            
+            $('#fp-add-time-slot').attr({
+                'aria-describedby': 'fp-add-time-slot-desc'
+            });
+            
+            // Add keyboard support for day pills
+            $(document).on('keydown.fp-accessibility', '.fp-day-pill-clean label', function(e) {
+                if (e.key === ' ' || e.key === 'Enter') {
+                    e.preventDefault();
+                    $(this).find('input').click();
+                }
+            });
+            
+            // Announce changes to screen readers
+            $(document).on('change.fp-accessibility', '.fp-day-pill-clean input', function() {
+                var dayName = $(this).closest('label').text().trim();
+                var isChecked = $(this).is(':checked');
+                var message = dayName + ' ' + (isChecked ? 'selected' : 'deselected');
+                this.setAttribute('aria-label', message);
+            });
+        },
         updateSlotCountFeedback: function() {
             var container = $('#fp-time-slots-container');
             var count = container.find('.fp-time-slot-card-clean').length;
