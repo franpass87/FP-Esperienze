@@ -76,6 +76,9 @@
                 // Track user interactions
                 this.trackUserInteractions();
                 
+                // Start system health monitoring
+                this.startSystemHealthMonitoring();
+                
                 console.log('FP Esperienze: Performance monitoring initialized');
                 
             } catch (error) {
@@ -469,6 +472,210 @@
         },
 
         /**
+         * Start system health monitoring
+         */
+        startSystemHealthMonitoring: function() {
+            // Monitor system health every 30 seconds
+            setInterval(() => {
+                this.checkSystemHealth();
+            }, 30000);
+
+            // Initial health check after 5 seconds
+            setTimeout(() => {
+                this.checkSystemHealth();
+            }, 5000);
+        },
+
+        /**
+         * Check overall system health
+         */
+        checkSystemHealth: function() {
+            try {
+                const healthData = {
+                    timestamp: Date.now(),
+                    memory: this.getMemoryUsage(),
+                    performance: this.getPerformanceMetrics(),
+                    errors: this.metrics.errors,
+                    interactions: this.metrics.interactions,
+                    dom_nodes: document.querySelectorAll('*').length,
+                    active_timers: this.getActiveTimersCount()
+                };
+
+                // Check for performance issues
+                this.analyzeSystemHealth(healthData);
+
+                // Store health data for trending
+                this.storeHealthData(healthData);
+
+            } catch (error) {
+                console.error('FP Esperienze: System health check failed:', error);
+            }
+        },
+
+        /**
+         * Get current memory usage information
+         */
+        getMemoryUsage: function() {
+            if (performance.memory) {
+                return {
+                    used: performance.memory.usedJSHeapSize,
+                    total: performance.memory.totalJSHeapSize,
+                    limit: performance.memory.jsHeapSizeLimit,
+                    usage_percent: (performance.memory.usedJSHeapSize / performance.memory.jsHeapSizeLimit) * 100
+                };
+            }
+            return null;
+        },
+
+        /**
+         * Get performance metrics summary
+         */
+        getPerformanceMetrics: function() {
+            return {
+                avg_response_time: this.metrics.avgResponseTime,
+                frame_rate: this.getAverageFrameRate(),
+                init_time: this.metrics.initTime,
+                total_interactions: this.metrics.interactions
+            };
+        },
+
+        /**
+         * Estimate active timers count
+         */
+        getActiveTimersCount: function() {
+            // This is an approximation since we can't directly access all timers
+            let count = 0;
+            
+            // Count setInterval handlers we can detect
+            if (window.FPEsperienzeAdmin && window.FPEsperienzeAdmin.activeTimers) {
+                count += window.FPEsperienzeAdmin.activeTimers.length;
+            }
+            
+            return count;
+        },
+
+        /**
+         * Analyze system health and generate alerts
+         */
+        analyzeSystemHealth: function(healthData) {
+            const warnings = [];
+            const errors = [];
+
+            // Memory usage analysis
+            if (healthData.memory) {
+                if (healthData.memory.usage_percent > 80) {
+                    errors.push('High memory usage: ' + healthData.memory.usage_percent.toFixed(1) + '%');
+                } else if (healthData.memory.usage_percent > 60) {
+                    warnings.push('Moderate memory usage: ' + healthData.memory.usage_percent.toFixed(1) + '%');
+                }
+            }
+
+            // Performance analysis
+            if (healthData.performance.avg_response_time > 1000) {
+                warnings.push('Slow API responses: ' + healthData.performance.avg_response_time.toFixed(0) + 'ms average');
+            }
+
+            if (healthData.performance.frame_rate < 30) {
+                warnings.push('Low frame rate: ' + healthData.performance.frame_rate.toFixed(1) + ' FPS');
+            }
+
+            // DOM nodes count
+            if (healthData.dom_nodes > 5000) {
+                warnings.push('High DOM complexity: ' + healthData.dom_nodes + ' nodes');
+            }
+
+            // Error rate analysis
+            if (healthData.errors > 10) {
+                errors.push('High error count: ' + healthData.errors + ' errors');
+            }
+
+            // Log significant issues
+            if (errors.length > 0) {
+                console.error('FP Esperienze: System health issues detected:', errors);
+                this.notifySystemIssues('error', errors);
+            } else if (warnings.length > 0) {
+                console.warn('FP Esperienze: System performance warnings:', warnings);
+                this.notifySystemIssues('warning', warnings);
+            }
+        },
+
+        /**
+         * Store health data for trending analysis
+         */
+        storeHealthData: function(healthData) {
+            // Store last 20 health checks for trending
+            if (!this.healthHistory) {
+                this.healthHistory = [];
+            }
+
+            this.healthHistory.push(healthData);
+            
+            if (this.healthHistory.length > 20) {
+                this.healthHistory.shift();
+            }
+
+            // Update current health metrics
+            this.currentHealth = healthData;
+        },
+
+        /**
+         * Notify about system issues
+         */
+        notifySystemIssues: function(level, issues) {
+            // Only notify for critical issues to avoid spam
+            if (level === 'error' && !this.lastNotificationTime || 
+                Date.now() - this.lastNotificationTime > 300000) { // 5 minutes throttle
+                
+                this.lastNotificationTime = Date.now();
+                
+                // Show admin notice if on admin page
+                if (window.pagenow && window.pagenow.includes('fp-esperienze')) {
+                    const notice = document.createElement('div');
+                    notice.className = 'notice notice-error is-dismissible';
+                    notice.innerHTML = '<p><strong>FP Esperienze Performance Alert:</strong> ' + issues.join(', ') + '</p>';
+                    
+                    const adminNotices = document.querySelector('.wrap h1');
+                    if (adminNotices && adminNotices.parentNode) {
+                        adminNotices.parentNode.insertBefore(notice, adminNotices.nextSibling);
+                    }
+                }
+            }
+        },
+
+        /**
+         * Get system health report
+         */
+        getHealthReport: function() {
+            return {
+                current: this.currentHealth,
+                history: this.healthHistory,
+                metrics: this.metrics,
+                trends: this.calculateHealthTrends()
+            };
+        },
+
+        /**
+         * Calculate health trends from history
+         */
+        calculateHealthTrends: function() {
+            if (!this.healthHistory || this.healthHistory.length < 2) {
+                return null;
+            }
+
+            const recent = this.healthHistory.slice(-5); // Last 5 checks
+            const older = this.healthHistory.slice(0, 5); // First 5 checks
+
+            const recentAvg = recent.reduce((sum, h) => sum + (h.memory ? h.memory.usage_percent : 0), 0) / recent.length;
+            const olderAvg = older.reduce((sum, h) => sum + (h.memory ? h.memory.usage_percent : 0), 0) / older.length;
+
+            return {
+                memory_trend: recentAvg - olderAvg,
+                performance_trend: recent[recent.length - 1].performance.avg_response_time - older[0].performance.avg_response_time,
+                error_trend: recent[recent.length - 1].errors - older[0].errors
+            };
+        },
+
+        /**
          * Cleanup observers and listeners
          */
         cleanup: function() {
@@ -491,7 +698,9 @@
         debounce: window.FPEsperienzePerformance.debounce,
         throttle: window.FPEsperienzePerformance.throttle,
         mark: window.FPEsperienzePerformance.mark.bind(window.FPEsperienzePerformance),
-        measure: window.FPEsperienzePerformance.measure.bind(window.FPEsperienzePerformance)
+        measure: window.FPEsperienzePerformance.measure.bind(window.FPEsperienzePerformance),
+        getHealthReport: window.FPEsperienzePerformance.getHealthReport.bind(window.FPEsperienzePerformance),
+        getMetrics: function() { return window.FPEsperienzePerformance.metrics; }
     };
 
 })(jQuery);

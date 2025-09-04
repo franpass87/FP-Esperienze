@@ -108,9 +108,11 @@ class SystemStatus {
 
             <div class="fp-system-status">
                 <?php $this->renderSystemInfo(); ?>
+                <?php $this->renderPerformanceMetrics(); ?>
                 <?php $this->renderChecks($checks); ?>
                 <?php $this->renderDatabaseInfo(); ?>
                 <?php $this->renderIntegrationStatus(); ?>
+                <?php $this->renderOptimizationRecommendations($checks); ?>
             </div>
 
             <style>
@@ -168,6 +170,77 @@ class SystemStatus {
             }
             .fp-fix-button {
                 margin-left: 10px;
+            }
+            .fp-recommendations {
+                margin-top: 15px;
+            }
+            .fp-recommendation {
+                background: #fff;
+                border: 1px solid #c3c4c7;
+                border-radius: 4px;
+                margin-bottom: 15px;
+                padding: 15px;
+                position: relative;
+            }
+            .fp-recommendation.fp-priority-high {
+                border-left: 4px solid #d63638;
+            }
+            .fp-recommendation.fp-priority-medium {
+                border-left: 4px solid #dba617;
+            }
+            .fp-recommendation.fp-priority-low {
+                border-left: 4px solid #00a32a;
+            }
+            .fp-priority-badge {
+                display: inline-block;
+                padding: 2px 8px;
+                border-radius: 3px;
+                font-size: 10px;
+                font-weight: bold;
+                margin-right: 8px;
+                text-transform: uppercase;
+            }
+            .fp-priority-badge.fp-priority-high {
+                background: #d63638;
+                color: white;
+            }
+            .fp-priority-badge.fp-priority-medium {
+                background: #dba617;
+                color: white;
+            }
+            .fp-priority-badge.fp-priority-low {
+                background: #00a32a;
+                color: white;
+            }
+            .fp-recommendation h4 {
+                margin: 0 0 10px 0;
+                font-size: 14px;
+            }
+            .fp-recommendation p {
+                margin: 8px 0;
+                color: #646970;
+            }
+            .fp-action {
+                font-size: 13px;
+                background: #f6f7f7;
+                padding: 8px;
+                border-radius: 3px;
+                margin-top: 10px !important;
+            }
+            .fp-status-table td {
+                word-break: break-word;
+            }
+            @media (max-width: 782px) {
+                .fp-status-table th,
+                .fp-status-table td {
+                    display: block;
+                    width: 100%;
+                    padding: 8px 20px;
+                }
+                .fp-status-table th {
+                    background: #f9f9f9;
+                    border-bottom: none;
+                }
             }
             </style>
         </div>
@@ -273,6 +346,13 @@ class SystemStatus {
 
         // Check required PHP extensions
         $checks['php_extensions'] = $this->checkPHPExtensions();
+
+        // Enhanced performance and health checks
+        $checks['cache_performance'] = $this->checkCachePerformance();
+        $checks['api_endpoints'] = $this->checkAPIEndpoints();
+        $checks['database_performance'] = $this->checkDatabasePerformance();
+        $checks['memory_usage'] = $this->checkMemoryUsage();
+        $checks['frontend_performance'] = $this->checkFrontendPerformance();
 
         return $checks;
     }
@@ -565,5 +645,479 @@ class SystemStatus {
             </table>
         </div>
         <?php
+    }
+
+    /**
+     * Check cache performance and statistics
+     */
+    private function checkCachePerformance(): array {
+        if (!class_exists('\FP\Esperienze\Core\CacheManager')) {
+            return [
+                'title' => __('Cache Performance', 'fp-esperienze'),
+                'status' => 'warning',
+                'message' => __('CacheManager not available', 'fp-esperienze')
+            ];
+        }
+
+        $cache_stats = \FP\Esperienze\Core\CacheManager::getCacheStats();
+        $total_caches = $cache_stats['total_caches'] ?? 0;
+        
+        // Test cache write/read performance
+        $test_key = 'fp_system_test_' . time();
+        $test_data = ['test' => 'performance', 'timestamp' => time()];
+        
+        $start_time = microtime(true);
+        set_transient($test_key, $test_data, 60);
+        $cached_data = get_transient($test_key);
+        $cache_time = (microtime(true) - $start_time) * 1000;
+        delete_transient($test_key);
+        
+        if ($cached_data !== $test_data) {
+            return [
+                'title' => __('Cache Performance', 'fp-esperienze'),
+                'status' => 'error',
+                'message' => __('Cache read/write failed', 'fp-esperienze'),
+                'description' => __('Object caching is not working properly.', 'fp-esperienze')
+            ];
+        }
+
+        if ($cache_time > 10) { // 10ms threshold
+            return [
+                'title' => __('Cache Performance', 'fp-esperienze'),
+                'status' => 'warning',
+                'message' => sprintf(__('Slow cache (%.2fms)', 'fp-esperienze'), $cache_time),
+                'description' => sprintf(__('%d total caches. Consider using Redis or Memcached for better performance.', 'fp-esperienze'), $total_caches)
+            ];
+        }
+
+        return [
+            'title' => __('Cache Performance', 'fp-esperienze'),
+            'status' => 'ok',
+            'message' => sprintf(__('Good (%.2fms, %d caches)', 'fp-esperienze'), $cache_time, $total_caches)
+        ];
+    }
+
+    /**
+     * Check API endpoints health
+     */
+    private function checkAPIEndpoints(): array {
+        $endpoints_to_test = [
+            '/wp-json/fp-exp/v1/availability' => 'Availability API',
+            '/wp-json/fp-esperienze/v1/ics/product/1' => 'ICS API',
+            '/wp-json/fp-esperienze/v1/events' => 'Events API'
+        ];
+
+        $failed_endpoints = [];
+        $slow_endpoints = [];
+        $total_time = 0;
+
+        foreach ($endpoints_to_test as $endpoint => $name) {
+            $url = home_url($endpoint . '?test=1');
+            $start_time = microtime(true);
+            
+            $response = wp_remote_get($url, [
+                'timeout' => 10,
+                'headers' => [
+                    'User-Agent' => 'FP-Esperienze-SystemCheck/1.0'
+                ]
+            ]);
+            
+            $response_time = (microtime(true) - $start_time) * 1000;
+            $total_time += $response_time;
+
+            if (is_wp_error($response)) {
+                $failed_endpoints[] = $name;
+                continue;
+            }
+
+            $status_code = wp_remote_retrieve_response_code($response);
+            if ($status_code >= 400) {
+                $failed_endpoints[] = $name . " (HTTP {$status_code})";
+                continue;
+            }
+
+            if ($response_time > 1000) { // 1 second threshold
+                $slow_endpoints[] = $name . sprintf(' (%.0fms)', $response_time);
+            }
+        }
+
+        if (!empty($failed_endpoints)) {
+            return [
+                'title' => __('API Endpoints', 'fp-esperienze'),
+                'status' => 'error',
+                'message' => sprintf(__('%d endpoints failed', 'fp-esperienze'), count($failed_endpoints)),
+                'description' => __('Failed endpoints: ', 'fp-esperienze') . implode(', ', $failed_endpoints)
+            ];
+        }
+
+        if (!empty($slow_endpoints)) {
+            return [
+                'title' => __('API Endpoints', 'fp-esperienze'),
+                'status' => 'warning',
+                'message' => sprintf(__('%d slow endpoints', 'fp-esperienze'), count($slow_endpoints)),
+                'description' => __('Slow endpoints: ', 'fp-esperienze') . implode(', ', $slow_endpoints)
+            ];
+        }
+
+        $avg_time = $total_time / count($endpoints_to_test);
+        return [
+            'title' => __('API Endpoints', 'fp-esperienze'),
+            'status' => 'ok',
+            'message' => sprintf(__('All endpoints healthy (avg %.0fms)', 'fp-esperienze'), $avg_time)
+        ];
+    }
+
+    /**
+     * Check database performance
+     */
+    private function checkDatabasePerformance(): array {
+        global $wpdb;
+
+        $start_time = microtime(true);
+        $start_queries = $wpdb->num_queries;
+
+        // Test common FP Esperienze database operations
+        $test_queries = [
+            "SELECT COUNT(*) FROM {$wpdb->prefix}fp_bookings WHERE status = 'confirmed'",
+            "SELECT COUNT(*) FROM {$wpdb->prefix}fp_schedules",
+            "SELECT COUNT(*) FROM {$wpdb->prefix}fp_meeting_points WHERE is_active = 1"
+        ];
+
+        $total_rows = 0;
+        foreach ($test_queries as $query) {
+            $result = $wpdb->get_var($query);
+            $total_rows += (int) $result;
+        }
+
+        $execution_time = (microtime(true) - $start_time) * 1000;
+        $query_count = $wpdb->num_queries - $start_queries;
+
+        // Check for slow queries if QueryMonitor is available
+        $slow_query_warning = '';
+        if (class_exists('\FP\Esperienze\Core\QueryMonitor')) {
+            $stats = \FP\Esperienze\Core\QueryMonitor::getStatistics();
+            if (isset($stats['slow_queries']) && $stats['slow_queries'] > 0) {
+                $slow_query_warning = sprintf(__(' (%d slow queries detected)', 'fp-esperienze'), $stats['slow_queries']);
+            }
+        }
+
+        if ($execution_time > 100) { // 100ms threshold
+            return [
+                'title' => __('Database Performance', 'fp-esperienze'),
+                'status' => 'warning',
+                'message' => sprintf(__('Slow queries (%.2fms)', 'fp-esperienze'), $execution_time),
+                'description' => sprintf(__('%d queries returned %d total rows%s', 'fp-esperienze'), $query_count, $total_rows, $slow_query_warning)
+            ];
+        }
+
+        return [
+            'title' => __('Database Performance', 'fp-esperienze'),
+            'status' => 'ok',
+            'message' => sprintf(__('Good performance (%.2fms)', 'fp-esperienze'), $execution_time),
+            'description' => sprintf(__('%d queries, %d total rows%s', 'fp-esperienze'), $query_count, $total_rows, $slow_query_warning)
+        ];
+    }
+
+    /**
+     * Check memory usage
+     */
+    private function checkMemoryUsage(): array {
+        $memory_limit = wp_convert_hr_to_bytes(ini_get('memory_limit'));
+        $memory_usage = memory_get_usage(true);
+        $memory_peak = memory_get_peak_usage(true);
+        
+        $usage_percentage = ($memory_usage / $memory_limit) * 100;
+        $peak_percentage = ($memory_peak / $memory_limit) * 100;
+
+        if ($peak_percentage > 80) {
+            return [
+                'title' => __('Memory Usage', 'fp-esperienze'),
+                'status' => 'error',
+                'message' => sprintf(__('High usage (%.1f%%)', 'fp-esperienze'), $peak_percentage),
+                'description' => sprintf(__('Peak: %s / %s. Consider increasing memory_limit.', 'fp-esperienze'), 
+                    size_format($memory_peak), size_format($memory_limit))
+            ];
+        }
+
+        if ($peak_percentage > 60) {
+            return [
+                'title' => __('Memory Usage', 'fp-esperienze'),
+                'status' => 'warning',
+                'message' => sprintf(__('Moderate usage (%.1f%%)', 'fp-esperienze'), $peak_percentage),
+                'description' => sprintf(__('Peak: %s / %s. Monitor for potential issues.', 'fp-esperienze'), 
+                    size_format($memory_peak), size_format($memory_limit))
+            ];
+        }
+
+        return [
+            'title' => __('Memory Usage', 'fp-esperienze'),
+            'status' => 'ok',
+            'message' => sprintf(__('Normal usage (%.1f%%)', 'fp-esperienze'), $peak_percentage),
+            'description' => sprintf(__('Current: %s, Peak: %s / %s', 'fp-esperienze'), 
+                size_format($memory_usage), size_format($memory_peak), size_format($memory_limit))
+        ];
+    }
+
+    /**
+     * Check frontend performance indicators
+     */
+    private function checkFrontendPerformance(): array {
+        // Check if AssetOptimizer is available and working
+        $minified_available = false;
+        $compression_ratio = 0;
+
+        if (class_exists('\FP\Esperienze\Core\AssetOptimizer')) {
+            $minified_available = \FP\Esperienze\Core\AssetOptimizer::hasMinifiedAssets();
+            $stats = \FP\Esperienze\Core\AssetOptimizer::getOptimizationStats();
+            $compression_ratio = $stats['compression_ratio'] ?? 0;
+        }
+
+        // Check asset file sizes
+        $css_file = FP_ESPERIENZE_PLUGIN_DIR . 'assets/css/frontend.css';
+        $js_file = FP_ESPERIENZE_PLUGIN_DIR . 'assets/js/frontend.js';
+        $admin_js_file = FP_ESPERIENZE_PLUGIN_DIR . 'assets/js/admin.js';
+
+        $total_size = 0;
+        $files_checked = 0;
+        
+        foreach ([$css_file, $js_file, $admin_js_file] as $file) {
+            if (file_exists($file)) {
+                $total_size += filesize($file);
+                $files_checked++;
+            }
+        }
+
+        if ($total_size > 500000) { // 500KB threshold
+            $status = 'warning';
+            $message = sprintf(__('Large assets (%s)', 'fp-esperienze'), size_format($total_size));
+            $description = $minified_available ? 
+                sprintf(__('Minification enabled (%.1f%% compression)', 'fp-esperienze'), $compression_ratio) :
+                __('Consider enabling asset minification for better performance.', 'fp-esperienze');
+        } else {
+            $status = $minified_available ? 'ok' : 'warning';
+            $message = sprintf(__('Assets: %s', 'fp-esperienze'), size_format($total_size));
+            $description = $minified_available ?
+                sprintf(__('Minification enabled (%.1f%% compression)', 'fp-esperienze'), $compression_ratio) :
+                __('Asset minification not enabled.', 'fp-esperienze');
+        }
+
+        return [
+            'title' => __('Frontend Performance', 'fp-esperienze'),
+            'status' => $status,
+            'message' => $message,
+            'description' => $description
+        ];
+    }
+
+    /**
+     * Render performance metrics section
+     */
+    private function renderPerformanceMetrics(): void {
+        // Collect real-time performance data
+        $memory_usage = memory_get_usage(true);
+        $memory_peak = memory_get_peak_usage(true);
+        $memory_limit = wp_convert_hr_to_bytes(ini_get('memory_limit'));
+        
+        // Get cache statistics if available
+        $cache_stats = [];
+        if (class_exists('\FP\Esperienze\Core\CacheManager')) {
+            $cache_stats = \FP\Esperienze\Core\CacheManager::getCacheStats();
+        }
+
+        // Get query statistics if available
+        $query_stats = [];
+        if (class_exists('\FP\Esperienze\Core\QueryMonitor')) {
+            $query_stats = \FP\Esperienze\Core\QueryMonitor::getStatistics();
+        }
+
+        ?>
+        <div class="fp-status-section">
+            <h2><?php _e('Performance Metrics', 'fp-esperienze'); ?></h2>
+            <table class="fp-status-table">
+                <tr>
+                    <th><?php _e('Memory Usage', 'fp-esperienze'); ?></th>
+                    <td>
+                        <?php 
+                        $usage_percent = ($memory_usage / $memory_limit) * 100;
+                        $peak_percent = ($memory_peak / $memory_limit) * 100;
+                        $status_class = $peak_percent > 80 ? 'error' : ($peak_percent > 60 ? 'warning' : 'ok');
+                        ?>
+                        <span class="fp-status-<?php echo esc_attr($status_class); ?> fp-status-icon">
+                            <?php printf(__('Current: %s (%.1f%%) | Peak: %s (%.1f%%)', 'fp-esperienze'), 
+                                size_format($memory_usage), $usage_percent,
+                                size_format($memory_peak), $peak_percent); ?>
+                        </span>
+                    </td>
+                </tr>
+                <?php if (!empty($cache_stats)) : ?>
+                <tr>
+                    <th><?php _e('Cache Statistics', 'fp-esperienze'); ?></th>
+                    <td>
+                        <span class="fp-status-<?php echo $cache_stats['total_caches'] > 0 ? 'ok' : 'warning'; ?> fp-status-icon">
+                            <?php printf(__('Total: %d | Availability: %d | Archive: %d', 'fp-esperienze'), 
+                                $cache_stats['total_caches'],
+                                $cache_stats['availability_caches'],
+                                $cache_stats['archive_caches']); ?>
+                        </span>
+                    </td>
+                </tr>
+                <?php endif; ?>
+                <?php if (!empty($query_stats)) : ?>
+                <tr>
+                    <th><?php _e('Database Queries', 'fp-esperienze'); ?></th>
+                    <td>
+                        <span class="fp-status-<?php echo $query_stats['slow_queries'] > 0 ? 'warning' : 'ok'; ?> fp-status-icon">
+                            <?php printf(__('Total: %d | Slow: %d | Avg Time: %.2fms', 'fp-esperienze'), 
+                                $query_stats['total_queries'],
+                                $query_stats['slow_queries'],
+                                $query_stats['total_queries'] > 0 ? $query_stats['total_time'] / $query_stats['total_queries'] : 0); ?>
+                        </span>
+                    </td>
+                </tr>
+                <?php endif; ?>
+                <tr>
+                    <th><?php _e('PHP Configuration', 'fp-esperienze'); ?></th>
+                    <td>
+                        <?php 
+                        $max_execution_time = ini_get('max_execution_time');
+                        $upload_max_filesize = ini_get('upload_max_filesize');
+                        $post_max_size = ini_get('post_max_size');
+                        ?>
+                        <span class="fp-status-ok fp-status-icon">
+                            <?php printf(__('Execution: %ds | Upload: %s | Post: %s', 'fp-esperienze'), 
+                                $max_execution_time, $upload_max_filesize, $post_max_size); ?>
+                        </span>
+                    </td>
+                </tr>
+                <tr>
+                    <th><?php _e('Server Load', 'fp-esperienze'); ?></th>
+                    <td>
+                        <?php 
+                        $load_average = '';
+                        if (function_exists('sys_getloadavg')) {
+                            $load = sys_getloadavg();
+                            $load_average = sprintf('%.2f, %.2f, %.2f', $load[0], $load[1], $load[2]);
+                            $status_class = $load[0] > 2 ? 'warning' : 'ok';
+                        } else {
+                            $load_average = __('Not available', 'fp-esperienze');
+                            $status_class = 'warning';
+                        }
+                        ?>
+                        <span class="fp-status-<?php echo esc_attr($status_class); ?> fp-status-icon">
+                            <?php echo esc_html($load_average); ?>
+                        </span>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <?php
+    }
+
+    /**
+     * Render optimization recommendations
+     */
+    private function renderOptimizationRecommendations(array $checks): void {
+        $recommendations = [];
+
+        // Analyze checks and generate recommendations
+        foreach ($checks as $check_name => $check) {
+            if ($check['status'] === 'error') {
+                switch ($check_name) {
+                    case 'cache_performance':
+                        $recommendations[] = [
+                            'priority' => 'high',
+                            'title' => __('Improve Cache Performance', 'fp-esperienze'),
+                            'description' => __('Consider implementing Redis or Memcached for better caching performance.', 'fp-esperienze'),
+                            'action' => __('Install Redis/Memcached plugin', 'fp-esperienze')
+                        ];
+                        break;
+                    case 'api_endpoints':
+                        $recommendations[] = [
+                            'priority' => 'high',
+                            'title' => __('Fix API Endpoints', 'fp-esperienze'),
+                            'description' => __('Some API endpoints are not responding correctly. This may affect booking functionality.', 'fp-esperienze'),
+                            'action' => __('Check server logs and debug failing endpoints', 'fp-esperienze')
+                        ];
+                        break;
+                    case 'memory_usage':
+                        $recommendations[] = [
+                            'priority' => 'high',
+                            'title' => __('Increase Memory Limit', 'fp-esperienze'),
+                            'description' => __('High memory usage detected. Increase PHP memory_limit to prevent issues.', 'fp-esperienze'),
+                            'action' => __('Update php.ini or contact hosting provider', 'fp-esperienze')
+                        ];
+                        break;
+                }
+            } elseif ($check['status'] === 'warning') {
+                switch ($check_name) {
+                    case 'database_performance':
+                        $recommendations[] = [
+                            'priority' => 'medium',
+                            'title' => __('Optimize Database Queries', 'fp-esperienze'),
+                            'description' => __('Slow database queries detected. Consider adding indexes or optimizing queries.', 'fp-esperienze'),
+                            'action' => __('Review Query Monitor logs and optimize slow queries', 'fp-esperienze')
+                        ];
+                        break;
+                    case 'frontend_performance':
+                        $recommendations[] = [
+                            'priority' => 'medium',
+                            'title' => __('Enable Asset Optimization', 'fp-esperienze'),
+                            'description' => __('Asset minification is not enabled. This can improve page load times.', 'fp-esperienze'),
+                            'action' => __('Go to Performance Settings and enable asset optimization', 'fp-esperienze')
+                        ];
+                        break;
+                    case 'cache_performance':
+                        $recommendations[] = [
+                            'priority' => 'low',
+                            'title' => __('Monitor Cache Performance', 'fp-esperienze'),
+                            'description' => __('Cache performance is slower than optimal but still functional.', 'fp-esperienze'),
+                            'action' => __('Monitor cache hit ratios and consider upgrading caching solution', 'fp-esperienze')
+                        ];
+                        break;
+                }
+            }
+        }
+
+        // Add general performance recommendations
+        $memory_limit = wp_convert_hr_to_bytes(ini_get('memory_limit'));
+        if ($memory_limit < 256 * 1024 * 1024) { // Less than 256MB
+            $recommendations[] = [
+                'priority' => 'medium',
+                'title' => __('Increase PHP Memory Limit', 'fp-esperienze'),
+                'description' => sprintf(__('Current memory limit is %s. For optimal performance, consider increasing to at least 256MB.', 'fp-esperienze'), size_format($memory_limit)),
+                'action' => __('Update memory_limit in php.ini', 'fp-esperienze')
+            ];
+        }
+
+        if (empty($recommendations)) {
+            $recommendations[] = [
+                'priority' => 'low',
+                'title' => __('System Running Optimally', 'fp-esperienze'),
+                'description' => __('All systems are functioning well. Continue monitoring performance regularly.', 'fp-esperienze'),
+                'action' => __('Schedule regular performance reviews', 'fp-esperienze')
+            ];
+        }
+
+        if (!empty($recommendations)) :
+        ?>
+        <div class="fp-status-section">
+            <h2><?php _e('Optimization Recommendations', 'fp-esperienze'); ?></h2>
+            <div class="fp-recommendations">
+                <?php foreach ($recommendations as $rec) : ?>
+                    <div class="fp-recommendation fp-priority-<?php echo esc_attr($rec['priority']); ?>">
+                        <h4>
+                            <span class="fp-priority-badge fp-priority-<?php echo esc_attr($rec['priority']); ?>">
+                                <?php echo esc_html(strtoupper($rec['priority'])); ?>
+                            </span>
+                            <?php echo esc_html($rec['title']); ?>
+                        </h4>
+                        <p><?php echo esc_html($rec['description']); ?></p>
+                        <p class="fp-action"><strong><?php _e('Action:', 'fp-esperienze'); ?></strong> <?php echo esc_html($rec['action']); ?></p>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        <?php
+        endif;
     }
 }
