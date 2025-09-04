@@ -2393,6 +2393,10 @@ class Experience {
             body:not(.product-type-experience) .show_if_experience {
                 display: none !important;
             }
+            .woocommerce_options_panel label,
+            .woocommerce_options_panel legend {
+                margin: 0 0 5px 0 !important;
+            }
         ');
     }
     
