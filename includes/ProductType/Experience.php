@@ -1876,33 +1876,49 @@ class Experience {
      * @param int $product_id Product ID
      */
     private function saveOverrides(int $product_id): void {
-        if (!isset($_POST['overrides']) || !is_array($_POST['overrides'])) {
-            return;
+        // Get existing overrides to track which ones should be deleted
+        $existing_overrides = OverrideManager::getOverrides($product_id);
+        $existing_dates = array_map(function($override) {
+            return $override->date;
+        }, $existing_overrides);
+        
+        $submitted_dates = [];
+        
+        // Process submitted overrides
+        if (isset($_POST['overrides']) && is_array($_POST['overrides'])) {
+            foreach ($_POST['overrides'] as $override_data) {
+                if (empty($override_data['date'])) {
+                    continue;
+                }
+                
+                $date = sanitize_text_field($override_data['date']);
+                $submitted_dates[] = $date;
+                
+                $price_override = [];
+                if (!empty($override_data['price_adult'])) {
+                    $price_override['adult'] = (float) $override_data['price_adult'];
+                }
+                if (!empty($override_data['price_child'])) {
+                    $price_override['child'] = (float) $override_data['price_child'];
+                }
+                
+                $data = [
+                    'product_id' => $product_id,
+                    'date' => $date,
+                    'is_closed' => !empty($override_data['is_closed']) ? 1 : 0,
+                    'capacity_override' => !empty($override_data['capacity_override']) ? (int) $override_data['capacity_override'] : null,
+                    'price_override_json' => !empty($price_override) ? $price_override : null,
+                    'reason' => sanitize_text_field($override_data['reason'] ?? '')
+                ];
+                
+                OverrideManager::saveOverride($data);
+            }
         }
         
-        foreach ($_POST['overrides'] as $override_data) {
-            if (empty($override_data['date'])) {
-                continue;
-            }
-            
-            $price_override = [];
-            if (!empty($override_data['price_adult'])) {
-                $price_override['adult'] = (float) $override_data['price_adult'];
-            }
-            if (!empty($override_data['price_child'])) {
-                $price_override['child'] = (float) $override_data['price_child'];
-            }
-            
-            $data = [
-                'product_id' => $product_id,
-                'date' => sanitize_text_field($override_data['date']),
-                'is_closed' => !empty($override_data['is_closed']) ? 1 : 0,
-                'capacity_override' => !empty($override_data['capacity_override']) ? (int) $override_data['capacity_override'] : null,
-                'price_override_json' => !empty($price_override) ? $price_override : null,
-                'reason' => sanitize_text_field($override_data['reason'] ?? '')
-            ];
-            
-            OverrideManager::saveOverride($data);
+        // Delete overrides that were removed from the form
+        $dates_to_delete = array_diff($existing_dates, $submitted_dates);
+        foreach ($dates_to_delete as $date) {
+            OverrideManager::deleteOverride($product_id, $date);
         }
     }
 
