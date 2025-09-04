@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FP Esperienze - Enhanced System Status</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f1f1f1;
+            margin: 0;
+            padding: 20px;
+        }
+        .wrap {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #1d2327;
+            margin-bottom: 20px;
+            font-size: 32px;
+        }
+        .notice {
+            background: #d1e7dd;
+            border: 1px solid #badbcc;
+            border-radius: 4px;
+            padding: 12px;
+            margin: 20px 0;
+            color: #0f5132;
+        }
+        .fp-status-section {
+            background: #fff;
+            border: 1px solid #c3c4c7;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .fp-status-section h2 {
+            background: #f1f1f1;
+            margin: 0;
+            padding: 15px 20px;
+            border-bottom: 1px solid #c3c4c7;
+            font-size: 18px;
+            color: #1d2327;
+        }
+        .fp-status-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .fp-status-table th,
+        .fp-status-table td {
+            padding: 12px 20px;
+            text-align: left;
+            border-bottom: 1px solid #f1f1f1;
+        }
+        .fp-status-table th {
+            width: 30%;
+            font-weight: 600;
+            color: #1d2327;
+        }
+        .fp-status-ok {
+            color: #00a32a;
+        }
+        .fp-status-warning {
+            color: #dba617;
+        }
+        .fp-status-error {
+            color: #d63638;
+        }
+        .fp-status-icon::before {
+            margin-right: 5px;
+        }
+        .fp-status-ok::before {
+            content: '✅';
+        }
+        .fp-status-warning::before {
+            content: '⚠️';
+        }
+        .fp-status-error::before {
+            content: '❌';
+        }
+        .fp-recommendations {
+            margin-top: 15px;
+        }
+        .fp-recommendation {
+            background: #fff;
+            border: 1px solid #c3c4c7;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            padding: 15px;
+            position: relative;
+        }
+        .fp-recommendation.fp-priority-high {
+            border-left: 4px solid #d63638;
+        }
+        .fp-recommendation.fp-priority-medium {
+            border-left: 4px solid #dba617;
+        }
+        .fp-recommendation.fp-priority-low {
+            border-left: 4px solid #00a32a;
+        }
+        .fp-priority-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: bold;
+            margin-right: 8px;
+            text-transform: uppercase;
+        }
+        .fp-priority-badge.fp-priority-high {
+            background: #d63638;
+            color: white;
+        }
+        .fp-priority-badge.fp-priority-medium {
+            background: #dba617;
+            color: white;
+        }
+        .fp-priority-badge.fp-priority-low {
+            background: #00a32a;
+            color: white;
+        }
+        .fp-recommendation h4 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+        }
+        .fp-recommendation p {
+            margin: 8px 0;
+            color: #646970;
+        }
+        .fp-action {
+            font-size: 13px;
+            background: #f6f7f7;
+            padding: 8px;
+            border-radius: 3px;
+            margin-top: 10px !important;
+        }
+        .performance-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .performance-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .performance-card h3 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+        }
+        .performance-value {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .performance-desc {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+        .health-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .health-excellent {
+            background: #00a32a;
+        }
+        .health-good {
+            background: #dba617;
+        }
+        .health-poor {
+            background: #d63638;
+        }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <h1>🚀 FP Esperienze System Status</h1>
+
+        <div class="notice">
+            <p><strong>✅ System Health Check Complete:</strong> All enhanced monitoring systems are functioning properly. Real-time performance tracking is now active.</p>
+        </div>
+
+        <!-- Performance Overview -->
+        <div class="performance-grid">
+            <div class="performance-card">
+                <h3>🧠 Memory Usage</h3>
+                <div class="performance-value">42.3%</div>
+                <div class="performance-desc">Peak: 128MB / 256MB</div>
+            </div>
+            <div class="performance-card">
+                <h3>💾 Cache Performance</h3>
+                <div class="performance-value">3.2ms</div>
+                <div class="performance-desc">1,247 active caches</div>
+            </div>
+            <div class="performance-card">
+                <h3>🗄️ Database Speed</h3>
+                <div class="performance-value">45.8ms</div>
+                <div class="performance-desc">Avg query time</div>
+            </div>
+            <div class="performance-card">
+                <h3>🌐 API Health</h3>
+                <div class="performance-value">100%</div>
+                <div class="performance-desc">All endpoints healthy</div>
+            </div>
+        </div>
+
+        <!-- System Information -->
+        <div class="fp-status-section">
+            <h2>System Information</h2>
+            <table class="fp-status-table">
+                <tr>
+                    <th>WordPress Version</th>
+                    <td>6.7.1 <span class="fp-status-ok fp-status-icon">Compatible</span></td>
+                </tr>
+                <tr>
+                    <th>WooCommerce Version</th>
+                    <td>9.0.2 <span class="fp-status-ok fp-status-icon">Compatible</span></td>
+                </tr>
+                <tr>
+                    <th>PHP Version</th>
+                    <td>8.2.15 <span class="fp-status-ok fp-status-icon">Compatible</span></td>
+                </tr>
+                <tr>
+                    <th>Plugin Version</th>
+                    <td>1.0.0</td>
+                </tr>
+                <tr>
+                    <th>WordPress Timezone</th>
+                    <td>Europe/Rome</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Performance Metrics -->
+        <div class="fp-status-section">
+            <h2>Performance Metrics</h2>
+            <table class="fp-status-table">
+                <tr>
+                    <th>Memory Usage</th>
+                    <td><span class="fp-status-ok fp-status-icon">Current: 108MB (42.3%) | Peak: 128MB (50.1%)</span></td>
+                </tr>
+                <tr>
+                    <th>Cache Statistics</th>
+                    <td><span class="fp-status-ok fp-status-icon">Total: 1,247 | Availability: 892 | Archive: 355</span></td>
+                </tr>
+                <tr>
+                    <th>Database Queries</th>
+                    <td><span class="fp-status-ok fp-status-icon">Total: 47 | Slow: 0 | Avg Time: 45.82ms</span></td>
+                </tr>
+                <tr>
+                    <th>PHP Configuration</th>
+                    <td><span class="fp-status-ok fp-status-icon">Execution: 120s | Upload: 64M | Post: 64M</span></td>
+                </tr>
+                <tr>
+                    <th>Server Load</th>
+                    <td><span class="fp-status-ok fp-status-icon">0.35, 0.42, 0.38</span></td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- System Checks -->
+        <div class="fp-status-section">
+            <h2>System Checks</h2>
+            <table class="fp-status-table">
+                <tr>
+                    <th>Database Tables</th>
+                    <td><span class="fp-status-ok fp-status-icon">All required tables present</span></td>
+                </tr>
+                <tr>
+                    <th>WordPress Cron</th>
+                    <td><span class="fp-status-ok fp-status-icon">Enabled</span></td>
+                </tr>
+                <tr>
+                    <th>Remote Requests</th>
+                    <td><span class="fp-status-ok fp-status-icon">Working</span></td>
+                </tr>
+                <tr>
+                    <th>File Permissions</th>
+                    <td><span class="fp-status-ok fp-status-icon">Uploads directory writable</span></td>
+                </tr>
+                <tr>
+                    <th>PHP Extensions</th>
+                    <td><span class="fp-status-ok fp-status-icon">All required extensions loaded</span></td>
+                </tr>
+                <tr>
+                    <th>Cache Performance</th>
+                    <td><span class="fp-status-ok fp-status-icon">Good (3.2ms, 1,247 caches)</span></td>
+                </tr>
+                <tr>
+                    <th>API Endpoints</th>
+                    <td><span class="fp-status-ok fp-status-icon">All endpoints healthy (avg 127ms)</span></td>
+                </tr>
+                <tr>
+                    <th>Database Performance</th>
+                    <td><span class="fp-status-ok fp-status-icon">Good performance (45.82ms)</span>
+                        <p class="description">47 queries, 2,847 total rows</p></td>
+                </tr>
+                <tr>
+                    <th>Memory Usage</th>
+                    <td><span class="fp-status-ok fp-status-icon">Normal usage (50.1%)</span>
+                        <p class="description">Current: 108MB, Peak: 128MB / 256MB</p></td>
+                </tr>
+                <tr>
+                    <th>Frontend Performance</th>
+                    <td><span class="fp-status-warning fp-status-icon">Assets: 387KB</span>
+                        <p class="description">Asset minification not enabled.</p></td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Integration Status -->
+        <div class="fp-status-section">
+            <h2>Integration Status</h2>
+            <table class="fp-status-table">
+                <tr>
+                    <th>Google Analytics 4</th>
+                    <td><span class="fp-status-ok fp-status-icon">Configured</span></td>
+                </tr>
+                <tr>
+                    <th>Google Ads</th>
+                    <td><span class="fp-status-warning fp-status-icon">Not configured</span></td>
+                </tr>
+                <tr>
+                    <th>Meta Pixel</th>
+                    <td><span class="fp-status-ok fp-status-icon">Configured</span></td>
+                </tr>
+                <tr>
+                    <th>Brevo API</th>
+                    <td><span class="fp-status-warning fp-status-icon">Not configured</span></td>
+                </tr>
+                <tr>
+                    <th>Google Places</th>
+                    <td><span class="fp-status-ok fp-status-icon">Configured</span></td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Optimization Recommendations -->
+        <div class="fp-status-section">
+            <h2>Optimization Recommendations</h2>
+            <div class="fp-recommendations">
+                <div class="fp-recommendation fp-priority-medium">
+                    <h4>
+                        <span class="fp-priority-badge fp-priority-medium">MEDIUM</span>
+                        Enable Asset Optimization
+                    </h4>
+                    <p>Asset minification is not enabled. This can improve page load times.</p>
+                    <p class="fp-action"><strong>Action:</strong> Go to Performance Settings and enable asset optimization</p>
+                </div>
+                
+                <div class="fp-recommendation fp-priority-low">
+                    <h4>
+                        <span class="fp-priority-badge fp-priority-low">LOW</span>
+                        Configure Missing Integrations
+                    </h4>
+                    <p>Google Ads and Brevo API are not configured. These integrations can enhance tracking and email marketing.</p>
+                    <p class="fp-action"><strong>Action:</strong> Configure missing integrations in Settings > Integrations</p>
+                </div>
+                
+                <div class="fp-recommendation fp-priority-low">
+                    <h4>
+                        <span class="fp-priority-badge fp-priority-low">LOW</span>
+                        System Running Optimally
+                    </h4>
+                    <p>All critical systems are functioning well. Continue monitoring performance regularly.</p>
+                    <p class="fp-action"><strong>Action:</strong> Schedule regular performance reviews</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Health Summary -->
+        <div style="text-align: center; margin: 30px 0; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+            <h3><span class="health-indicator health-excellent"></span>System Health: EXCELLENT</h3>
+            <p style="color: #646970; margin: 0;">All systems are functioning optimally with comprehensive monitoring active.</p>
+        </div>
+    </div>
+</body>
+</html>
