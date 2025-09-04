@@ -998,7 +998,6 @@
     .fp-summary-table td {
         padding: 6px 8px;
     }
-}
     .fp-override-row input[type="number"],
     .fp-override-row input[type="text"] {
         max-width: none;
@@ -1011,19 +1010,18 @@
     .fp-overrides-section {
         margin: 10px 0;
     }
-}
-    
+
+}    
     .fp-summary-table {
         font-size: 12px;
     }
     
-    .fp-summary-table th,
-    .fp-summary-table td {
-        padding: 8px 6px;
-    }
-}
+      .fp-summary-table th,
+      .fp-summary-table td {
+          padding: 8px 6px;
+      }
 
-@media (max-width: 768px) {
+  @media (max-width: 768px) {
     .fp-schedules-section,
     .fp-overrides-section-wrapper {
         padding: 10px;
@@ -1049,8 +1047,7 @@
         margin: 10px 0;
         padding: 10px;
     }
-}
-    
+
     .fp-summary-table {
         font-size: 11px;
         display: block;
@@ -1111,20 +1108,21 @@
     }
     
     /* Hide summary table on very small screens */
-    @media (max-width: 480px) {
-        .fp-slots-summary {
-            display: none;
-        }
-    }
+      @media (max-width: 480px) {
+          .fp-slots-summary {
+              display: none;
+          }
+      }
 }
 
-/* Improved focus states for accessibility */
-.fp-day-pill input[type="checkbox"]:focus + label {
-    outline: 2px solid #0073aa;
-    outline-offset: 2px;
-    z-index: 1;
-    position: relative;
-}
+  /* Improved focus states for accessibility */
+  .fp-day-pill input[type="checkbox"]:focus + label {
+      outline: 2px solid #0073aa;
+      outline-offset: 2px;
+      z-index: 1;
+      position: relative;
+      box-shadow: 0 0 0 2px rgba(0, 115, 170, 0.3);
+  }
 
 .fp-time-field input[type="time"]:focus,
 .fp-overrides-section input:focus,
@@ -1604,15 +1602,13 @@
     }
     
     .fp-add-time-slot,
-    .fp-add-override {
-        width: 100%;
-        justify-content: center;
-    }
-}
-    box-shadow: 0 0 0 2px rgba(0, 115, 170, 0.3);
-}
+      .fp-add-override {
+          width: 100%;
+          justify-content: center;
+      }
+  }
 
-/* Remove old checkbox styles for days */
+  /* Remove old checkbox styles for days */
 .fp-days-checkboxes {
     display: none !important;
 }
@@ -1708,15 +1704,14 @@
 .fp-remove-time-slot:hover {
     background: #d63638 !important;
     color: #fff !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(214,54,56,0.2);
 }
 
 .fp-remove-time-slot .dashicons {
     font-size: 16px !important;
     width: 16px !important;
     height: 16px !important;
-}
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(214,54,56,0.2);
 }
 
 .fp-remove-time-slot .dashicons {
@@ -1837,6 +1832,8 @@
     color: #23282d;
     font-size: 14px;
 }
+
+.fp-slots-summary-header .dashicons {
     color: #ffffff;
     filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
 }
@@ -1889,6 +1886,8 @@
     border-radius: 12px;
     font-size: 11px;
     font-weight: 600;
+}
+
 .fp-summary-table .fp-time-badge {
     background: #23282d;
     color: #fff;
