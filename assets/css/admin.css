@@ -124,6 +124,75 @@
     resize: vertical;
 }
 
+/* Dynamic Pricing Rules Panel Fix */
+#dynamic_pricing_product_data {
+    position: relative !important;
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+    width: 100% !important;
+    box-sizing: border-box;
+}
+
+#dynamic_pricing_product_data .options_group {
+    margin-left: 0 !important;
+    padding-left: 12px !important;
+    position: relative !important;
+    width: 100% !important;
+    box-sizing: border-box;
+}
+
+/* WooCommerce Options Panel Label Fix */
+.woocommerce_options_panel label,
+.woocommerce_options_panel legend {
+    margin: 0 0 5px 0 !important;
+    position: relative !important;
+}
+
+.woocommerce_options_panel .options_group {
+    position: relative !important;
+    margin-left: 0 !important;
+    padding-left: 12px !important;
+    width: 100% !important;
+    box-sizing: border-box;
+}
+
+/* Pricing Rules Container */
+#fp-pricing-rules-container {
+    width: 100%;
+    margin: 15px 0;
+    clear: both;
+    position: relative;
+}
+
+#fp-pricing-rules-container .fp-pricing-rule-row {
+    margin-bottom: 15px;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: #f9f9f9;
+}
+
+.fp-pricing-preview {
+    margin-top: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+}
+
+.fp-preview-inputs {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.fp-preview-inputs > div {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
 /* Admin notices */
 .fp-admin-notice {
     margin: 15px 0;
@@ -154,6 +223,8 @@
     border: 1px solid #ddd;
     border-radius: 4px;
     background: #f9f9f9;
+    flex-wrap: wrap;
+    min-width: 0;
 }
 
 /* Enhanced section styling with semantic structure */
@@ -356,8 +427,9 @@
 }
 .fp-schedule-row input,
 .fp-schedule-row select {
-    flex: 1;
-    min-width: 100px;
+    flex: 1 1 100px;
+    min-width: 80px;
+    max-width: 200px;
 }
 
 .fp-schedule-row .fp-remove-schedule {
@@ -380,6 +452,8 @@
     max-width: 100%;
     overflow-x: auto;
     overflow-y: visible;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 /* Time slots container specific styling */
@@ -1000,6 +1074,20 @@
     }
     .fp-override-row input[type="number"],
     .fp-override-row input[type="text"] {
+        max-width: none;
+    }
+    
+    /* Schedule row responsive fixes */
+    .fp-schedule-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+    
+    .fp-schedule-row input,
+    .fp-schedule-row select {
+        flex: none;
+        width: 100%;
         max-width: none;
     }
     
