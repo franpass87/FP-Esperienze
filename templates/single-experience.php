@@ -294,14 +294,21 @@ jQuery(document).ready(function($) {
                         
                         <div class="fp-meeting-point-map">
                             <?php if ($meeting_point->lat && $meeting_point->lng) : ?>
-                                <!-- Map placeholder for future integration -->
+                                <!-- Interactive Google Maps embed using basic iframe (no API key required) -->
                                 <div class="fp-map-container" aria-label="<?php _e('Map showing meeting point location', 'fp-esperienze'); ?>">
-                                    <div class="fp-map-placeholder">
-                                        <span><?php _e('Interactive map will be displayed here', 'fp-esperienze'); ?></span>
-                                    </div>
+                                    <iframe 
+                                        src="https://maps.google.com/maps?q=<?php echo esc_attr($meeting_point->lat . ',' . $meeting_point->lng); ?>&amp;z=15&amp;output=embed"
+                                        width="100%" 
+                                        height="200" 
+                                        style="border:0;" 
+                                        allowfullscreen="" 
+                                        loading="lazy" 
+                                        referrerpolicy="no-referrer-when-downgrade"
+                                        title="<?php esc_attr_e('Map showing meeting point location', 'fp-esperienze'); ?>">
+                                    </iframe>
                                 </div>
                             <?php else : ?>
-                                <div class="fp-map-container">
+                                <div class="fp-map-container fp-map-placeholder-container">
                                     <div class="fp-map-placeholder fp-map-unavailable">
                                         <span><?php _e('Map coordinates not available', 'fp-esperienze'); ?></span>
                                     </div>
