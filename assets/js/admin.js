@@ -279,7 +279,12 @@
             // Form submission handling for schedule builder
             $('form#post').on('submit', function() {
                 if ($('#product-type').val() === 'experience') {
-                    self.generateSchedulesFromBuilder();
+                    // Only run generateSchedulesFromBuilder if we're not using the builder interface
+                    // The builder interface already creates properly named form fields for builder_slots
+                    var hasBuilderSlots = $('#fp-time-slots-container .fp-time-slot-row, #fp-time-slots-container .fp-time-slot-card-clean').length > 0;
+                    if (!hasBuilderSlots) {
+                        self.generateSchedulesFromBuilder();
+                    }
                     // Clear unsaved changes flag on successful submission
                     self.clearUnsavedChanges();
                 }
