@@ -48,3 +48,5 @@ error_log
 test-*.php
 test-*.html
 verify-experience-fix.php
+# Composer dependencies should not be committed in WordPress plugins
+vendor/
