@@ -279,7 +279,22 @@
             // Form submission handling for schedule builder
             $('form#post').on('submit', function() {
                 if ($('#product-type').val() === 'experience') {
-                    self.generateSchedulesFromBuilder();
+                    // Always clear the generated schedules container to prevent duplicate data
+                    $('#fp-generated-schedules').empty();
+                    
+                    // Check if we're using the modern builder interface (which sends builder_slots data)
+                    var hasBuilderSlots = $('#fp-time-slots-container .fp-time-slot-row, #fp-time-slots-container .fp-time-slot-card-clean').length > 0;
+                    
+                    // Only generate legacy schedule data if:
+                    // 1. We're not using the builder interface AND
+                    // 2. There are no existing builder_slots form inputs
+                    var hasBuilderFormInputs = $('input[name*="builder_slots"]').length > 0;
+                    
+                    if (!hasBuilderSlots && !hasBuilderFormInputs) {
+                        // This is the legacy raw schedule mode
+                        self.generateSchedulesFromBuilder();
+                    }
+                    
                     // Clear unsaved changes flag on successful submission
                     self.clearUnsavedChanges();
                 }
@@ -311,15 +326,20 @@
                 var $timeSlotRow = $this.closest('.fp-time-slot-row');
                 var $overridesSection = $timeSlotRow.find('.fp-overrides-section');
                 var $advancedEnabledField = $timeSlotRow.find('.fp-advanced-enabled');
+                var $overrideToggle = $timeSlotRow.find('.fp-override-toggle');
                 
                 if ($this.is(':checked')) {
                     $overridesSection.show();
                     $advancedEnabledField.val('1');
+                    // Clear user-disabled flag when explicitly enabling
+                    $overrideToggle.removeData('user-disabled');
                 } else {
                     $overridesSection.hide();
                     // Don't automatically clear values - let user decide
                     // Only clear the advanced enabled flag
                     $advancedEnabledField.val('0');
+                    // Mark that user explicitly disabled advanced settings
+                    $overrideToggle.data('user-disabled', true);
                 }
                 
                 // Update summary table immediately
@@ -333,6 +353,9 @@
                 var $advancedEnabledField = $timeSlotRow.find('.fp-advanced-enabled');
                 var $overrideToggle = $timeSlotRow.find('.fp-override-toggle');
                 
+                // Track if user explicitly disabled advanced settings
+                var userDisabled = $overrideToggle.data('user-disabled') === true;
+                
                 // Check if any override fields have values
                 var hasOverrideValues = false;
                 $timeSlotRow.find('.fp-overrides-section input, .fp-overrides-section select').each(function() {
@@ -342,8 +365,9 @@
                     }
                 });
                 
-                // Auto-enable advanced mode if values are present
-                if (hasOverrideValues && !$toggle.is(':checked')) {
+                // Only auto-enable if user hasn't explicitly disabled advanced settings
+                // and this is triggered by user input (not programmatic setting)
+                if (hasOverrideValues && !$toggle.is(':checked') && !userDisabled) {
                     $toggle.prop('checked', true);
                     $advancedEnabledField.val('1');
                     $overrideToggle.addClass('auto-enabled');
@@ -352,8 +376,49 @@
                     setTimeout(function() {
                         $overrideToggle.removeClass('auto-enabled');
                     }, 2000);
-                } else if (!hasOverrideValues && $toggle.is(':checked')) {
-                    // Auto-disable if no values and currently enabled
+                } else if (!hasOverrideValues && $toggle.is(':checked') && !userDisabled) {
+                    // Auto-disable if no values and currently enabled (only if not user-controlled)
+                    $toggle.prop('checked', false);
+                    $advancedEnabledField.val('0');
+                    $overrideToggle.removeClass('auto-enabled');
+                }
+                
+                // Update summary table
+                self.updateSummaryTable();
+            });
+            
+            // Handle override field changes for clean version - same logic as above
+            $(document).on('input change', '.fp-overrides-section-clean input, .fp-overrides-section-clean select', function() {
+                var $timeSlotCard = $(this).closest('.fp-time-slot-card-clean');
+                var $toggle = $timeSlotCard.find('.fp-show-overrides-toggle-clean');
+                var $advancedEnabledField = $timeSlotCard.find('.fp-advanced-enabled-clean');
+                var $overrideToggle = $timeSlotCard.find('.fp-override-toggle-clean');
+                
+                // Track if user explicitly disabled advanced settings
+                var userDisabled = $overrideToggle.data('user-disabled') === true;
+                
+                // Check if any override fields have values
+                var hasOverrideValues = false;
+                $timeSlotCard.find('.fp-overrides-section-clean input, .fp-overrides-section-clean select').each(function() {
+                    if ($(this).val() && $(this).val() !== '') {
+                        hasOverrideValues = true;
+                        return false; // break
+                    }
+                });
+                
+                // Only auto-enable if user hasn't explicitly disabled advanced settings
+                // and this is triggered by user input (not programmatic setting)
+                if (hasOverrideValues && !$toggle.is(':checked') && !userDisabled) {
+                    $toggle.prop('checked', true);
+                    $advancedEnabledField.val('1');
+                    $overrideToggle.addClass('auto-enabled');
+                    
+                    // Show a subtle indication that auto-enable happened
+                    setTimeout(function() {
+                        $overrideToggle.removeClass('auto-enabled');
+                    }, 2000);
+                } else if (!hasOverrideValues && $toggle.is(':checked') && !userDisabled) {
+                    // Auto-disable if no values and currently enabled (only if not user-controlled)
                     $toggle.prop('checked', false);
                     $advancedEnabledField.val('0');
                     $overrideToggle.removeClass('auto-enabled');
@@ -385,9 +450,15 @@
             
             // Validate time slots before form submission
             $('form#post').on('submit', function(e) {
-                if (!self.validateTimeSlots()) {
-                    e.preventDefault();
-                    return false;
+                if ($('#product-type').val() === 'experience') {
+                    // Enhanced validation before submission
+                    var isValid = self.validateTimeSlots();
+                    var hasValidData = self.validateFormData();
+                    
+                    if (!isValid || !hasValidData) {
+                        e.preventDefault();
+                        return false;
+                    }
                 }
             });
             
@@ -404,7 +475,9 @@
             var hasErrors = false;
             var errorMessages = [];
             
-            $('#fp-time-slots-container .fp-time-slot-row').each(function() {
+            // Support both old (.fp-time-slot-row) and new (.fp-time-slot-card-clean) formats
+            var selector = '#fp-time-slots-container .fp-time-slot-row, #fp-time-slots-container .fp-time-slot-card-clean';
+            $(selector).each(function() {
                 var $slot = $(this);
                 var startTime = $slot.find('input[name*="[start_time]"]').val();
                 var selectedDays = $slot.find('input[name*="[days][]"]:checked').length;
@@ -414,15 +487,24 @@
                     $slot.find('input[name*="[start_time]"]').css('border-color', '#d63638');
                     errorMessages.push('All time slots must have a start time.');
                 } else {
-                    $slot.find('input[name*="[start_time]"]').css('border-color', '');
+                    // Validate time format on frontend too
+                    var timePattern = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
+                    if (!timePattern.test(startTime)) {
+                        hasErrors = true;
+                        $slot.find('input[name*="[start_time]"]').css('border-color', '#d63638');
+                        errorMessages.push('Time "' + startTime + '" has invalid format. Use HH:MM format.');
+                    } else {
+                        $slot.find('input[name*="[start_time]"]').css('border-color', '');
+                    }
                 }
                 
                 if (selectedDays === 0) {
                     hasErrors = true;
-                    $slot.find('.fp-days-pills').css('border', '2px solid #d63638');
+                    // Support both old and new day pills containers
+                    $slot.find('.fp-days-pills, .fp-days-pills-clean').css('border', '2px solid #d63638');
                     errorMessages.push('All time slots must have at least one day selected.');
                 } else {
-                    $slot.find('.fp-days-pills').css('border', '');
+                    $slot.find('.fp-days-pills, .fp-days-pills-clean').css('border', '');
                 }
             });
             
@@ -430,6 +512,22 @@
                 var uniqueMessages = [...new Set(errorMessages)];
                 alert('Please fix the following errors:\n\n' + uniqueMessages.join('\n'));
                 return false;
+            }
+            
+            return true;
+        },
+        
+        /**
+         * Validate form data for conflicts and issues
+         */
+        validateFormData: function() {
+            var hasBuilderSlots = $('input[name*="builder_slots"]').length > 0;
+            var hasGeneratedSchedules = $('#fp-generated-schedules input').length > 0;
+            
+            // Check for potential conflicts
+            if (hasBuilderSlots && hasGeneratedSchedules) {
+                console.warn('FP Esperienze: Detected both builder_slots and generated schedules data, clearing generated schedules to prevent conflicts');
+                $('#fp-generated-schedules').empty();
             }
             
             return true;
@@ -478,8 +576,9 @@
                 '5': 'Fri', '6': 'Sat', '0': 'Sun'
             };
             
-            // Collect slot data
-            $('#fp-time-slots-container .fp-time-slot-row').each(function() {
+            // Collect slot data - support both old (.fp-time-slot-row) and new (.fp-time-slot-card-clean) formats
+            var selector = '#fp-time-slots-container .fp-time-slot-row, #fp-time-slots-container .fp-time-slot-card-clean';
+            $(selector).each(function() {
                 var $slot = $(this);
                 var startTime = $slot.find('input[name*="[start_time]"]').val();
                 var selectedDays = [];
@@ -489,11 +588,13 @@
                 });
                 
                 if (startTime && selectedDays.length > 0) {
-                    var overridesEnabled = $slot.find('.fp-show-overrides-toggle').is(':checked');
+                    // Support both old and new override toggle classes
+                    var overridesEnabled = $slot.find('.fp-show-overrides-toggle, .fp-show-overrides-toggle-clean').is(':checked');
                     var customCount = 0;
                     
                     if (overridesEnabled) {
-                        $slot.find('.fp-overrides-section input, .fp-overrides-section select').each(function() {
+                        // Support both old and new override section classes
+                        $slot.find('.fp-overrides-section input, .fp-overrides-section select, .fp-overrides-section-clean input, .fp-overrides-section-clean select').each(function() {
                             if ($(this).val() && $(this).val() !== '') {
                                 customCount++;
                             }
@@ -604,8 +705,9 @@
             
             var scheduleIndex = 0;
             
-            // Process each time slot
-            $('#fp-time-slots-container .fp-time-slot-row').each(function() {
+            // Process each time slot - support both old (.fp-time-slot-row) and new (.fp-time-slot-card-clean) formats
+            var selector = '#fp-time-slots-container .fp-time-slot-row, #fp-time-slots-container .fp-time-slot-card-clean';
+            $(selector).each(function() {
                 var timeSlot = $(this);
                 var startTime = timeSlot.find('input[name*="[start_time]"]').val();
                 var selectedDays = [];
@@ -619,9 +721,9 @@
                     return; // Skip invalid slots
                 }
                 
-                // Get override values - always check if advanced settings are enabled
+                // Get override values - check for both old and new advanced enabled fields
                 var overrides = {};
-                var advancedEnabled = timeSlot.find('.fp-advanced-enabled').val() === '1';
+                var advancedEnabled = timeSlot.find('.fp-advanced-enabled, .fp-advanced-enabled-clean').val() === '1';
                 
                 if (advancedEnabled) {
                     var duration = timeSlot.find('input[name*="[duration_min]"]').val();
@@ -1698,13 +1800,22 @@
             var $card = $checkbox.closest('.fp-time-slot-card-clean');
             var $overridesSection = $card.find('.fp-overrides-section-clean');
             var $hiddenInput = $card.find('.fp-advanced-enabled-clean');
+            var $overrideToggle = $card.find('.fp-override-toggle-clean');
             
             if ($checkbox.is(':checked')) {
                 $overridesSection.slideDown(200);
                 $hiddenInput.val('1');
+                // Clear user-disabled flag when explicitly enabling
+                if ($overrideToggle.length) {
+                    $overrideToggle.removeData('user-disabled');
+                }
             } else {
                 $overridesSection.slideUp(200);
                 $hiddenInput.val('0');
+                // Mark that user explicitly disabled advanced settings
+                if ($overrideToggle.length) {
+                    $overrideToggle.data('user-disabled', true);
+                }
             }
         },
         
