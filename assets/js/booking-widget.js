@@ -493,13 +493,4 @@
         }
     };
 
-})(jQuery);/div>');
-            
-            // Auto-hide after 5 seconds
-            setTimeout(function() {
-                $errorContainer.empty();
-            }, 5000);
-        }
-    };
-
 })(jQuery);

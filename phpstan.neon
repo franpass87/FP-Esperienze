@@ -1,0 +1,14 @@
+parameters:
+    level: 8
+    paths:
+        - includes/
+    excludePaths:
+        - includes/vendor/
+    ignoreErrors:
+        # WordPress specific ignores
+        - '#Unsafe usage of new static\(\)#'
+        - '#Access to an undefined property WP_Post#'
+        - '#Function wp_die invoked with 1 parameter#'
+    checkMissingIterableValueType: false
+    checkGenericClassInNonGenericObjectType: false
+    bootstrap: phpstan-bootstrap.php
