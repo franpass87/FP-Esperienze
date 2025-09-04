@@ -155,8 +155,31 @@ jQuery(document).ready(function($) {
                         <div class="fp-trust-content">
                             <strong><?php _e('Languages', 'fp-esperienze'); ?></strong>
                             <div class="fp-language-chips">
-                                <?php foreach ($language_chips as $lang) : ?>
-                                    <span class="fp-language-chip"><?php echo esc_html($lang); ?></span>
+                                <?php 
+                                // Simple language to flag mapping
+                                $language_flags = [
+                                    'Italian' => '🇮🇹',
+                                    'English' => '🇬🇧', 
+                                    'Spanish' => '🇪🇸',
+                                    'French' => '🇫🇷',
+                                    'German' => '🇩🇪',
+                                    'Portuguese' => '🇵🇹',
+                                    'Dutch' => '🇳🇱',
+                                    'Russian' => '🇷🇺',
+                                    'Chinese' => '🇨🇳',
+                                    'Japanese' => '🇯🇵',
+                                    'Korean' => '🇰🇷',
+                                    'Arabic' => '🇸🇦'
+                                ];
+                                
+                                foreach ($language_chips as $lang) : 
+                                    $trimmed_lang = trim($lang);
+                                    $flag = isset($language_flags[$trimmed_lang]) ? $language_flags[$trimmed_lang] : '🌐';
+                                ?>
+                                    <span class="fp-language-chip">
+                                        <span class="fp-language-flag"><?php echo $flag; ?></span>
+                                        <?php echo esc_html($trimmed_lang); ?>
+                                    </span>
                                 <?php endforeach; ?>
                             </div>
                         </div>

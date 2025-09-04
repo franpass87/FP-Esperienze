@@ -2397,6 +2397,16 @@ class Experience {
             .woocommerce_options_panel legend {
                 margin: 0 0 5px 0 !important;
             }
+            .woocommerce_options_panel h4 {
+                margin: 15px 12px 10px 12px !important;
+                padding: 0 !important;
+            }
+            .woocommerce_options_panel .options_group {
+                position: relative !important;
+                clear: both !important;
+                z-index: auto !important;
+                margin-left: 0 !important;
+            }
         ');
     }
     

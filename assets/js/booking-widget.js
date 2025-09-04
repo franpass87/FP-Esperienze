@@ -217,6 +217,21 @@
                 self.validateForm();
             });
 
+            // Gift form toggle
+            $('#fp-gift-toggle').on('change', function() {
+                if ($(this).is(':checked')) {
+                    $('#fp-gift-form').slideDown(300);
+                } else {
+                    $('#fp-gift-form').slideUp(300);
+                }
+                self.validateForm();
+            });
+            
+            // Gift form validation
+            $('.fp-required-field').on('input blur', function() {
+                self.validateForm();
+            });
+
             // Add to cart
             $('#fp-add-to-cart').on('click', function() {
                 self.addToCart();
@@ -423,6 +438,22 @@
                     isValid = false;
                 }
             });
+            
+            // Check gift form validation if gift is selected
+            if ($('#fp-gift-toggle').is(':checked')) {
+                var recipientName = $('#fp-gift-recipient-name').val().trim();
+                var recipientEmail = $('#fp-gift-recipient-email').val().trim();
+                
+                if (!recipientName || !recipientEmail) {
+                    isValid = false;
+                }
+                
+                // Basic email validation
+                var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (recipientEmail && !emailRegex.test(recipientEmail)) {
+                    isValid = false;
+                }
+            }
             
             $('#fp-add-to-cart').prop('disabled', !isValid);
             
