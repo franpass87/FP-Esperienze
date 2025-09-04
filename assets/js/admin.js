@@ -311,15 +311,20 @@
                 var $timeSlotRow = $this.closest('.fp-time-slot-row');
                 var $overridesSection = $timeSlotRow.find('.fp-overrides-section');
                 var $advancedEnabledField = $timeSlotRow.find('.fp-advanced-enabled');
+                var $overrideToggle = $timeSlotRow.find('.fp-override-toggle');
                 
                 if ($this.is(':checked')) {
                     $overridesSection.show();
                     $advancedEnabledField.val('1');
+                    // Clear user-disabled flag when explicitly enabling
+                    $overrideToggle.removeData('user-disabled');
                 } else {
                     $overridesSection.hide();
                     // Don't automatically clear values - let user decide
                     // Only clear the advanced enabled flag
                     $advancedEnabledField.val('0');
+                    // Mark that user explicitly disabled advanced settings
+                    $overrideToggle.data('user-disabled', true);
                 }
                 
                 // Update summary table immediately
@@ -333,6 +338,9 @@
                 var $advancedEnabledField = $timeSlotRow.find('.fp-advanced-enabled');
                 var $overrideToggle = $timeSlotRow.find('.fp-override-toggle');
                 
+                // Track if user explicitly disabled advanced settings
+                var userDisabled = $overrideToggle.data('user-disabled') === true;
+                
                 // Check if any override fields have values
                 var hasOverrideValues = false;
                 $timeSlotRow.find('.fp-overrides-section input, .fp-overrides-section select').each(function() {
@@ -342,8 +350,9 @@
                     }
                 });
                 
-                // Auto-enable advanced mode if values are present
-                if (hasOverrideValues && !$toggle.is(':checked')) {
+                // Only auto-enable if user hasn't explicitly disabled advanced settings
+                // and this is triggered by user input (not programmatic setting)
+                if (hasOverrideValues && !$toggle.is(':checked') && !userDisabled) {
                     $toggle.prop('checked', true);
                     $advancedEnabledField.val('1');
                     $overrideToggle.addClass('auto-enabled');
@@ -352,8 +361,49 @@
                     setTimeout(function() {
                         $overrideToggle.removeClass('auto-enabled');
                     }, 2000);
-                } else if (!hasOverrideValues && $toggle.is(':checked')) {
-                    // Auto-disable if no values and currently enabled
+                } else if (!hasOverrideValues && $toggle.is(':checked') && !userDisabled) {
+                    // Auto-disable if no values and currently enabled (only if not user-controlled)
+                    $toggle.prop('checked', false);
+                    $advancedEnabledField.val('0');
+                    $overrideToggle.removeClass('auto-enabled');
+                }
+                
+                // Update summary table
+                self.updateSummaryTable();
+            });
+            
+            // Handle override field changes for clean version - same logic as above
+            $(document).on('input change', '.fp-overrides-section-clean input, .fp-overrides-section-clean select', function() {
+                var $timeSlotCard = $(this).closest('.fp-time-slot-card-clean');
+                var $toggle = $timeSlotCard.find('.fp-show-overrides-toggle-clean');
+                var $advancedEnabledField = $timeSlotCard.find('.fp-advanced-enabled-clean');
+                var $overrideToggle = $timeSlotCard.find('.fp-override-toggle-clean');
+                
+                // Track if user explicitly disabled advanced settings
+                var userDisabled = $overrideToggle.data('user-disabled') === true;
+                
+                // Check if any override fields have values
+                var hasOverrideValues = false;
+                $timeSlotCard.find('.fp-overrides-section-clean input, .fp-overrides-section-clean select').each(function() {
+                    if ($(this).val() && $(this).val() !== '') {
+                        hasOverrideValues = true;
+                        return false; // break
+                    }
+                });
+                
+                // Only auto-enable if user hasn't explicitly disabled advanced settings
+                // and this is triggered by user input (not programmatic setting)
+                if (hasOverrideValues && !$toggle.is(':checked') && !userDisabled) {
+                    $toggle.prop('checked', true);
+                    $advancedEnabledField.val('1');
+                    $overrideToggle.addClass('auto-enabled');
+                    
+                    // Show a subtle indication that auto-enable happened
+                    setTimeout(function() {
+                        $overrideToggle.removeClass('auto-enabled');
+                    }, 2000);
+                } else if (!hasOverrideValues && $toggle.is(':checked') && !userDisabled) {
+                    // Auto-disable if no values and currently enabled (only if not user-controlled)
                     $toggle.prop('checked', false);
                     $advancedEnabledField.val('0');
                     $overrideToggle.removeClass('auto-enabled');
@@ -1698,13 +1748,22 @@
             var $card = $checkbox.closest('.fp-time-slot-card-clean');
             var $overridesSection = $card.find('.fp-overrides-section-clean');
             var $hiddenInput = $card.find('.fp-advanced-enabled-clean');
+            var $overrideToggle = $card.find('.fp-override-toggle-clean');
             
             if ($checkbox.is(':checked')) {
                 $overridesSection.slideDown(200);
                 $hiddenInput.val('1');
+                // Clear user-disabled flag when explicitly enabling
+                if ($overrideToggle.length) {
+                    $overrideToggle.removeData('user-disabled');
+                }
             } else {
                 $overridesSection.slideUp(200);
                 $hiddenInput.val('0');
+                // Mark that user explicitly disabled advanced settings
+                if ($overrideToggle.length) {
+                    $overrideToggle.data('user-disabled', true);
+                }
             }
         },
         
