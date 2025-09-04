@@ -643,7 +643,8 @@ class Experience {
      */
     private function renderTimeSlotCardClean($slot, $index, $days, $meeting_points, $default_duration, $default_capacity, $default_language, $default_meeting_point, $default_price_adult, $default_price_child, $product_id): void {
         $overrides = $slot['overrides'] ?? [];
-        $has_overrides = $this->hasActualOverrides($overrides, $index, $product_id);
+        // Check if user explicitly enabled advanced settings (not auto-determined)
+        $advanced_explicitly_enabled = isset($slot['advanced_enabled']) && $slot['advanced_enabled'] === '1';
         ?>
         <div class="fp-time-slot-content-clean">
             <!-- Time slot header -->
@@ -692,16 +693,16 @@ class Experience {
             <!-- Advanced settings toggle -->
             <div class="fp-override-toggle-clean">
                 <label>
-                    <input type="checkbox" class="fp-show-overrides-toggle-clean" <?php checked($has_overrides); ?>>
+                    <input type="checkbox" class="fp-show-overrides-toggle-clean" <?php checked($advanced_explicitly_enabled); ?>>
                     <span class="dashicons dashicons-admin-tools"></span>
                     <?php _e('Advanced Settings', 'fp-esperienze'); ?>
                 </label>
                 <span class="description"><?php _e('Override default values for this specific time slot', 'fp-esperienze'); ?></span>
-                <input type="hidden" name="builder_slots[<?php echo esc_attr($index); ?>][advanced_enabled]" value="<?php echo $has_overrides ? '1' : '0'; ?>" class="fp-advanced-enabled-clean">
+                <input type="hidden" name="builder_slots[<?php echo esc_attr($index); ?>][advanced_enabled]" value="<?php echo $advanced_explicitly_enabled ? '1' : '0'; ?>" class="fp-advanced-enabled-clean">
             </div>
             
             <!-- Advanced settings section -->
-            <div class="fp-overrides-section-clean" style="<?php echo $has_overrides ? 'display: block;' : 'display: none;'; ?>">
+            <div class="fp-overrides-section-clean" style="<?php echo $advanced_explicitly_enabled ? 'display: block;' : 'display: none;'; ?>">
                 <div class="fp-overrides-grid-clean">
                     <div class="fp-override-field-clean">
                         <label><?php _e('Duration (minutes)', 'fp-esperienze'); ?></label>
@@ -779,6 +780,8 @@ class Experience {
      */
     private function renderTimeSlot($slot, $index, $days, $meeting_points, $default_duration, $default_capacity, $default_language, $default_meeting_point, $default_price_adult, $default_price_child, $product_id): void {
         $overrides = $slot['overrides'] ?? [];
+        // Check if user explicitly enabled advanced settings (not auto-determined)
+        $advanced_explicitly_enabled = isset($slot['advanced_enabled']) && $slot['advanced_enabled'] === '1';
         ?>
         <div class="fp-time-slot-row">
             <div class="fp-time-slot-header">
@@ -833,16 +836,16 @@ class Experience {
             
             <div class="fp-override-toggle">
                 <label>
-                    <input type="checkbox" class="fp-show-overrides-toggle" <?php checked($this->hasActualOverrides($overrides, $index, $product_id)); ?>>
+                    <input type="checkbox" class="fp-show-overrides-toggle" <?php checked($advanced_explicitly_enabled); ?>>
                     <span class="dashicons dashicons-admin-tools"></span>
                     <?php _e('Advanced Settings', 'fp-esperienze'); ?>
                 </label>
                 <span class="description"><?php _e('Override default values for this specific time slot', 'fp-esperienze'); ?></span>
                 <!-- Hidden field to track if advanced settings are enabled for this slot -->
-                <input type="hidden" name="builder_slots[<?php echo esc_attr($index); ?>][advanced_enabled]" value="<?php echo $this->hasActualOverrides($overrides, $index, $product_id) ? '1' : '0'; ?>" class="fp-advanced-enabled">
+                <input type="hidden" name="builder_slots[<?php echo esc_attr($index); ?>][advanced_enabled]" value="<?php echo $advanced_explicitly_enabled ? '1' : '0'; ?>" class="fp-advanced-enabled">
             </div>
             
-            <div class="fp-overrides-section" style="<?php echo $this->hasActualOverrides($overrides, $index, $product_id) ? '' : 'display: none;'; ?>">
+            <div class="fp-overrides-section" style="<?php echo $advanced_explicitly_enabled ? '' : 'display: none;'; ?>">
                 <div>
                     <div>
                         <label>
@@ -1876,33 +1879,49 @@ class Experience {
      * @param int $product_id Product ID
      */
     private function saveOverrides(int $product_id): void {
-        if (!isset($_POST['overrides']) || !is_array($_POST['overrides'])) {
-            return;
+        // Get existing overrides to track which ones should be deleted
+        $existing_overrides = OverrideManager::getOverrides($product_id);
+        $existing_dates = array_map(function($override) {
+            return $override->date;
+        }, $existing_overrides);
+        
+        $submitted_dates = [];
+        
+        // Process submitted overrides
+        if (isset($_POST['overrides']) && is_array($_POST['overrides'])) {
+            foreach ($_POST['overrides'] as $override_data) {
+                if (empty($override_data['date'])) {
+                    continue;
+                }
+                
+                $date = sanitize_text_field($override_data['date']);
+                $submitted_dates[] = $date;
+                
+                $price_override = [];
+                if (!empty($override_data['price_adult'])) {
+                    $price_override['adult'] = (float) $override_data['price_adult'];
+                }
+                if (!empty($override_data['price_child'])) {
+                    $price_override['child'] = (float) $override_data['price_child'];
+                }
+                
+                $data = [
+                    'product_id' => $product_id,
+                    'date' => $date,
+                    'is_closed' => !empty($override_data['is_closed']) ? 1 : 0,
+                    'capacity_override' => !empty($override_data['capacity_override']) ? (int) $override_data['capacity_override'] : null,
+                    'price_override_json' => !empty($price_override) ? $price_override : null,
+                    'reason' => sanitize_text_field($override_data['reason'] ?? '')
+                ];
+                
+                OverrideManager::saveOverride($data);
+            }
         }
         
-        foreach ($_POST['overrides'] as $override_data) {
-            if (empty($override_data['date'])) {
-                continue;
-            }
-            
-            $price_override = [];
-            if (!empty($override_data['price_adult'])) {
-                $price_override['adult'] = (float) $override_data['price_adult'];
-            }
-            if (!empty($override_data['price_child'])) {
-                $price_override['child'] = (float) $override_data['price_child'];
-            }
-            
-            $data = [
-                'product_id' => $product_id,
-                'date' => sanitize_text_field($override_data['date']),
-                'is_closed' => !empty($override_data['is_closed']) ? 1 : 0,
-                'capacity_override' => !empty($override_data['capacity_override']) ? (int) $override_data['capacity_override'] : null,
-                'price_override_json' => !empty($price_override) ? $price_override : null,
-                'reason' => sanitize_text_field($override_data['reason'] ?? '')
-            ];
-            
-            OverrideManager::saveOverride($data);
+        // Delete overrides that were removed from the form
+        $dates_to_delete = array_diff($existing_dates, $submitted_dates);
+        foreach ($dates_to_delete as $date) {
+            OverrideManager::deleteOverride($product_id, $date);
         }
     }
 
@@ -2387,10 +2406,17 @@ class Experience {
             .product-type-experience .show_if_external {
                 display: none !important;
             }
-            .show_if_experience {
-                display: block !important;
+            /* Only show experience elements when product type is experience AND in experience context */
+            .product-type-experience .woocommerce_options_panel .show_if_experience {
+                display: block;
             }
+            /* Hide experience elements when not experience type */
             body:not(.product-type-experience) .show_if_experience {
+                display: none !important;
+            }
+            /* Ensure experience tabs are properly hidden when not active */
+            #experience_product_data:not(.active),
+            #dynamic_pricing_product_data:not(.active) {
                 display: none !important;
             }
             .woocommerce_options_panel label,

@@ -153,13 +153,17 @@ class ScheduleHelper {
         
         // Convert groups to time slots and identify non-aggregatable schedules
         foreach ($groups as $group) {
+            // Check if any schedule in this group has explicit overrides
+            $has_explicit_overrides = self::hasExplicitOverrides($group, $product_id);
+            
             // Always try to create a time slot if it has valid data
             // Single day slots with overrides can still be represented in the builder
             $time_slots[] = [
                 'start_time' => $group['start_time'],
                 'days' => $group['days'],
                 'overrides' => self::extractOverrides($group, $product_id),
-                'schedule_ids' => $group['schedule_ids']
+                'schedule_ids' => $group['schedule_ids'],
+                'advanced_enabled' => $has_explicit_overrides ? '1' : '0'
             ];
         }
         
@@ -246,5 +250,17 @@ class ScheduleHelper {
         }
         
         return $overrides;
+    }
+    
+    /**
+     * Check if a group has explicit overrides (not defaults)
+     *
+     * @param array $group Schedule group data
+     * @param int $product_id Product ID
+     * @return bool True if group has explicit overrides
+     */
+    private static function hasExplicitOverrides(array $group, int $product_id): bool {
+        // A group has explicit overrides if any value is not null and not equal to the product default
+        return !empty(self::extractOverrides($group, $product_id));
     }
 }
