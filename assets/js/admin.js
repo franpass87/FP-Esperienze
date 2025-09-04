@@ -279,12 +279,22 @@
             // Form submission handling for schedule builder
             $('form#post').on('submit', function() {
                 if ($('#product-type').val() === 'experience') {
-                    // Only run generateSchedulesFromBuilder if we're not using the builder interface
-                    // The builder interface already creates properly named form fields for builder_slots
+                    // Always clear the generated schedules container to prevent duplicate data
+                    $('#fp-generated-schedules').empty();
+                    
+                    // Check if we're using the modern builder interface (which sends builder_slots data)
                     var hasBuilderSlots = $('#fp-time-slots-container .fp-time-slot-row, #fp-time-slots-container .fp-time-slot-card-clean').length > 0;
-                    if (!hasBuilderSlots) {
+                    
+                    // Only generate legacy schedule data if:
+                    // 1. We're not using the builder interface AND
+                    // 2. There are no existing builder_slots form inputs
+                    var hasBuilderFormInputs = $('input[name*="builder_slots"]').length > 0;
+                    
+                    if (!hasBuilderSlots && !hasBuilderFormInputs) {
+                        // This is the legacy raw schedule mode
                         self.generateSchedulesFromBuilder();
                     }
+                    
                     // Clear unsaved changes flag on successful submission
                     self.clearUnsavedChanges();
                 }
@@ -440,9 +450,15 @@
             
             // Validate time slots before form submission
             $('form#post').on('submit', function(e) {
-                if (!self.validateTimeSlots()) {
-                    e.preventDefault();
-                    return false;
+                if ($('#product-type').val() === 'experience') {
+                    // Enhanced validation before submission
+                    var isValid = self.validateTimeSlots();
+                    var hasValidData = self.validateFormData();
+                    
+                    if (!isValid || !hasValidData) {
+                        e.preventDefault();
+                        return false;
+                    }
                 }
             });
             
@@ -471,7 +487,15 @@
                     $slot.find('input[name*="[start_time]"]').css('border-color', '#d63638');
                     errorMessages.push('All time slots must have a start time.');
                 } else {
-                    $slot.find('input[name*="[start_time]"]').css('border-color', '');
+                    // Validate time format on frontend too
+                    var timePattern = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
+                    if (!timePattern.test(startTime)) {
+                        hasErrors = true;
+                        $slot.find('input[name*="[start_time]"]').css('border-color', '#d63638');
+                        errorMessages.push('Time "' + startTime + '" has invalid format. Use HH:MM format.');
+                    } else {
+                        $slot.find('input[name*="[start_time]"]').css('border-color', '');
+                    }
                 }
                 
                 if (selectedDays === 0) {
@@ -488,6 +512,22 @@
                 var uniqueMessages = [...new Set(errorMessages)];
                 alert('Please fix the following errors:\n\n' + uniqueMessages.join('\n'));
                 return false;
+            }
+            
+            return true;
+        },
+        
+        /**
+         * Validate form data for conflicts and issues
+         */
+        validateFormData: function() {
+            var hasBuilderSlots = $('input[name*="builder_slots"]').length > 0;
+            var hasGeneratedSchedules = $('#fp-generated-schedules input').length > 0;
+            
+            // Check for potential conflicts
+            if (hasBuilderSlots && hasGeneratedSchedules) {
+                console.warn('FP Esperienze: Detected both builder_slots and generated schedules data, clearing generated schedules to prevent conflicts');
+                $('#fp-generated-schedules').empty();
             }
             
             return true;

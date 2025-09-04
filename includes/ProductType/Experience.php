@@ -1676,13 +1676,25 @@ class Experience {
         $validation_errors = [];
         
         // Process builder slots first if they exist
-        if (isset($_POST['builder_slots']) && is_array($_POST['builder_slots'])) {
+        $has_builder_slots = isset($_POST['builder_slots']) && is_array($_POST['builder_slots']) && !empty($_POST['builder_slots']);
+        
+        if ($has_builder_slots) {
+            // Add debug logging for builder slots processing
+            error_log("FP Esperienze: Processing builder slots for product {$product_id}");
             $processed_ids = array_merge($processed_ids, $this->processBuilderSlots($product_id, $_POST['builder_slots'], $validation_errors));
         }
         
-        // Process raw schedules if they exist (for advanced mode)
-        if (isset($_POST['schedules']) && is_array($_POST['schedules'])) {
+        // Process raw schedules ONLY if we don't have builder slots (to prevent conflicts)
+        // Raw schedules are for advanced/legacy mode when not using the visual builder
+        if (!$has_builder_slots && isset($_POST['schedules']) && is_array($_POST['schedules'])) {
+            // Add debug logging for raw schedules processing
+            error_log("FP Esperienze: Processing raw schedules for product {$product_id}");
             $processed_ids = array_merge($processed_ids, $this->processRawSchedules($product_id, $_POST['schedules'], $validation_errors));
+        }
+        
+        // Add debug logging for potential conflicts
+        if ($has_builder_slots && isset($_POST['schedules']) && !empty($_POST['schedules'])) {
+            error_log("FP Esperienze: WARNING - Both builder_slots and schedules data present for product {$product_id}, ignoring schedules to prevent conflicts");
         }
         
         // Delete schedules that were removed
@@ -1714,14 +1726,39 @@ class Experience {
         $processed_ids = [];
         
         foreach ($builder_slots as $slot_index => $slot_data) {
-            // Validate required fields
-            if (empty($slot_data['start_time']) || empty($slot_data['days'])) {
+            // Validate required fields - be more specific about what's missing
+            if (empty($slot_data['start_time'])) {
+                // Skip empty slots silently - they might be from auto-generated empty rows
                 continue;
             }
             
-            // Validate time format
-            if (!preg_match('/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/', $slot_data['start_time'])) {
-                $validation_errors[] = sprintf(__('Time slot %d: Invalid time format. Use HH:MM format.', 'fp-esperienze'), $slot_index + 1);
+            if (empty($slot_data['days']) || !is_array($slot_data['days'])) {
+                // Skip slots without selected days
+                continue;
+            }
+            
+            // Sanitize time before validation
+            $start_time = trim($slot_data['start_time']);
+            
+            // Handle common time format variations (convert to HH:MM)
+            if (preg_match('/^(\d{1,2}):(\d{2})$/', $start_time, $matches)) {
+                $hours = str_pad($matches[1], 2, '0', STR_PAD_LEFT);
+                $minutes = $matches[2];
+                $start_time = $hours . ':' . $minutes;
+            }
+            
+            // Validate time format - enhanced validation with better error reporting
+            if (!preg_match('/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/', $start_time)) {
+                // Add debug information if logging is enabled
+                if (apply_filters('fp_esperienze_debug_validation', false)) {
+                    error_log("FP Esperienze: Invalid time format for slot {$slot_index}: '{$start_time}' (original: '{$slot_data['start_time']}')");
+                }
+                
+                $validation_errors[] = sprintf(
+                    __('Time slot %d: Invalid time format "%s". Use HH:MM format (e.g., 09:30).', 'fp-esperienze'), 
+                    $slot_index + 1,
+                    esc_html($slot_data['start_time']) // Show original for user feedback
+                );
                 continue;
             }
             
@@ -1772,7 +1809,7 @@ class Experience {
                 $schedule_data = [
                     'product_id' => $product_id,
                     'day_of_week' => $day_of_week,
-                    'start_time' => sanitize_text_field($slot_data['start_time']),
+                    'start_time' => $start_time, // Use the sanitized time from validation
                     'duration_min' => $duration_override,
                     'capacity' => $capacity_override,
                     'lang' => $lang_override,
@@ -1786,7 +1823,7 @@ class Experience {
                 $existing_schedule_id = null;
                 foreach ($existing_slot_ids as $id) {
                     $existing = ScheduleManager::getSchedule($id);
-                    if ($existing && $existing->day_of_week == $day_of_week && $existing->start_time == $slot_data['start_time']) {
+                    if ($existing && $existing->day_of_week == $day_of_week && $existing->start_time == $start_time) {
                         $existing_schedule_id = $id;
                         break;
                     }
