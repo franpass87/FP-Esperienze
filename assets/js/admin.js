@@ -454,7 +454,9 @@
             var hasErrors = false;
             var errorMessages = [];
             
-            $('#fp-time-slots-container .fp-time-slot-row').each(function() {
+            // Support both old (.fp-time-slot-row) and new (.fp-time-slot-card-clean) formats
+            var selector = '#fp-time-slots-container .fp-time-slot-row, #fp-time-slots-container .fp-time-slot-card-clean';
+            $(selector).each(function() {
                 var $slot = $(this);
                 var startTime = $slot.find('input[name*="[start_time]"]').val();
                 var selectedDays = $slot.find('input[name*="[days][]"]:checked').length;
@@ -469,10 +471,11 @@
                 
                 if (selectedDays === 0) {
                     hasErrors = true;
-                    $slot.find('.fp-days-pills').css('border', '2px solid #d63638');
+                    // Support both old and new day pills containers
+                    $slot.find('.fp-days-pills, .fp-days-pills-clean').css('border', '2px solid #d63638');
                     errorMessages.push('All time slots must have at least one day selected.');
                 } else {
-                    $slot.find('.fp-days-pills').css('border', '');
+                    $slot.find('.fp-days-pills, .fp-days-pills-clean').css('border', '');
                 }
             });
             
@@ -528,8 +531,9 @@
                 '5': 'Fri', '6': 'Sat', '0': 'Sun'
             };
             
-            // Collect slot data
-            $('#fp-time-slots-container .fp-time-slot-row').each(function() {
+            // Collect slot data - support both old (.fp-time-slot-row) and new (.fp-time-slot-card-clean) formats
+            var selector = '#fp-time-slots-container .fp-time-slot-row, #fp-time-slots-container .fp-time-slot-card-clean';
+            $(selector).each(function() {
                 var $slot = $(this);
                 var startTime = $slot.find('input[name*="[start_time]"]').val();
                 var selectedDays = [];
@@ -539,11 +543,13 @@
                 });
                 
                 if (startTime && selectedDays.length > 0) {
-                    var overridesEnabled = $slot.find('.fp-show-overrides-toggle').is(':checked');
+                    // Support both old and new override toggle classes
+                    var overridesEnabled = $slot.find('.fp-show-overrides-toggle, .fp-show-overrides-toggle-clean').is(':checked');
                     var customCount = 0;
                     
                     if (overridesEnabled) {
-                        $slot.find('.fp-overrides-section input, .fp-overrides-section select').each(function() {
+                        // Support both old and new override section classes
+                        $slot.find('.fp-overrides-section input, .fp-overrides-section select, .fp-overrides-section-clean input, .fp-overrides-section-clean select').each(function() {
                             if ($(this).val() && $(this).val() !== '') {
                                 customCount++;
                             }
@@ -654,8 +660,9 @@
             
             var scheduleIndex = 0;
             
-            // Process each time slot
-            $('#fp-time-slots-container .fp-time-slot-row').each(function() {
+            // Process each time slot - support both old (.fp-time-slot-row) and new (.fp-time-slot-card-clean) formats
+            var selector = '#fp-time-slots-container .fp-time-slot-row, #fp-time-slots-container .fp-time-slot-card-clean';
+            $(selector).each(function() {
                 var timeSlot = $(this);
                 var startTime = timeSlot.find('input[name*="[start_time]"]').val();
                 var selectedDays = [];
@@ -669,9 +676,9 @@
                     return; // Skip invalid slots
                 }
                 
-                // Get override values - always check if advanced settings are enabled
+                // Get override values - check for both old and new advanced enabled fields
                 var overrides = {};
-                var advancedEnabled = timeSlot.find('.fp-advanced-enabled').val() === '1';
+                var advancedEnabled = timeSlot.find('.fp-advanced-enabled, .fp-advanced-enabled-clean').val() === '1';
                 
                 if (advancedEnabled) {
                     var duration = timeSlot.find('input[name*="[duration_min]"]').val();
