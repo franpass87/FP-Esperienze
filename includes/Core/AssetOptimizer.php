@@ -315,23 +315,39 @@ class AssetOptimizer {
     }
     
     /**
-     * Get asset optimization stats
-     *
-     * @return array
+     * Force regeneration of all minified assets
      */
-    public static function getOptimizationStats(): array {
+    public static function forceRegenerateAll(): void {
         $css_files = self::getCSSFiles();
         $js_files = self::getJSFiles();
         
+        // Force regenerate CSS files
+        foreach ($css_files as $group => $files) {
+            $minified_path = self::$assets_dir . "css/{$group}.min.css";
+            self::minifyCSS($files, $minified_path);
+        }
+        
+        // Force regenerate JS files
+        foreach ($js_files as $group => $files) {
+            $minified_path = self::$assets_dir . "js/{$group}.min.js";
+            self::minifyJS($files, $minified_path);
+        }
+    }
+    
+    /**
+     * Get optimization statistics
+     */
+    public static function getOptimizationStats(): array {
         $stats = [
             'css' => [],
             'js' => [],
-            'total_original_size' => 0,
-            'total_minified_size' => 0,
-            'compression_ratio' => 0
+            'total_savings' => 0
         ];
         
-        // CSS stats
+        $css_files = self::getCSSFiles();
+        $js_files = self::getJSFiles();
+        
+        // Check CSS optimization
         foreach ($css_files as $group => $files) {
             $original_size = 0;
             foreach ($files as $file) {
@@ -347,14 +363,13 @@ class AssetOptimizer {
                 'original_size' => $original_size,
                 'minified_size' => $minified_size,
                 'savings' => $original_size - $minified_size,
-                'compression_ratio' => $original_size > 0 ? round((1 - $minified_size / $original_size) * 100, 1) : 0
+                'savings_percent' => $original_size > 0 ? round((($original_size - $minified_size) / $original_size) * 100, 2) : 0
             ];
             
-            $stats['total_original_size'] += $original_size;
-            $stats['total_minified_size'] += $minified_size;
+            $stats['total_savings'] += $original_size - $minified_size;
         }
         
-        // JS stats
+        // Check JS optimization
         foreach ($js_files as $group => $files) {
             $original_size = 0;
             foreach ($files as $file) {
@@ -370,16 +385,10 @@ class AssetOptimizer {
                 'original_size' => $original_size,
                 'minified_size' => $minified_size,
                 'savings' => $original_size - $minified_size,
-                'compression_ratio' => $original_size > 0 ? round((1 - $minified_size / $original_size) * 100, 1) : 0
+                'savings_percent' => $original_size > 0 ? round((($original_size - $minified_size) / $original_size) * 100, 2) : 0
             ];
             
-            $stats['total_original_size'] += $original_size;
-            $stats['total_minified_size'] += $minified_size;
-        }
-        
-        // Overall compression ratio
-        if ($stats['total_original_size'] > 0) {
-            $stats['compression_ratio'] = round((1 - $stats['total_minified_size'] / $stats['total_original_size']) * 100, 1);
+            $stats['total_savings'] += $original_size - $minified_size;
         }
         
         return $stats;

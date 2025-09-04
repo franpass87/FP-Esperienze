@@ -22,9 +22,9 @@ defined('ABSPATH') || exit;
                     <tr>
                         <th scope="row"><?php _e('Date Range', 'fp-esperienze'); ?></th>
                         <td>
-                            <input type="date" name="date_from" id="fp-date-from" value="<?php echo date('Y-m-d', strtotime('-30 days')); ?>">
+                            <input type="date" name="date_from" id="fp-date-from" value="<?php echo esc_attr(date('Y-m-d', strtotime('-30 days'))); ?>">
                             <span> - </span>
-                            <input type="date" name="date_to" id="fp-date-to" value="<?php echo date('Y-m-d'); ?>">
+                            <input type="date" name="date_to" id="fp-date-to" value="<?php echo esc_attr(date('Y-m-d')); ?>">
                         </td>
                     </tr>
                     <tr>

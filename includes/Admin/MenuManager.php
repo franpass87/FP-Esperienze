@@ -981,8 +981,8 @@ class MenuManager {
         $data = [
             'name' => sanitize_text_field($_POST['meeting_point_name'] ?? ''),
             'address' => sanitize_textarea_field($_POST['meeting_point_address'] ?? ''),
-            'lat' => !empty($_POST['meeting_point_lat']) ? (float) $_POST['meeting_point_lat'] : null,
-            'lng' => !empty($_POST['meeting_point_lng']) ? (float) $_POST['meeting_point_lng'] : null,
+            'lat' => !empty($_POST['meeting_point_lat']) ? (float) sanitize_text_field($_POST['meeting_point_lat']) : null,
+            'lng' => !empty($_POST['meeting_point_lng']) ? (float) sanitize_text_field($_POST['meeting_point_lng']) : null,
             'place_id' => sanitize_text_field($_POST['meeting_point_place_id'] ?? ''),
             'note' => sanitize_textarea_field($_POST['meeting_point_note'] ?? '')
         ];
@@ -1031,8 +1031,8 @@ class MenuManager {
         $data = [
             'name' => sanitize_text_field($_POST['meeting_point_name'] ?? ''),
             'address' => sanitize_textarea_field($_POST['meeting_point_address'] ?? ''),
-            'lat' => !empty($_POST['meeting_point_lat']) ? (float) $_POST['meeting_point_lat'] : null,
-            'lng' => !empty($_POST['meeting_point_lng']) ? (float) $_POST['meeting_point_lng'] : null,
+            'lat' => !empty($_POST['meeting_point_lat']) ? (float) sanitize_text_field($_POST['meeting_point_lat']) : null,
+            'lng' => !empty($_POST['meeting_point_lng']) ? (float) sanitize_text_field($_POST['meeting_point_lng']) : null,
             'place_id' => sanitize_text_field($_POST['meeting_point_place_id'] ?? ''),
             'note' => sanitize_textarea_field($_POST['meeting_point_note'] ?? '')
         ];
@@ -2299,7 +2299,7 @@ class MenuManager {
             'name' => sanitize_text_field($_POST['extra_name'] ?? ''),
             'description' => sanitize_textarea_field($_POST['extra_description'] ?? ''),
             'price' => floatval($_POST['extra_price'] ?? 0),
-            'billing_type' => in_array($_POST['extra_billing_type'] ?? '', ['per_person', 'per_booking']) ? $_POST['extra_billing_type'] : 'per_person',
+            'billing_type' => in_array(sanitize_text_field($_POST['extra_billing_type'] ?? ''), ['per_person', 'per_booking']) ? sanitize_text_field($_POST['extra_billing_type']) : 'per_person',
             'tax_class' => sanitize_text_field($_POST['extra_tax_class'] ?? ''),
             'max_quantity' => absint($_POST['extra_max_quantity'] ?? 1),
             'is_required' => isset($_POST['extra_is_required']) ? 1 : 0,
@@ -2351,7 +2351,7 @@ class MenuManager {
             'name' => sanitize_text_field($_POST['extra_name'] ?? ''),
             'description' => sanitize_textarea_field($_POST['extra_description'] ?? ''),
             'price' => floatval($_POST['extra_price'] ?? 0),
-            'billing_type' => in_array($_POST['extra_billing_type'] ?? '', ['per_person', 'per_booking']) ? $_POST['extra_billing_type'] : 'per_person',
+            'billing_type' => in_array(sanitize_text_field($_POST['extra_billing_type'] ?? ''), ['per_person', 'per_booking']) ? sanitize_text_field($_POST['extra_billing_type']) : 'per_person',
             'tax_class' => sanitize_text_field($_POST['extra_tax_class'] ?? ''),
             'max_quantity' => absint($_POST['extra_max_quantity'] ?? 1),
             'is_required' => isset($_POST['extra_is_required']) ? 1 : 0,

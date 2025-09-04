@@ -81,12 +81,12 @@ $ga4_view_item = [
 jQuery(document).ready(function($) {
     if (typeof window.FPTracking !== 'undefined') {
         $(document).trigger('fp_track_view_item', {
-            product_id: <?php echo wp_json_encode($product_id); ?>,
-            product_name: <?php echo wp_json_encode($product->get_name()); ?>,
-            price: <?php echo wp_json_encode($adult_price ?: 0); ?>,
+            product_id: <?php echo wp_json_encode($product_id, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+            product_name: <?php echo wp_json_encode($product->get_name(), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+            price: <?php echo wp_json_encode($adult_price ?: 0, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
             slot_start: null,
             meeting_point_id: null,
-            lang: <?php echo wp_json_encode($language_chips); ?>
+            lang: <?php echo wp_json_encode($language_chips, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>
         });
     }
 });
@@ -548,7 +548,7 @@ jQuery(document).ready(function($) {
                             <input type="date" 
                                    id="fp-date-picker" 
                                    class="fp-date-input" 
-                                   min="<?php echo date('Y-m-d'); ?>"
+                                   min="<?php echo esc_attr(date('Y-m-d')); ?>"
                                    aria-describedby="fp-date-help" />
                             <small id="fp-date-help" class="fp-field-help">
                                 <?php _e('Choose your preferred date', 'fp-esperienze'); ?>

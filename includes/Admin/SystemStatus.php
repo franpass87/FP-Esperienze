@@ -66,6 +66,18 @@ class SystemStatus {
                 wp_redirect(admin_url('admin.php?page=fp-esperienze-system-status&fixed=rewrite'));
                 exit;
                 break;
+            case 'optimize_assets':
+                \FP\Esperienze\Core\AssetOptimizer::forceRegenerateAll();
+                wp_redirect(admin_url('admin.php?page=fp-esperienze-system-status&fixed=assets'));
+                exit;
+                break;
+            case 'clear_cache':
+                if (class_exists('\FP\Esperienze\Core\CacheManager')) {
+                    \FP\Esperienze\Core\CacheManager::clearAllCaches();
+                }
+                wp_redirect(admin_url('admin.php?page=fp-esperienze-system-status&fixed=cache'));
+                exit;
+                break;
         }
     }
 
@@ -864,41 +876,48 @@ class SystemStatus {
     private function checkFrontendPerformance(): array {
         // Check if AssetOptimizer is available and working
         $minified_available = false;
-        $compression_ratio = 0;
+        $optimization_stats = null;
+        $total_savings = 0;
 
         if (class_exists('\FP\Esperienze\Core\AssetOptimizer')) {
             $minified_available = \FP\Esperienze\Core\AssetOptimizer::hasMinifiedAssets();
-            $stats = \FP\Esperienze\Core\AssetOptimizer::getOptimizationStats();
-            $compression_ratio = $stats['compression_ratio'] ?? 0;
+            $optimization_stats = \FP\Esperienze\Core\AssetOptimizer::getOptimizationStats();
+            $total_savings = $optimization_stats['total_savings'] ?? 0;
         }
 
         // Check asset file sizes
-        $css_file = FP_ESPERIENZE_PLUGIN_DIR . 'assets/css/frontend.css';
-        $js_file = FP_ESPERIENZE_PLUGIN_DIR . 'assets/js/frontend.js';
         $admin_js_file = FP_ESPERIENZE_PLUGIN_DIR . 'assets/js/admin.js';
-
-        $total_size = 0;
-        $files_checked = 0;
+        $admin_js_size = file_exists($admin_js_file) ? filesize($admin_js_file) : 0;
         
-        foreach ([$css_file, $js_file, $admin_js_file] as $file) {
-            if (file_exists($file)) {
-                $total_size += filesize($file);
-                $files_checked++;
-            }
-        }
-
-        if ($total_size > 500000) { // 500KB threshold
+        // Large admin.js file threshold (100KB)
+        $large_admin_js = $admin_js_size > 102400;
+        
+        if ($large_admin_js && !$minified_available) {
             $status = 'warning';
-            $message = sprintf(__('Large assets (%s)', 'fp-esperienze'), size_format($total_size));
-            $description = $minified_available ? 
-                sprintf(__('Minification enabled (%.1f%% compression)', 'fp-esperienze'), $compression_ratio) :
-                __('Consider enabling asset minification for better performance.', 'fp-esperienze');
+            $message = sprintf(__('Large admin.js (%s) - minification recommended', 'fp-esperienze'), size_format($admin_js_size));
+            $description = __('Asset minification not enabled. This can improve page load times.', 'fp-esperienze');
+        } elseif ($minified_available) {
+            $status = 'ok';
+            $message = sprintf(__('Asset optimization enabled (%.1fKB saved)', 'fp-esperienze'), $total_savings / 1024);
+            
+            if ($optimization_stats) {
+                $admin_stats = $optimization_stats['js']['admin'] ?? null;
+                if ($admin_stats && $admin_stats['savings_percent'] > 0) {
+                    $description = sprintf(__('Admin.js optimized: %s → %s (%.1f%% reduction)', 'fp-esperienze'),
+                        size_format($admin_stats['original_size']),
+                        size_format($admin_stats['minified_size']),
+                        $admin_stats['savings_percent']
+                    );
+                } else {
+                    $description = __('Assets optimized and minified.', 'fp-esperienze');
+                }
+            } else {
+                $description = __('Assets optimized and minified.', 'fp-esperienze');
+            }
         } else {
-            $status = $minified_available ? 'ok' : 'warning';
-            $message = sprintf(__('Assets: %s', 'fp-esperienze'), size_format($total_size));
-            $description = $minified_available ?
-                sprintf(__('Minification enabled (%.1f%% compression)', 'fp-esperienze'), $compression_ratio) :
-                __('Asset minification not enabled.', 'fp-esperienze');
+            $status = 'ok';
+            $message = __('Assets: Normal size', 'fp-esperienze');
+            $description = __('Asset sizes are within acceptable limits.', 'fp-esperienze');
         }
 
         return [
@@ -1059,12 +1078,25 @@ class SystemStatus {
                         ];
                         break;
                     case 'frontend_performance':
-                        $recommendations[] = [
-                            'priority' => 'medium',
-                            'title' => __('Enable Asset Optimization', 'fp-esperienze'),
-                            'description' => __('Asset minification is not enabled. This can improve page load times.', 'fp-esperienze'),
-                            'action' => __('Go to Performance Settings and enable asset optimization', 'fp-esperienze')
-                        ];
+                        if (strpos($check['message'], 'Large admin.js') !== false) {
+                            $recommendations[] = [
+                                'priority' => 'medium',
+                                'title' => __('Enable Asset Optimization', 'fp-esperienze'),
+                                'description' => __('Asset minification is not enabled. This can improve page load times, especially for the large admin.js file.', 'fp-esperienze'),
+                                'action' => sprintf('<a href="%s" class="button">%s</a>', 
+                                    wp_nonce_url(admin_url('admin.php?page=fp-esperienze-system-status&action=optimize_assets'), 'fp_system_status_fix_optimize_assets'),
+                                    __('Optimize Assets Now', 'fp-esperienze'))
+                            ];
+                        } else {
+                            $recommendations[] = [
+                                'priority' => 'low',
+                                'title' => __('Consider Asset Optimization', 'fp-esperienze'),
+                                'description' => __('Asset minification can further improve page load times.', 'fp-esperienze'),
+                                'action' => sprintf('<a href="%s" class="button">%s</a>', 
+                                    wp_nonce_url(admin_url('admin.php?page=fp-esperienze-system-status&action=optimize_assets'), 'fp_system_status_fix_optimize_assets'),
+                                    __('Optimize Assets', 'fp-esperienze'))
+                            ];
+                        }
                         break;
                     case 'cache_performance':
                         $recommendations[] = [
