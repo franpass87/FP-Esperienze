@@ -112,18 +112,17 @@
             
             // Special handling for experience type
             if (productType === 'experience') {
-                // Show experience-specific elements
-                $('.show_if_experience').show();
-                $('#experience_product_data, #dynamic_pricing_product_data').show();
+                // Update virtual/downloadable settings for experiences
+                $('#_virtual').prop('checked', true).trigger('change');
+                $('#_downloadable').prop('checked', false).trigger('change');
                 
                 // Hide incompatible elements
                 $('.show_if_simple, .show_if_variable, .show_if_grouped, .show_if_external').hide();
                 
-                // Update virtual/downloadable settings for experiences
-                $('#_virtual').prop('checked', true).trigger('change');
-                $('#_downloadable').prop('checked', false).trigger('change');
+                // Let WooCommerce handle tab visibility naturally
+                // Don't force show experience elements - they should only show when their tab is active
             } else {
-                // Hide experience-specific elements
+                // Hide experience-specific elements when not experience type
                 $('.show_if_experience').hide();
                 $('#experience_product_data, #dynamic_pricing_product_data').hide();
             }
