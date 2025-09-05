@@ -82,7 +82,7 @@
                 // Track user interactions
                 this.trackUserInteractions();
                 
-                console.log('FP Esperienze: Performance monitoring initialized');
+                // Debug logging removed for production
                 
             } catch (error) {
                 console.error('FP Esperienze: Performance monitoring setup failed:', error);
@@ -177,7 +177,7 @@
                 totalLoadTime: entry.loadEventEnd - entry.navigationStart
             };
             
-            console.log('FP Esperienze Navigation Timing:', timing);
+            // Debug logging removed for production
             this.reportMetric('navigation', timing);
         },
 
@@ -202,7 +202,7 @@
          * Track custom performance measures
          */
         trackCustomMeasure: function(entry) {
-            console.log(`FP Esperienze Custom Measure: ${entry.name} - ${entry.duration}ms`);
+            // Debug logging removed for production
             this.reportMetric('custom', {
                 name: entry.name,
                 duration: entry.duration
@@ -314,7 +314,7 @@
                     this.metrics.errors++;
                 }
                 
-                console.log(`FP Esperienze AJAX: ${url} - ${duration.toFixed(2)}ms - ${success ? 'Success' : 'Error'}`);
+                // Debug logging removed for production
             }
         },
 
@@ -352,7 +352,7 @@
         handleDOMChanges: function(mutation) {
             // Track DOM mutations for performance impact
             if (mutation.addedNodes.length > 5) {
-                console.log('FP Esperienze: Large DOM change detected:', mutation.addedNodes.length, 'nodes added');
+                // Debug logging removed for production
             }
             
             // Observe new elements for intersection
