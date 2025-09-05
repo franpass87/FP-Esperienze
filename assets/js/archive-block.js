@@ -195,7 +195,7 @@
                     activeFilters.length > 0 && createElement('div', {
                         style: {
                             fontSize: '12px',
-                            color: '#ff6b35',
+                            color: 'var(--fp-brand-orange, #ff6b35)',
                             marginTop: '10px',
                             fontWeight: '500'
                         }
