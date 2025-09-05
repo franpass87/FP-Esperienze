@@ -20,6 +20,7 @@ use FP\Esperienze\Core\CapabilityManager;
 use FP\Esperienze\Core\I18nManager;
 use FP\Esperienze\Core\WebhookManager;
 use FP\Esperienze\Core\Log;
+use FP\Esperienze\Admin\DependencyChecker;
 
 defined('ABSPATH') || exit;
 
@@ -52,6 +53,7 @@ class MenuManager {
         add_action('wp_ajax_fp_check_cancellation_rules', [$this, 'ajaxCheckCancellationRules']);
         add_action('wp_ajax_fp_test_webhook', [$this, 'ajaxTestWebhook']);
         add_action('wp_ajax_fp_cleanup_expired_holds', [$this, 'ajaxCleanupExpiredHolds']);
+        add_action('wp_ajax_fp_test_meta_capi', [$this, 'ajaxTestMetaCAPI']);
     }
 
     /**
@@ -279,6 +281,10 @@ class MenuManager {
      * Dashboard page
      */
     public function dashboardPage(): void {
+        // Get dashboard statistics
+        $stats = $this->getDashboardStatistics();
+        $recent_bookings = $this->getRecentBookings(5);
+        
         ?>
         <div class="wrap">
             <h1><?php _e('FP Esperienze Dashboard', 'fp-esperienze'); ?></h1>
@@ -290,27 +296,93 @@ class MenuManager {
             <?php endif; ?>
             
             <div class="fp-admin-dashboard">
-                <div class="fp-dashboard-widgets">
-                    <div class="fp-widget">
-                        <h3><?php _e('Recent Bookings', 'fp-esperienze'); ?></h3>
-                        <p><?php _e('Dashboard functionality will be implemented in future updates.', 'fp-esperienze'); ?></p>
+                <!-- Statistics Cards -->
+                <div class="fp-dashboard-stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px;">
+                    <div class="fp-stat-card" style="background: white; padding: 20px; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <h3 style="margin: 0 0 10px 0; color: #ff6b35; font-size: 14px; text-transform: uppercase;"><?php _e('Total Bookings', 'fp-esperienze'); ?></h3>
+                        <p style="margin: 0; font-size: 32px; font-weight: bold; color: #333;"><?php echo esc_html($stats['total_bookings']); ?></p>
                     </div>
                     
-                    <div class="fp-widget">
-                        <h3><?php _e('Statistics', 'fp-esperienze'); ?></h3>
-                        <p><?php _e('Booking statistics and analytics coming soon.', 'fp-esperienze'); ?></p>
+                    <div class="fp-stat-card" style="background: white; padding: 20px; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <h3 style="margin: 0 0 10px 0; color: #ff6b35; font-size: 14px; text-transform: uppercase;"><?php _e('This Month', 'fp-esperienze'); ?></h3>
+                        <p style="margin: 0; font-size: 32px; font-weight: bold; color: #333;"><?php echo esc_html($stats['month_bookings']); ?></p>
                     </div>
                     
-                    <div class="fp-widget">
-                        <h3><?php _e('Quick Actions', 'fp-esperienze'); ?></h3>
-                        <p>
+                    <div class="fp-stat-card" style="background: white; padding: 20px; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <h3 style="margin: 0 0 10px 0; color: #ff6b35; font-size: 14px; text-transform: uppercase;"><?php _e('Upcoming', 'fp-esperienze'); ?></h3>
+                        <p style="margin: 0; font-size: 32px; font-weight: bold; color: #333;"><?php echo esc_html($stats['upcoming_bookings']); ?></p>
+                    </div>
+                    
+                    <div class="fp-stat-card" style="background: white; padding: 20px; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <h3 style="margin: 0 0 10px 0; color: #ff6b35; font-size: 14px; text-transform: uppercase;"><?php _e('Active Vouchers', 'fp-esperienze'); ?></h3>
+                        <p style="margin: 0; font-size: 32px; font-weight: bold; color: #333;"><?php echo esc_html($stats['active_vouchers']); ?></p>
+                    </div>
+                </div>
+                
+                <div class="fp-dashboard-widgets" style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px;">
+                    <!-- Recent Bookings -->
+                    <div class="fp-widget" style="background: white; padding: 20px; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <h3 style="margin: 0 0 20px 0; color: #ff6b35; font-size: 18px;"><?php _e('Recent Bookings', 'fp-esperienze'); ?></h3>
+                        
+                        <?php if (!empty($recent_bookings)) : ?>
+                            <div class="fp-bookings-list">
+                                <?php foreach ($recent_bookings as $booking) : 
+                                    $product = wc_get_product($booking->product_id);
+                                    $product_name = $product ? $product->get_name() : __('Unknown Experience', 'fp-esperienze');
+                                    $status_color = $this->getStatusColor($booking->status);
+                                ?>
+                                    <div style="padding: 12px 0; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+                                        <div>
+                                            <strong><?php echo esc_html($product_name); ?></strong><br>
+                                            <small style="color: #666;">
+                                                <?php echo esc_html($booking->customer_name); ?> • 
+                                                <?php echo esc_html(date_i18n(get_option('date_format') . ' ' . get_option('time_format'), strtotime($booking->booking_date . ' ' . $booking->booking_time))); ?>
+                                            </small>
+                                        </div>
+                                        <div>
+                                            <span style="background: <?php echo esc_attr($status_color); ?>; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; text-transform: uppercase;">
+                                                <?php echo esc_html($booking->status); ?>
+                                            </span>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                                
+                                <div style="margin-top: 15px; text-align: center;">
+                                    <a href="<?php echo admin_url('admin.php?page=fp-esperienze-bookings'); ?>" class="button">
+                                        <?php _e('View All Bookings', 'fp-esperienze'); ?>
+                                    </a>
+                                </div>
+                            </div>
+                        <?php else : ?>
+                            <p style="color: #666; font-style: italic;"><?php _e('No bookings yet. Create your first experience to start accepting bookings!', 'fp-esperienze'); ?></p>
+                        <?php endif; ?>
+                    </div>
+                    
+                    <!-- Quick Actions -->
+                    <div class="fp-widget" style="background: white; padding: 20px; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <h3 style="margin: 0 0 20px 0; color: #ff6b35; font-size: 18px;"><?php _e('Quick Actions', 'fp-esperienze'); ?></h3>
+                        
+                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                            <a href="<?php echo admin_url('post-new.php?post_type=product'); ?>" class="button button-primary" style="justify-content: center; text-align: center;">
+                                <?php _e('Add New Experience', 'fp-esperienze'); ?>
+                            </a>
+                            
                             <a href="<?php echo admin_url('admin.php?page=fp-esperienze-bookings'); ?>" class="button">
-                                <?php _e('View Bookings', 'fp-esperienze'); ?>
+                                <?php _e('Manage Bookings', 'fp-esperienze'); ?>
                             </a>
-                            <a href="<?php echo admin_url('post-new.php?post_type=product'); ?>" class="button button-primary">
-                                <?php _e('Add Experience', 'fp-esperienze'); ?>
+                            
+                            <a href="<?php echo admin_url('admin.php?page=fp-esperienze-vouchers'); ?>" class="button">
+                                <?php _e('Create Voucher', 'fp-esperienze'); ?>
                             </a>
-                        </p>
+                            
+                            <a href="<?php echo admin_url('admin.php?page=fp-esperienze-reports'); ?>" class="button">
+                                <?php _e('View Reports', 'fp-esperienze'); ?>
+                            </a>
+                            
+                            <a href="<?php echo admin_url('admin.php?page=fp-esperienze-settings'); ?>" class="button">
+                                <?php _e('Settings', 'fp-esperienze'); ?>
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1436,7 +1508,7 @@ class MenuManager {
         }
         
         // Get vouchers
-        $vouchers_query = "SELECT * FROM $table_name WHERE $where_clause ORDER BY created_at DESC LIMIT %d OFFSET %d";
+        $vouchers_query = "SELECT id, order_id, voucher_code, amount, recipient_name, recipient_email, sender_name, sender_email, message, status, created_at, expires_at FROM $table_name WHERE $where_clause ORDER BY created_at DESC LIMIT %d OFFSET %d";
         $all_params = array_merge($query_params, [$per_page, $offset]);
         $vouchers = $wpdb->get_results($wpdb->prepare($vouchers_query, ...$all_params));
         
@@ -1862,7 +1934,7 @@ class MenuManager {
         $table_name = $wpdb->prefix . 'fp_exp_vouchers';
         
         $voucher = $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM $table_name WHERE id = %d",
+            "SELECT order_id, voucher_code, amount, recipient_name, recipient_email, sender_name, sender_email, message, expires_at FROM $table_name WHERE id = %d",
             $voucher_id
         ), ARRAY_A);
         
@@ -1954,7 +2026,7 @@ class MenuManager {
         
         // Get current voucher
         $voucher = $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM $table_name WHERE id = %d",
+            "SELECT id, order_id, voucher_code, amount, recipient_name, recipient_email, sender_name, sender_email, message, status, created_at, expires_at FROM $table_name WHERE id = %d",
             $voucher_id
         ));
         
@@ -2093,7 +2165,7 @@ class MenuManager {
         $table_name = $wpdb->prefix . 'fp_exp_vouchers';
         
         $voucher = $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM $table_name WHERE id = %d",
+            "SELECT pdf_path FROM $table_name WHERE id = %d",
             $voucher_id
         ));
         
@@ -2156,7 +2228,7 @@ class MenuManager {
         $table_name = $wpdb->prefix . 'fp_exp_vouchers';
         
         $voucher = $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM $table_name WHERE id = %d",
+            "SELECT voucher_code, pdf_path FROM $table_name WHERE id = %d",
             $voucher_id
         ));
         
@@ -2164,7 +2236,7 @@ class MenuManager {
             wp_die(__('PDF not found.', 'fp-esperienze'));
         }
         
-        $filename = 'voucher-' . $voucher->code . '.pdf';
+        $filename = 'voucher-' . $voucher->voucher_code . '.pdf';
         
         header('Content-Type: application/pdf');
         header('Content-Disposition: attachment; filename="' . $filename . '"');
@@ -2509,8 +2581,11 @@ class MenuManager {
         $ga4_measurement_id = $integrations['ga4_measurement_id'] ?? '';
         $ga4_ecommerce = !empty($integrations['ga4_ecommerce']);
         $gads_conversion_id = $integrations['gads_conversion_id'] ?? '';
+        $gads_purchase_label = $integrations['gads_purchase_label'] ?? '';
         $meta_pixel_id = $integrations['meta_pixel_id'] ?? '';
         $meta_capi_enabled = !empty($integrations['meta_capi_enabled']);
+        $meta_access_token = $integrations['meta_access_token'] ?? '';
+        $meta_dataset_id = $integrations['meta_dataset_id'] ?? '';
         $brevo_api_key = $integrations['brevo_api_key'] ?? '';
         $brevo_list_id_it = $integrations['brevo_list_id_it'] ?? '';
         $brevo_list_id_en = $integrations['brevo_list_id_en'] ?? '';
@@ -2852,6 +2927,21 @@ class MenuManager {
                             </td>
                         </tr>
                         
+                        <tr>
+                            <th scope="row">
+                                <label for="gads_purchase_label"><?php _e('Purchase Conversion Label', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <input type="text" 
+                                       id="gads_purchase_label" 
+                                       name="gads_purchase_label" 
+                                       value="<?php echo esc_attr($gads_purchase_label); ?>" 
+                                       placeholder="AbCdEfGhIjKlMnOp"
+                                       class="regular-text" />
+                                <p class="description"><?php _e('Conversion label for purchase events (found in Google Ads conversion action settings).', 'fp-esperienze'); ?></p>
+                            </td>
+                        </tr>
+                        
                         <!-- Meta Pixel Section -->
                         <tr>
                             <th colspan="2"><h3><?php _e('Meta Pixel (Facebook)', 'fp-esperienze'); ?></h3></th>
@@ -2883,9 +2973,38 @@ class MenuManager {
                                            name="meta_capi_enabled" 
                                            value="1" 
                                            <?php checked($meta_capi_enabled); ?> />
-                                    <?php _e('Enable Conversions API and event deduplication (placeholder)', 'fp-esperienze'); ?>
+                                    <?php _e('Enable server-side Meta Conversions API tracking', 'fp-esperienze'); ?>
                                 </label>
-                                <p class="description"><?php _e('Advanced feature for server-side tracking and better data accuracy. Implementation coming in future version.', 'fp-esperienze'); ?></p>
+                                <p class="description"><?php _e('Server-side tracking for improved data accuracy and iOS 14.5+ compliance.', 'fp-esperienze'); ?></p>
+                            </td>
+                        </tr>
+                        
+                        <tr class="meta-capi-settings" <?php echo !$meta_capi_enabled ? 'style="display:none;"' : ''; ?>>
+                            <th scope="row">
+                                <label for="meta_access_token"><?php _e('Access Token', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <input type="password" 
+                                       id="meta_access_token" 
+                                       name="meta_access_token" 
+                                       value="<?php echo esc_attr($meta_access_token); ?>" 
+                                       class="regular-text" />
+                                <p class="description"><?php _e('Meta Conversions API access token (generate in Facebook Business Manager).', 'fp-esperienze'); ?></p>
+                            </td>
+                        </tr>
+                        
+                        <tr class="meta-capi-settings" <?php echo !$meta_capi_enabled ? 'style="display:none;"' : ''; ?>>
+                            <th scope="row">
+                                <label for="meta_dataset_id"><?php _e('Dataset ID', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <input type="text" 
+                                       id="meta_dataset_id" 
+                                       name="meta_dataset_id" 
+                                       value="<?php echo esc_attr($meta_dataset_id); ?>" 
+                                       class="regular-text" />
+                                <button type="button" class="button" onclick="testMetaCAPI()"><?php _e('Test Connection', 'fp-esperienze'); ?></button>
+                                <p class="description"><?php _e('Meta Conversions API dataset ID (found in Events Manager).', 'fp-esperienze'); ?></p>
                             </td>
                         </tr>
                         
@@ -3117,6 +3236,68 @@ class MenuManager {
                         </tr>
                         <?php endif; ?>
                     </table>
+                    
+                    <script>
+                    function testMetaCAPI() {
+                        const button = event.target;
+                        const originalText = button.textContent;
+                        const metaPixelId = document.getElementById('meta_pixel_id').value;
+                        const metaAccessToken = document.getElementById('meta_access_token').value;
+                        const metaDatasetId = document.getElementById('meta_dataset_id').value;
+                        
+                        if (!metaPixelId || !metaAccessToken || !metaDatasetId) {
+                            alert('<?php _e('Please fill in all Meta Conversions API fields before testing.', 'fp-esperienze'); ?>');
+                            return;
+                        }
+                        
+                        button.textContent = '<?php _e('Testing...', 'fp-esperienze'); ?>';
+                        button.disabled = true;
+                        
+                        // Create result div if it doesn't exist
+                        let resultDiv = document.getElementById('meta-capi-test-result');
+                        if (!resultDiv) {
+                            resultDiv = document.createElement('div');
+                            resultDiv.id = 'meta-capi-test-result';
+                            resultDiv.style.marginTop = '10px';
+                            button.parentNode.appendChild(resultDiv);
+                        }
+                        
+                        const data = new FormData();
+                        data.append('action', 'fp_test_meta_capi');
+                        data.append('nonce', '<?php echo wp_create_nonce('fp_test_meta_capi'); ?>');
+                        
+                        fetch(ajaxurl, {
+                            method: 'POST',
+                            body: data
+                        })
+                        .then(response => response.json())
+                        .then(result => {
+                            if (result.success) {
+                                resultDiv.innerHTML = '<div class="notice notice-success inline"><p><strong><?php _e('Success!', 'fp-esperienze'); ?></strong> ' + result.data.message + '</p></div>';
+                            } else {
+                                resultDiv.innerHTML = '<div class="notice notice-error inline"><p><strong><?php _e('Error:', 'fp-esperienze'); ?></strong> ' + result.data.message + '</p></div>';
+                            }
+                        })
+                        .catch(error => {
+                            resultDiv.innerHTML = '<div class="notice notice-error inline"><p><strong><?php _e('Error:', 'fp-esperienze'); ?></strong> ' + error.message + '</p></div>';
+                        })
+                        .finally(() => {
+                            button.textContent = originalText;
+                            button.disabled = false;
+                        });
+                    }
+                    
+                    // Toggle Meta CAPI settings visibility
+                    jQuery(document).ready(function($) {
+                        $('#meta_capi_enabled').change(function() {
+                            if ($(this).is(':checked')) {
+                                $('.meta-capi-settings').show();
+                            } else {
+                                $('.meta-capi-settings').hide();
+                            }
+                        });
+                    });
+                    </script>
                     
                     <?php submit_button(__('Save Integrations', 'fp-esperienze')); ?>
                 </div>
@@ -3418,6 +3599,42 @@ class MenuManager {
                 alert(fpEsperienzeAdmin.i18n.requestFailed);
             });
         }
+        
+        // Toggle Meta CAPI settings visibility
+        jQuery(document).ready(function($) {
+            $('#meta_capi_enabled').change(function() {
+                if ($(this).is(':checked')) {
+                    $('.meta-capi-settings').show();
+                } else {
+                    $('.meta-capi-settings').hide();
+                }
+            });
+        });
+        
+        function testMetaCAPI() {
+            var button = event.target;
+            var originalText = button.textContent;
+            button.textContent = fpEsperienzeAdmin.i18n.testing;
+            button.disabled = true;
+            
+            jQuery.post(ajaxurl, {
+                action: 'fp_test_meta_capi',
+                nonce: '<?php echo wp_create_nonce('fp_test_meta_capi'); ?>'
+            }, function(response) {
+                button.textContent = originalText;
+                button.disabled = false;
+                
+                if (response.success) {
+                    alert('Meta Conversions API test successful!\\n' + response.data.message);
+                } else {
+                    alert('Meta Conversions API test failed:\\n' + response.data.message);
+                }
+            }).fail(function() {
+                button.textContent = originalText;
+                button.disabled = false;
+                alert(fpEsperienzeAdmin.i18n.requestFailed);
+            });
+        }
         </script>
         <?php
     }
@@ -3475,8 +3692,11 @@ class MenuManager {
                 'ga4_measurement_id' => sanitize_text_field($_POST['ga4_measurement_id'] ?? ''),
                 'ga4_ecommerce' => !empty($_POST['ga4_ecommerce']),
                 'gads_conversion_id' => sanitize_text_field($_POST['gads_conversion_id'] ?? ''),
+                'gads_purchase_label' => sanitize_text_field($_POST['gads_purchase_label'] ?? ''),
                 'meta_pixel_id' => sanitize_text_field($_POST['meta_pixel_id'] ?? ''),
                 'meta_capi_enabled' => !empty($_POST['meta_capi_enabled']),
+                'meta_access_token' => sanitize_text_field($_POST['meta_access_token'] ?? ''),
+                'meta_dataset_id' => sanitize_text_field($_POST['meta_dataset_id'] ?? ''),
                 'brevo_api_key' => sanitize_text_field($_POST['brevo_api_key'] ?? ''),
                 'brevo_list_id_it' => absint($_POST['brevo_list_id_it'] ?? 0),
                 'brevo_list_id_en' => absint($_POST['brevo_list_id_en'] ?? 0),
@@ -3934,5 +4154,113 @@ class MenuManager {
         $count = HoldManager::cleanupExpiredHolds();
         
         wp_send_json_success(['count' => $count, 'message' => sprintf(__('Cleaned up %d expired holds', 'fp-esperienze'), $count)]);
+    }
+    
+    /**
+     * AJAX handler: Test Meta Conversions API
+     */
+    public function ajaxTestMetaCAPI(): void {
+        if (!CapabilityManager::canManageFPEsperienze()) {
+            wp_send_json_error(['message' => __('Insufficient permissions.', 'fp-esperienze')]);
+        }
+        
+        if (!wp_verify_nonce($_POST['nonce'] ?? '', 'fp_test_meta_capi')) {
+            wp_send_json_error(['message' => __('Security check failed.', 'fp-esperienze')]);
+        }
+        
+        $meta_capi = new \FP\Esperienze\Integrations\MetaCAPIManager();
+        $result = $meta_capi->testConnection();
+        
+        if ($result['success']) {
+            wp_send_json_success($result);
+        } else {
+            wp_send_json_error($result);
+        }
+    }
+    
+    /**
+     * Get dashboard statistics
+     */
+    private function getDashboardStatistics(): array {
+        global $wpdb;
+        
+        // Total bookings
+        $total_bookings = $wpdb->get_var(
+            "SELECT COUNT(*) FROM {$wpdb->prefix}fp_bookings WHERE status != 'cancelled'"
+        );
+        
+        // This month bookings
+        $month_start = date('Y-m-01');
+        $month_end = date('Y-m-t');
+        $month_bookings = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT COUNT(*) FROM {$wpdb->prefix}fp_bookings 
+                 WHERE status != 'cancelled' 
+                 AND booking_date >= %s AND booking_date <= %s",
+                $month_start,
+                $month_end
+            )
+        );
+        
+        // Upcoming bookings (from today onwards)
+        $today = date('Y-m-d');
+        $upcoming_bookings = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT COUNT(*) FROM {$wpdb->prefix}fp_bookings 
+                 WHERE status != 'cancelled' 
+                 AND booking_date >= %s",
+                $today
+            )
+        );
+        
+        // Active vouchers (not expired and not used)
+        $active_vouchers = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT COUNT(*) FROM {$wpdb->prefix}fp_exp_vouchers 
+                 WHERE expires_on >= %s AND used_at IS NULL",
+                $today
+            )
+        );
+        
+        return [
+            'total_bookings' => intval($total_bookings) ?: 0,
+            'month_bookings' => intval($month_bookings) ?: 0,
+            'upcoming_bookings' => intval($upcoming_bookings) ?: 0,
+            'active_vouchers' => intval($active_vouchers) ?: 0,
+        ];
+    }
+    
+    /**
+     * Get recent bookings for dashboard
+     */
+    private function getRecentBookings(int $limit = 5): array {
+        global $wpdb;
+        
+        $results = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT id, order_id, product_id, customer_name, customer_email, booking_date, status, created_at FROM {$wpdb->prefix}fp_bookings 
+                 WHERE status != 'cancelled' 
+                 ORDER BY created_at DESC 
+                 LIMIT %d",
+                $limit
+            )
+        );
+        
+        return $results ?: [];
+    }
+    
+    /**
+     * Get status color for booking status
+     */
+    private function getStatusColor(string $status): string {
+        $colors = [
+            'confirmed' => '#28a745',
+            'pending' => '#ffc107',
+            'cancelled' => '#dc3545',
+            'completed' => '#007cba',
+            'refunded' => '#6c757d',
+        ];
+        
+        return $colors[$status] ?? '#6c757d';
     }
 }

@@ -27,6 +27,7 @@ use FP\Esperienze\Data\HoldManager;
 use FP\Esperienze\Integrations\TrackingManager;
 use FP\Esperienze\Integrations\BrevoManager;
 use FP\Esperienze\Integrations\GooglePlacesManager;
+use FP\Esperienze\Integrations\MetaCAPIManager;
 use FP\Esperienze\Core\CapabilityManager;
 use FP\Esperienze\Core\WebhookManager;
 use FP\Esperienze\Core\I18nManager;
@@ -169,11 +170,20 @@ class Plugin {
         // Initialize tracking manager for GA4 and Meta Pixel
         new TrackingManager();
         
+        // Initialize Meta Conversions API manager for server-side tracking
+        new MetaCAPIManager();
+        
         // Initialize Brevo manager for email marketing
         new BrevoManager();
         
         // Initialize Google Places manager for meeting point reviews
         new GooglePlacesManager();
+        
+        // Initialize enhanced email marketing manager
+        new \FP\Esperienze\Integrations\EmailMarketingManager();
+        
+        // Initialize AI features manager
+        new \FP\Esperienze\AI\AIFeaturesManager();
     }
 
     /**
@@ -181,6 +191,9 @@ class Plugin {
      */
     public function initAdmin(): void {
         new MenuManager();
+        
+        // Initialize advanced analytics
+        new \FP\Esperienze\Admin\AdvancedAnalytics();
     }
 
     /**
@@ -201,6 +214,9 @@ class Plugin {
         new BookingsController();
         new ICSAPI();
         new SecurePDFAPI();
+        
+        // Initialize mobile API manager
+        new \FP\Esperienze\REST\MobileAPIManager();
     }
 
     /**

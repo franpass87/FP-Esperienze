@@ -218,11 +218,18 @@ class SetupWizard {
             'ga4_measurement_id' => sanitize_text_field($_POST['ga4_measurement_id'] ?? ''),
             'ga4_ecommerce' => !empty($_POST['ga4_ecommerce']),
             'gads_conversion_id' => sanitize_text_field($_POST['gads_conversion_id'] ?? ''),
+            'gads_purchase_label' => sanitize_text_field($_POST['gads_purchase_label'] ?? ''),
             'meta_pixel_id' => sanitize_text_field($_POST['meta_pixel_id'] ?? ''),
+            'meta_capi_enabled' => !empty($_POST['meta_capi_enabled']),
+            'meta_access_token' => sanitize_text_field($_POST['meta_access_token'] ?? ''),
+            'meta_dataset_id' => sanitize_text_field($_POST['meta_dataset_id'] ?? ''),
             'brevo_api_key' => sanitize_text_field($_POST['brevo_api_key'] ?? ''),
             'brevo_list_id_it' => sanitize_text_field($_POST['brevo_list_id_it'] ?? ''),
             'brevo_list_id_en' => sanitize_text_field($_POST['brevo_list_id_en'] ?? ''),
             'gplaces_api_key' => sanitize_text_field($_POST['gplaces_api_key'] ?? ''),
+            'consent_mode_enabled' => !empty($_POST['consent_mode_enabled']),
+            'consent_cookie_name' => sanitize_text_field($_POST['consent_cookie_name'] ?? 'marketing_consent'),
+            'consent_js_function' => sanitize_text_field($_POST['consent_js_function'] ?? ''),
         ];
 
         update_option('fp_esperienze_integrations', $integrations);
@@ -508,6 +515,15 @@ class SetupWizard {
                     <p class="description"><?php _e('Your Google Ads Conversion ID for tracking bookings.', 'fp-esperienze'); ?></p>
                 </td>
             </tr>
+            <tr>
+                <th scope="row">
+                    <label for="gads_purchase_label"><?php _e('Purchase Conversion Label', 'fp-esperienze'); ?></label>
+                </th>
+                <td>
+                    <input type="text" name="gads_purchase_label" id="gads_purchase_label" value="<?php echo esc_attr($integrations['gads_purchase_label'] ?? ''); ?>" class="regular-text" placeholder="XXXXXXXXXXXX">
+                    <p class="description"><?php _e('Conversion label for purchase events (optional but recommended).', 'fp-esperienze'); ?></p>
+                </td>
+            </tr>
         </table>
 
         <h3><?php _e('Meta Pixel (Facebook)', 'fp-esperienze'); ?></h3>
@@ -518,10 +534,50 @@ class SetupWizard {
                 </th>
                 <td>
                     <input type="text" name="meta_pixel_id" id="meta_pixel_id" value="<?php echo esc_attr($integrations['meta_pixel_id'] ?? ''); ?>" class="regular-text">
-                    <p class="description"><?php _e('Your Meta (Facebook) Pixel ID for tracking conversions.', 'fp-esperienze'); ?></p>
+                    <p class="description"><?php _e('Your Meta (Facebook) Pixel ID for frontend tracking.', 'fp-esperienze'); ?></p>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row"></th>
+                <td>
+                    <label>
+                        <input type="checkbox" name="meta_capi_enabled" value="1" <?php checked(!empty($integrations['meta_capi_enabled'])); ?>>
+                        <?php _e('Enable Meta Conversions API (server-side tracking)', 'fp-esperienze'); ?>
+                    </label>
+                    <p class="description"><?php _e('Enables server-side tracking for better data accuracy and iOS 14.5+ compliance.', 'fp-esperienze'); ?></p>
+                </td>
+            </tr>
+            <tr id="meta_capi_settings" style="<?php echo empty($integrations['meta_capi_enabled']) ? 'display: none;' : ''; ?>">
+                <th scope="row">
+                    <label for="meta_access_token"><?php _e('Access Token', 'fp-esperienze'); ?></label>
+                </th>
+                <td>
+                    <input type="text" name="meta_access_token" id="meta_access_token" value="<?php echo esc_attr($integrations['meta_access_token'] ?? ''); ?>" class="regular-text">
+                    <p class="description"><?php _e('Meta app access token for Conversions API.', 'fp-esperienze'); ?></p>
+                </td>
+            </tr>
+            <tr id="meta_dataset_row" style="<?php echo empty($integrations['meta_capi_enabled']) ? 'display: none;' : ''; ?>">
+                <th scope="row">
+                    <label for="meta_dataset_id"><?php _e('Dataset ID', 'fp-esperienze'); ?></label>
+                </th>
+                <td>
+                    <input type="text" name="meta_dataset_id" id="meta_dataset_id" value="<?php echo esc_attr($integrations['meta_dataset_id'] ?? ''); ?>" class="regular-text">
+                    <p class="description"><?php _e('Dataset ID for Meta Conversions API (found in Events Manager).', 'fp-esperienze'); ?></p>
                 </td>
             </tr>
         </table>
+
+        <script>
+        jQuery(document).ready(function($) {
+            $('input[name="meta_capi_enabled"]').change(function() {
+                if ($(this).is(':checked')) {
+                    $('#meta_capi_settings, #meta_dataset_row').show();
+                } else {
+                    $('#meta_capi_settings, #meta_dataset_row').hide();
+                }
+            });
+        });
+        </script>
 
         <h3><?php _e('Brevo (Email Marketing)', 'fp-esperienze'); ?></h3>
         <table class="form-table">
@@ -564,6 +620,50 @@ class SetupWizard {
                 </td>
             </tr>
         </table>
+
+        <h3><?php _e('Privacy & Consent', 'fp-esperienze'); ?></h3>
+        <table class="form-table">
+            <tr>
+                <th scope="row"></th>
+                <td>
+                    <label>
+                        <input type="checkbox" name="consent_mode_enabled" value="1" <?php checked(!empty($integrations['consent_mode_enabled'])); ?>>
+                        <?php _e('Enable Consent Mode (GDPR Compliance)', 'fp-esperienze'); ?>
+                    </label>
+                    <p class="description"><?php _e('Requires user consent before loading tracking scripts.', 'fp-esperienze'); ?></p>
+                </td>
+            </tr>
+            <tr id="consent_settings" style="<?php echo empty($integrations['consent_mode_enabled']) ? 'display: none;' : ''; ?>">
+                <th scope="row">
+                    <label for="consent_cookie_name"><?php _e('Consent Cookie Name', 'fp-esperienze'); ?></label>
+                </th>
+                <td>
+                    <input type="text" name="consent_cookie_name" id="consent_cookie_name" value="<?php echo esc_attr($integrations['consent_cookie_name'] ?? 'marketing_consent'); ?>" class="regular-text">
+                    <p class="description"><?php _e('Name of cookie that stores consent status.', 'fp-esperienze'); ?></p>
+                </td>
+            </tr>
+            <tr id="consent_function_row" style="<?php echo empty($integrations['consent_mode_enabled']) ? 'display: none;' : ''; ?>">
+                <th scope="row">
+                    <label for="consent_js_function"><?php _e('JavaScript Function (Optional)', 'fp-esperienze'); ?></label>
+                </th>
+                <td>
+                    <input type="text" name="consent_js_function" id="consent_js_function" value="<?php echo esc_attr($integrations['consent_js_function'] ?? ''); ?>" class="regular-text" placeholder="window.getConsentStatus">
+                    <p class="description"><?php _e('JavaScript function to check consent status. Leave blank to use cookie only.', 'fp-esperienze'); ?></p>
+                </td>
+            </tr>
+        </table>
+
+        <script>
+        jQuery(document).ready(function($) {
+            $('input[name="consent_mode_enabled"]').change(function() {
+                if ($(this).is(':checked')) {
+                    $('#consent_settings, #consent_function_row').show();
+                } else {
+                    $('#consent_settings, #consent_function_row').hide();
+                }
+            });
+        });
+        </script>
         <?php
     }
 

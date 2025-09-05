@@ -33,6 +33,10 @@ class TrackingManager {
         add_action('woocommerce_before_checkout_form', [$this, 'trackBeginCheckout']);
         add_action('woocommerce_checkout_process', [$this, 'trackAddPaymentInfo']);
         add_action('woocommerce_checkout_order_processed', [$this, 'trackPurchase'], 10, 1);
+        
+        // UTM tracking hooks
+        add_action('wp_head', [$this, 'captureUTMParameters']);
+        add_action('woocommerce_checkout_order_processed', [$this, 'storeUTMParameters'], 5, 1);
     }
     
     /**
@@ -47,6 +51,13 @@ class TrackingManager {
      */
     public function isMetaPixelEnabled(): bool {
         return !empty($this->settings['meta_pixel_id']);
+    }
+    
+    /**
+     * Check if Google Ads tracking is enabled
+     */
+    public function isGoogleAdsEnabled(): bool {
+        return !empty($this->settings['gads_conversion_id']);
     }
     
     /**
@@ -71,7 +82,7 @@ class TrackingManager {
             return;
         }
         
-        if ($this->isGA4Enabled() || $this->isMetaPixelEnabled()) {
+        if ($this->isGA4Enabled() || $this->isMetaPixelEnabled() || $this->isGoogleAdsEnabled()) {
             wp_enqueue_script(
                 'fp-esperienze-tracking',
                 FP_ESPERIENZE_PLUGIN_URL . 'assets/js/tracking.js',
@@ -84,8 +95,11 @@ class TrackingManager {
             wp_localize_script('fp-esperienze-tracking', 'fpTrackingSettings', [
                 'ga4_enabled' => $this->isGA4Enabled(),
                 'meta_enabled' => $this->isMetaPixelEnabled(),
+                'gads_enabled' => $this->isGoogleAdsEnabled(),
                 'ga4_measurement_id' => $this->settings['ga4_measurement_id'] ?? '',
                 'meta_pixel_id' => $this->settings['meta_pixel_id'] ?? '',
+                'gads_conversion_id' => $this->settings['gads_conversion_id'] ?? '',
+                'gads_purchase_label' => $this->settings['gads_purchase_label'] ?? '',
                 'currency' => get_woocommerce_currency(),
                 // Consent Mode v2 settings
                 'consent_mode_enabled' => !empty($this->settings['consent_mode_enabled']),
@@ -123,6 +137,32 @@ class TrackingManager {
                 gtag('config', '{$measurement_id}');
             ";
             wp_add_inline_script('google-analytics-gtag', $ga4_init_script);
+        }
+        
+        if ($this->isGoogleAdsEnabled()) {
+            $conversion_id = esc_js($this->settings['gads_conversion_id']);
+            
+            // Use same gtag script if GA4 is also enabled, otherwise load it
+            if (!$this->isGA4Enabled()) {
+                wp_enqueue_script(
+                    'google-analytics-gtag',
+                    "https://www.googletagmanager.com/gtag/js?id={$conversion_id}",
+                    [],
+                    null,
+                    true
+                );
+                
+                $gads_init_script = "
+                    window.dataLayer = window.dataLayer || [];
+                    function gtag(){dataLayer.push(arguments);}
+                    gtag('js', new Date());
+                ";
+                wp_add_inline_script('google-analytics-gtag', $gads_init_script);
+            }
+            
+            // Add Google Ads config
+            $gads_config_script = "gtag('config', '{$conversion_id}');";
+            wp_add_inline_script('google-analytics-gtag', $gads_config_script);
         }
         
         if ($this->isMetaPixelEnabled()) {
@@ -315,6 +355,23 @@ class TrackingManager {
                 'event_id' => $this->generateEventId('purchase', $order_id),
             ];
             
+            // Add UTM attribution data if available
+            $utm_source = $order->get_meta('_utm_source');
+            $utm_medium = $order->get_meta('_utm_medium');
+            $utm_campaign = $order->get_meta('_utm_campaign');
+            
+            if ($utm_source || $utm_medium || $utm_campaign) {
+                $tracking_data['attribution'] = [
+                    'utm_source' => $utm_source,
+                    'utm_medium' => $utm_medium,
+                    'utm_campaign' => $utm_campaign,
+                    'utm_term' => $order->get_meta('_utm_term'),
+                    'utm_content' => $order->get_meta('_utm_content'),
+                    'gclid' => $order->get_meta('_gclid'),
+                    'fbclid' => $order->get_meta('_fbclid'),
+                ];
+            }
+            
             // Store in transient for order confirmation page
             set_transient('fp_tracking_purchase_' . $order_id, $tracking_data, HOUR_IN_SECONDS);
         }
@@ -355,5 +412,106 @@ class TrackingManager {
         }
         
         return $data;
+    }
+    
+    /**
+     * Capture UTM parameters and store in session
+     */
+    public function captureUTMParameters(): void {
+        // Only capture UTM parameters on first page visit
+        if (!WC()->session || WC()->session->get('utm_captured')) {
+            return;
+        }
+        
+        $utm_params = [
+            'utm_source' => sanitize_text_field($_GET['utm_source'] ?? ''),
+            'utm_medium' => sanitize_text_field($_GET['utm_medium'] ?? ''),
+            'utm_campaign' => sanitize_text_field($_GET['utm_campaign'] ?? ''),
+            'utm_term' => sanitize_text_field($_GET['utm_term'] ?? ''),
+            'utm_content' => sanitize_text_field($_GET['utm_content'] ?? ''),
+            'gclid' => sanitize_text_field($_GET['gclid'] ?? ''), // Google Ads click ID
+            'fbclid' => sanitize_text_field($_GET['fbclid'] ?? ''), // Facebook click ID
+        ];
+        
+        // Remove empty parameters
+        $utm_params = array_filter($utm_params);
+        
+        if (!empty($utm_params)) {
+            WC()->session->set('utm_parameters', $utm_params);
+            WC()->session->set('utm_captured', true);
+        }
+    }
+    
+    /**
+     * Store UTM parameters with order
+     */
+    public function storeUTMParameters(int $order_id): void {
+        if (!WC()->session) {
+            return;
+        }
+        
+        $utm_params = WC()->session->get('utm_parameters');
+        if (empty($utm_params)) {
+            return;
+        }
+        
+        $order = wc_get_order($order_id);
+        if (!$order) {
+            return;
+        }
+        
+        // Store each UTM parameter as order meta
+        foreach ($utm_params as $key => $value) {
+            $order->update_meta_data('_' . $key, $value);
+        }
+        
+        // Store attribution timestamp
+        $order->update_meta_data('_attribution_timestamp', current_time('mysql'));
+        
+        $order->save();
+        
+        // Clear UTM data from session after storing
+        WC()->session->__unset('utm_parameters');
+        WC()->session->__unset('utm_captured');
+    }
+    
+    /**
+     * Send server-side Meta Conversions API event
+     */
+    public function sendMetaCAPIEvent(string $event_name, array $event_data, string $event_id = null): bool {
+        if (empty($this->settings['meta_capi_enabled']) || empty($this->settings['meta_pixel_id'])) {
+            return false;
+        }
+        
+        // This is a placeholder for Meta Conversions API implementation
+        // Requires Meta access token and proper server-side setup
+        // For now, we'll log the event for future implementation
+        
+        $payload = [
+            'data' => [
+                [
+                    'event_name' => $event_name,
+                    'event_time' => time(),
+                    'action_source' => 'website',
+                    'event_source_url' => home_url(),
+                    'custom_data' => $event_data,
+                ]
+            ]
+        ];
+        
+        if ($event_id) {
+            $payload['data'][0]['event_id'] = $event_id;
+        }
+        
+        // TODO: Implement actual Meta Conversions API call
+        // This would require:
+        // 1. Meta access token configuration
+        // 2. Dataset ID configuration  
+        // 3. Proper API authentication
+        // 4. HTTP request to Meta's Conversions API endpoint
+        
+        error_log('FP Esperienze: Meta CAPI event (placeholder): ' . wp_json_encode($payload));
+        
+        return true;
     }
 }

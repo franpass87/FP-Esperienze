@@ -7,9 +7,6 @@
 
 namespace FP\Esperienze\PDF;
 
-use chillerlan\QRCode\QRCode;
-use chillerlan\QRCode\QROptions;
-
 defined('ABSPATH') || exit;
 
 /**
@@ -18,23 +15,38 @@ defined('ABSPATH') || exit;
 class Qr {
     
     /**
+     * Check if QR code generation dependencies are available
+     *
+     * @return bool
+     */
+    public static function isQRCodeAvailable(): bool {
+        return class_exists('chillerlan\QRCode\QRCode');
+    }
+    
+    /**
      * Generate QR code for voucher
      *
      * @param array $voucher_data Voucher data
-     * @return string QR code file path
+     * @return string QR code file path or empty string
      */
     public static function generate($voucher_data): string {
+        // Check if QR code library is available
+        if (!self::isQRCodeAvailable()) {
+            // Fallback: generate text-based alternative
+            return self::generateTextFallback($voucher_data);
+        }
+        
         $payload = self::buildPayload($voucher_data);
         
-        $options = new QROptions([
+        $options = new \chillerlan\QRCode\QROptions([
             'version'    => 5,
-            'outputType' => QRCode::OUTPUT_IMAGE_PNG,
-            'eccLevel'   => QRCode::ECC_M,
+            'outputType' => \chillerlan\QRCode\QRCode::OUTPUT_IMAGE_PNG,
+            'eccLevel'   => \chillerlan\QRCode\QRCode::ECC_M,
             'scale'      => 5,
             'imageBase64' => false,
         ]);
         
-        $qrcode = new QRCode($options);
+        $qrcode = new \chillerlan\QRCode\QRCode($options);
         $qr_image = $qrcode->render($payload);
         
         // Save QR code image
@@ -55,6 +67,18 @@ class Qr {
         }
         
         return $file_path;
+    }
+    
+    /**
+     * Generate text-based fallback when QR code libraries are not available
+     *
+     * @param array $voucher_data Voucher data
+     * @return string Empty string (no QR code available)
+     */
+    private static function generateTextFallback($voucher_data): string {
+        // When QR code library is not available, return empty string
+        // The voucher will still contain the code that can be manually verified
+        return '';
     }
     
     /**

@@ -7,9 +7,6 @@
 
 namespace FP\Esperienze\PDF;
 
-use Dompdf\Dompdf;
-use Dompdf\Options;
-
 defined('ABSPATH') || exit;
 
 /**
@@ -18,17 +15,33 @@ defined('ABSPATH') || exit;
 class Voucher_Pdf {
     
     /**
+     * Check if PDF generation dependencies are available
+     *
+     * @return bool
+     */
+    public static function isDompdfAvailable(): bool {
+        return class_exists('Dompdf\Dompdf');
+    }
+    
+    /**
      * Generate voucher PDF
      *
      * @param array $voucher_data Voucher data
-     * @return string PDF file path
+     * @return string PDF file path or HTML content
      */
     public static function generate($voucher_data): string {
-        $options = new Options();
+        // Check if dompdf is available
+        if (!self::isDompdfAvailable()) {
+            // Fallback: generate HTML version
+            return self::generateHtmlFallback($voucher_data);
+        }
+        
+        // Use Dompdf if available
+        $options = new \Dompdf\Options();
         $options->set('defaultFont', 'Arial');
         $options->set('isRemoteEnabled', true);
         
-        $dompdf = new Dompdf($options);
+        $dompdf = new \Dompdf\Dompdf($options);
         
         // Generate QR code
         $qr_code_path = Qr::generate($voucher_data);
@@ -57,6 +70,40 @@ class Voucher_Pdf {
         
         if ($result === false) {
             throw new \Exception('Failed to save PDF voucher to: ' . $file_path);
+        }
+        
+        return $file_path;
+    }
+    
+    /**
+     * Generate HTML fallback when PDF libraries are not available
+     *
+     * @param array $voucher_data Voucher data
+     * @return string HTML file path
+     */
+    private static function generateHtmlFallback($voucher_data): string {
+        // Generate QR code (will also have fallback)
+        $qr_code_path = Qr::generate($voucher_data);
+        
+        // Build HTML content
+        $html = self::buildHtmlContent($voucher_data, $qr_code_path);
+        
+        // Save HTML file
+        $upload_dir = wp_upload_dir();
+        $voucher_dir = $upload_dir['basedir'] . '/fp-esperienze/voucher/';
+        
+        if (!file_exists($voucher_dir)) {
+            wp_mkdir_p($voucher_dir);
+            self::createSecurityHtaccess($voucher_dir);
+        }
+        
+        $filename = 'voucher-' . $voucher_data['code'] . '-' . time() . '.html';
+        $file_path = $voucher_dir . $filename;
+        
+        $result = file_put_contents($file_path, $html);
+        
+        if ($result === false) {
+            throw new \Exception('Failed to save HTML voucher to: ' . $file_path);
         }
         
         return $file_path;

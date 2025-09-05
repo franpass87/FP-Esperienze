@@ -55,22 +55,24 @@ if (version_compare(PHP_VERSION, '8.1', '<')) {
 
 // WooCommerce dependency checks will be performed in plugins_loaded hook
 
-// Check for Composer autoloader
+// Update the main plugin file to handle missing composer dependencies gracefully
 $autoloader_path = FP_ESPERIENZE_PLUGIN_DIR . 'vendor/autoload.php';
-if (!file_exists($autoloader_path)) {
+$composer_available = file_exists($autoloader_path);
+
+if (!$composer_available) {
+    // Add notice but don't prevent plugin from loading
     add_action('admin_notices', function() {
-        echo '<div class="notice notice-error"><p>' . 
+        echo '<div class="notice notice-warning"><p>' . 
              sprintf(
-                 esc_html__('FP Esperienze requires composer dependencies to be installed. Please run %s in the plugin directory.', 'fp-esperienze'),
+                 esc_html__('FP Esperienze: Some advanced features (PDF generation, QR codes) require composer dependencies. Run %s in the plugin directory to enable all features.', 'fp-esperienze'),
                  '<code>composer install --no-dev</code>'
              ) . 
              '</p></div>';
     });
-    return;
+} else {
+    // Autoloader
+    require_once $autoloader_path;
 }
-
-// Autoloader
-require_once $autoloader_path;
 
 /**
  * Initialize the plugin

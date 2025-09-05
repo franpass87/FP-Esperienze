@@ -25,7 +25,7 @@ class ScheduleManager {
         
         $table_name = $wpdb->prefix . 'fp_schedules';
         $results = $wpdb->get_results($wpdb->prepare(
-            "SELECT * FROM $table_name WHERE product_id = %d AND is_active = 1 ORDER BY day_of_week, start_time",
+            "SELECT id, product_id, day_of_week, start_time, end_time, max_participants, is_active FROM $table_name WHERE product_id = %d AND is_active = 1 ORDER BY day_of_week, start_time",
             $product_id
         ));
         
