@@ -31,6 +31,13 @@
         // Prevent double initialization
         initialized: false,
         
+        // Debug utility
+        debug: function(message, data) {
+            if (typeof fpEsperienzeAdmin !== 'undefined' && fpEsperienzeAdmin.debug === '1') {
+                console.log('FP Esperienze:', message, data || '');
+            }
+        },
+        
         /**
          * Initialize
          */
@@ -770,7 +777,7 @@
         initModernScheduleBuilder: function() {
             var self = this;
             
-            console.log('FP Esperienze: Initializing clean schedule builder');
+            self.debug('Initializing clean schedule builder');
             
             // Validate containers first
             this.validateContainers();
@@ -787,7 +794,7 @@
             $(document).on('click.fp-clean', '#fp-add-time-slot, #fp-add-time-slot-empty', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('FP Esperienze: Add time slot clicked');
+                self.debug('Add time slot clicked');
                 
                 // Disable button temporarily to prevent double clicks
                 var $button = $(this);
@@ -810,7 +817,7 @@
             $(document).on('click.fp-clean', '.fp-remove-time-slot-clean', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('FP Esperienze: Remove time slot clicked');
+                self.debug('Remove time slot clicked');
                 
                 var $button = $(this);
                 var $card = $button.closest('.fp-time-slot-card-clean');

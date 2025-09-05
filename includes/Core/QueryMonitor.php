@@ -122,11 +122,26 @@ class QueryMonitor {
         // Also log EXPLAIN plan for optimization insights
         global $wpdb;
         if (strpos(strtoupper(trim($query)), 'SELECT') === 0) {
-            // Basic safety check: ensure query doesn't contain potential malicious content
-            if (!preg_match('/[;\'"\\\\]/', $query)) {
-                $explain = $wpdb->get_results("EXPLAIN " . $query, ARRAY_A);
-                if ($explain && defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log("[FP Esperienze] Query Plan: " . wp_json_encode($explain));
+            // Enhanced safety check: ensure query doesn't contain potential malicious content
+            // More strict validation for SQL injection prevention
+            if (!preg_match('/[;\'"\\\\]|--|\\/\\*|\\*\\/|xp_|sp_/i', $query) && strlen($query) < 1000) {
+                try {
+                    // For safety, we'll just validate the query structure more strictly
+                    // and skip EXPLAIN if it contains any suspicious patterns
+                    $trimmed_query = trim($query);
+                    if (preg_match('/^SELECT\s+/i', $trimmed_query) && 
+                        !preg_match('/\b(INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|UNION)\b/i', $trimmed_query)) {
+                        
+                        // Log query info without running EXPLAIN to avoid security risks
+                        if (defined('WP_DEBUG') && WP_DEBUG) {
+                            error_log("[FP Esperienze] Safe query logged: " . self::sanitizeQueryForLog($query));
+                        }
+                    }
+                } catch (Exception $e) {
+                    // If validation fails, just log without details
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        error_log("[FP Esperienze] Query validation failed for: " . self::sanitizeQueryForLog($query));
+                    }
                 }
             }
         }
