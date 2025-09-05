@@ -20,6 +20,7 @@ use FP\Esperienze\Core\CapabilityManager;
 use FP\Esperienze\Core\I18nManager;
 use FP\Esperienze\Core\WebhookManager;
 use FP\Esperienze\Core\Log;
+use FP\Esperienze\Admin\DependencyChecker;
 
 defined('ABSPATH') || exit;
 
