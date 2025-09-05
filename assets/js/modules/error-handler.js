@@ -14,6 +14,8 @@
         maxErrors: 10,
         recoveryAttempts: 0,
         maxRecoveryAttempts: 3,
+        healthCheckInterval: null,
+        recoveryTimeout: null,
         
         /**
          * Initialize error handling system
@@ -24,6 +26,11 @@
             this.setupAjaxErrorHandling();
             this.initErrorRecovery();
             this.startHealthChecks();
+            
+            // Setup cleanup on page unload
+            $(window).on('beforeunload', () => {
+                this.cleanup();
+            });
         },
 
         /**
@@ -174,8 +181,8 @@
                     5000
                 );
                 
-                // Attempt automatic recovery
-                setTimeout(() => {
+                // Attempt automatic recovery with timeout tracking
+                this.recoveryTimeout = setTimeout(() => {
                     this.attemptRecovery();
                 }, 1000);
                 
@@ -438,9 +445,24 @@
          * Start periodic health checks
          */
         startHealthChecks: function() {
-            setInterval(() => {
+            // Clear existing interval if any
+            if (this.healthCheckInterval) {
+                clearInterval(this.healthCheckInterval);
+            }
+            
+            this.healthCheckInterval = setInterval(() => {
                 this.performHealthCheck();
             }, 30000); // Every 30 seconds
+        },
+
+        /**
+         * Stop health checks (cleanup)
+         */
+        stopHealthChecks: function() {
+            if (this.healthCheckInterval) {
+                clearInterval(this.healthCheckInterval);
+                this.healthCheckInterval = null;
+            }
         },
 
         /**
@@ -508,6 +530,18 @@
             this.criticalErrors = 0;
             this.recoveryAttempts = 0;
             console.log('FP Esperienze: Error log cleared');
+        },
+
+        /**
+         * Cleanup method for page unload
+         */
+        cleanup: function() {
+            this.stopHealthChecks();
+            // Clear any pending timeouts that might be stored
+            if (this.recoveryTimeout) {
+                clearTimeout(this.recoveryTimeout);
+                this.recoveryTimeout = null;
+            }
         }
     };
 

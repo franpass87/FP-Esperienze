@@ -33,6 +33,12 @@
             performance: null
         },
         
+        // Timer IDs for cleanup
+        timers: {
+            memoryMonitor: null,
+            frameRateMonitor: null
+        },
+        
         /**
          * Initialize performance monitoring
          */
@@ -243,7 +249,7 @@
         setupMemoryMonitoring: function() {
             if (!performance.memory) return;
             
-            setInterval(() => {
+            this.timers.memoryMonitor = setInterval(() => {
                 const currentMemory = performance.memory.usedJSHeapSize;
                 this.metrics.memoryUsage.current = currentMemory;
                 
@@ -472,6 +478,7 @@
          * Cleanup observers and listeners
          */
         cleanup: function() {
+            // Clean up observers
             if (this.observers.intersection) {
                 this.observers.intersection.disconnect();
             }
@@ -482,6 +489,17 @@
             
             if (this.observers.performance) {
                 this.observers.performance.disconnect();
+            }
+            
+            // Clean up timers
+            if (this.timers.memoryMonitor) {
+                clearInterval(this.timers.memoryMonitor);
+                this.timers.memoryMonitor = null;
+            }
+            
+            if (this.timers.frameRateMonitor) {
+                clearInterval(this.timers.frameRateMonitor);
+                this.timers.frameRateMonitor = null;
             }
         }
     };
