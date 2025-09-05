@@ -373,6 +373,119 @@ class VoucherManager {
     }
     
     /**
+     * Create a voucher manually (public API)
+     *
+     * @param array $voucher_data {
+     *     Voucher data array
+     *     @type int    $product_id      Product ID
+     *     @type string $amount_type     'full' or 'value'
+     *     @type float  $amount          Amount value
+     *     @type string $recipient_name  Recipient name
+     *     @type string $recipient_email Recipient email
+     *     @type string $message         Optional message
+     *     @type string $expires_on      Expiration date (Y-m-d format)
+     * }
+     * @return array Result with success status, voucher ID, and code
+     */
+    public static function createVoucher(array $voucher_data): array {
+        global $wpdb;
+        
+        $result = [
+            'success' => false,
+            'voucher_id' => 0,
+            'voucher_code' => '',
+            'message' => ''
+        ];
+        
+        // Validate required fields
+        $required_fields = ['product_id', 'recipient_name', 'recipient_email', 'expires_on'];
+        foreach ($required_fields as $field) {
+            if (empty($voucher_data[$field])) {
+                $result['message'] = sprintf(__('Missing required field: %s', 'fp-esperienze'), $field);
+                return $result;
+            }
+        }
+        
+        // Validate product exists and is experience type
+        $product = wc_get_product($voucher_data['product_id']);
+        if (!$product || $product->get_type() !== 'experience') {
+            $result['message'] = __('Invalid product ID or product is not an experience.', 'fp-esperienze');
+            return $result;
+        }
+        
+        // Validate email
+        if (!is_email($voucher_data['recipient_email'])) {
+            $result['message'] = __('Invalid recipient email address.', 'fp-esperienze');
+            return $result;
+        }
+        
+        // Validate expiration date
+        $expires_on = $voucher_data['expires_on'];
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $expires_on) || strtotime($expires_on) === false) {
+            $result['message'] = __('Invalid expiration date format. Use Y-m-d format.', 'fp-esperienze');
+            return $result;
+        }
+        
+        // Set defaults
+        $amount_type = $voucher_data['amount_type'] ?? 'full';
+        $amount = $voucher_data['amount'] ?? ($amount_type === 'full' ? $product->get_price() : 0);
+        $message = $voucher_data['message'] ?? '';
+        
+        // Generate unique voucher code
+        $instance = new self();
+        $voucher_code = $instance->generateVoucherCode();
+        
+        // Insert voucher into database
+        $table_name = $wpdb->prefix . 'fp_exp_vouchers';
+        $inserted = $wpdb->insert(
+            $table_name,
+            [
+                'code' => $voucher_code,
+                'product_id' => (int) $voucher_data['product_id'],
+                'amount_type' => $amount_type,
+                'amount' => (float) $amount,
+                'recipient_name' => sanitize_text_field($voucher_data['recipient_name']),
+                'recipient_email' => sanitize_email($voucher_data['recipient_email']),
+                'message' => sanitize_textarea_field($message),
+                'expires_on' => $expires_on,
+                'status' => 'active',
+                'created_at' => current_time('mysql'),
+                'order_id' => 0 // Manual voucher, no associated order
+            ],
+            [
+                '%s', // code
+                '%d', // product_id
+                '%s', // amount_type
+                '%f', // amount
+                '%s', // recipient_name
+                '%s', // recipient_email
+                '%s', // message
+                '%s', // expires_on
+                '%s', // status
+                '%s', // created_at
+                '%d'  // order_id
+            ]
+        );
+        
+        if ($inserted === false) {
+            $result['message'] = __('Failed to create voucher in database.', 'fp-esperienze');
+            return $result;
+        }
+        
+        $voucher_id = $wpdb->insert_id;
+        
+        $result['success'] = true;
+        $result['voucher_id'] = $voucher_id;
+        $result['voucher_code'] = $voucher_code;
+        $result['message'] = __('Voucher created successfully.', 'fp-esperienze');
+        
+        // Log the creation
+        do_action('fp_esperienze_voucher_created', $voucher_id, $voucher_data);
+        
+        return $result;
+    }
+
+    /**
      * Send scheduled voucher
      *
      * @param int $voucher_id Voucher ID
