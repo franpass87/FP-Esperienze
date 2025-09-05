@@ -95,6 +95,10 @@ class Plugin {
         add_action('wp_enqueue_scripts', [$this, 'enqueueScripts']);
         add_action('admin_enqueue_scripts', [$this, 'enqueueAdminScripts']);
         
+        // Output custom branding CSS
+        add_action('wp_head', [$this, 'outputBrandingCSS']);
+        add_action('admin_head', [$this, 'outputBrandingCSS']);
+        
         // Add filter to defer non-critical scripts
         add_filter('script_loader_tag', [$this, 'deferNonCriticalScripts'], 10, 3);
         
@@ -549,5 +553,96 @@ class Plugin {
         );
         
         return $content;
+    }
+    
+    /**
+     * Output custom branding CSS
+     */
+    public function outputBrandingCSS(): void {
+        $branding_settings = get_option('fp_esperienze_branding', []);
+        
+        // Skip if no custom branding settings
+        if (empty($branding_settings)) {
+            return;
+        }
+        
+        $primary_font = $branding_settings['primary_font'] ?? 'inherit';
+        $heading_font = $branding_settings['heading_font'] ?? 'inherit';
+        $primary_color = $branding_settings['primary_color'] ?? '#ff6b35';
+        $secondary_color = $branding_settings['secondary_color'] ?? '#b24a25';
+        
+        // Skip if all values are defaults
+        if ($primary_font === 'inherit' && 
+            $heading_font === 'inherit' && 
+            $primary_color === '#ff6b35' && 
+            $secondary_color === '#b24a25') {
+            return;
+        }
+        
+        echo "\n<!-- FP Esperienze Custom Branding CSS -->\n";
+        echo "<style type=\"text/css\">\n";
+        
+        // Update CSS custom properties
+        echo ":root {\n";
+        if ($primary_color !== '#ff6b35') {
+            echo "    --fp-brand-orange: " . esc_attr($primary_color) . ";\n";
+        }
+        if ($secondary_color !== '#b24a25') {
+            echo "    --fp-brand-orange-text: " . esc_attr($secondary_color) . ";\n";
+        }
+        echo "}\n";
+        
+        // Apply fonts to FP Esperienze elements
+        if ($primary_font !== 'inherit') {
+            echo ".fp-experience-single,\n";
+            echo ".fp-experience-archive,\n";
+            echo ".fp-booking-form,\n";
+            echo ".fp-experience-grid .fp-experience-card,\n";
+            echo ".fp-experience-details,\n";
+            echo ".fp-experience-description {\n";
+            echo "    font-family: " . esc_attr($primary_font) . " !important;\n";
+            echo "}\n";
+        }
+        
+        if ($heading_font !== 'inherit') {
+            echo ".fp-experience-title,\n";
+            echo ".fp-experience-single h1,\n";
+            echo ".fp-experience-single h2,\n";
+            echo ".fp-experience-single h3,\n";
+            echo ".fp-experience-grid .fp-experience-card h3,\n";
+            echo ".fp-hero-title,\n";
+            echo ".fp-section-title {\n";
+            echo "    font-family: " . esc_attr($heading_font) . " !important;\n";
+            echo "}\n";
+        }
+        
+        // Load Google Fonts if needed
+        $google_fonts = [];
+        if ($primary_font !== 'inherit' && strpos($primary_font, 'sans-serif') !== false && strpos($primary_font, "'") !== false) {
+            $font_name = str_replace(["'", ', sans-serif', ', serif'], '', $primary_font);
+            if (in_array($font_name, ['Open Sans', 'Roboto', 'Lato', 'Montserrat', 'Poppins'])) {
+                $google_fonts[] = $font_name;
+            }
+        }
+        
+        if ($heading_font !== 'inherit' && strpos($heading_font, "'") !== false) {
+            $font_name = str_replace(["'", ', sans-serif', ', serif'], '', $heading_font);
+            if (in_array($font_name, ['Open Sans', 'Roboto', 'Lato', 'Montserrat', 'Poppins', 'Playfair Display', 'Merriweather'])) {
+                $google_fonts[] = $font_name;
+            }
+        }
+        
+        echo "</style>\n";
+        
+        // Add Google Fonts if needed
+        if (!empty($google_fonts)) {
+            $google_fonts = array_unique($google_fonts);
+            $fonts_query = str_replace(' ', '+', implode('|', $google_fonts));
+            echo '<link rel="preconnect" href="https://fonts.googleapis.com">' . "\n";
+            echo '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' . "\n";
+            echo '<link href="https://fonts.googleapis.com/css2?family=' . esc_attr($fonts_query) . ':wght@400;600;700&display=swap" rel="stylesheet">' . "\n";
+        }
+        
+        echo "<!-- End FP Esperienze Custom Branding CSS -->\n\n";
     }
 }

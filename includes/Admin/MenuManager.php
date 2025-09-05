@@ -2614,6 +2614,13 @@ class MenuManager {
         $webhook_secret = get_option('fp_esperienze_webhook_secret', '');
         $webhook_hide_pii = get_option('fp_esperienze_webhook_hide_pii', false);
         
+        // Get branding settings
+        $branding_settings = get_option('fp_esperienze_branding', []);
+        $primary_font = $branding_settings['primary_font'] ?? 'inherit';
+        $heading_font = $branding_settings['heading_font'] ?? 'inherit';
+        $primary_color = $branding_settings['primary_color'] ?? '#ff6b35';
+        $secondary_color = $branding_settings['secondary_color'] ?? '#b24a25';
+        
         ?>
         <div class="wrap">
             <h1><?php _e('FP Esperienze Settings', 'fp-esperienze'); ?></h1>
@@ -2621,6 +2628,7 @@ class MenuManager {
             <h2 class="nav-tab-wrapper">
                 <a href="<?php echo admin_url('admin.php?page=fp-esperienze-settings&tab=general'); ?>" class="nav-tab <?php echo $current_tab === 'general' ? 'nav-tab-active' : ''; ?>"><?php _e('General', 'fp-esperienze'); ?></a>
                 <a href="<?php echo admin_url('admin.php?page=fp-esperienze-settings&tab=booking'); ?>" class="nav-tab <?php echo $current_tab === 'booking' ? 'nav-tab-active' : ''; ?>"><?php _e('Booking', 'fp-esperienze'); ?></a>
+                <a href="<?php echo admin_url('admin.php?page=fp-esperienze-settings&tab=branding'); ?>" class="nav-tab <?php echo $current_tab === 'branding' ? 'nav-tab-active' : ''; ?>"><?php _e('Branding', 'fp-esperienze'); ?></a>
                 <a href="<?php echo admin_url('admin.php?page=fp-esperienze-settings&tab=gift'); ?>" class="nav-tab <?php echo $current_tab === 'gift' ? 'nav-tab-active' : ''; ?>"><?php _e('Gift Vouchers', 'fp-esperienze'); ?></a>
                 <a href="<?php echo admin_url('admin.php?page=fp-esperienze-settings&tab=notifications'); ?>" class="nav-tab <?php echo $current_tab === 'notifications' ? 'nav-tab-active' : ''; ?>"><?php _e('Notifications', 'fp-esperienze'); ?></a>
                 <a href="<?php echo admin_url('admin.php?page=fp-esperienze-settings&tab=integrations'); ?>" class="nav-tab <?php echo $current_tab === 'integrations' ? 'nav-tab-active' : ''; ?>"><?php _e('Integrations', 'fp-esperienze'); ?></a>
@@ -2680,6 +2688,109 @@ class MenuManager {
                     </table>
                     
                     <?php submit_button(__('Save Settings', 'fp-esperienze')); ?>
+                </div>
+                <?php endif; ?>
+                
+                <?php if ($current_tab === 'branding') : ?>
+                <div class="tab-content">
+                    <h3><?php _e('Typography & Colors', 'fp-esperienze'); ?></h3>
+                    <p><?php _e('Configure fonts and colors for your experience booking system.', 'fp-esperienze'); ?></p>
+                    
+                    <table class="form-table">
+                        <tr>
+                            <th scope="row">
+                                <label for="primary_font"><?php _e('Primary Font', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <select id="primary_font" name="primary_font" class="regular-text">
+                                    <option value="inherit" <?php selected($primary_font, 'inherit'); ?>><?php _e('Inherit from theme', 'fp-esperienze'); ?></option>
+                                    <option value="Arial, sans-serif" <?php selected($primary_font, 'Arial, sans-serif'); ?>>Arial</option>
+                                    <option value="Helvetica, Arial, sans-serif" <?php selected($primary_font, 'Helvetica, Arial, sans-serif'); ?>>Helvetica</option>
+                                    <option value="Georgia, serif" <?php selected($primary_font, 'Georgia, serif'); ?>>Georgia</option>
+                                    <option value="'Times New Roman', serif" <?php selected($primary_font, "'Times New Roman', serif"); ?>>Times New Roman</option>
+                                    <option value="Verdana, sans-serif" <?php selected($primary_font, 'Verdana, sans-serif'); ?>>Verdana</option>
+                                    <option value="'Trebuchet MS', sans-serif" <?php selected($primary_font, "'Trebuchet MS', sans-serif"); ?>>Trebuchet MS</option>
+                                    <option value="'Courier New', monospace" <?php selected($primary_font, "'Courier New', monospace"); ?>>Courier New</option>
+                                    <option value="'Open Sans', sans-serif" <?php selected($primary_font, "'Open Sans', sans-serif"); ?>>Open Sans (Google Fonts)</option>
+                                    <option value="'Roboto', sans-serif" <?php selected($primary_font, "'Roboto', sans-serif"); ?>>Roboto (Google Fonts)</option>
+                                    <option value="'Lato', sans-serif" <?php selected($primary_font, "'Lato', sans-serif"); ?>>Lato (Google Fonts)</option>
+                                    <option value="'Montserrat', sans-serif" <?php selected($primary_font, "'Montserrat', sans-serif"); ?>>Montserrat (Google Fonts)</option>
+                                    <option value="'Poppins', sans-serif" <?php selected($primary_font, "'Poppins', sans-serif"); ?>>Poppins (Google Fonts)</option>
+                                </select>
+                                <p class="description"><?php _e('Primary font used for body text in experience displays.', 'fp-esperienze'); ?></p>
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row">
+                                <label for="heading_font"><?php _e('Heading Font', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <select id="heading_font" name="heading_font" class="regular-text">
+                                    <option value="inherit" <?php selected($heading_font, 'inherit'); ?>><?php _e('Inherit from theme', 'fp-esperienze'); ?></option>
+                                    <option value="Arial, sans-serif" <?php selected($heading_font, 'Arial, sans-serif'); ?>>Arial</option>
+                                    <option value="Helvetica, Arial, sans-serif" <?php selected($heading_font, 'Helvetica, Arial, sans-serif'); ?>>Helvetica</option>
+                                    <option value="Georgia, serif" <?php selected($heading_font, 'Georgia, serif'); ?>>Georgia</option>
+                                    <option value="'Times New Roman', serif" <?php selected($heading_font, "'Times New Roman', serif"); ?>>Times New Roman</option>
+                                    <option value="Verdana, sans-serif" <?php selected($heading_font, 'Verdana, sans-serif'); ?>>Verdana</option>
+                                    <option value="'Trebuchet MS', sans-serif" <?php selected($heading_font, "'Trebuchet MS', sans-serif"); ?>>Trebuchet MS</option>
+                                    <option value="'Courier New', monospace" <?php selected($heading_font, "'Courier New', monospace"); ?>>Courier New</option>
+                                    <option value="'Open Sans', sans-serif" <?php selected($heading_font, "'Open Sans', sans-serif"); ?>>Open Sans (Google Fonts)</option>
+                                    <option value="'Roboto', sans-serif" <?php selected($heading_font, "'Roboto', sans-serif"); ?>>Roboto (Google Fonts)</option>
+                                    <option value="'Lato', sans-serif" <?php selected($heading_font, "'Lato', sans-serif"); ?>>Lato (Google Fonts)</option>
+                                    <option value="'Montserrat', sans-serif" <?php selected($heading_font, "'Montserrat', sans-serif"); ?>>Montserrat (Google Fonts)</option>
+                                    <option value="'Poppins', sans-serif" <?php selected($heading_font, "'Poppins', sans-serif"); ?>>Poppins (Google Fonts)</option>
+                                    <option value="'Playfair Display', serif" <?php selected($heading_font, "'Playfair Display', serif"); ?>>Playfair Display (Google Fonts)</option>
+                                    <option value="'Merriweather', serif" <?php selected($heading_font, "'Merriweather', serif"); ?>>Merriweather (Google Fonts)</option>
+                                </select>
+                                <p class="description"><?php _e('Font used for headings and titles in experience displays.', 'fp-esperienze'); ?></p>
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row">
+                                <label for="primary_color"><?php _e('Primary Color', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <input type="color" 
+                                       id="primary_color" 
+                                       name="primary_color" 
+                                       value="<?php echo esc_attr($primary_color); ?>" />
+                                <input type="text" 
+                                       id="primary_color_text" 
+                                       value="<?php echo esc_attr($primary_color); ?>" 
+                                       class="regular-text" 
+                                       placeholder="#ff6b35" />
+                                <p class="description"><?php _e('Primary brand color used for buttons, highlights, and accents.', 'fp-esperienze'); ?></p>
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row">
+                                <label for="secondary_color"><?php _e('Secondary Color', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <input type="color" 
+                                       id="secondary_color" 
+                                       name="secondary_color" 
+                                       value="<?php echo esc_attr($secondary_color); ?>" />
+                                <input type="text" 
+                                       id="secondary_color_text" 
+                                       value="<?php echo esc_attr($secondary_color); ?>" 
+                                       class="regular-text" 
+                                       placeholder="#b24a25" />
+                                <p class="description"><?php _e('Secondary color used for text elements and darker accents.', 'fp-esperienze'); ?></p>
+                            </td>
+                        </tr>
+                    </table>
+                    
+                    <h3><?php _e('Font Preview', 'fp-esperienze'); ?></h3>
+                    <div id="fp-font-preview" style="border: 1px solid #ddd; padding: 20px; margin: 20px 0; background: #fff;">
+                        <h2 id="fp-preview-heading" style="margin: 0 0 10px 0;"><?php _e('Experience Title Preview', 'fp-esperienze'); ?></h2>
+                        <p id="fp-preview-text" style="margin: 0;"><?php _e('This is how your body text will appear in experience descriptions and details.', 'fp-esperienze'); ?></p>
+                    </div>
+                    
+                    <?php submit_button(__('Save Branding Settings', 'fp-esperienze')); ?>
                 </div>
                 <?php endif; ?>
                 
@@ -3635,6 +3746,61 @@ class MenuManager {
                 alert(fpEsperienzeAdmin.i18n.requestFailed);
             });
         }
+        
+        // Branding settings functionality
+        jQuery(document).ready(function($) {
+            // Sync color picker with text input
+            $('#primary_color').on('change', function() {
+                $('#primary_color_text').val($(this).val());
+                updateColorPreview();
+            });
+            
+            $('#primary_color_text').on('change', function() {
+                var color = $(this).val();
+                if (color.match(/^#[0-9a-fA-F]{6}$/)) {
+                    $('#primary_color').val(color);
+                }
+                updateColorPreview();
+            });
+            
+            $('#secondary_color').on('change', function() {
+                $('#secondary_color_text').val($(this).val());
+                updateColorPreview();
+            });
+            
+            $('#secondary_color_text').on('change', function() {
+                var color = $(this).val();
+                if (color.match(/^#[0-9a-fA-F]{6}$/)) {
+                    $('#secondary_color').val(color);
+                }
+                updateColorPreview();
+            });
+            
+            // Update font preview when fonts change
+            $('#primary_font, #heading_font').on('change', function() {
+                updateFontPreview();
+            });
+            
+            function updateFontPreview() {
+                var primaryFont = $('#primary_font').val();
+                var headingFont = $('#heading_font').val();
+                
+                $('#fp-preview-text').css('font-family', primaryFont === 'inherit' ? '' : primaryFont);
+                $('#fp-preview-heading').css('font-family', headingFont === 'inherit' ? '' : headingFont);
+            }
+            
+            function updateColorPreview() {
+                var primaryColor = $('#primary_color').val();
+                var secondaryColor = $('#secondary_color').val();
+                
+                $('#fp-preview-heading').css('color', secondaryColor);
+                $('#fp-font-preview').css('border-color', primaryColor);
+            }
+            
+            // Initialize preview on page load
+            updateFontPreview();
+            updateColorPreview();
+        });
         </script>
         <?php
     }
@@ -3652,6 +3818,44 @@ class MenuManager {
         if ($tab === 'general') {
             // Update general settings
             update_option('fp_esperienze_archive_page_id', absint($_POST['archive_page_id'] ?? 0));
+            
+        } elseif ($tab === 'branding') {
+            // Update branding settings
+            $branding_settings = [
+                'primary_font' => sanitize_text_field($_POST['primary_font'] ?? 'inherit'),
+                'heading_font' => sanitize_text_field($_POST['heading_font'] ?? 'inherit'),
+                'primary_color' => sanitize_hex_color($_POST['primary_color'] ?? '#ff6b35'),
+                'secondary_color' => sanitize_hex_color($_POST['secondary_color'] ?? '#b24a25'),
+            ];
+            
+            // Validate font values - only allow specific safe fonts
+            $allowed_fonts = [
+                'inherit',
+                'Arial, sans-serif',
+                'Helvetica, Arial, sans-serif', 
+                'Georgia, serif',
+                "'Times New Roman', serif",
+                'Verdana, sans-serif',
+                "'Trebuchet MS', sans-serif",
+                "'Courier New', monospace",
+                "'Open Sans', sans-serif",
+                "'Roboto', sans-serif",
+                "'Lato', sans-serif",
+                "'Montserrat', sans-serif",
+                "'Poppins', sans-serif",
+                "'Playfair Display', serif",
+                "'Merriweather', serif"
+            ];
+            
+            if (!in_array($branding_settings['primary_font'], $allowed_fonts)) {
+                $branding_settings['primary_font'] = 'inherit';
+            }
+            
+            if (!in_array($branding_settings['heading_font'], $allowed_fonts)) {
+                $branding_settings['heading_font'] = 'inherit';
+            }
+            
+            update_option('fp_esperienze_branding', $branding_settings);
             
         } elseif ($tab === 'gift') {
             // Update gift settings
