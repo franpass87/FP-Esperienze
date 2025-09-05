@@ -178,6 +178,12 @@ class Plugin {
         
         // Initialize Google Places manager for meeting point reviews
         new GooglePlacesManager();
+        
+        // Initialize enhanced email marketing manager
+        new \FP\Esperienze\Integrations\EmailMarketingManager();
+        
+        // Initialize AI features manager
+        new \FP\Esperienze\AI\AIFeaturesManager();
     }
 
     /**
@@ -185,6 +191,9 @@ class Plugin {
      */
     public function initAdmin(): void {
         new MenuManager();
+        
+        // Initialize advanced analytics
+        new \FP\Esperienze\Admin\AdvancedAnalytics();
     }
 
     /**
@@ -205,6 +214,9 @@ class Plugin {
         new BookingsController();
         new ICSAPI();
         new SecurePDFAPI();
+        
+        // Initialize mobile API manager
+        new \FP\Esperienze\REST\MobileAPIManager();
     }
 
     /**
