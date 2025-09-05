@@ -33,7 +33,7 @@ class DynamicPricingManager {
         }
         
         $results = $wpdb->get_results($wpdb->prepare(
-            "SELECT * FROM $table_name $where_clause ORDER BY priority ASC, rule_type ASC",
+            "SELECT id, product_id, rule_type, priority, conditions, action_type, action_value, start_date, end_date, is_active FROM $table_name $where_clause ORDER BY priority ASC, rule_type ASC",
             ...$params
         ));
         
