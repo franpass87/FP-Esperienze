@@ -3236,6 +3236,68 @@ class MenuManager {
                         <?php endif; ?>
                     </table>
                     
+                    <script>
+                    function testMetaCAPI() {
+                        const button = event.target;
+                        const originalText = button.textContent;
+                        const metaPixelId = document.getElementById('meta_pixel_id').value;
+                        const metaAccessToken = document.getElementById('meta_access_token').value;
+                        const metaDatasetId = document.getElementById('meta_dataset_id').value;
+                        
+                        if (!metaPixelId || !metaAccessToken || !metaDatasetId) {
+                            alert('<?php _e('Please fill in all Meta Conversions API fields before testing.', 'fp-esperienze'); ?>');
+                            return;
+                        }
+                        
+                        button.textContent = '<?php _e('Testing...', 'fp-esperienze'); ?>';
+                        button.disabled = true;
+                        
+                        // Create result div if it doesn't exist
+                        let resultDiv = document.getElementById('meta-capi-test-result');
+                        if (!resultDiv) {
+                            resultDiv = document.createElement('div');
+                            resultDiv.id = 'meta-capi-test-result';
+                            resultDiv.style.marginTop = '10px';
+                            button.parentNode.appendChild(resultDiv);
+                        }
+                        
+                        const data = new FormData();
+                        data.append('action', 'fp_test_meta_capi');
+                        data.append('nonce', '<?php echo wp_create_nonce('fp_test_meta_capi'); ?>');
+                        
+                        fetch(ajaxurl, {
+                            method: 'POST',
+                            body: data
+                        })
+                        .then(response => response.json())
+                        .then(result => {
+                            if (result.success) {
+                                resultDiv.innerHTML = '<div class="notice notice-success inline"><p><strong><?php _e('Success!', 'fp-esperienze'); ?></strong> ' + result.data.message + '</p></div>';
+                            } else {
+                                resultDiv.innerHTML = '<div class="notice notice-error inline"><p><strong><?php _e('Error:', 'fp-esperienze'); ?></strong> ' + result.data.message + '</p></div>';
+                            }
+                        })
+                        .catch(error => {
+                            resultDiv.innerHTML = '<div class="notice notice-error inline"><p><strong><?php _e('Error:', 'fp-esperienze'); ?></strong> ' + error.message + '</p></div>';
+                        })
+                        .finally(() => {
+                            button.textContent = originalText;
+                            button.disabled = false;
+                        });
+                    }
+                    
+                    // Toggle Meta CAPI settings visibility
+                    jQuery(document).ready(function($) {
+                        $('#meta_capi_enabled').change(function() {
+                            if ($(this).is(':checked')) {
+                                $('.meta-capi-settings').show();
+                            } else {
+                                $('.meta-capi-settings').hide();
+                            }
+                        });
+                    });
+                    </script>
+                    
                     <?php submit_button(__('Save Integrations', 'fp-esperienze')); ?>
                 </div>
                 
