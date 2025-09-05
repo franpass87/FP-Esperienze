@@ -285,6 +285,10 @@ class MenuManager {
         $stats = $this->getDashboardStatistics();
         $recent_bookings = $this->getRecentBookings(5);
         
+        // Get branding settings for consistent colors
+        $branding_settings = get_option('fp_esperienze_branding', []);
+        $primary_color = $branding_settings['primary_color'] ?? '#ff6b35';
+        
         ?>
         <div class="wrap">
             <h1><?php _e('FP Esperienze Dashboard', 'fp-esperienze'); ?></h1>
@@ -299,22 +303,22 @@ class MenuManager {
                 <!-- Statistics Cards -->
                 <div class="fp-dashboard-stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px;">
                     <div class="fp-stat-card" style="background: white; padding: 20px; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                        <h3 style="margin: 0 0 10px 0; color: #ff6b35; font-size: 14px; text-transform: uppercase;"><?php _e('Total Bookings', 'fp-esperienze'); ?></h3>
+                        <h3 style="margin: 0 0 10px 0; color: <?php echo esc_attr($primary_color); ?>; font-size: 14px; text-transform: uppercase;"><?php _e('Total Bookings', 'fp-esperienze'); ?></h3>
                         <p style="margin: 0; font-size: 32px; font-weight: bold; color: #333;"><?php echo esc_html($stats['total_bookings']); ?></p>
                     </div>
                     
                     <div class="fp-stat-card" style="background: white; padding: 20px; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                        <h3 style="margin: 0 0 10px 0; color: #ff6b35; font-size: 14px; text-transform: uppercase;"><?php _e('This Month', 'fp-esperienze'); ?></h3>
+                        <h3 style="margin: 0 0 10px 0; color: <?php echo esc_attr($primary_color); ?>; font-size: 14px; text-transform: uppercase;"><?php _e('This Month', 'fp-esperienze'); ?></h3>
                         <p style="margin: 0; font-size: 32px; font-weight: bold; color: #333;"><?php echo esc_html($stats['month_bookings']); ?></p>
                     </div>
                     
                     <div class="fp-stat-card" style="background: white; padding: 20px; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                        <h3 style="margin: 0 0 10px 0; color: #ff6b35; font-size: 14px; text-transform: uppercase;"><?php _e('Upcoming', 'fp-esperienze'); ?></h3>
+                        <h3 style="margin: 0 0 10px 0; color: <?php echo esc_attr($primary_color); ?>; font-size: 14px; text-transform: uppercase;"><?php _e('Upcoming', 'fp-esperienze'); ?></h3>
                         <p style="margin: 0; font-size: 32px; font-weight: bold; color: #333;"><?php echo esc_html($stats['upcoming_bookings']); ?></p>
                     </div>
                     
                     <div class="fp-stat-card" style="background: white; padding: 20px; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                        <h3 style="margin: 0 0 10px 0; color: #ff6b35; font-size: 14px; text-transform: uppercase;"><?php _e('Active Vouchers', 'fp-esperienze'); ?></h3>
+                        <h3 style="margin: 0 0 10px 0; color: <?php echo esc_attr($primary_color); ?>; font-size: 14px; text-transform: uppercase;"><?php _e('Active Vouchers', 'fp-esperienze'); ?></h3>
                         <p style="margin: 0; font-size: 32px; font-weight: bold; color: #333;"><?php echo esc_html($stats['active_vouchers']); ?></p>
                     </div>
                 </div>
@@ -322,7 +326,7 @@ class MenuManager {
                 <div class="fp-dashboard-widgets" style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px;">
                     <!-- Recent Bookings -->
                     <div class="fp-widget" style="background: white; padding: 20px; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                        <h3 style="margin: 0 0 20px 0; color: #ff6b35; font-size: 18px;"><?php _e('Recent Bookings', 'fp-esperienze'); ?></h3>
+                        <h3 style="margin: 0 0 20px 0; color: <?php echo esc_attr($primary_color); ?>; font-size: 18px;"><?php _e('Recent Bookings', 'fp-esperienze'); ?></h3>
                         
                         <?php if (!empty($recent_bookings)) : ?>
                             <div class="fp-bookings-list">
@@ -360,7 +364,7 @@ class MenuManager {
                     
                     <!-- Quick Actions -->
                     <div class="fp-widget" style="background: white; padding: 20px; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                        <h3 style="margin: 0 0 20px 0; color: #ff6b35; font-size: 18px;"><?php _e('Quick Actions', 'fp-esperienze'); ?></h3>
+                        <h3 style="margin: 0 0 20px 0; color: <?php echo esc_attr($primary_color); ?>; font-size: 18px;"><?php _e('Quick Actions', 'fp-esperienze'); ?></h3>
                         
                         <div style="display: flex; flex-direction: column; gap: 10px;">
                             <a href="<?php echo admin_url('post-new.php?post_type=product'); ?>" class="button button-primary" style="justify-content: center; text-align: center;">
