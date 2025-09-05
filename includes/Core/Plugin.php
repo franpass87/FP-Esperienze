@@ -27,6 +27,7 @@ use FP\Esperienze\Data\HoldManager;
 use FP\Esperienze\Integrations\TrackingManager;
 use FP\Esperienze\Integrations\BrevoManager;
 use FP\Esperienze\Integrations\GooglePlacesManager;
+use FP\Esperienze\Integrations\MetaCAPIManager;
 use FP\Esperienze\Core\CapabilityManager;
 use FP\Esperienze\Core\WebhookManager;
 use FP\Esperienze\Core\I18nManager;
@@ -168,6 +169,9 @@ class Plugin {
         
         // Initialize tracking manager for GA4 and Meta Pixel
         new TrackingManager();
+        
+        // Initialize Meta Conversions API manager for server-side tracking
+        new MetaCAPIManager();
         
         // Initialize Brevo manager for email marketing
         new BrevoManager();

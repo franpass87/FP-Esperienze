@@ -18,6 +18,9 @@
             // Initialize consent mode
             this.initConsentMode();
             
+            // Capture UTM parameters
+            this.captureUTMParameters();
+            
             // Process any pending tracking events
             this.processPendingEvents();
             
@@ -84,6 +87,44 @@
                 return parts.pop().split(';').shift();
             }
             return null;
+        },
+        
+        /**
+         * Capture UTM parameters from URL
+         */
+        captureUTMParameters: function() {
+            // Get URL parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            const utmParams = {};
+            
+            // Capture standard UTM parameters
+            ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'].forEach(param => {
+                const value = urlParams.get(param);
+                if (value) {
+                    utmParams[param] = value;
+                }
+            });
+            
+            // Capture click IDs
+            ['gclid', 'fbclid'].forEach(param => {
+                const value = urlParams.get(param);
+                if (value) {
+                    utmParams[param] = value;
+                }
+            });
+            
+            // Store in sessionStorage for later use
+            if (Object.keys(utmParams).length > 0) {
+                sessionStorage.setItem('fp_utm_params', JSON.stringify(utmParams));
+            }
+        },
+        
+        /**
+         * Get stored UTM parameters
+         */
+        getUTMParameters: function() {
+            const stored = sessionStorage.getItem('fp_utm_params');
+            return stored ? JSON.parse(stored) : {};
         },
         
         /**
@@ -154,6 +195,12 @@
                         content_ids: data.purchase.items.map(item => item.item_id),
                         content_type: 'product'
                     }, data.purchase.event_id);
+                    
+                    this.trackGoogleAdsConversion('purchase', {
+                        value: data.purchase.value,
+                        currency: data.purchase.currency,
+                        transaction_id: data.purchase.transaction_id
+                    });
                 }
             }
         },
@@ -263,6 +310,42 @@
                 window.fbq('track', eventName, trackData);
                 
                 console.log('Meta Pixel Event:', eventName, trackData);
+            }
+        },
+        
+        /**
+         * Track Google Ads conversion event
+         */
+        trackGoogleAdsConversion: function(eventType, eventData) {
+            if (!this.settings.gads_enabled) {
+                return;
+            }
+            
+            // Check consent if consent mode is enabled
+            if (this.settings.consent_mode_enabled && !this.getConsentStatus()) {
+                console.log('FP Esperienze: Google Ads conversion blocked due to consent:', eventType);
+                return;
+            }
+            
+            if (typeof window.gtag !== 'undefined') {
+                // Track conversion using gtag
+                let conversionData = {
+                    value: eventData.value || 0,
+                    currency: eventData.currency || this.settings.currency,
+                    transaction_id: eventData.transaction_id || ''
+                };
+                
+                // Use conversion label if available for purchase events
+                let sendTo = this.settings.gads_conversion_id;
+                if (eventType === 'purchase' && this.settings.gads_purchase_label) {
+                    sendTo += '/' + this.settings.gads_purchase_label;
+                }
+                
+                conversionData.send_to = sendTo;
+                
+                window.gtag('event', 'conversion', conversionData);
+                
+                console.log('Google Ads Conversion:', eventType, conversionData);
             }
         },
         

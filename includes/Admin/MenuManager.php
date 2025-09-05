@@ -52,6 +52,7 @@ class MenuManager {
         add_action('wp_ajax_fp_check_cancellation_rules', [$this, 'ajaxCheckCancellationRules']);
         add_action('wp_ajax_fp_test_webhook', [$this, 'ajaxTestWebhook']);
         add_action('wp_ajax_fp_cleanup_expired_holds', [$this, 'ajaxCleanupExpiredHolds']);
+        add_action('wp_ajax_fp_test_meta_capi', [$this, 'ajaxTestMetaCAPI']);
     }
 
     /**
@@ -2579,8 +2580,11 @@ class MenuManager {
         $ga4_measurement_id = $integrations['ga4_measurement_id'] ?? '';
         $ga4_ecommerce = !empty($integrations['ga4_ecommerce']);
         $gads_conversion_id = $integrations['gads_conversion_id'] ?? '';
+        $gads_purchase_label = $integrations['gads_purchase_label'] ?? '';
         $meta_pixel_id = $integrations['meta_pixel_id'] ?? '';
         $meta_capi_enabled = !empty($integrations['meta_capi_enabled']);
+        $meta_access_token = $integrations['meta_access_token'] ?? '';
+        $meta_dataset_id = $integrations['meta_dataset_id'] ?? '';
         $brevo_api_key = $integrations['brevo_api_key'] ?? '';
         $brevo_list_id_it = $integrations['brevo_list_id_it'] ?? '';
         $brevo_list_id_en = $integrations['brevo_list_id_en'] ?? '';
@@ -2922,6 +2926,21 @@ class MenuManager {
                             </td>
                         </tr>
                         
+                        <tr>
+                            <th scope="row">
+                                <label for="gads_purchase_label"><?php _e('Purchase Conversion Label', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <input type="text" 
+                                       id="gads_purchase_label" 
+                                       name="gads_purchase_label" 
+                                       value="<?php echo esc_attr($gads_purchase_label); ?>" 
+                                       placeholder="AbCdEfGhIjKlMnOp"
+                                       class="regular-text" />
+                                <p class="description"><?php _e('Conversion label for purchase events (found in Google Ads conversion action settings).', 'fp-esperienze'); ?></p>
+                            </td>
+                        </tr>
+                        
                         <!-- Meta Pixel Section -->
                         <tr>
                             <th colspan="2"><h3><?php _e('Meta Pixel (Facebook)', 'fp-esperienze'); ?></h3></th>
@@ -2953,9 +2972,38 @@ class MenuManager {
                                            name="meta_capi_enabled" 
                                            value="1" 
                                            <?php checked($meta_capi_enabled); ?> />
-                                    <?php _e('Enable Conversions API and event deduplication (placeholder)', 'fp-esperienze'); ?>
+                                    <?php _e('Enable server-side Meta Conversions API tracking', 'fp-esperienze'); ?>
                                 </label>
-                                <p class="description"><?php _e('Advanced feature for server-side tracking and better data accuracy. Implementation coming in future version.', 'fp-esperienze'); ?></p>
+                                <p class="description"><?php _e('Server-side tracking for improved data accuracy and iOS 14.5+ compliance.', 'fp-esperienze'); ?></p>
+                            </td>
+                        </tr>
+                        
+                        <tr class="meta-capi-settings" <?php echo !$meta_capi_enabled ? 'style="display:none;"' : ''; ?>>
+                            <th scope="row">
+                                <label for="meta_access_token"><?php _e('Access Token', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <input type="password" 
+                                       id="meta_access_token" 
+                                       name="meta_access_token" 
+                                       value="<?php echo esc_attr($meta_access_token); ?>" 
+                                       class="regular-text" />
+                                <p class="description"><?php _e('Meta Conversions API access token (generate in Facebook Business Manager).', 'fp-esperienze'); ?></p>
+                            </td>
+                        </tr>
+                        
+                        <tr class="meta-capi-settings" <?php echo !$meta_capi_enabled ? 'style="display:none;"' : ''; ?>>
+                            <th scope="row">
+                                <label for="meta_dataset_id"><?php _e('Dataset ID', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <input type="text" 
+                                       id="meta_dataset_id" 
+                                       name="meta_dataset_id" 
+                                       value="<?php echo esc_attr($meta_dataset_id); ?>" 
+                                       class="regular-text" />
+                                <button type="button" class="button" onclick="testMetaCAPI()"><?php _e('Test Connection', 'fp-esperienze'); ?></button>
+                                <p class="description"><?php _e('Meta Conversions API dataset ID (found in Events Manager).', 'fp-esperienze'); ?></p>
                             </td>
                         </tr>
                         
@@ -3488,6 +3536,42 @@ class MenuManager {
                 alert(fpEsperienzeAdmin.i18n.requestFailed);
             });
         }
+        
+        // Toggle Meta CAPI settings visibility
+        jQuery(document).ready(function($) {
+            $('#meta_capi_enabled').change(function() {
+                if ($(this).is(':checked')) {
+                    $('.meta-capi-settings').show();
+                } else {
+                    $('.meta-capi-settings').hide();
+                }
+            });
+        });
+        
+        function testMetaCAPI() {
+            var button = event.target;
+            var originalText = button.textContent;
+            button.textContent = fpEsperienzeAdmin.i18n.testing;
+            button.disabled = true;
+            
+            jQuery.post(ajaxurl, {
+                action: 'fp_test_meta_capi',
+                nonce: '<?php echo wp_create_nonce('fp_test_meta_capi'); ?>'
+            }, function(response) {
+                button.textContent = originalText;
+                button.disabled = false;
+                
+                if (response.success) {
+                    alert('Meta Conversions API test successful!\\n' + response.data.message);
+                } else {
+                    alert('Meta Conversions API test failed:\\n' + response.data.message);
+                }
+            }).fail(function() {
+                button.textContent = originalText;
+                button.disabled = false;
+                alert(fpEsperienzeAdmin.i18n.requestFailed);
+            });
+        }
         </script>
         <?php
     }
@@ -3545,8 +3629,11 @@ class MenuManager {
                 'ga4_measurement_id' => sanitize_text_field($_POST['ga4_measurement_id'] ?? ''),
                 'ga4_ecommerce' => !empty($_POST['ga4_ecommerce']),
                 'gads_conversion_id' => sanitize_text_field($_POST['gads_conversion_id'] ?? ''),
+                'gads_purchase_label' => sanitize_text_field($_POST['gads_purchase_label'] ?? ''),
                 'meta_pixel_id' => sanitize_text_field($_POST['meta_pixel_id'] ?? ''),
                 'meta_capi_enabled' => !empty($_POST['meta_capi_enabled']),
+                'meta_access_token' => sanitize_text_field($_POST['meta_access_token'] ?? ''),
+                'meta_dataset_id' => sanitize_text_field($_POST['meta_dataset_id'] ?? ''),
                 'brevo_api_key' => sanitize_text_field($_POST['brevo_api_key'] ?? ''),
                 'brevo_list_id_it' => absint($_POST['brevo_list_id_it'] ?? 0),
                 'brevo_list_id_en' => absint($_POST['brevo_list_id_en'] ?? 0),
@@ -4004,6 +4091,28 @@ class MenuManager {
         $count = HoldManager::cleanupExpiredHolds();
         
         wp_send_json_success(['count' => $count, 'message' => sprintf(__('Cleaned up %d expired holds', 'fp-esperienze'), $count)]);
+    }
+    
+    /**
+     * AJAX handler: Test Meta Conversions API
+     */
+    public function ajaxTestMetaCAPI(): void {
+        if (!CapabilityManager::canManageFPEsperienze()) {
+            wp_send_json_error(['message' => __('Insufficient permissions.', 'fp-esperienze')]);
+        }
+        
+        if (!wp_verify_nonce($_POST['nonce'] ?? '', 'fp_test_meta_capi')) {
+            wp_send_json_error(['message' => __('Security check failed.', 'fp-esperienze')]);
+        }
+        
+        $meta_capi = new \FP\Esperienze\Integrations\MetaCAPIManager();
+        $result = $meta_capi->testConnection();
+        
+        if ($result['success']) {
+            wp_send_json_success($result);
+        } else {
+            wp_send_json_error($result);
+        }
     }
     
     /**
