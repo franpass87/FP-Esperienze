@@ -14,6 +14,7 @@ use FP\Esperienze\Core\CapabilityManager;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_Error;
+use DateTime;
 
 defined('ABSPATH') || exit;
 
@@ -149,6 +150,15 @@ class MobileAPIManager {
      * @return WP_REST_Response|WP_Error Response
      */
     public function mobileLogin(WP_REST_Request $request): WP_REST_Response|WP_Error {
+        // Rate limiting for login attempts
+        $client_ip = $this->getClientIP();
+        $rate_limit_key = 'mobile_login_attempts_' . $client_ip;
+        $attempts = (int) get_transient($rate_limit_key);
+        
+        if ($attempts >= 5) {
+            return new WP_Error('rate_limit_exceeded', __('Too many login attempts. Please try again later.', 'fp-esperienze'), ['status' => 429]);
+        }
+
         $username = sanitize_text_field($request->get_param('username'));
         $password = sanitize_text_field($request->get_param('password'));
         $device_info = $request->get_param('device_info');
@@ -160,8 +170,13 @@ class MobileAPIManager {
         $user = wp_authenticate($username, $password);
 
         if (is_wp_error($user)) {
+            // Increment failed login attempts
+            set_transient($rate_limit_key, $attempts + 1, 900); // 15 minutes
             return new WP_Error('invalid_credentials', __('Invalid username or password', 'fp-esperienze'), ['status' => 401]);
         }
+
+        // Clear rate limiting on successful login
+        delete_transient($rate_limit_key);
 
         // Generate mobile auth token
         $token = $this->generateMobileToken($user->ID);
@@ -235,14 +250,25 @@ class MobileAPIManager {
      * Get mobile-optimized experiences
      *
      * @param WP_REST_Request $request Request object
-     * @return WP_REST_Response Response
+     * @return WP_REST_Response|WP_Error Response
      */
-    public function getMobileExperiences(WP_REST_Request $request): WP_REST_Response {
-        $page = intval($request->get_param('page')) ?: 1;
-        $per_page = min(intval($request->get_param('per_page')) ?: 20, 100);
+    public function getMobileExperiences(WP_REST_Request $request): WP_REST_Response|WP_Error {
+        // Enhanced input validation
+        $page = max(1, intval($request->get_param('page') ?: 1));
+        $per_page = max(1, min(intval($request->get_param('per_page') ?: 20), 100));
         $category = sanitize_text_field($request->get_param('category'));
         $location = sanitize_text_field($request->get_param('location'));
         $date_from = sanitize_text_field($request->get_param('date_from'));
+        
+        // Validate date format if provided
+        if ($date_from && !DateTime::createFromFormat('Y-m-d', $date_from)) {
+            return new WP_Error('invalid_date', __('Invalid date format. Use Y-m-d format.', 'fp-esperienze'), ['status' => 400]);
+        }
+        
+        // Validate category exists if provided
+        if ($category && !term_exists($category, 'product_cat')) {
+            return new WP_Error('invalid_category', __('Category does not exist', 'fp-esperienze'), ['status' => 400]);
+        }
 
         $args = [
             'post_type' => 'product',
@@ -1275,5 +1301,27 @@ class MobileAPIManager {
         }
 
         return $schedule;
+    }
+
+    /**
+     * Get client IP address
+     *
+     * @return string Client IP address
+     */
+    private function getClientIP(): string {
+        $ip_keys = ['HTTP_CLIENT_IP', 'HTTP_X_FORWARDED_FOR', 'HTTP_X_FORWARDED', 'HTTP_X_CLUSTER_CLIENT_IP', 'HTTP_FORWARDED_FOR', 'HTTP_FORWARDED', 'REMOTE_ADDR'];
+        
+        foreach ($ip_keys as $key) {
+            if (array_key_exists($key, $_SERVER) === true) {
+                foreach (explode(',', $_SERVER[$key]) as $ip) {
+                    $ip = trim($ip);
+                    if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+                        return $ip;
+                    }
+                }
+            }
+        }
+        
+        return $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
     }
 }

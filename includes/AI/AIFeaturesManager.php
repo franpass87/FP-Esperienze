@@ -300,29 +300,39 @@ class AIFeaturesManager {
     private function calculateDemandFactor(int $product_id): float {
         global $wpdb;
 
-        // Get bookings in last 7 days vs same period last month
-        $recent_bookings = $wpdb->get_var($wpdb->prepare("
-            SELECT COUNT(*)
-            FROM {$wpdb->prefix}fp_bookings
-            WHERE product_id = %d
-            AND booking_date >= %s
-            AND status IN ('confirmed', 'completed')
-        ", $product_id, date('Y-m-d', strtotime('-7 days'))));
+        try {
+            // Get bookings in last 7 days vs same period last month
+            $recent_bookings = $wpdb->get_var($wpdb->prepare("
+                SELECT COUNT(*)
+                FROM {$wpdb->prefix}fp_bookings
+                WHERE product_id = %d
+                AND booking_date >= %s
+                AND status IN ('confirmed', 'completed')
+            ", $product_id, date('Y-m-d', strtotime('-7 days'))));
 
-        $historical_bookings = $wpdb->get_var($wpdb->prepare("
-            SELECT COUNT(*)
-            FROM {$wpdb->prefix}fp_bookings
-            WHERE product_id = %d
-            AND booking_date BETWEEN %s AND %s
-            AND status IN ('confirmed', 'completed')
-        ", $product_id, date('Y-m-d', strtotime('-35 days')), date('Y-m-d', strtotime('-28 days'))));
+            $historical_bookings = $wpdb->get_var($wpdb->prepare("
+                SELECT COUNT(*)
+                FROM {$wpdb->prefix}fp_bookings
+                WHERE product_id = %d
+                AND booking_date BETWEEN %s AND %s
+                AND status IN ('confirmed', 'completed')
+            ", $product_id, date('Y-m-d', strtotime('-35 days')), date('Y-m-d', strtotime('-28 days'))));
 
-        if ($historical_bookings == 0) {
-            return 1.0; // Neutral if no historical data
+            if ($recent_bookings === null || $historical_bookings === null) {
+                error_log("FP Esperienze: Database error calculating demand factor for product {$product_id}");
+                return 1.0; // Neutral on database error
+            }
+
+            if ($historical_bookings == 0) {
+                return 1.0; // Neutral if no historical data
+            }
+
+            $factor = $recent_bookings / $historical_bookings;
+            return max(0.5, min(2.0, $factor));
+        } catch (Exception $e) {
+            error_log("FP Esperienze: Error calculating demand factor: " . $e->getMessage());
+            return 1.0; // Neutral on error
         }
-
-        $factor = $recent_bookings / $historical_bookings;
-        return max(0.5, min(2.0, $factor));
     }
 
     /**

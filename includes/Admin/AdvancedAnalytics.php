@@ -147,6 +147,14 @@ class AdvancedAnalytics {
      * @return array Funnel data
      */
     private function getConversionFunnelData(string $date_from, string $date_to): array {
+        // Check cache first
+        $cache_key = 'fp_conversion_funnel_' . md5($date_from . $date_to);
+        $cached_data = get_transient($cache_key);
+        
+        if ($cached_data !== false && is_array($cached_data)) {
+            return $cached_data;
+        }
+
         global $wpdb;
 
         // Get website visits (from GA4 or approximate from page views)
@@ -201,6 +209,11 @@ class AdvancedAnalytics {
             'total_revenue' => $this->getTotalRevenue($date_from, $date_to),
             'average_order_value' => $purchases > 0 ? round($this->getTotalRevenue($date_from, $date_to) / $purchases, 2) : 0
         ];
+
+        // Cache for 1 hour
+        set_transient($cache_key, $funnel_data, HOUR_IN_SECONDS);
+
+        return $funnel_data;
     }
 
     /**
@@ -211,6 +224,14 @@ class AdvancedAnalytics {
      * @return array Attribution data
      */
     private function getAttributionReportData(string $date_from, string $date_to): array {
+        // Check cache first
+        $cache_key = 'fp_attribution_report_' . md5($date_from . $date_to);
+        $cached_data = get_transient($cache_key);
+        
+        if ($cached_data !== false && is_array($cached_data)) {
+            return $cached_data;
+        }
+
         global $wpdb;
 
         $table_orders = $wpdb->prefix . 'wc_orders';
@@ -275,12 +296,17 @@ class AdvancedAnalytics {
             $channel['campaigns'] = implode(', ', array_slice($channel['campaigns'], 0, 3));
         }
 
-        return [
+        $attribution_data = [
             'channels' => array_values($attribution_summary),
             'total_revenue' => $total_revenue,
             'total_orders' => $total_orders,
             'average_order_value' => $total_orders > 0 ? round($total_revenue / $total_orders, 2) : 0
         ];
+
+        // Cache for 1 hour
+        set_transient($cache_key, $attribution_data, HOUR_IN_SECONDS);
+
+        return $attribution_data;
     }
 
     /**

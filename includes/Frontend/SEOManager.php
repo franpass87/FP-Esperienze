@@ -396,7 +396,7 @@ class SEOManager {
         
         // Look for schedules for this product
         $schedule = $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM {$wpdb->prefix}fp_schedules WHERE product_id = %d ORDER BY day_of_week ASC, start_time ASC LIMIT 1",
+            "SELECT day_of_week, start_time, duration_minutes FROM {$wpdb->prefix}fp_schedules WHERE product_id = %d ORDER BY day_of_week ASC, start_time ASC LIMIT 1",
             $product_id
         ));
         

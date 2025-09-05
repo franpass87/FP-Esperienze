@@ -2532,6 +2532,12 @@
                 // Initialize error recovery
                 this.initErrorRecovery();
                 
+                // Initialize enhanced loading states
+                this.initLoadingStates();
+                
+                // Initialize better form handling
+                this.initFormEnhancements();
+                
                 // Add version info for debugging
                 window.FPEsperienzeVersion = {
                     version: '2.0.0-enhanced',
@@ -2540,7 +2546,9 @@
                         'performance-monitoring', 
                         'error-recovery',
                         'visual-feedback',
-                        'smooth-animations'
+                        'smooth-animations',
+                        'enhanced-loading',
+                        'form-improvements'
                     ],
                     initialized: new Date().toISOString()
                 };
@@ -2551,6 +2559,237 @@
                 console.error('FP Esperienze: Failed to initialize enhancements:', error);
                 // Continue with basic functionality even if enhancements fail
             }
+        },
+
+        /**
+         * Initialize enhanced loading states
+         */
+        initLoadingStates: function() {
+            var self = this;
+            
+            // Add loading overlay functionality
+            $('body').append('<div id="fp-loading-overlay" class="fp-loading-overlay" style="display: none;"><div class="fp-spinner"></div><div class="fp-loading-text">Loading...</div></div>');
+            
+            // Enhance AJAX requests with loading states
+            $(document).on('click', '.fp-async-button', function(e) {
+                var $button = $(this);
+                var originalText = $button.text();
+                
+                $button.prop('disabled', true)
+                       .addClass('loading')
+                       .html('<span class="fp-spinner-small"></span> ' + ($button.data('loading-text') || 'Loading...'));
+                
+                // Restore button after timeout if no other action
+                setTimeout(function() {
+                    if ($button.hasClass('loading')) {
+                        $button.prop('disabled', false)
+                               .removeClass('loading')
+                               .text(originalText);
+                    }
+                }, 10000);
+            });
+            
+            // Enhanced form submission with loading
+            $(document).on('submit', '.fp-enhanced-form', function(e) {
+                var $form = $(this);
+                var $submitButton = $form.find('input[type="submit"], button[type="submit"]');
+                
+                $form.addClass('submitting');
+                $submitButton.prop('disabled', true);
+                
+                // Show loading overlay for complex forms
+                if ($form.hasClass('fp-complex-form')) {
+                    self.showLoadingOverlay($form.data('loading-message') || 'Processing...');
+                }
+            });
+        },
+
+        /**
+         * Initialize form enhancements
+         */
+        initFormEnhancements: function() {
+            var self = this;
+            
+            // Auto-save drafts for long forms
+            $('form.fp-auto-save').each(function() {
+                var $form = $(this);
+                var formId = $form.attr('id') || 'fp-form-' + Math.random().toString(36).substr(2, 9);
+                
+                $form.find('input, textarea, select').on('change input', _.debounce(function() {
+                    self.autoSaveDraft(formId, $form.serialize());
+                }, 2000));
+                
+                // Restore draft on page load
+                self.restoreDraft(formId, $form);
+            });
+            
+            // Enhanced validation feedback
+            $(document).on('invalid', '.fp-enhanced-form input, .fp-enhanced-form textarea, .fp-enhanced-form select', function(e) {
+                var $field = $(this);
+                var $wrapper = $field.closest('.form-field, .field-wrapper');
+                
+                $wrapper.addClass('has-error');
+                
+                // Add custom error message
+                var errorMsg = $field[0].validationMessage || 'This field is required';
+                var $errorDiv = $wrapper.find('.field-error');
+                
+                if ($errorDiv.length === 0) {
+                    $errorDiv = $('<div class="field-error"></div>');
+                    $wrapper.append($errorDiv);
+                }
+                
+                $errorDiv.text(errorMsg).show();
+                
+                // Remove error when field becomes valid
+                $field.on('input change', function() {
+                    if (this.checkValidity()) {
+                        $wrapper.removeClass('has-error');
+                        $errorDiv.hide();
+                    }
+                });
+            });
+            
+            // Smart form sections with progress
+            $('.fp-multi-step-form').each(function() {
+                var $form = $(this);
+                var $steps = $form.find('.form-step');
+                var currentStep = 0;
+                
+                // Add progress bar
+                var progressHtml = '<div class="fp-form-progress"><div class="progress-bar"><div class="progress-fill"></div></div><div class="step-counter"><span class="current">1</span> of <span class="total">' + $steps.length + '</span></div></div>';
+                $form.prepend(progressHtml);
+                
+                // Step navigation
+                $form.on('click', '.next-step', function() {
+                    if (self.validateStep($steps.eq(currentStep))) {
+                        currentStep++;
+                        self.updateFormProgress($form, currentStep, $steps.length);
+                        self.showStep($steps, currentStep);
+                    }
+                });
+                
+                $form.on('click', '.prev-step', function() {
+                    currentStep--;
+                    self.updateFormProgress($form, currentStep, $steps.length);
+                    self.showStep($steps, currentStep);
+                });
+            });
+        },
+
+        /**
+         * Show loading overlay
+         */
+        showLoadingOverlay: function(message) {
+            var $overlay = $('#fp-loading-overlay');
+            if (message) {
+                $overlay.find('.fp-loading-text').text(message);
+            }
+            $overlay.fadeIn(200);
+        },
+
+        /**
+         * Hide loading overlay
+         */
+        hideLoadingOverlay: function() {
+            $('#fp-loading-overlay').fadeOut(200);
+        },
+
+        /**
+         * Auto-save form draft
+         */
+        autoSaveDraft: function(formId, data) {
+            try {
+                localStorage.setItem('fp_draft_' + formId, data);
+                this.showNotification('Draft saved automatically', 'info', 2000);
+            } catch (e) {
+                console.warn('FP Esperienze: Could not save draft:', e);
+            }
+        },
+
+        /**
+         * Restore form draft
+         */
+        restoreDraft: function(formId, $form) {
+            try {
+                var draft = localStorage.getItem('fp_draft_' + formId);
+                if (draft) {
+                    // Parse and restore form data
+                    var params = new URLSearchParams(draft);
+                    params.forEach(function(value, key) {
+                        var $field = $form.find('[name="' + key + '"]');
+                        if ($field.length) {
+                            if ($field.is(':checkbox, :radio')) {
+                                $field.filter('[value="' + value + '"]').prop('checked', true);
+                            } else {
+                                $field.val(value);
+                            }
+                        }
+                    });
+                    
+                    this.showNotification('Draft restored', 'success', 3000);
+                }
+            } catch (e) {
+                console.warn('FP Esperienze: Could not restore draft:', e);
+            }
+        },
+
+        /**
+         * Validate form step
+         */
+        validateStep: function($step) {
+            var isValid = true;
+            $step.find('input[required], textarea[required], select[required]').each(function() {
+                if (!this.checkValidity()) {
+                    isValid = false;
+                    $(this).trigger('invalid');
+                }
+            });
+            return isValid;
+        },
+
+        /**
+         * Update form progress
+         */
+        updateFormProgress: function($form, currentStep, totalSteps) {
+            var progress = ((currentStep + 1) / totalSteps) * 100;
+            $form.find('.progress-fill').css('width', progress + '%');
+            $form.find('.step-counter .current').text(currentStep + 1);
+        },
+
+        /**
+         * Show form step
+         */
+        showStep: function($steps, stepIndex) {
+            $steps.removeClass('active').eq(stepIndex).addClass('active');
+        },
+
+        /**
+         * Show notification
+         */
+        showNotification: function(message, type, duration) {
+            type = type || 'info';
+            duration = duration || 5000;
+            
+            var $notification = $('<div class="fp-notification fp-notification-' + type + '">' + message + '</div>');
+            
+            // Remove existing notifications of same type
+            $('.fp-notification-' + type).remove();
+            
+            $('body').append($notification);
+            
+            // Animate in
+            setTimeout(function() {
+                $notification.addClass('show');
+            }, 100);
+            
+            // Auto remove
+            setTimeout(function() {
+                $notification.removeClass('show');
+                setTimeout(function() {
+                    $notification.remove();
+                }, 300);
+            }, duration);
         }
     };
 

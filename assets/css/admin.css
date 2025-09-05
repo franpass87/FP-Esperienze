@@ -3454,3 +3454,226 @@ body.fp-reduced-animations .fp-loading::after {
     margin-top: 5px;
     margin-left: 26px;
 }
+
+/* Enhanced Loading States and UX */
+.fp-loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.9);
+    z-index: 999999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(2px);
+}
+
+.fp-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #007cba;
+    border-radius: 50%;
+    animation: fp-spin 1s linear infinite;
+    margin-bottom: 15px;
+}
+
+.fp-spinner-small {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: fp-spin 1s linear infinite;
+    vertical-align: middle;
+}
+
+@keyframes fp-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.fp-loading-text {
+    font-size: 16px;
+    color: #555;
+    font-weight: 500;
+}
+
+/* Enhanced Button States */
+.fp-async-button.loading {
+    position: relative;
+    color: transparent !important;
+    pointer-events: none;
+}
+
+.fp-async-button.loading:before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px;
+    height: 20px;
+    border: 2px solid transparent;
+    border-top: 2px solid #fff;
+    border-radius: 50%;
+    animation: fp-spin 1s linear infinite;
+}
+
+/* Enhanced Form States */
+.fp-enhanced-form.submitting {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.form-field.has-error input,
+.form-field.has-error textarea,
+.form-field.has-error select {
+    border-color: #dc3232;
+    box-shadow: 0 0 0 1px rgba(220, 50, 50, 0.2);
+}
+
+.field-error {
+    color: #dc3232;
+    font-size: 12px;
+    margin-top: 5px;
+    display: none;
+}
+
+/* Multi-step Form Progress */
+.fp-form-progress {
+    margin-bottom: 30px;
+    padding: 20px;
+    background: #f9f9f9;
+    border-radius: 8px;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: #e0e0e0;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #007cba 0%, #00a0d2 100%);
+    transition: width 0.3s ease;
+    border-radius: 4px;
+}
+
+.step-counter {
+    text-align: center;
+    font-size: 14px;
+    color: #666;
+}
+
+.step-counter .current {
+    font-weight: bold;
+    color: #007cba;
+}
+
+/* Form Steps */
+.form-step {
+    display: none;
+}
+
+.form-step.active {
+    display: block;
+    animation: fp-fade-in 0.3s ease-in-out;
+}
+
+@keyframes fp-fade-in {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Enhanced Notifications */
+.fp-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 10000;
+    transform: translateX(100%);
+    transition: transform 0.3s ease-in-out;
+    max-width: 400px;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.fp-notification.show {
+    transform: translateX(0);
+}
+
+.fp-notification-success {
+    background: #d4edda;
+    color: #155724;
+    border-left: 4px solid #28a745;
+}
+
+.fp-notification-error {
+    background: #f8d7da;
+    color: #721c24;
+    border-left: 4px solid #dc3545;
+}
+
+.fp-notification-warning {
+    background: #fff3cd;
+    color: #856404;
+    border-left: 4px solid #ffc107;
+}
+
+.fp-notification-info {
+    background: #d1ecf1;
+    color: #0c5460;
+    border-left: 4px solid #17a2b8;
+}
+
+/* Enhanced Hover States */
+.fp-async-button:hover:not(.loading) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+}
+
+/* Auto-save indicator */
+.auto-save-indicator {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #28a745;
+    color: white;
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-size: 12px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.auto-save-indicator.show {
+    opacity: 1;
+}
+
+/* Responsive enhancements */
+@media (max-width: 768px) {
+    .fp-notification {
+        right: 10px;
+        left: 10px;
+        max-width: none;
+    }
+    
+    .fp-loading-overlay .fp-loading-text {
+        font-size: 14px;
+        text-align: center;
+        padding: 0 20px;
+    }
+}

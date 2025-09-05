@@ -549,49 +549,98 @@ class EmailMarketingManager {
      * @return string HTML content
      */
     private function getDefaultEmailTemplate(string $template, array $data): string {
+        $site_name = get_bloginfo('name');
+        $site_url = home_url();
+        
+        $base_style = '
+            <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                <div style="background: #f8f9fa; padding: 30px; text-align: center;">
+                    <h1 style="color: #007cba; margin: 0;">' . esc_html($site_name) . '</h1>
+                </div>
+                <div style="padding: 30px; background: #ffffff;">
+                    {{CONTENT}}
+                </div>
+                <div style="background: #f8f9fa; padding: 20px; text-align: center; font-size: 14px; color: #666;">
+                    <p>© ' . date('Y') . ' ' . esc_html($site_name) . ' | <a href="' . esc_url($site_url) . '" style="color: #007cba;">Visit our website</a></p>
+                </div>
+            </div>
+        ';
+
         $templates = [
             'booking_confirmation' => '
-                <h2>Booking Confirmation</h2>
-                <p>Dear ' . ($data['customer_name'] ?? 'Customer') . ',</p>
-                <p>Your booking has been confirmed!</p>
-                <ul>
-                    <li><strong>Experience:</strong> ' . ($data['experience_name'] ?? '') . '</li>
-                    <li><strong>Date:</strong> ' . ($data['booking_date'] ?? '') . '</li>
-                    <li><strong>Meeting Point:</strong> ' . ($data['meeting_point'] ?? '') . '</li>
-                    <li><strong>Participants:</strong> ' . ($data['participants'] ?? 1) . '</li>
-                    <li><strong>Total:</strong> €' . ($data['total_amount'] ?? 0) . '</li>
-                </ul>
-                <p>We look forward to seeing you!</p>
+                <h2 style="color: #28a745; border-bottom: 2px solid #28a745; padding-bottom: 10px;">🎉 Booking Confirmed!</h2>
+                <p>Dear <strong>' . esc_html($data['customer_name'] ?? 'Customer') . '</strong>,</p>
+                <p>Great news! Your booking has been confirmed. Here are the details:</p>
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <tr><td style="padding: 8px; font-weight: bold;">Experience:</td><td style="padding: 8px;">' . esc_html($data['experience_name'] ?? '') . '</td></tr>
+                        <tr><td style="padding: 8px; font-weight: bold;">Date & Time:</td><td style="padding: 8px;">' . esc_html($data['booking_date'] ?? '') . '</td></tr>
+                        <tr><td style="padding: 8px; font-weight: bold;">Meeting Point:</td><td style="padding: 8px;">' . esc_html($data['meeting_point'] ?? '') . '</td></tr>
+                        <tr><td style="padding: 8px; font-weight: bold;">Participants:</td><td style="padding: 8px;">' . intval($data['participants'] ?? 1) . '</td></tr>
+                        <tr><td style="padding: 8px; font-weight: bold;">Total Amount:</td><td style="padding: 8px; color: #28a745; font-weight: bold;">€' . number_format(floatval($data['total_amount'] ?? 0), 2) . '</td></tr>
+                    </table>
+                </div>
+                <p><strong>Important:</strong> Please arrive 15 minutes before the scheduled time.</p>
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="' . esc_url($data['booking_details_url'] ?? '') . '" style="background: #007cba; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">View Booking Details</a>
+                </div>
+                <p>We can\'t wait to see you there! 🌟</p>
             ',
             'booking_completion' => '
-                <h2>Thank You!</h2>
-                <p>Dear ' . ($data['customer_name'] ?? 'Customer') . ',</p>
-                <p>Thank you for choosing us for your ' . ($data['experience_name'] ?? 'experience') . '!</p>
-                <p>We hope you had an amazing time.</p>
+                <h2 style="color: #ffc107; border-bottom: 2px solid #ffc107; padding-bottom: 10px;">⭐ Thank You!</h2>
+                <p>Dear <strong>' . esc_html($data['customer_name'] ?? 'Customer') . '</strong>,</p>
+                <p>Thank you for choosing us for your <strong>' . esc_html($data['experience_name'] ?? 'experience') . '</strong>!</p>
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0;">
+                    <h3 style="margin: 0; color: white;">We hope you had an amazing time! 🎊</h3>
+                </div>
+                <p>Your memories from today will last a lifetime. Thank you for being part of our story!</p>
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="' . esc_url($data['review_link'] ?? '') . '" style="background: #ffc107; color: #333; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">Share Your Experience</a>
+                </div>
             ',
             'abandoned_cart' => '
-                <h2>Complete Your Booking</h2>
-                <p>You left some amazing experiences in your cart:</p>
-                <p><strong>' . ($data['experience_names'] ?? '') . '</strong></p>
-                <p>Total: €' . ($data['cart_total'] ?? 0) . '</p>
-                <p><a href="' . ($data['recovery_link'] ?? '') . '">Complete your booking now!</a></p>
+                <h2 style="color: #dc3545; border-bottom: 2px solid #dc3545; padding-bottom: 10px;">⏰ Don\'t Miss Out!</h2>
+                <p>You left some amazing experiences in your cart...</p>
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <h3 style="margin-top: 0; color: #333;">📋 Your Selected Experiences:</h3>
+                    <p><strong>' . esc_html($data['experience_names'] ?? '') . '</strong></p>
+                    <p style="font-size: 18px; color: #dc3545;"><strong>Total: €' . number_format(floatval($data['cart_total'] ?? 0), 2) . '</strong></p>
+                </div>
+                <p><strong>Hurry!</strong> These popular experiences fill up fast. Complete your booking now to secure your spot!</p>
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="' . esc_url($data['recovery_link'] ?? '') . '" style="background: #dc3545; color: white; padding: 15px 40px; text-decoration: none; border-radius: 5px; display: inline-block; font-size: 16px;">Complete Your Booking Now 🚀</a>
+                </div>
             ',
             'review_request' => '
-                <h2>How was your experience?</h2>
-                <p>Dear ' . ($data['customer_name'] ?? 'Customer') . ',</p>
-                <p>We hope you enjoyed your ' . ($data['experience_name'] ?? 'experience') . '!</p>
-                <p>Please take a moment to share your feedback:</p>
-                <p><a href="' . ($data['review_link'] ?? '') . '">Leave a review</a></p>
+                <h2 style="color: #17a2b8; border-bottom: 2px solid #17a2b8; padding-bottom: 10px;">💭 How was your experience?</h2>
+                <p>Dear <strong>' . esc_html($data['customer_name'] ?? 'Customer') . '</strong>,</p>
+                <p>We hope you absolutely loved your <strong>' . esc_html($data['experience_name'] ?? 'experience') . '</strong>!</p>
+                <div style="background: #e1f5fe; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
+                    <p style="font-size: 18px; margin: 0;">⭐⭐⭐⭐⭐</p>
+                    <p style="margin: 10px 0 0 0;">Your feedback helps us improve and helps other travelers discover amazing experiences!</p>
+                </div>
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="' . esc_url($data['review_link'] ?? '') . '" style="background: #17a2b8; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">Leave a Review 📝</a>
+                </div>
+                <p><em>It only takes 2 minutes and means the world to us!</em></p>
             ',
             'upselling' => '
-                <h2>Discover New Experiences</h2>
-                <p>Based on your previous bookings, we think you\'ll love these experiences:</p>
-                <div>' . $this->renderRecommendedExperiences($data['recommended_experiences'] ?? []) . '</div>
-                <p>Use code <strong>' . ($data['discount_code'] ?? '') . '</strong> for 10% off!</p>
+                <h2 style="color: #6f42c1; border-bottom: 2px solid #6f42c1; padding-bottom: 10px;">🌟 Discover New Adventures!</h2>
+                <p>Based on your previous bookings, we\'ve handpicked some experiences you\'ll absolutely love:</p>
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    ' . $this->renderRecommendedExperiences($data['recommended_experiences'] ?? []) . '
+                </div>
+                <div style="background: #6f42c1; color: white; padding: 15px; border-radius: 8px; text-align: center; margin: 20px 0;">
+                    <p style="margin: 0; font-size: 18px;">🎁 Special Offer: Use code <strong style="background: rgba(255,255,255,0.2); padding: 5px 10px; border-radius: 3px;">' . esc_html($data['discount_code'] ?? '') . '</strong> for 10% off!</p>
+                </div>
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="' . esc_url($site_url) . '" style="background: #6f42c1; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">Browse Experiences 🗺️</a>
+                </div>
             '
         ];
 
-        return $templates[$template] ?? '<p>Email content not available.</p>';
+        $content = $templates[$template] ?? '<p>Email content not available.</p>';
+        return str_replace('{{CONTENT}}', $content, $base_style);
     }
 
     /**
@@ -735,18 +784,6 @@ class EmailMarketingManager {
         ];
     }
 
-    private function generateDiscountCode(int $customer_id): string {
-        return 'COMEBACK' . substr(md5($customer_id . time()), 0, 6);
-    }
-
-    private function renderRecommendedExperiences(array $experiences): string {
-        $html = '';
-        foreach ($experiences as $experience) {
-            $html .= '<div>' . $experience['name'] . ' - €' . $experience['price'] . '</div>';
-        }
-        return $html;
-    }
-
     private function getCampaignRecipients(string $recipient_type): array {
         global $wpdb;
 
@@ -775,5 +812,61 @@ class EmailMarketingManager {
             default:
                 return [];
         }
+    }
+
+    /**
+     * Generate discount code for customer
+     *
+     * @param int $customer_id Customer ID
+     * @return string Discount code
+     */
+    private function generateDiscountCode(int $customer_id): string {
+        $code = 'COMEBACK' . $customer_id . wp_rand(100, 999);
+        
+        // Create WooCommerce coupon
+        $coupon = new \WC_Coupon();
+        $coupon->set_code($code);
+        $coupon->set_amount(10);
+        $coupon->set_discount_type('percent');
+        $coupon->set_individual_use(true);
+        $coupon->set_usage_limit(1);
+        $coupon->set_usage_limit_per_user(1);
+        $coupon->set_date_expires(time() + (7 * DAY_IN_SECONDS)); // 7 days
+        $coupon->save();
+        
+        return $code;
+    }
+
+    /**
+     * Render recommended experiences HTML
+     *
+     * @param array $experiences Recommended experiences
+     * @return string HTML
+     */
+    private function renderRecommendedExperiences(array $experiences): string {
+        if (empty($experiences)) {
+            return '<p>No recommendations available at this time.</p>';
+        }
+        
+        $html = '<div style="margin: 20px 0;">';
+        
+        foreach ($experiences as $experience) {
+            $html .= sprintf(
+                '<div style="border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 8px;">
+                    <h4 style="margin: 0 0 10px 0; color: #333;">%s</h4>
+                    <p style="margin: 5px 0;">%s</p>
+                    <p style="margin: 10px 0 0 0; font-weight: bold; color: #6f42c1;">€%s</p>
+                    <a href="%s" style="background: #6f42c1; color: white; padding: 8px 15px; text-decoration: none; border-radius: 4px; display: inline-block; margin-top: 10px;">View Details</a>
+                </div>',
+                esc_html($experience['name'] ?? 'Experience'),
+                esc_html(wp_trim_words($experience['description'] ?? '', 20)),
+                number_format(floatval($experience['price'] ?? 0), 2),
+                esc_url($experience['url'] ?? '#')
+            );
+        }
+        
+        $html .= '</div>';
+        
+        return $html;
     }
 }

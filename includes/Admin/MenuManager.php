@@ -1507,7 +1507,7 @@ class MenuManager {
         }
         
         // Get vouchers
-        $vouchers_query = "SELECT * FROM $table_name WHERE $where_clause ORDER BY created_at DESC LIMIT %d OFFSET %d";
+        $vouchers_query = "SELECT id, order_id, voucher_code, amount, recipient_name, recipient_email, sender_name, sender_email, message, status, created_at, expires_at FROM $table_name WHERE $where_clause ORDER BY created_at DESC LIMIT %d OFFSET %d";
         $all_params = array_merge($query_params, [$per_page, $offset]);
         $vouchers = $wpdb->get_results($wpdb->prepare($vouchers_query, ...$all_params));
         
@@ -1933,7 +1933,7 @@ class MenuManager {
         $table_name = $wpdb->prefix . 'fp_exp_vouchers';
         
         $voucher = $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM $table_name WHERE id = %d",
+            "SELECT order_id, voucher_code, amount, recipient_name, recipient_email, sender_name, sender_email, message, expires_at FROM $table_name WHERE id = %d",
             $voucher_id
         ), ARRAY_A);
         
@@ -2025,7 +2025,7 @@ class MenuManager {
         
         // Get current voucher
         $voucher = $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM $table_name WHERE id = %d",
+            "SELECT id, order_id, voucher_code, amount, recipient_name, recipient_email, sender_name, sender_email, message, status, created_at, expires_at FROM $table_name WHERE id = %d",
             $voucher_id
         ));
         
@@ -2164,7 +2164,7 @@ class MenuManager {
         $table_name = $wpdb->prefix . 'fp_exp_vouchers';
         
         $voucher = $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM $table_name WHERE id = %d",
+            "SELECT pdf_path FROM $table_name WHERE id = %d",
             $voucher_id
         ));
         
@@ -2227,7 +2227,7 @@ class MenuManager {
         $table_name = $wpdb->prefix . 'fp_exp_vouchers';
         
         $voucher = $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM $table_name WHERE id = %d",
+            "SELECT voucher_code, pdf_path FROM $table_name WHERE id = %d",
             $voucher_id
         ));
         
@@ -2235,7 +2235,7 @@ class MenuManager {
             wp_die(__('PDF not found.', 'fp-esperienze'));
         }
         
-        $filename = 'voucher-' . $voucher->code . '.pdf';
+        $filename = 'voucher-' . $voucher->voucher_code . '.pdf';
         
         header('Content-Type: application/pdf');
         header('Content-Disposition: attachment; filename="' . $filename . '"');
@@ -4237,7 +4237,7 @@ class MenuManager {
         
         $results = $wpdb->get_results(
             $wpdb->prepare(
-                "SELECT * FROM {$wpdb->prefix}fp_bookings 
+                "SELECT id, order_id, product_id, customer_name, customer_email, booking_date, status, created_at FROM {$wpdb->prefix}fp_bookings 
                  WHERE status != 'cancelled' 
                  ORDER BY created_at DESC 
                  LIMIT %d",

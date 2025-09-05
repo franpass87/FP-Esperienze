@@ -240,7 +240,7 @@ class I18nManager {
         global $wpdb;
         $table_name = $wpdb->prefix . 'fp_meeting_points';
         $meeting_point = $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM $table_name WHERE id = %d",
+            "SELECT name, address FROM $table_name WHERE id = %d",
             $meeting_point_id
         ));
 
