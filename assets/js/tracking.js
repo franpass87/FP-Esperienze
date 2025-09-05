@@ -272,7 +272,7 @@
             
             // Check consent if consent mode is enabled
             if (this.settings.consent_mode_enabled && !this.getConsentStatus()) {
-                console.log('FP Esperienze: GA4 event blocked due to consent:', eventName);
+                // Debug logging removed for production
                 return;
             }
             
@@ -282,7 +282,7 @@
                     ecommerce: eventData
                 });
                 
-                console.log('GA4 Event:', eventName, eventData);
+                // Debug logging removed for production
             }
         },
         
@@ -296,7 +296,7 @@
             
             // Check consent if consent mode is enabled
             if (this.settings.consent_mode_enabled && !this.getConsentStatus()) {
-                console.log('FP Esperienze: Meta Pixel event blocked due to consent:', eventName);
+                // Debug logging removed for production
                 return;
             }
             
@@ -309,7 +309,7 @@
                 
                 window.fbq('track', eventName, trackData);
                 
-                console.log('Meta Pixel Event:', eventName, trackData);
+                // Debug logging removed for production
             }
         },
         
@@ -323,7 +323,7 @@
             
             // Check consent if consent mode is enabled
             if (this.settings.consent_mode_enabled && !this.getConsentStatus()) {
-                console.log('FP Esperienze: Google Ads conversion blocked due to consent:', eventType);
+                // Debug logging removed for production
                 return;
             }
             
@@ -345,7 +345,7 @@
                 
                 window.gtag('event', 'conversion', conversionData);
                 
-                console.log('Google Ads Conversion:', eventType, conversionData);
+                // Debug logging removed for production
             }
         },
         

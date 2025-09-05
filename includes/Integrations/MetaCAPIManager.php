@@ -94,7 +94,7 @@ class MetaCAPIManager {
     /**
      * Send event to Meta Conversions API
      */
-    public function sendEvent(string $event_name, array $custom_data, $order = null, string $event_id = null): bool {
+    public function sendEvent(string $event_name, array $custom_data, $order = null, ?string $event_id = null): bool {
         if (!$this->isEnabled()) {
             return false;
         }

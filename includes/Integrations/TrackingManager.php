@@ -478,7 +478,7 @@ class TrackingManager {
     /**
      * Send server-side Meta Conversions API event
      */
-    public function sendMetaCAPIEvent(string $event_name, array $event_data, string $event_id = null): bool {
+    public function sendMetaCAPIEvent(string $event_name, array $event_data, ?string $event_id = null): bool {
         if (empty($this->settings['meta_capi_enabled']) || empty($this->settings['meta_pixel_id'])) {
             return false;
         }

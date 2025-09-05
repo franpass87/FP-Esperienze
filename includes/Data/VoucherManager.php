@@ -276,10 +276,14 @@ class VoucherManager {
         $product = wc_get_product($voucher_data['product_id']);
         $product_name = $product ? $product->get_name() : __('Experience', 'fp-esperienze');
         
+        // Get branding settings for consistent colors
+        $branding_settings = get_option('fp_esperienze_branding', []);
+        $primary_color = $branding_settings['primary_color'] ?? '#ff6b35';
+        
         $message = '<html><body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">';
         $message .= '<div style="max-width: 600px; margin: 0 auto; padding: 20px;">';
         
-        $message .= '<h1 style="color: #ff6b35; text-align: center;">' . esc_html__('You have received a gift voucher!', 'fp-esperienze') . '</h1>';
+        $message .= '<h1 style="color: ' . esc_attr($primary_color) . '; text-align: center;">' . esc_html__('You have received a gift voucher!', 'fp-esperienze') . '</h1>';
         
         $message .= '<p>' . sprintf(
             esc_html__('Hi %s,', 'fp-esperienze'),
@@ -296,15 +300,15 @@ class VoucherManager {
         }
         
         if (!empty($voucher_data['message'])) {
-            $message .= '<div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ff6b35;">';
-            $message .= '<h3 style="margin-top: 0; color: #ff6b35;">' . esc_html__('Personal Message:', 'fp-esperienze') . '</h3>';
+            $message .= '<div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid ' . esc_attr($primary_color) . ';">';
+            $message .= '<h3 style="margin-top: 0; color: ' . esc_attr($primary_color) . ';">' . esc_html__('Personal Message:', 'fp-esperienze') . '</h3>';
             $message .= '<p style="margin-bottom: 0; font-style: italic;">' . nl2br(esc_html($voucher_data['message'])) . '</p>';
             $message .= '</div>';
         }
         
-        $message .= '<div style="background: white; border: 2px solid #ff6b35; border-radius: 8px; padding: 20px; text-align: center; margin: 20px 0;">';
-        $message .= '<h2 style="color: #ff6b35; margin: 0 0 10px 0;">' . esc_html($product_name) . '</h2>';
-        $message .= '<p style="font-size: 24px; font-weight: bold; background: #ff6b35; color: white; padding: 10px; border-radius: 4px; letter-spacing: 2px; margin: 10px 0;">' . esc_html($voucher_data['code']) . '</p>';
+        $message .= '<div style="background: white; border: 2px solid ' . esc_attr($primary_color) . '; border-radius: 8px; padding: 20px; text-align: center; margin: 20px 0;">';
+        $message .= '<h2 style="color: ' . esc_attr($primary_color) . '; margin: 0 0 10px 0;">' . esc_html($product_name) . '</h2>';
+        $message .= '<p style="font-size: 24px; font-weight: bold; background: ' . esc_attr($primary_color) . '; color: white; padding: 10px; border-radius: 4px; letter-spacing: 2px; margin: 10px 0;">' . esc_html($voucher_data['code']) . '</p>';
         $message .= '<p style="margin: 0; color: #666;">' . sprintf(
             esc_html__('Valid until: %s', 'fp-esperienze'),
             date_i18n(get_option('date_format'), strtotime($voucher_data['expires_on']))
@@ -316,7 +320,7 @@ class VoucherManager {
         ) . '</p>';
         
         $message .= '<p style="text-align: center; margin: 30px 0;">';
-        $message .= '<a href="' . esc_url(home_url()) . '" style="background: #ff6b35; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold;">' . 
+        $message .= '<a href="' . esc_url(home_url()) . '" style="background: ' . esc_attr($primary_color) . '; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold;">' . 
                     esc_html__('Book Your Experience', 'fp-esperienze') . '</a>';
         $message .= '</p>';
         
@@ -341,10 +345,14 @@ class VoucherManager {
         $product = wc_get_product($voucher_data['product_id']);
         $product_name = $product ? $product->get_name() : __('Experience', 'fp-esperienze');
         
+        // Get branding settings for consistent colors
+        $branding_settings = get_option('fp_esperienze_branding', []);
+        $primary_color = $branding_settings['primary_color'] ?? '#ff6b35';
+        
         $message = '<html><body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">';
         $message .= '<div style="max-width: 600px; margin: 0 auto; padding: 20px;">';
         
-        $message .= '<h1 style="color: #ff6b35; text-align: center;">' . esc_html__('Gift voucher confirmation', 'fp-esperienze') . '</h1>';
+        $message .= '<h1 style="color: ' . esc_attr($primary_color) . '; text-align: center;">' . esc_html__('Gift voucher confirmation', 'fp-esperienze') . '</h1>';
         
         $message .= '<p>' . sprintf(
             esc_html__('Hi %s,', 'fp-esperienze'),
@@ -354,7 +362,7 @@ class VoucherManager {
         $message .= '<p>' . esc_html__('Your gift voucher has been successfully created and sent!', 'fp-esperienze') . '</p>';
         
         $message .= '<div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">';
-        $message .= '<h3 style="margin-top: 0; color: #ff6b35;">' . esc_html__('Gift Details:', 'fp-esperienze') . '</h3>';
+        $message .= '<h3 style="margin-top: 0; color: ' . esc_attr($primary_color) . ';">' . esc_html__('Gift Details:', 'fp-esperienze') . '</h3>';
         $message .= '<p><strong>' . esc_html__('Recipient:', 'fp-esperienze') . '</strong> ' . esc_html($voucher_data['recipient_name']) . ' (' . esc_html($voucher_data['recipient_email']) . ')</p>';
         $message .= '<p><strong>' . esc_html__('Experience:', 'fp-esperienze') . '</strong> ' . esc_html($product_name) . '</p>';
         $message .= '<p><strong>' . esc_html__('Voucher Code:', 'fp-esperienze') . '</strong> ' . esc_html($voucher_data['code']) . '</p>';

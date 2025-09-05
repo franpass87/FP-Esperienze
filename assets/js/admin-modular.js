@@ -31,8 +31,6 @@
          */
         init: function() {
             try {
-                console.log('FP Esperienze: Initializing admin interface...');
-                
                 // Initialize error handling first
                 this.initializeErrorHandling();
                 
@@ -51,7 +49,7 @@
                 // Mark as initialized
                 this.initialized = true;
                 
-                console.log('FP Esperienze: Admin interface initialized successfully');
+                // Admin interface initialized successfully
                 
                 // Dispatch custom event
                 $(document).trigger('fp-esperienze-admin-ready');
@@ -69,7 +67,7 @@
             if (window.FPEsperienzeErrorHandler) {
                 this.modules.errorHandler = window.FPEsperienzeErrorHandler;
                 this.modules.errorHandler.init();
-                console.log('FP Esperienze: Error handling initialized');
+                // Error handling initialized
             }
         },
 
@@ -80,7 +78,7 @@
             if (window.FPEsperienzePerformance) {
                 this.modules.performance = window.FPEsperienzePerformance;
                 this.modules.performance.init();
-                console.log('FP Esperienze: Performance monitoring initialized');
+                // Performance monitoring initialized
             }
         },
 
@@ -102,7 +100,7 @@
             if (window.FPEsperienzeScheduleBuilder) {
                 this.modules.scheduleBuilder = window.FPEsperienzeScheduleBuilder;
                 this.modules.scheduleBuilder.init();
-                console.log('FP Esperienze: Schedule builder initialized');
+                // Schedule builder initialized
             }
         },
 
@@ -113,7 +111,7 @@
             if (window.FPEsperienzeAccessibility) {
                 this.modules.accessibility = window.FPEsperienzeAccessibility;
                 this.modules.accessibility.init();
-                console.log('FP Esperienze: Accessibility features initialized');
+                // Accessibility features initialized
             }
         },
 
@@ -136,7 +134,8 @@
             // Prevent form submission with wrong product type
             $('form#post').on('submit', function() {
                 if ($('body').hasClass('post-type-product') && $('#product-type').val() !== 'experience') {
-                    alert('This product must be of type "Experience"');
+                    // Show user-friendly error message
+                    this.showErrorMessage('This product must be of type "Experience"');
                     return false;
                 }
             });
@@ -280,7 +279,7 @@
                         };
                     },
                     failure: function() {
-                        alert('Failed to load bookings');
+                        FPEsperienze.showErrorMessage('Failed to load bookings');
                     }
                 },
                 eventClick: function(info) {
@@ -365,7 +364,7 @@
             }
             
             // Fallback implementation
-            console.log('FP Esperienze: ' + message);
+            // Log message for debugging in development
             
             // Simple notification
             var $notice = $('<div class="notice notice-' + type + ' is-dismissible"><p>' + message + '</p></div>');
@@ -396,7 +395,6 @@
         updateSummaryTable: function() {
             // This method is called by legacy code and modules
             // Implementation would update any summary displays
-            console.log('FP Esperienze: Summary table update requested');
         },
 
         /**

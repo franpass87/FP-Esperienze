@@ -34,7 +34,7 @@
                 // Add skip links
                 this.addSkipLinks();
                 
-                console.log('FP Esperienze: Accessibility features enhanced');
+                // Debug logging removed for production
                 
             } catch (error) {
                 console.error('FP Esperienze: Error enhancing accessibility:', error);
@@ -307,7 +307,7 @@
             if (issues.length > 0) {
                 console.warn('FP Esperienze Accessibility Issues:', issues);
             } else {
-                console.log('FP Esperienze: No accessibility issues found');
+                // Debug logging removed for production
             }
             
             return issues;

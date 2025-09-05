@@ -2,7 +2,7 @@
 
 /* CSS Custom Properties for consistent colors and accessibility */
 :root {
-    --fp-brand-orange: #ff6b35; /* Original for backgrounds and borders */
+    --fp-brand-orange: var(--fp-brand-orange); /* Original for backgrounds and borders */
     --fp-brand-orange-text: #b24a25; /* Darker variant for text - meets AA contrast */
     --fp-text-gray: #555; /* Improved from #666 for better contrast */
     --fp-text-light-gray: #666; /* Improved from #999 for better contrast */
@@ -83,7 +83,7 @@
 .fp-filter-select:focus,
 .fp-filter-date:focus {
     outline: none;
-    border-color: #ff6b35;
+    border-color: var(--fp-brand-orange);
     box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
 }
 
@@ -171,13 +171,13 @@
 }
 
 .fp-pagination-current .fp-pagination-link {
-    background: #ff6b35;
+    background: var(--fp-brand-orange);
     color: white;
     cursor: default;
 }
 
 .fp-pagination-current .fp-pagination-link:hover {
-    background: #ff6b35;
+    background: var(--fp-brand-orange);
     color: white;
 }
 
@@ -610,7 +610,7 @@
     background: white;
     border-radius: 8px;
     padding: 16px;
-    border-left: 4px solid #ff6b35;
+    border-left: 4px solid var(--fp-brand-orange);
     margin-bottom: 20px;
 }
 
@@ -718,7 +718,7 @@
 }
 
 .fp-faq-question:focus {
-    outline: 2px solid #ff6b35;
+    outline: 2px solid var(--fp-brand-orange);
     outline-offset: -2px;
     background: #f8f9fa;
     /* Enhanced focus state for better accessibility */
@@ -844,7 +844,7 @@
 
 /* Social Proof */
 .fp-social-proof {
-    background: linear-gradient(135deg, #ff6b35, #ff8c42);
+    background: linear-gradient(135deg, var(--fp-brand-orange), #ff8c42);
     color: white;
     padding: 12px 16px;
     border-radius: 8px;
@@ -901,7 +901,7 @@
 .fp-date-input:focus,
 .fp-select:focus {
     outline: none;
-    border-color: #ff6b35;
+    border-color: var(--fp-brand-orange);
     box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
 }
 
@@ -942,17 +942,17 @@
 }
 
 .fp-time-slot:hover:not(.unavailable) {
-    border-color: #ff6b35;
+    border-color: var(--fp-brand-orange);
     background: #fff5f2;
 }
 
 .fp-time-slot:focus {
-    outline: 2px solid #ff6b35;
+    outline: 2px solid var(--fp-brand-orange);
     outline-offset: 2px;
 }
 
 .fp-time-slot.selected {
-    border-color: #ff6b35;
+    border-color: var(--fp-brand-orange);
     background: #fff5f2;
     box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
 }
@@ -1051,12 +1051,12 @@
 
 .fp-qty-btn:hover {
     background: #f8f9fa;
-    border-color: #ff6b35;
-    color: #ff6b35;
+    border-color: var(--fp-brand-orange);
+    color: var(--fp-brand-orange);
 }
 
 .fp-qty-btn:focus {
-    outline: 2px solid #ff6b35;
+    outline: 2px solid var(--fp-brand-orange);
     outline-offset: 2px;
 }
 
@@ -1075,7 +1075,7 @@
 
 .fp-price-per {
     font-weight: 600;
-    color: #ff6b35;
+    color: var(--fp-brand-orange);
     min-width: 80px;
     text-align: right;
     font-size: 15px;
@@ -1135,7 +1135,7 @@
 }
 
 .fp-required-badge {
-    background: #ff6b35;
+    background: var(--fp-brand-orange);
     color: white;
     padding: 4px 8px;
     border-radius: 4px;
@@ -1178,8 +1178,8 @@
 }
 
 .fp-extra-checkbox input:checked ~ .checkmark {
-    background-color: #ff6b35;
-    border-color: #ff6b35;
+    background-color: var(--fp-brand-orange);
+    border-color: var(--fp-brand-orange);
 }
 
 .fp-extra-checkbox .checkmark:after {
@@ -1287,7 +1287,7 @@
 }
 
 .fp-btn-primary {
-    background: #ff6b35;
+    background: var(--fp-brand-orange);
     color: white;
 }
 
@@ -1299,7 +1299,7 @@
 }
 
 .fp-btn-primary:focus {
-    outline: 2px solid #ff6b35;
+    outline: 2px solid var(--fp-brand-orange);
     outline-offset: 2px;
 }
 
@@ -1331,7 +1331,7 @@
     width: 20px;
     height: 20px;
     border: 2px solid #f3f3f3;
-    border-top: 2px solid #ff6b35;
+    border-top: 2px solid var(--fp-brand-orange);
     border-radius: 50%;
     animation: spin 1s linear infinite;
 }
@@ -1399,7 +1399,7 @@
 .fp-sticky-price .fp-amount {
     font-size: 20px;
     font-weight: 700;
-    color: #ff6b35;
+    color: var(--fp-brand-orange);
 }
 
 .fp-show-booking {
@@ -1603,7 +1603,7 @@
 }
 
 .fp-gift-checkbox:checked + .fp-toggle-switch {
-    background: #ff6b35;
+    background: var(--fp-brand-orange);
 }
 
 .fp-gift-checkbox:checked + .fp-toggle-switch::before {
@@ -1661,7 +1661,7 @@
 
 .fp-input:focus {
     outline: none;
-    border-color: #ff6b35;
+    border-color: var(--fp-brand-orange);
     box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
 }
 
@@ -1683,7 +1683,7 @@
 
 .fp-textarea:focus {
     outline: none;
-    border-color: #ff6b35;
+    border-color: var(--fp-brand-orange);
     box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
 }
 
@@ -1757,7 +1757,7 @@
 
 .fp-voucher-code-input:focus {
     outline: none;
-    border-color: #ff6b35;
+    border-color: var(--fp-brand-orange);
     box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
 }
 
@@ -1779,7 +1779,7 @@
 }
 
 .fp-apply-voucher-btn {
-    background: #ff6b35;
+    background: var(--fp-brand-orange);
     color: white;
 }
 
@@ -2049,7 +2049,7 @@
 }
 
 .fp-maps-profile-link {
-    color: #ff6b35;
+    color: var(--fp-brand-orange);
     text-decoration: none;
     font-weight: 500;
 }

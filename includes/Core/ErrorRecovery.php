@@ -22,7 +22,7 @@ class ErrorRecovery {
      * @param string $operation_name Operation name for logging
      * @return mixed Function result or fallback
      */
-    public static function execute(callable $function, $fallback = null, string $operation_name = 'unknown'): mixed {
+    public static function execute(callable $function, mixed $fallback = null, string $operation_name = 'unknown'): mixed {
         try {
             return $function();
         } catch (\Throwable $e) {

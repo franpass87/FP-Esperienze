@@ -146,6 +146,10 @@ class NotificationManager {
         $customer_email = $order->get_billing_email();
         $customer_phone = $order->get_billing_phone();
         
+        // Get branding settings for consistent colors
+        $branding_settings = get_option('fp_esperienze_branding', []);
+        $primary_color = $branding_settings['primary_color'] ?? '#ff6b35';
+        
         // Format booking date and time
         $booking_datetime = new \DateTime($booking->booking_date . ' ' . $booking->booking_time, wp_timezone());
         $formatted_date = wp_date(get_option('date_format'), $booking_datetime->getTimestamp());
@@ -154,7 +158,7 @@ class NotificationManager {
         $message = '<html><body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">';
         $message .= '<div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">';
         
-        $message .= '<h2 style="color: #ff6b35; text-align: center; margin-bottom: 30px;">';
+        $message .= '<h2 style="color: ' . esc_attr($primary_color) . '; text-align: center; margin-bottom: 30px;">';
         $message .= sprintf(esc_html__('New Booking - %s', 'fp-esperienze'), esc_html($product_name));
         $message .= '</h2>';
         
@@ -197,7 +201,7 @@ class NotificationManager {
         // Admin links
         $message .= '<div style="text-align: center; margin: 30px 0;">';
         $message .= '<a href="' . esc_url(admin_url('admin.php?page=fp-esperienze-bookings')) . '" ' .
-                    'style="background: #ff6b35; color: white; padding: 12px 24px; text-decoration: none; ' .
+                    'style="background: ' . esc_attr($primary_color) . '; color: white; padding: 12px 24px; text-decoration: none; ' .
                     'border-radius: 5px; display: inline-block; margin-right: 10px;">' . 
                     esc_html__('View Bookings', 'fp-esperienze') . '</a>';
         

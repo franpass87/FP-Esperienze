@@ -34,7 +34,7 @@
         // Debug utility
         debug: function(message, data) {
             if (typeof fpEsperienzeAdmin !== 'undefined' && fpEsperienzeAdmin.debug === '1') {
-                console.log('FP Esperienze:', message, data || '');
+                // Debug logging removed for production
             }
         },
         
@@ -838,7 +838,7 @@
             
             // Override toggle - clean version with namespace
             $(document).on('change.fp-clean', '.fp-show-overrides-toggle-clean', function() {
-                console.log('FP Esperienze: Toggle overrides');
+                // Debug logging removed for production
                 try {
                     self.toggleTimeSlotOverridesClean($(this));
                 } catch (error) {
@@ -850,7 +850,7 @@
             $(document).on('click.fp-clean', '#fp-add-override', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('FP Esperienze: Add override clicked');
+                // Debug logging removed for production
                 try {
                     self.addOverrideCardClean();
                 } catch (error) {
@@ -861,7 +861,7 @@
             $(document).on('click.fp-clean', '.fp-override-remove-clean', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('FP Esperienze: Remove override clicked');
+                // Debug logging removed for production
                 try {
                     self.removeOverrideCardClean($(this));
                 } catch (error) {
@@ -871,7 +871,7 @@
             
             // Override closed checkbox - clean version with namespace
             $(document).on('change.fp-clean', '.fp-override-checkbox-clean input[type="checkbox"]', function() {
-                console.log('FP Esperienze: Override closed checkbox changed');
+                // Debug logging removed for production
                 try {
                     self.handleOverrideClosedClean($(this));
                 } catch (error) {
@@ -893,13 +893,13 @@
             if (!timeSlotsContainer.length) {
                 console.warn('FP Esperienze: Time slots container #fp-time-slots-container not found');
             } else {
-                console.log('FP Esperienze: Time slots container validated');
+                // Debug logging removed for production
             }
             
             if (!overridesContainer.length) {
                 console.warn('FP Esperienze: Overrides container .fp-overrides-container-clean not found');
             } else {
-                console.log('FP Esperienze: Overrides container validated');
+                // Debug logging removed for production
             }
             
             // Check if buttons are present
@@ -909,13 +909,13 @@
             if (!addTimeSlotBtn.length) {
                 console.warn('FP Esperienze: Add time slot button #fp-add-time-slot not found');
             } else {
-                console.log('FP Esperienze: Add time slot button validated');
+                // Debug logging removed for production
             }
             
             if (!addOverrideBtn.length) {
                 console.warn('FP Esperienze: Add override button #fp-add-override not found');
             } else {
-                console.log('FP Esperienze: Add override button validated');
+                // Debug logging removed for production
             }
         },
 
@@ -1566,7 +1566,7 @@
          * Add time slot card - ENHANCED VERSION with comprehensive improvements
          */
         addTimeSlotCardClean: function() {
-            console.log('FP Esperienze: Starting to add time slot card with enhanced features');
+            // Debug logging removed for production
             
             try {
                 var container = $('#fp-time-slots-container');
@@ -1583,7 +1583,7 @@
                 }
                 
                 var index = container.find('.fp-time-slot-card-clean').length;
-                console.log('FP Esperienze: Creating time slot card with index:', index);
+                // Debug logging removed for production
                 
                 var cardHtml = this.createTimeSlotCardHTMLClean(index);
                 if (!cardHtml) {
@@ -1630,7 +1630,7 @@
                     }
                 }, 400);
                 
-                console.log('FP Esperienze: Successfully added time slot card', index);
+                // Debug logging removed for production
                 
                 // Update visual feedback and show success message
                 this.updateSlotCountFeedback();
@@ -1830,7 +1830,7 @@
          * Add override card - CLEAN VERSION - ENHANCED
          */
         addOverrideCardClean: function() {
-            console.log('FP Esperienze: Starting to add override card');
+            // Debug logging removed for production
             
             var container = $('#fp-overrides-container .fp-overrides-container-clean');
             if (!container.length) {
@@ -1844,7 +1844,7 @@
                 container.find('.fp-overrides-empty-clean').hide();
                 
                 var index = container.find('.fp-override-card-clean').length;
-                console.log('FP Esperienze: Creating override card with index:', index);
+                // Debug logging removed for production
                 
                 var cardHtml = this.createOverrideCardHTMLClean(index);
                 if (!cardHtml) {
@@ -1865,7 +1865,7 @@
                     $newCard.find('input[type="date"]').focus();
                 }, 350);
                 
-                console.log('FP Esperienze: Successfully added override card', index);
+                // Debug logging removed for production
                 
                 // Update visual feedback
                 this.updateOverrideCountFeedback();
@@ -1942,7 +1942,7 @@
                 // Announce changes to screen readers
                 this.setupScreenReaderAnnouncements();
                 
-                console.log('FP Esperienze: Enhanced accessibility features activated');
+                // Debug logging removed for production
             } catch (error) {
                 console.warn('FP Esperienze: Accessibility enhancement failed:', error);
             }
@@ -2309,7 +2309,7 @@
                 this.debouncedValidation = this.debounce(this.validateTimeSlotInputsEnhanced, 300);
                 this.debouncedSummaryUpdate = this.debounce(this.updateSummaryTable, 200);
                 
-                console.log('FP Esperienze: Performance monitoring initialized');
+                // Debug logging removed for production
             } catch (error) {
                 console.warn('FP Esperienze: Performance monitoring setup failed:', error);
             }
@@ -2370,7 +2370,7 @@
                 // Set up periodic health checks
                 this.startHealthChecks();
                 
-                console.log('FP Esperienze: Error recovery system initialized');
+                // Debug logging removed for production
             } catch (error) {
                 console.warn('FP Esperienze: Error recovery setup failed:', error);
             }
@@ -2416,7 +2416,7 @@
          */
         attemptRecovery: function() {
             try {
-                console.log('FP Esperienze: Attempting automatic recovery...');
+                // Debug logging removed for production
                 
                 // Re-validate container existence
                 this.validateContainers();
@@ -2430,7 +2430,7 @@
                 // Announce recovery to user
                 this.showUserFeedback('System recovered successfully. You can continue working.', 'success');
                 
-                console.log('FP Esperienze: Recovery completed successfully');
+                // Debug logging removed for production
                 
             } catch (error) {
                 console.error('FP Esperienze: Recovery attempt failed:', error);
@@ -2449,7 +2449,7 @@
                 // Re-initialize the modern schedule builder
                 this.initModernScheduleBuilder();
                 
-                console.log('FP Esperienze: Critical events re-bound successfully');
+                // Debug logging removed for production
             } catch (error) {
                 console.error('FP Esperienze: Failed to re-bind critical events:', error);
                 throw error;
@@ -2560,7 +2560,7 @@
                     initialized: new Date().toISOString()
                 };
                 
-                console.log('FP Esperienze: Enhanced features initialized', window.FPEsperienzeVersion);
+                // Debug logging removed for production
                 
             } catch (error) {
                 console.error('FP Esperienze: Failed to initialize enhancements:', error);

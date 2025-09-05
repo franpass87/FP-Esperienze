@@ -215,7 +215,7 @@
             this.recoveryAttempts++;
             
             try {
-                console.log('FP Esperienze: Attempting automatic recovery...', this.recoveryAttempts);
+                // Debug logging removed for production
                 
                 // Re-validate container existence
                 this.validateContainers();
@@ -232,7 +232,7 @@
                 // Announce recovery to user
                 this.showUserFeedback('System recovered successfully. You can continue working.', 'success');
                 
-                console.log('FP Esperienze: Recovery completed successfully');
+                // Debug logging removed for production
                 
             } catch (error) {
                 console.error('FP Esperienze: Recovery attempt failed:', error);
@@ -529,7 +529,7 @@
             this.errorLog = [];
             this.criticalErrors = 0;
             this.recoveryAttempts = 0;
-            console.log('FP Esperienze: Error log cleared');
+            // Debug logging removed for production
         },
 
         /**

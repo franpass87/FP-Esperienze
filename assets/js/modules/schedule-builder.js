@@ -161,13 +161,13 @@
             if (!timeSlotsContainer.length) {
                 console.warn('FP Esperienze: Time slots container #fp-time-slots-container not found');
             } else {
-                console.log('FP Esperienze: Time slots container validated');
+                // Debug logging removed for production
             }
             
             if (!overridesContainer.length) {
                 console.warn('FP Esperienze: Overrides container .fp-overrides-container-clean not found');
             } else {
-                console.log('FP Esperienze: Overrides container validated');
+                // Debug logging removed for production
             }
         },
 
@@ -240,7 +240,7 @@
                     window.FPEsperienzeAdmin.showUserFeedback('Override added successfully!', 'success');
                 }
                 
-                console.log('FP Esperienze: Successfully added override card', index);
+                // Debug logging removed for production
                 
             } catch (error) {
                 console.error('FP Esperienze: Error adding override card:', error);
@@ -302,7 +302,7 @@
                     window.FPEsperienzeAdmin.showUserFeedback('Time slot added successfully!', 'success');
                 }
                 
-                console.log('FP Esperienze: Successfully added time slot card', index);
+                // Debug logging removed for production
                 
             } catch (error) {
                 console.error('FP Esperienze: Error adding time slot card:', error);
