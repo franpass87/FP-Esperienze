@@ -279,6 +279,10 @@ class MenuManager {
      * Dashboard page
      */
     public function dashboardPage(): void {
+        // Get dashboard statistics
+        $stats = $this->getDashboardStatistics();
+        $recent_bookings = $this->getRecentBookings(5);
+        
         ?>
         <div class="wrap">
             <h1><?php _e('FP Esperienze Dashboard', 'fp-esperienze'); ?></h1>
@@ -290,27 +294,93 @@ class MenuManager {
             <?php endif; ?>
             
             <div class="fp-admin-dashboard">
-                <div class="fp-dashboard-widgets">
-                    <div class="fp-widget">
-                        <h3><?php _e('Recent Bookings', 'fp-esperienze'); ?></h3>
-                        <p><?php _e('Dashboard functionality will be implemented in future updates.', 'fp-esperienze'); ?></p>
+                <!-- Statistics Cards -->
+                <div class="fp-dashboard-stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px;">
+                    <div class="fp-stat-card" style="background: white; padding: 20px; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <h3 style="margin: 0 0 10px 0; color: #ff6b35; font-size: 14px; text-transform: uppercase;"><?php _e('Total Bookings', 'fp-esperienze'); ?></h3>
+                        <p style="margin: 0; font-size: 32px; font-weight: bold; color: #333;"><?php echo esc_html($stats['total_bookings']); ?></p>
                     </div>
                     
-                    <div class="fp-widget">
-                        <h3><?php _e('Statistics', 'fp-esperienze'); ?></h3>
-                        <p><?php _e('Booking statistics and analytics coming soon.', 'fp-esperienze'); ?></p>
+                    <div class="fp-stat-card" style="background: white; padding: 20px; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <h3 style="margin: 0 0 10px 0; color: #ff6b35; font-size: 14px; text-transform: uppercase;"><?php _e('This Month', 'fp-esperienze'); ?></h3>
+                        <p style="margin: 0; font-size: 32px; font-weight: bold; color: #333;"><?php echo esc_html($stats['month_bookings']); ?></p>
                     </div>
                     
-                    <div class="fp-widget">
-                        <h3><?php _e('Quick Actions', 'fp-esperienze'); ?></h3>
-                        <p>
+                    <div class="fp-stat-card" style="background: white; padding: 20px; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <h3 style="margin: 0 0 10px 0; color: #ff6b35; font-size: 14px; text-transform: uppercase;"><?php _e('Upcoming', 'fp-esperienze'); ?></h3>
+                        <p style="margin: 0; font-size: 32px; font-weight: bold; color: #333;"><?php echo esc_html($stats['upcoming_bookings']); ?></p>
+                    </div>
+                    
+                    <div class="fp-stat-card" style="background: white; padding: 20px; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <h3 style="margin: 0 0 10px 0; color: #ff6b35; font-size: 14px; text-transform: uppercase;"><?php _e('Active Vouchers', 'fp-esperienze'); ?></h3>
+                        <p style="margin: 0; font-size: 32px; font-weight: bold; color: #333;"><?php echo esc_html($stats['active_vouchers']); ?></p>
+                    </div>
+                </div>
+                
+                <div class="fp-dashboard-widgets" style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px;">
+                    <!-- Recent Bookings -->
+                    <div class="fp-widget" style="background: white; padding: 20px; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <h3 style="margin: 0 0 20px 0; color: #ff6b35; font-size: 18px;"><?php _e('Recent Bookings', 'fp-esperienze'); ?></h3>
+                        
+                        <?php if (!empty($recent_bookings)) : ?>
+                            <div class="fp-bookings-list">
+                                <?php foreach ($recent_bookings as $booking) : 
+                                    $product = wc_get_product($booking->product_id);
+                                    $product_name = $product ? $product->get_name() : __('Unknown Experience', 'fp-esperienze');
+                                    $status_color = $this->getStatusColor($booking->status);
+                                ?>
+                                    <div style="padding: 12px 0; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+                                        <div>
+                                            <strong><?php echo esc_html($product_name); ?></strong><br>
+                                            <small style="color: #666;">
+                                                <?php echo esc_html($booking->customer_name); ?> • 
+                                                <?php echo esc_html(date_i18n(get_option('date_format') . ' ' . get_option('time_format'), strtotime($booking->booking_date . ' ' . $booking->booking_time))); ?>
+                                            </small>
+                                        </div>
+                                        <div>
+                                            <span style="background: <?php echo esc_attr($status_color); ?>; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; text-transform: uppercase;">
+                                                <?php echo esc_html($booking->status); ?>
+                                            </span>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                                
+                                <div style="margin-top: 15px; text-align: center;">
+                                    <a href="<?php echo admin_url('admin.php?page=fp-esperienze-bookings'); ?>" class="button">
+                                        <?php _e('View All Bookings', 'fp-esperienze'); ?>
+                                    </a>
+                                </div>
+                            </div>
+                        <?php else : ?>
+                            <p style="color: #666; font-style: italic;"><?php _e('No bookings yet. Create your first experience to start accepting bookings!', 'fp-esperienze'); ?></p>
+                        <?php endif; ?>
+                    </div>
+                    
+                    <!-- Quick Actions -->
+                    <div class="fp-widget" style="background: white; padding: 20px; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <h3 style="margin: 0 0 20px 0; color: #ff6b35; font-size: 18px;"><?php _e('Quick Actions', 'fp-esperienze'); ?></h3>
+                        
+                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                            <a href="<?php echo admin_url('post-new.php?post_type=product'); ?>" class="button button-primary" style="justify-content: center; text-align: center;">
+                                <?php _e('Add New Experience', 'fp-esperienze'); ?>
+                            </a>
+                            
                             <a href="<?php echo admin_url('admin.php?page=fp-esperienze-bookings'); ?>" class="button">
-                                <?php _e('View Bookings', 'fp-esperienze'); ?>
+                                <?php _e('Manage Bookings', 'fp-esperienze'); ?>
                             </a>
-                            <a href="<?php echo admin_url('post-new.php?post_type=product'); ?>" class="button button-primary">
-                                <?php _e('Add Experience', 'fp-esperienze'); ?>
+                            
+                            <a href="<?php echo admin_url('admin.php?page=fp-esperienze-vouchers'); ?>" class="button">
+                                <?php _e('Create Voucher', 'fp-esperienze'); ?>
                             </a>
-                        </p>
+                            
+                            <a href="<?php echo admin_url('admin.php?page=fp-esperienze-reports'); ?>" class="button">
+                                <?php _e('View Reports', 'fp-esperienze'); ?>
+                            </a>
+                            
+                            <a href="<?php echo admin_url('admin.php?page=fp-esperienze-settings'); ?>" class="button">
+                                <?php _e('Settings', 'fp-esperienze'); ?>
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -3934,5 +4004,91 @@ class MenuManager {
         $count = HoldManager::cleanupExpiredHolds();
         
         wp_send_json_success(['count' => $count, 'message' => sprintf(__('Cleaned up %d expired holds', 'fp-esperienze'), $count)]);
+    }
+    
+    /**
+     * Get dashboard statistics
+     */
+    private function getDashboardStatistics(): array {
+        global $wpdb;
+        
+        // Total bookings
+        $total_bookings = $wpdb->get_var(
+            "SELECT COUNT(*) FROM {$wpdb->prefix}fp_bookings WHERE status != 'cancelled'"
+        );
+        
+        // This month bookings
+        $month_start = date('Y-m-01');
+        $month_end = date('Y-m-t');
+        $month_bookings = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT COUNT(*) FROM {$wpdb->prefix}fp_bookings 
+                 WHERE status != 'cancelled' 
+                 AND booking_date >= %s AND booking_date <= %s",
+                $month_start,
+                $month_end
+            )
+        );
+        
+        // Upcoming bookings (from today onwards)
+        $today = date('Y-m-d');
+        $upcoming_bookings = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT COUNT(*) FROM {$wpdb->prefix}fp_bookings 
+                 WHERE status != 'cancelled' 
+                 AND booking_date >= %s",
+                $today
+            )
+        );
+        
+        // Active vouchers (not expired and not used)
+        $active_vouchers = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT COUNT(*) FROM {$wpdb->prefix}fp_exp_vouchers 
+                 WHERE expires_on >= %s AND used_at IS NULL",
+                $today
+            )
+        );
+        
+        return [
+            'total_bookings' => intval($total_bookings) ?: 0,
+            'month_bookings' => intval($month_bookings) ?: 0,
+            'upcoming_bookings' => intval($upcoming_bookings) ?: 0,
+            'active_vouchers' => intval($active_vouchers) ?: 0,
+        ];
+    }
+    
+    /**
+     * Get recent bookings for dashboard
+     */
+    private function getRecentBookings(int $limit = 5): array {
+        global $wpdb;
+        
+        $results = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT * FROM {$wpdb->prefix}fp_bookings 
+                 WHERE status != 'cancelled' 
+                 ORDER BY created_at DESC 
+                 LIMIT %d",
+                $limit
+            )
+        );
+        
+        return $results ?: [];
+    }
+    
+    /**
+     * Get status color for booking status
+     */
+    private function getStatusColor(string $status): string {
+        $colors = [
+            'confirmed' => '#28a745',
+            'pending' => '#ffc107',
+            'cancelled' => '#dc3545',
+            'completed' => '#007cba',
+            'refunded' => '#6c757d',
+        ];
+        
+        return $colors[$status] ?? '#6c757d';
     }
 }
