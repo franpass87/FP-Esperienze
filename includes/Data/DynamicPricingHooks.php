@@ -83,16 +83,18 @@ class DynamicPricingHooks {
         }
         
         // Try to get context from $_POST if in admin or AJAX
-        if (!empty($_POST['fp_experience'])) {
-            $exp_data = $_POST['fp_experience'];
-            
-            if (!empty($exp_data['slot_start'])) {
-                $context['booking_date'] = date('Y-m-d', strtotime(sanitize_text_field($exp_data['slot_start'])));
+        if ( ! empty( $_POST['fp_experience'] ) && is_array( $_POST['fp_experience'] ) ) {
+            $exp_data   = wp_unslash( $_POST['fp_experience'] );
+            $slot_start = sanitize_text_field( $exp_data['slot_start'] ?? '' );
+
+            if ( ! empty( $slot_start ) ) {
+                $context['booking_date'] = date( 'Y-m-d', strtotime( $slot_start ) );
             }
-            
-            $context['total_participants'] = 
-                absint($exp_data['qty_adult'] ?? 0) + 
-                absint($exp_data['qty_child'] ?? 0);
+
+            $qty_adult = absint( $exp_data['qty_adult'] ?? 0 );
+            $qty_child = absint( $exp_data['qty_child'] ?? 0 );
+
+            $context['total_participants'] = $qty_adult + $qty_child;
         }
         
         return $context;
