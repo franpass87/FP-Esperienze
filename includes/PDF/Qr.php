@@ -51,21 +51,31 @@ class Qr {
         
         // Save QR code image
         $upload_dir = wp_upload_dir();
-        $qr_dir = $upload_dir['basedir'] . '/fp-esperienze/voucher/qr/';
-        
+        $base_dir   = trailingslashit(wp_normalize_path($upload_dir['basedir']));
+        $qr_dir     = $base_dir . 'fp-esperienze/voucher/qr/';
+
         if (!file_exists($qr_dir)) {
             wp_mkdir_p($qr_dir);
         }
-        
-        $filename = 'qr-' . $voucher_data['code'] . '-' . time() . '.png';
-        $file_path = $qr_dir . $filename;
-        
+
+        $sanitized_code = sanitize_file_name($voucher_data['code']);
+        if ($sanitized_code === '') {
+            throw new \Exception('Invalid voucher code.');
+        }
+
+        $filename  = 'qr-' . $sanitized_code . '-' . time() . '.png';
+        $file_path = wp_normalize_path($qr_dir . $filename);
+
+        if (strpos($file_path, $base_dir) !== 0) {
+            throw new \Exception('Invalid file path for QR code.');
+        }
+
         $result = file_put_contents($file_path, $qr_image);
-        
+
         if ($result === false) {
             throw new \Exception('Failed to save QR code image to: ' . $file_path);
         }
-        
+
         return $file_path;
     }
     
