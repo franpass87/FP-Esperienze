@@ -51,20 +51,34 @@
         initStickyWidget: function() {
             var $widget = $('#fp-booking-widget');
             var $stickyNotice = $('.fp-sticky-notice');
-            
+
+            // Simple debounce to improve scroll performance
+            var debounce = function(func, wait) {
+                var timeout;
+                return function() {
+                    var context = this, args = arguments;
+                    clearTimeout(timeout);
+                    timeout = setTimeout(function() {
+                        func.apply(context, args);
+                    }, wait);
+                };
+            };
+
             if ($widget.length && $stickyNotice.length) {
-                $(window).on('scroll', function() {
+                var handleScroll = function() {
                     var widgetTop = $widget.offset().top;
                     var scrollTop = $(window).scrollTop();
                     var windowHeight = $(window).height();
-                    
+
                     // Show sticky notice on mobile when widget is not visible
                     if (scrollTop + windowHeight < widgetTop || scrollTop > widgetTop + $widget.height()) {
                         $stickyNotice.addClass('fp-sticky-visible');
                     } else {
                         $stickyNotice.removeClass('fp-sticky-visible');
                     }
-                });
+                };
+
+                $(window).on('scroll', debounce(handleScroll, 100));
             }
         },
 
