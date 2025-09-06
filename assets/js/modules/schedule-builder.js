@@ -253,27 +253,68 @@
         createOverrideCardHTML: function(index) {
             return `
                 <div class="fp-override-card-clean" data-index="${index}">
+                    <input type="hidden" name="overrides[${index}][id]" value="">
                     <div class="fp-override-header-clean">
-                        <h4>Date Override #${index + 1}</h4>
-                        <button type="button" class="fp-remove-override-clean button-link-delete">
-                            <span class="dashicons dashicons-no-alt"></span>
-                            Remove
-                        </button>
+                        <div class="fp-override-date-field-clean">
+                            <label for="override-date-${index}">
+                                <span class="dashicons dashicons-calendar-alt"></span>
+                                Date <span class="required">*</span>
+                            </label>
+                            <input type="date"
+                                   id="override-date-${index}"
+                                   name="overrides[${index}][date]"
+                                   required>
+                        </div>
+                        <div class="fp-override-actions-clean">
+                            <div class="fp-override-checkbox-clean">
+                                <input type="checkbox"
+                                       name="overrides[${index}][is_closed]"
+                                       value="1"
+                                       id="override-closed-${index}">
+                                <label for="override-closed-${index}">Closed</label>
+                            </div>
+                            <button type="button" class="fp-override-remove-clean button">
+                                <span class="dashicons dashicons-trash"></span>
+                                Remove
+                            </button>
+                        </div>
                     </div>
-                    <div class="fp-override-body-clean">
-                        <div class="fp-override-row-clean">
-                            <label>
-                                Date:
-                                <input type="date" name="overrides[${index}][date]" required />
-                            </label>
-                            <label>
-                                Available Spots:
-                                <input type="number" name="overrides[${index}][available_spots]" min="0" />
-                            </label>
-                            <label>
-                                <input type="checkbox" name="overrides[${index}][is_closed]" value="1" />
-                                Closed for bookings
-                            </label>
+                    <div class="fp-override-fields-clean">
+                        <div class="fp-override-grid-clean">
+                            <div class="fp-override-field-clean">
+                                <label for="override-capacity-${index}">Capacity Override</label>
+                                <input type="number"
+                                       id="override-capacity-${index}"
+                                       name="overrides[${index}][capacity_override]"
+                                       placeholder="Leave empty = use default"
+                                       min="0"
+                                       step="1">
+                            </div>
+                            <div class="fp-override-field-clean">
+                                <label for="override-reason-${index}">Reason/Note</label>
+                                <input type="text"
+                                       id="override-reason-${index}"
+                                       name="overrides[${index}][reason]"
+                                       placeholder="Optional note (e.g., Holiday, Maintenance)">
+                            </div>
+                            <div class="fp-override-field-clean">
+                                <label for="override-adult-price-${index}">Adult Price</label>
+                                <input type="number"
+                                       id="override-adult-price-${index}"
+                                       name="overrides[${index}][price_adult]"
+                                       placeholder="Leave empty = use default"
+                                       min="0"
+                                       step="0.01">
+                            </div>
+                            <div class="fp-override-field-clean">
+                                <label for="override-child-price-${index}">Child Price</label>
+                                <input type="number"
+                                       id="override-child-price-${index}"
+                                       name="overrides[${index}][price_child]"
+                                       placeholder="Leave empty = use default"
+                                       min="0"
+                                       step="0.01">
+                            </div>
                         </div>
                     </div>
                 </div>
