@@ -382,17 +382,23 @@ class SystemStatus {
      */
     private function checkRemoteRequests(): array {
         $test_url = 'https://httpbin.org/get';
-        $response = wp_remote_get($test_url, [
+        $response = wp_safe_remote_get($test_url, [
             'timeout' => 10,
-            'sslverify' => false
         ]);
 
         if (is_wp_error($response)) {
+            $error_message = $response->get_error_message();
+            $description   = $error_message;
+
+            if (false !== strpos(strtolower($error_message), 'ssl') || false !== strpos(strtolower($error_message), 'certificate')) {
+                $description = __('SSL certificate validation failed. Please verify your server configuration.', 'fp-esperienze');
+            }
+
             return [
                 'title' => __('Remote Requests', 'fp-esperienze'),
                 'status' => 'error',
                 'message' => __('Failed', 'fp-esperienze'),
-                'description' => $response->get_error_message()
+                'description' => $description
             ];
         }
 
