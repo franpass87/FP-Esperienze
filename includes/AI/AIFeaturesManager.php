@@ -145,8 +145,8 @@ class AIFeaturesManager {
 
         check_ajax_referer('fp_esperienze_admin', 'nonce');
 
-        $insight_type = sanitize_text_field($_POST['insight_type'] ?? 'overview');
-        $date_range = sanitize_text_field($_POST['date_range'] ?? '30');
+        $insight_type = sanitize_text_field(wp_unslash($_POST['insight_type'] ?? 'overview'));
+        $date_range = sanitize_text_field(wp_unslash($_POST['date_range'] ?? '30'));
 
         $insights = $this->getAIInsights($insight_type, $date_range);
 
@@ -163,8 +163,8 @@ class AIFeaturesManager {
 
         check_ajax_referer('fp_esperienze_admin', 'nonce');
 
-        $product_id = intval($_POST['product_id'] ?? 0);
-        $recommendation_type = sanitize_text_field($_POST['type'] ?? 'similar');
+        $product_id = intval(wp_unslash($_POST['product_id'] ?? 0));
+        $recommendation_type = sanitize_text_field(wp_unslash($_POST['type'] ?? 'similar'));
 
         $recommendations = $this->getProductRecommendations($product_id, $recommendation_type);
 
@@ -181,9 +181,9 @@ class AIFeaturesManager {
 
         check_ajax_referer('fp_esperienze_admin', 'nonce');
 
-        $analysis_type = sanitize_text_field($_POST['analysis_type'] ?? 'revenue');
-        $date_from = sanitize_text_field($_POST['date_from'] ?? date('Y-m-d', strtotime('-30 days')));
-        $date_to = sanitize_text_field($_POST['date_to'] ?? date('Y-m-d'));
+        $analysis_type = sanitize_text_field(wp_unslash($_POST['analysis_type'] ?? 'revenue'));
+        $date_from = sanitize_text_field(wp_unslash($_POST['date_from'] ?? date('Y-m-d', strtotime('-30 days'))));
+        $date_to = sanitize_text_field(wp_unslash($_POST['date_to'] ?? date('Y-m-d')));
 
         $analysis = $this->performAIAnalysis($analysis_type, $date_from, $date_to);
 
@@ -201,14 +201,14 @@ class AIFeaturesManager {
         check_ajax_referer('fp_esperienze_admin', 'nonce');
 
         $settings = [
-            'dynamic_pricing_enabled' => (bool)($_POST['dynamic_pricing_enabled'] ?? false),
-            'recommendations_enabled' => (bool)($_POST['recommendations_enabled'] ?? false),
-            'sentiment_analysis_enabled' => (bool)($_POST['sentiment_analysis_enabled'] ?? false),
-            'predictive_analytics_enabled' => (bool)($_POST['predictive_analytics_enabled'] ?? false),
-            'pricing_sensitivity' => floatval($_POST['pricing_sensitivity'] ?? 0.1),
-            'demand_threshold' => intval($_POST['demand_threshold'] ?? 5),
-            'api_key' => sanitize_text_field($_POST['ai_api_key'] ?? ''),
-            'model_preference' => sanitize_text_field($_POST['model_preference'] ?? 'local')
+            'dynamic_pricing_enabled' => (bool) (wp_unslash($_POST['dynamic_pricing_enabled'] ?? false)),
+            'recommendations_enabled' => (bool) (wp_unslash($_POST['recommendations_enabled'] ?? false)),
+            'sentiment_analysis_enabled' => (bool) (wp_unslash($_POST['sentiment_analysis_enabled'] ?? false)),
+            'predictive_analytics_enabled' => (bool) (wp_unslash($_POST['predictive_analytics_enabled'] ?? false)),
+            'pricing_sensitivity' => floatval(wp_unslash($_POST['pricing_sensitivity'] ?? 0.1)),
+            'demand_threshold' => intval(wp_unslash($_POST['demand_threshold'] ?? 5)),
+            'api_key' => sanitize_text_field(wp_unslash($_POST['ai_api_key'] ?? '')),
+            'model_preference' => sanitize_text_field(wp_unslash($_POST['model_preference'] ?? 'local'))
         ];
 
         update_option('fp_esperienze_ai_settings', $settings);
