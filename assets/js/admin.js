@@ -5,6 +5,10 @@
 (function($) {
     'use strict';
 
+    if (typeof fp_esperienze_admin !== 'undefined' && typeof fp_esperienze_admin.banner_offset !== 'undefined') {
+        document.documentElement.style.setProperty('--fp-banner-offset', fp_esperienze_admin.banner_offset + 'px');
+    }
+
     // Prevent multiple script execution
     if (window.FPEsperienzeAdmin && window.FPEsperienzeAdmin.initialized) {
         return;

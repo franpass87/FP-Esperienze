@@ -3597,7 +3597,7 @@ body.fp-reduced-animations .fp-loading::after {
 /* Enhanced Notifications */
 .fp-notification {
     position: fixed;
-    top: 20px;
+    top: var(--fp-banner-offset, 20px);
     right: 20px;
     padding: 15px 20px;
     border-radius: 8px;
@@ -3608,6 +3608,10 @@ body.fp-reduced-animations .fp-loading::after {
     max-width: 400px;
     font-size: 14px;
     line-height: 1.4;
+}
+
+body.admin-bar .fp-notification {
+    top: calc(32px + var(--fp-banner-offset, 20px));
 }
 
 .fp-notification.show {
