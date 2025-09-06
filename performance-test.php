@@ -1,16 +1,17 @@
 <?php
 /**
  * Performance Measurement Script
- * 
+ *
  * Run this script to measure the performance improvements
  * Usage: php performance-test.php
  */
 
-// WordPress bootstrap (adjust path as needed)
 require_once __DIR__ . '/../../wp-load.php';
 
-if (!defined('ABSPATH')) {
-    die('WordPress not loaded properly');
+defined( 'ABSPATH' ) || exit;
+
+if ( ! current_user_can( 'manage_options' ) ) {
+    return;
 }
 
 class PerformanceTest {
@@ -283,9 +284,8 @@ class PerformanceTest {
         echo "Performance test completed successfully! 🚀\n";
     }
 }
-
 // Run the test if called directly
 if (php_sapi_name() === 'cli') {
-    $test = new PerformanceTest();
-    $test->runTests();
+$test = new PerformanceTest();
+$test->runTests();
 }

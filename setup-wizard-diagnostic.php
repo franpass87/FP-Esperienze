@@ -1,21 +1,15 @@
 <?php
 /**
  * Setup Wizard Diagnostic Script
- * 
+ *
  * This script helps diagnose setup wizard issues in FP Esperienze plugin.
  * Place this file in WordPress root directory and access via browser.
  */
 
-// Prevent direct access from web if not in WordPress context
-if (!defined('ABSPATH')) {
-    // Simple WordPress loading for diagnostic purposes
-    $wp_config_path = __DIR__ . '/wp-config.php';
-    if (file_exists($wp_config_path)) {
-        require_once $wp_config_path;
-        require_once ABSPATH . 'wp-settings.php';
-    } else {
-        die('WordPress not found. Place this file in WordPress root directory.');
-    }
+defined( 'ABSPATH' ) || exit;
+
+if ( ! current_user_can( 'manage_options' ) ) {
+    return;
 }
 
 // Check if we're in admin context

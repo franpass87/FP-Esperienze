@@ -4,12 +4,13 @@
  * Place this in the wp-content/plugins/fp-esperienze/ directory and access via admin
  */
 
-// This should be included or called from within WordPress context
+defined( 'ABSPATH' ) || exit;
+
+if ( ! current_user_can( 'manage_options' ) ) {
+    return;
+}
 
 function fp_debug_product_type() {
-    if (!current_user_can('manage_options')) {
-        return;
-    }
     
     echo "<h2>FP Esperienze Product Type Debug</h2>";
     
