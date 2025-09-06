@@ -472,7 +472,7 @@ class EmailMarketingManager {
         }
 
         $url = 'https://api.brevo.com/v3/smtp/email';
-        
+
         $body = [
             'sender' => [
                 'email' => get_option('admin_email'),
@@ -485,7 +485,13 @@ class EmailMarketingManager {
             'params' => $template_data
         ];
 
-        $response = wp_remote_post($url, [
+        $url = wp_http_validate_url($url);
+        if (!$url || !str_starts_with($url, 'https://api.brevo.com/')) {
+            $this->logError('Invalid Brevo API URL', ['url' => $url]);
+            return false;
+        }
+
+        $response = wp_safe_remote_post($url, [
             'headers' => [
                 'api-key' => $this->settings['brevo_api_key'] ?? '',
                 'Content-Type' => 'application/json'
@@ -836,6 +842,24 @@ class EmailMarketingManager {
         $coupon->save();
         
         return $code;
+    }
+
+    /**
+     * Log error without exposing sensitive data
+     *
+     * @param string $message Error message
+     * @param array $context Context data (no PII)
+     */
+    private function logError(string $message, array $context = []): void {
+        unset($context['email'], $context['api_key'], $context['first_name'], $context['last_name']);
+
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log(sprintf(
+                'FP Esperienze - Email Marketing: %s %s',
+                $message,
+                !empty($context) ? wp_json_encode($context) : ''
+            ));
+        }
     }
 
     /**
