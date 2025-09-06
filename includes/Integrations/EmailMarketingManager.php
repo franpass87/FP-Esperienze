@@ -537,7 +537,7 @@ class EmailMarketingManager {
         }
 
         ob_start();
-        extract($data);
+        extract($data, EXTR_SKIP);
         include $template_path;
         return ob_get_clean();
     }
