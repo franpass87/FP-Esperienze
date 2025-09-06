@@ -133,7 +133,7 @@ class SecurePDFAPI {
         }
 
         $pdf_path = $voucher['pdf_path'];
-        if (empty($pdf_path) || !file_exists($pdf_path)) {
+        if (empty($pdf_path)) {
             return new WP_Error(
                 'pdf_not_found',
                 __('PDF file not found.', 'fp-esperienze'),
@@ -141,9 +141,28 @@ class SecurePDFAPI {
             );
         }
 
-        // Read file contents
-        $pdf_content = file_get_contents($pdf_path);
-        if ($pdf_content === false) {
+        $real_pdf_path = realpath($pdf_path);
+        if ($real_pdf_path === false || !file_exists($real_pdf_path)) {
+            return new WP_Error(
+                'pdf_not_found',
+                __('PDF file not found.', 'fp-esperienze'),
+                ['status' => 404]
+            );
+        }
+
+        $uploads = wp_upload_dir();
+        $uploads_basedir = isset($uploads['basedir']) ? realpath($uploads['basedir']) : false;
+        if (!$uploads_basedir || strpos($real_pdf_path, $uploads_basedir) !== 0) {
+            return new WP_Error(
+                'invalid_pdf_path',
+                __('Access to the requested file is denied.', 'fp-esperienze'),
+                ['status' => 403]
+            );
+        }
+
+        $filename = 'voucher-' . $voucher['code'] . '.pdf';
+
+        if (!file_exists($real_pdf_path) || !is_readable($real_pdf_path)) {
             return new WP_Error(
                 'pdf_read_error',
                 __('Unable to read PDF file.', 'fp-esperienze'),
@@ -151,19 +170,24 @@ class SecurePDFAPI {
             );
         }
 
-        // Create response with proper headers
-        $filename = 'voucher-' . $voucher['code'] . '.pdf';
-        
-        $response = new WP_REST_Response($pdf_content, 200);
-        $response->set_headers([
-            'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
-            'Content-Length' => strlen($pdf_content),
-            'Cache-Control' => 'no-cache, must-revalidate',
-            'Pragma' => 'no-cache',
-            'Expires' => '0'
-        ]);
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Content-Length: ' . filesize($real_pdf_path));
+        header('Cache-Control: no-cache, must-revalidate');
+        header('Pragma: no-cache');
+        header('Expires: 0');
 
-        return $response;
+        $handle = fopen($real_pdf_path, 'rb');
+        if ($handle === false) {
+            return new WP_Error(
+                'pdf_read_error',
+                __('Unable to read PDF file.', 'fp-esperienze'),
+                ['status' => 500]
+            );
+        }
+
+        fpassthru($handle);
+        fclose($handle);
+        exit;
     }
 }
