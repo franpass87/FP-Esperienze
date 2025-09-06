@@ -876,20 +876,40 @@ class MobileAPIManager {
      */
     public function recordStaffAttendance(WP_REST_Request $request): WP_REST_Response|WP_Error {
         $staff_user_id = $this->getCurrentMobileUserId($request);
-        $action_type = sanitize_text_field($request->get_param('action')); // 'clock_in', 'clock_out'
-        $location = $request->get_param('location'); // GPS coordinates
+        $action_type   = sanitize_text_field($request->get_param('action')); // 'clock_in', 'clock_out'
+        $location      = $request->get_param('location'); // GPS coordinates
 
-        if (!in_array($action_type, ['clock_in', 'clock_out'])) {
+        if (!in_array($action_type, ['clock_in', 'clock_out'], true)) {
             return new WP_Error('invalid_action', __('Invalid action type', 'fp-esperienze'), ['status' => 400]);
+        }
+
+        $location_data = null;
+
+        if (null !== $location) {
+            if (!is_array($location) || !isset($location['lat'], $location['lng']) || !is_numeric($location['lat']) || !is_numeric($location['lng'])) {
+                return new WP_Error('invalid_location', __('Invalid location data', 'fp-esperienze'), ['status' => 400]);
+            }
+
+            $lat = (float) $location['lat'];
+            $lng = (float) $location['lng'];
+
+            if ($lat < -90 || $lat > 90 || $lng < -180 || $lng > 180) {
+                return new WP_Error('invalid_location', __('Invalid location data', 'fp-esperienze'), ['status' => 400]);
+            }
+
+            $location_data = wp_json_encode([
+                'lat' => $lat,
+                'lng' => $lng,
+            ]);
         }
 
         global $wpdb;
 
         $attendance_data = [
-            'staff_id' => $staff_user_id,
-            'action_type' => $action_type,
-            'timestamp' => current_time('mysql'),
-            'location_data' => $location ? wp_json_encode($location) : null
+            'staff_id'      => $staff_user_id,
+            'action_type'   => $action_type,
+            'timestamp'     => current_time('mysql'),
+            'location_data' => $location_data,
         ];
 
         $result = $wpdb->insert(
