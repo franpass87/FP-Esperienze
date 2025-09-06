@@ -262,8 +262,22 @@ class GooglePlacesManager {
         } elseif ($method === 'GET' && !empty($params)) {
             $url = add_query_arg($params, $url);
         }
-        
-        return wp_remote_request($url, $args);
+
+        $url = wp_http_validate_url($url);
+        if (!$url || !str_starts_with($url, 'https://places.googleapis.com/')) {
+            $this->logError('Invalid Places API URL', ['url' => $url]);
+            return new \WP_Error('invalid_url', __('Invalid API URL', 'fp-esperienze'));
+        }
+
+        if ($method === 'POST') {
+            return wp_safe_remote_post($url, $args);
+        }
+
+        if ($method === 'GET') {
+            return wp_safe_remote_get($url, $args);
+        }
+
+        return wp_safe_remote_request($url, $args);
     }
     
     /**
