@@ -61,20 +61,20 @@ class Cart_Hooks {
         }
 
         // Get experience booking data from POST
-        $slot_start = sanitize_text_field($_POST['fp_slot_start'] ?? '');
-        $meeting_point_id = absint($_POST['fp_meeting_point_id'] ?? 0);
-        $lang = sanitize_text_field($_POST['fp_lang'] ?? '');
-        $qty_adult = absint($_POST['fp_qty_adult'] ?? 0);
-        $qty_child = absint($_POST['fp_qty_child'] ?? 0);
+        $slot_start = sanitize_text_field(wp_unslash($_POST['fp_slot_start'] ?? ''));
+        $meeting_point_id = absint(wp_unslash($_POST['fp_meeting_point_id'] ?? 0));
+        $lang = sanitize_text_field(wp_unslash($_POST['fp_lang'] ?? ''));
+        $qty_adult = absint(wp_unslash($_POST['fp_qty_adult'] ?? 0));
+        $qty_child = absint(wp_unslash($_POST['fp_qty_child'] ?? 0));
         $extras_data = json_decode(wp_unslash($_POST['fp_extras'] ?? ''), true);
         
         // Get gift data from POST
         $is_gift = !empty($_POST['fp_is_gift']);
-        $gift_sender_name = sanitize_text_field($_POST['fp_gift_sender_name'] ?? '');
-        $gift_recipient_name = sanitize_text_field($_POST['fp_gift_recipient_name'] ?? '');
-        $gift_recipient_email = sanitize_email($_POST['fp_gift_recipient_email'] ?? '');
-        $gift_message = sanitize_textarea_field($_POST['fp_gift_message'] ?? '');
-        $gift_send_date = sanitize_text_field($_POST['fp_gift_send_date'] ?? '');
+        $gift_sender_name = sanitize_text_field(wp_unslash($_POST['fp_gift_sender_name'] ?? ''));
+        $gift_recipient_name = sanitize_text_field(wp_unslash($_POST['fp_gift_recipient_name'] ?? ''));
+        $gift_recipient_email = sanitize_email(wp_unslash($_POST['fp_gift_recipient_email'] ?? ''));
+        $gift_message = sanitize_textarea_field(wp_unslash($_POST['fp_gift_message'] ?? ''));
+        $gift_send_date = sanitize_text_field(wp_unslash($_POST['fp_gift_send_date'] ?? ''));
 
         if ($slot_start) {
             $extras = [];
@@ -128,14 +128,14 @@ class Cart_Hooks {
         }
 
         // Get booking data
-        $slot_start = sanitize_text_field($_POST['fp_slot_start'] ?? '');
-        $qty_adult = absint($_POST['fp_qty_adult'] ?? 0);
-        $qty_child = absint($_POST['fp_qty_child'] ?? 0);
+        $slot_start = sanitize_text_field(wp_unslash($_POST['fp_slot_start'] ?? ''));
+        $qty_adult = absint(wp_unslash($_POST['fp_qty_adult'] ?? 0));
+        $qty_child = absint(wp_unslash($_POST['fp_qty_child'] ?? 0));
         
         // Get gift data
         $is_gift = !empty($_POST['fp_is_gift']);
-        $gift_recipient_name = sanitize_text_field($_POST['fp_gift_recipient_name'] ?? '');
-        $gift_recipient_email = sanitize_email($_POST['fp_gift_recipient_email'] ?? '');
+        $gift_recipient_name = sanitize_text_field(wp_unslash($_POST['fp_gift_recipient_name'] ?? ''));
+        $gift_recipient_email = sanitize_email(wp_unslash($_POST['fp_gift_recipient_email'] ?? ''));
 
         // Validate required fields
         if (empty($slot_start)) {
@@ -545,9 +545,9 @@ class Cart_Hooks {
             ]);
         }
         
-        $voucher_code = sanitize_text_field($_POST['voucher_code'] ?? '');
-        $product_id = absint($_POST['product_id'] ?? 0);
-        $cart_item_key = sanitize_text_field($_POST['cart_item_key'] ?? '');
+        $voucher_code = sanitize_text_field(wp_unslash($_POST['voucher_code'] ?? ''));
+        $product_id = absint(wp_unslash($_POST['product_id'] ?? 0));
+        $cart_item_key = sanitize_text_field(wp_unslash($_POST['cart_item_key'] ?? ''));
         
         if (empty($voucher_code)) {
             wp_send_json_error(['message' => __('Please enter a voucher code.', 'fp-esperienze')]);
@@ -601,7 +601,7 @@ class Cart_Hooks {
     public function removeVoucher() {
         check_ajax_referer('fp_voucher_nonce', 'nonce');
         
-        $cart_item_key = sanitize_text_field($_POST['cart_item_key'] ?? '');
+        $cart_item_key = sanitize_text_field(wp_unslash($_POST['cart_item_key'] ?? ''));
         
         if (empty($cart_item_key)) {
             wp_send_json_error(['message' => __('Invalid cart item.', 'fp-esperienze')]);
