@@ -103,11 +103,11 @@ jQuery(document).ready(function($) {
                              alt="<?php echo esc_attr($product->get_name()); ?>" 
                              loading="lazy" />
                     </div>
-                    <?php if ($gallery_ids) : ?>
+                    <?php if ( $gallery_ids && ! wp_is_mobile() ) : ?>
                         <div class="fp-gallery-thumbs">
-                            <?php foreach (array_slice($gallery_ids, 0, 4) as $gallery_id) : ?>
-                                <img src="<?php echo esc_url(wp_get_attachment_image_url($gallery_id, 'thumbnail')); ?>" 
-                                     alt="<?php echo esc_attr($product->get_name()); ?>" 
+                            <?php foreach ( array_slice( $gallery_ids, 0, 4 ) as $gallery_id ) : ?>
+                                <img src="<?php echo esc_url( wp_get_attachment_image_url( $gallery_id, 'thumbnail' ) ); ?>"
+                                     alt="<?php echo esc_attr( $product->get_name() ); ?>"
                                      loading="lazy" />
                             <?php endforeach; ?>
                         </div>
