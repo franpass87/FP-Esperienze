@@ -48,7 +48,7 @@ class RateLimiter {
      *
      * @return string Client IP address
      */
-    private static function getClientIP(): string {
+    public static function getClientIP(): string {
         $remote_addr = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
 
         $trusted_proxies = apply_filters('fp_trusted_proxies', []);
