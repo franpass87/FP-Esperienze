@@ -801,13 +801,34 @@ class MobileAPIManager {
      * @return WP_REST_Response Response
      */
     public function processOfflineActions(WP_REST_Request $request): WP_REST_Response {
-        $actions = $request->get_param('actions') ?: [];
+        $actions_param = wp_unslash($request->get_param('actions'));
+        $actions = is_array($actions_param) ? $actions_param : [];
         $staff_user_id = $this->getCurrentMobileUserId($request);
 
         $results = [];
 
         foreach ($actions as $action) {
-            $result = $this->processOfflineAction($action, $staff_user_id);
+            if (!is_array($action)) {
+                continue;
+            }
+
+            $sanitized_action = [];
+            foreach ($action as $key => $value) {
+                switch ($key) {
+                    case 'type':
+                    case 'status':
+                        $sanitized_action[$key] = sanitize_text_field($value);
+                        break;
+                    case 'booking_id':
+                        $sanitized_action[$key] = absint($value);
+                        break;
+                    default:
+                        $sanitized_action[$key] = sanitize_text_field($value);
+                        break;
+                }
+            }
+
+            $result = $this->processOfflineAction($sanitized_action, $staff_user_id);
             $results[] = $result;
         }
 
@@ -1283,11 +1304,22 @@ class MobileAPIManager {
         $action_type = $action['type'] ?? '';
         $booking_id = $action['booking_id'] ?? 0;
 
+        $allowed_keys = ['type', 'booking_id'];
+        if ('status_update' === $action_type) {
+            $allowed_keys[] = 'status';
+        }
+
+        $unknown_keys = array_diff(array_keys($action), $allowed_keys);
+        if (!empty($unknown_keys)) {
+            return ['success' => false, 'error' => 'Unknown action fields: ' . implode(', ', $unknown_keys)];
+        }
+
         switch ($action_type) {
             case 'check_in':
                 return $this->processOfflineCheckin($booking_id, $staff_user_id);
             case 'status_update':
-                return $this->processOfflineStatusUpdate($booking_id, $action['status'] ?? '', $staff_user_id);
+                $status = $action['status'] ?? '';
+                return $this->processOfflineStatusUpdate($booking_id, $status, $staff_user_id);
             default:
                 return ['success' => false, 'error' => 'Unknown action type'];
         }
