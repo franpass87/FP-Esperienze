@@ -11,6 +11,7 @@
 namespace FP\Esperienze\REST;
 
 use FP\Esperienze\Core\CapabilityManager;
+use FP\Esperienze\Core\RateLimiter;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_Error;
@@ -210,6 +211,15 @@ class MobileAPIManager {
      * @return WP_REST_Response|WP_Error Response
      */
     public function mobileRegister(WP_REST_Request $request): WP_REST_Response|WP_Error {
+        // Rate limiting for registration attempts (5 requests per 15 minutes per IP)
+        if (!RateLimiter::checkRateLimit('mobile_register', 5, 900)) {
+            return new WP_Error(
+                'rate_limit_exceeded',
+                __('Too many registration attempts. Please try again later.', 'fp-esperienze'),
+                ['status' => 429]
+            );
+        }
+
         $username = sanitize_text_field(wp_unslash($request->get_param('username')));
         $email = sanitize_email($request->get_param('email'));
         $password = wp_unslash($request->get_param('password'));
