@@ -274,10 +274,10 @@ class NotificationManager {
                         $token = ICSAPI::generateBookingToken($booking->id);
                         if ($token) {
                             // Add booking access info to order notes for customer reference
-                            $access_url = rest_url('fp-esperienze/v1/ics/booking/' . $booking->id . '?token=' . $token);
+                            $access_url = rest_url('fp-esperienze/v1/ics/file/' . basename($file_path) . '?token=' . $token);
                             $order->add_order_note(
-                                sprintf(__('Booking #%d ICS calendar access: %s', 'fp-esperienze'), 
-                                $booking->id, $access_url), 
+                                sprintf(__('Booking #%d ICS calendar access: %s', 'fp-esperienze'),
+                                $booking->id, $access_url),
                                 true // customer note
                             );
                         }
@@ -290,21 +290,12 @@ class NotificationManager {
             // Hook into email attachments for this order
             add_filter('woocommerce_email_attachments', function($attachments, $email_id, $email_object) use ($ics_files, $order_id) {
                 // Only attach to customer-facing emails for this specific order
-                if (in_array($email_id, ['customer_processing_order', 'customer_completed_order']) && 
+                if (in_array($email_id, ['customer_processing_order', 'customer_completed_order']) &&
                     $email_object && $email_object->object && $email_object->object->get_id() == $order_id) {
                     return array_merge($attachments, $ics_files);
                 }
                 return $attachments;
             }, 10, 3);
-            
-            // Clean up temp files after email is sent
-            add_action('woocommerce_email_sent', function() use ($ics_files) {
-                foreach ($ics_files as $file) {
-                    if (file_exists($file)) {
-                        unlink($file);
-                    }
-                }
-            });
         }
     }
 }

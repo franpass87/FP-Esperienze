@@ -285,18 +285,16 @@ class ICSGenerator {
      * @return string|false File path or false on failure
      */
     public static function createICSFile(string $content, string $filename) {
-        $upload_dir = wp_upload_dir();
-        $ics_dir = $upload_dir['basedir'] . '/fp-esperienze-ics';
+        $ics_dir = FP_ESPERIENZE_ICS_DIR;
         
         // Create directory if it doesn't exist
         if (!file_exists($ics_dir)) {
             wp_mkdir_p($ics_dir);
-            
+
             // Add .htaccess for security
-            $htaccess_content = "# Deny direct access to ICS files\n";
+            $htaccess_content  = "# Deny direct access to ICS files\n";
             $htaccess_content .= "<Files *.ics>\n";
-            $htaccess_content .= "    Order allow,deny\n";
-            $htaccess_content .= "    Deny from all\n";
+            $htaccess_content .= "    Require all denied\n";
             $htaccess_content .= "</Files>\n";
             file_put_contents($ics_dir . '/.htaccess', $htaccess_content);
         }
