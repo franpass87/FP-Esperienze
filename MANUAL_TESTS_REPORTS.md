@@ -258,6 +258,18 @@
 - [ ] JavaScript errors don't break the page
 - [ ] Fallback content shows when API fails
 
+### 16. Special Character Filters
+
+**Objective**: Ensure filters handle special characters without double escaping
+
+**Steps**:
+1. Enter values containing characters like `O'Reilly` or `café` in filter fields
+2. Apply the filters and observe the results
+
+**Expected Results**:
+- [ ] Submitted values appear without extra backslashes
+- [ ] Filtered data matches the entered special characters
+
 ## Test Results Summary
 
 **Date Tested**: ________________

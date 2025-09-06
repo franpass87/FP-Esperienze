@@ -469,11 +469,11 @@ class ReportsManager {
         }
 
         $filters = [
-            'date_from' => sanitize_text_field($_POST['date_from'] ?? ''),
-            'date_to' => sanitize_text_field($_POST['date_to'] ?? ''),
-            'product_id' => absint($_POST['product_id'] ?? 0),
-            'meeting_point_id' => absint($_POST['meeting_point_id'] ?? 0),
-            'language' => sanitize_text_field($_POST['language'] ?? '')
+            'date_from' => sanitize_text_field(wp_unslash($_POST['date_from'] ?? '')),
+            'date_to' => sanitize_text_field(wp_unslash($_POST['date_to'] ?? '')),
+            'product_id' => absint(wp_unslash($_POST['product_id'] ?? 0)),
+            'meeting_point_id' => absint(wp_unslash($_POST['meeting_point_id'] ?? 0)),
+            'language' => sanitize_text_field(wp_unslash($_POST['language'] ?? ''))
         ];
 
         $kpi_data = $this->getKpiData(array_filter($filters));
@@ -490,10 +490,10 @@ class ReportsManager {
             wp_die(__('Insufficient permissions.', 'fp-esperienze'));
         }
 
-        $period = sanitize_text_field($_POST['period'] ?? 'day');
+        $period = sanitize_text_field(wp_unslash($_POST['period'] ?? 'day'));
         $filters = [
-            'date_from' => sanitize_text_field($_POST['date_from'] ?? ''),
-            'date_to' => sanitize_text_field($_POST['date_to'] ?? ''),
+            'date_from' => sanitize_text_field(wp_unslash($_POST['date_from'] ?? '')),
+            'date_to' => sanitize_text_field(wp_unslash($_POST['date_to'] ?? '')),
         ];
 
         $chart_data = $this->getChartData($period, array_filter($filters));
@@ -510,13 +510,13 @@ class ReportsManager {
             wp_die(__('Insufficient permissions.', 'fp-esperienze'));
         }
         
-        $format = sanitize_text_field($_POST['format'] ?? 'csv');
+        $format = sanitize_text_field(wp_unslash($_POST['format'] ?? 'csv'));
         $filters = [
-            'date_from' => sanitize_text_field($_POST['date_from'] ?? ''),
-            'date_to' => sanitize_text_field($_POST['date_to'] ?? ''),
-            'product_id' => absint($_POST['product_id'] ?? 0),
-            'meeting_point_id' => absint($_POST['meeting_point_id'] ?? 0),
-            'language' => sanitize_text_field($_POST['language'] ?? '')
+            'date_from' => sanitize_text_field(wp_unslash($_POST['date_from'] ?? '')),
+            'date_to' => sanitize_text_field(wp_unslash($_POST['date_to'] ?? '')),
+            'product_id' => absint(wp_unslash($_POST['product_id'] ?? 0)),
+            'meeting_point_id' => absint(wp_unslash($_POST['meeting_point_id'] ?? 0)),
+            'language' => sanitize_text_field(wp_unslash($_POST['language'] ?? ''))
         ];
 
         $this->exportReportData($format, array_filter($filters));
