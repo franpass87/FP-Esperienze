@@ -749,11 +749,15 @@ class MobileAPIManager {
      * Get sync bookings for offline mode (staff only)
      *
      * @param WP_REST_Request $request Request object
-     * @return WP_REST_Response Response
+     * @return WP_REST_Response|WP_Error Response
      */
-    public function getSyncBookings(WP_REST_Request $request): WP_REST_Response {
+    public function getSyncBookings(WP_REST_Request $request): WP_REST_Response|WP_Error {
         $date_from = sanitize_text_field($request->get_param('date_from')) ?: date('Y-m-d');
         $date_to = sanitize_text_field($request->get_param('date_to')) ?: date('Y-m-d', strtotime('+7 days'));
+
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date_from) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $date_to)) {
+            return new WP_Error('invalid_date', __('Invalid date format. Expected YYYY-MM-DD', 'fp-esperienze'), ['status' => 400]);
+        }
 
         global $wpdb;
         
@@ -843,12 +847,16 @@ class MobileAPIManager {
      * Get staff schedule
      *
      * @param WP_REST_Request $request Request object
-     * @return WP_REST_Response Response
+     * @return WP_REST_Response|WP_Error Response
      */
-    public function getStaffSchedule(WP_REST_Request $request): WP_REST_Response {
+    public function getStaffSchedule(WP_REST_Request $request): WP_REST_Response|WP_Error {
         $staff_user_id = $this->getCurrentMobileUserId($request);
         $date_from = sanitize_text_field($request->get_param('date_from')) ?: date('Y-m-d');
         $date_to = sanitize_text_field($request->get_param('date_to')) ?: date('Y-m-d', strtotime('+7 days'));
+
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date_from) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $date_to)) {
+            return new WP_Error('invalid_date', __('Invalid date format. Expected YYYY-MM-DD', 'fp-esperienze'), ['status' => 400]);
+        }
 
         // Get staff schedule from custom table or meta
         $schedule = $this->getStaffScheduleData($staff_user_id, $date_from, $date_to);
