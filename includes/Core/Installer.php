@@ -45,8 +45,23 @@ class Installer {
      * Plugin deactivation
      */
     public static function deactivate(): void {
-        // Clear scheduled cleanup holds event
-        wp_clear_scheduled_hook('fp_esperienze_cleanup_holds');
+        $hooks = [
+            'fp_esperienze_cleanup_holds',
+            'fp_check_abandoned_carts',
+            'fp_send_upselling_emails',
+            'fp_daily_ai_analysis',
+            'fp_esperienze_prebuild_availability',
+        ];
+
+        // Clear all scheduled events for the plugin
+        foreach ($hooks as $hook) {
+            wp_clear_scheduled_hook($hook);
+
+            // Verify that no events remain scheduled for this hook
+            while ($timestamp = wp_next_scheduled($hook)) {
+                wp_unschedule_event($timestamp, $hook);
+            }
+        }
 
         // Flush rewrite rules
         flush_rewrite_rules();
