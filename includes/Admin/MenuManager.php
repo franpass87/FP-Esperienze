@@ -414,10 +414,10 @@ class MenuManager {
 
         // Get current filters
         $filters = [
-            'status' => sanitize_text_field($_GET['status'] ?? ''),
-            'product_id' => absint($_GET['product_id'] ?? 0),
-            'date_from' => sanitize_text_field($_GET['date_from'] ?? ''),
-            'date_to' => sanitize_text_field($_GET['date_to'] ?? ''),
+            'status' => sanitize_text_field(wp_unslash($_GET['status'] ?? '')),
+            'product_id' => absint(wp_unslash($_GET['product_id'] ?? 0)),
+            'date_from' => sanitize_text_field(wp_unslash($_GET['date_from'] ?? '')),
+            'date_to' => sanitize_text_field(wp_unslash($_GET['date_to'] ?? '')),
         ];
         
         // Remove empty filters
@@ -824,8 +824,8 @@ class MenuManager {
         }
         
         // Get action and ID for editing/deleting
-        $action = sanitize_text_field($_GET['action'] ?? '');
-        $meeting_point_id = (int) ($_GET['id'] ?? 0);
+        $action = sanitize_text_field(wp_unslash($_GET['action'] ?? ''));
+        $meeting_point_id = absint(wp_unslash($_GET['id'] ?? 0));
         $meeting_point = null;
         
         if ($action === 'edit' && $meeting_point_id) {
@@ -1036,7 +1036,7 @@ class MenuManager {
      * Handle meeting point form actions
      */
     private function handleMeetingPointAction(): void {
-        $action = sanitize_text_field($_POST['action'] ?? '');
+        $action = sanitize_text_field(wp_unslash($_POST['action'] ?? ''));
         
         switch ($action) {
             case 'create':
@@ -1058,12 +1058,12 @@ class MenuManager {
      */
     private function createMeetingPoint(): void {
         $data = [
-            'name' => sanitize_text_field($_POST['meeting_point_name'] ?? ''),
-            'address' => sanitize_textarea_field($_POST['meeting_point_address'] ?? ''),
-            'lat' => !empty($_POST['meeting_point_lat']) ? (float) $_POST['meeting_point_lat'] : null,
-            'lng' => !empty($_POST['meeting_point_lng']) ? (float) $_POST['meeting_point_lng'] : null,
-            'place_id' => sanitize_text_field($_POST['meeting_point_place_id'] ?? ''),
-            'note' => sanitize_textarea_field($_POST['meeting_point_note'] ?? '')
+            'name' => sanitize_text_field(wp_unslash($_POST['meeting_point_name'] ?? '')),
+            'address' => sanitize_textarea_field(wp_unslash($_POST['meeting_point_address'] ?? '')),
+            'lat' => !empty($_POST['meeting_point_lat']) ? (float) wp_unslash($_POST['meeting_point_lat']) : null,
+            'lng' => !empty($_POST['meeting_point_lng']) ? (float) wp_unslash($_POST['meeting_point_lng']) : null,
+            'place_id' => sanitize_text_field(wp_unslash($_POST['meeting_point_place_id'] ?? '')),
+            'note' => sanitize_textarea_field(wp_unslash($_POST['meeting_point_note'] ?? ''))
         ];
         
         if (empty($data['name']) || empty($data['address'])) {
@@ -1096,7 +1096,7 @@ class MenuManager {
      * Update meeting point
      */
     private function updateMeetingPoint(): void {
-        $id = (int) ($_POST['meeting_point_id'] ?? 0);
+        $id = absint(wp_unslash($_POST['meeting_point_id'] ?? 0));
         
         if (!$id) {
             add_action('admin_notices', function() {
@@ -1108,12 +1108,12 @@ class MenuManager {
         }
         
         $data = [
-            'name' => sanitize_text_field($_POST['meeting_point_name'] ?? ''),
-            'address' => sanitize_textarea_field($_POST['meeting_point_address'] ?? ''),
-            'lat' => !empty($_POST['meeting_point_lat']) ? (float) $_POST['meeting_point_lat'] : null,
-            'lng' => !empty($_POST['meeting_point_lng']) ? (float) $_POST['meeting_point_lng'] : null,
-            'place_id' => sanitize_text_field($_POST['meeting_point_place_id'] ?? ''),
-            'note' => sanitize_textarea_field($_POST['meeting_point_note'] ?? '')
+            'name' => sanitize_text_field(wp_unslash($_POST['meeting_point_name'] ?? '')),
+            'address' => sanitize_textarea_field(wp_unslash($_POST['meeting_point_address'] ?? '')),
+            'lat' => !empty($_POST['meeting_point_lat']) ? (float) wp_unslash($_POST['meeting_point_lat']) : null,
+            'lng' => !empty($_POST['meeting_point_lng']) ? (float) wp_unslash($_POST['meeting_point_lng']) : null,
+            'place_id' => sanitize_text_field(wp_unslash($_POST['meeting_point_place_id'] ?? '')),
+            'note' => sanitize_textarea_field(wp_unslash($_POST['meeting_point_note'] ?? ''))
         ];
         
         if (empty($data['name']) || empty($data['address'])) {
@@ -1150,7 +1150,7 @@ class MenuManager {
      * Delete meeting point
      */
     private function deleteMeetingPoint(): void {
-        $id = (int) ($_POST['meeting_point_id'] ?? 0);
+        $id = absint(wp_unslash($_POST['meeting_point_id'] ?? 0));
         
         if (!$id) {
             add_action('admin_notices', function() {
@@ -1462,15 +1462,15 @@ class MenuManager {
         
         // Pagination setup
         $per_page = 20;
-        $current_page = max(1, absint($_GET['paged'] ?? 1));
+        $current_page = max(1, absint(wp_unslash($_GET['paged'] ?? 1)));
         $offset = ($current_page - 1) * $per_page;
         
         // Get filters
-        $status_filter = sanitize_text_field($_GET['status'] ?? '');
-        $product_filter = absint($_GET['product_id'] ?? 0);
-        $date_from = sanitize_text_field($_GET['date_from'] ?? '');
-        $date_to = sanitize_text_field($_GET['date_to'] ?? '');
-        $search = sanitize_text_field($_GET['search'] ?? '');
+        $status_filter = sanitize_text_field(wp_unslash($_GET['status'] ?? ''));
+        $product_filter = absint(wp_unslash($_GET['product_id'] ?? 0));
+        $date_from = sanitize_text_field(wp_unslash($_GET['date_from'] ?? ''));
+        $date_to = sanitize_text_field(wp_unslash($_GET['date_to'] ?? ''));
+        $search = sanitize_text_field(wp_unslash($_GET['search'] ?? ''));
         
         // Build query
         $table_name = $wpdb->prefix . 'fp_exp_vouchers';
@@ -1864,8 +1864,8 @@ class MenuManager {
             wp_die(__('Security check failed.', 'fp-esperienze'));
         }
         
-        $action = sanitize_text_field($_POST['action'] ?? '');
-        $voucher_id = absint($_POST['voucher_id'] ?? 0);
+        $action = sanitize_text_field(wp_unslash($_POST['action'] ?? ''));
+        $voucher_id = absint(wp_unslash($_POST['voucher_id'] ?? 0));
         
         switch ($action) {
             case 'void_voucher':
@@ -1875,15 +1875,15 @@ class MenuManager {
                 $this->resendVoucherEmail($voucher_id);
                 break;
             case 'extend_voucher':
-                $extend_months = absint($_POST['extend_months'] ?? 0);
+                $extend_months = absint(wp_unslash($_POST['extend_months'] ?? 0));
                 $this->extendVoucher($voucher_id, $extend_months);
                 break;
         }
         
         // Handle GET actions (PDF download, copy link)
         if (isset($_GET['action'])) {
-            $get_action = sanitize_text_field($_GET['action']);
-            $voucher_id = absint($_GET['voucher_id'] ?? 0);
+            $get_action = sanitize_text_field(wp_unslash($_GET['action']));
+            $voucher_id = absint(wp_unslash($_GET['voucher_id'] ?? 0));
             
             switch ($get_action) {
                 case 'download_pdf':
@@ -2082,9 +2082,9 @@ class MenuManager {
         if (!wp_verify_nonce($_POST['bulk_nonce'] ?? '', 'bulk_voucher_action')) {
             return;
         }
-        
-        $action = sanitize_text_field($_POST['bulk_action']);
-        $voucher_ids = array_map('absint', $_POST['voucher_ids']);
+
+        $action = sanitize_text_field(wp_unslash($_POST['bulk_action']));
+        $voucher_ids = array_map('absint', wp_unslash($_POST['voucher_ids']));
         
         if (empty($voucher_ids)) {
             add_action('admin_notices', function() {
@@ -2122,7 +2122,7 @@ class MenuManager {
                 break;
                 
             case 'bulk_extend':
-                $extend_months = absint($_POST['bulk_extend_months'] ?? 0);
+                $extend_months = absint(wp_unslash($_POST['bulk_extend_months'] ?? 0));
                 if ($extend_months > 0) {
                     foreach ($voucher_ids as $voucher_id) {
                         try {
@@ -2361,7 +2361,7 @@ class MenuManager {
             wp_die(__('You do not have permission to perform this action.', 'fp-esperienze'));
         }
         
-        $action = sanitize_text_field($_POST['action'] ?? '');
+        $action = sanitize_text_field(wp_unslash($_POST['action'] ?? ''));
         
         switch ($action) {
             case 'create':
@@ -2383,12 +2383,12 @@ class MenuManager {
      */
     private function createExtra(): void {
         $data = [
-            'name' => sanitize_text_field($_POST['extra_name'] ?? ''),
-            'description' => sanitize_textarea_field($_POST['extra_description'] ?? ''),
-            'price' => floatval($_POST['extra_price'] ?? 0),
-            'billing_type' => in_array($_POST['extra_billing_type'] ?? '', ['per_person', 'per_booking']) ? $_POST['extra_billing_type'] : 'per_person',
-            'tax_class' => sanitize_text_field($_POST['extra_tax_class'] ?? ''),
-            'max_quantity' => absint($_POST['extra_max_quantity'] ?? 1),
+            'name' => sanitize_text_field(wp_unslash($_POST['extra_name'] ?? '')),
+            'description' => sanitize_textarea_field(wp_unslash($_POST['extra_description'] ?? '')),
+            'price' => floatval(wp_unslash($_POST['extra_price'] ?? 0)),
+            'billing_type' => in_array(wp_unslash($_POST['extra_billing_type'] ?? ''), ['per_person', 'per_booking']) ? wp_unslash($_POST['extra_billing_type'] ?? '') : 'per_person',
+            'tax_class' => sanitize_text_field(wp_unslash($_POST['extra_tax_class'] ?? '')),
+            'max_quantity' => absint(wp_unslash($_POST['extra_max_quantity'] ?? 1)),
             'is_required' => isset($_POST['extra_is_required']) ? 1 : 0,
             'is_active' => isset($_POST['extra_is_active']) ? 1 : 0
         ];
@@ -2423,7 +2423,7 @@ class MenuManager {
      * Update extra
      */
     private function updateExtra(): void {
-        $id = absint($_POST['extra_id'] ?? 0);
+        $id = absint(wp_unslash($_POST['extra_id'] ?? 0));
         
         if (!$id) {
             add_action('admin_notices', function() {
@@ -2435,12 +2435,12 @@ class MenuManager {
         }
         
         $data = [
-            'name' => sanitize_text_field($_POST['extra_name'] ?? ''),
-            'description' => sanitize_textarea_field($_POST['extra_description'] ?? ''),
-            'price' => floatval($_POST['extra_price'] ?? 0),
-            'billing_type' => in_array($_POST['extra_billing_type'] ?? '', ['per_person', 'per_booking']) ? $_POST['extra_billing_type'] : 'per_person',
-            'tax_class' => sanitize_text_field($_POST['extra_tax_class'] ?? ''),
-            'max_quantity' => absint($_POST['extra_max_quantity'] ?? 1),
+            'name' => sanitize_text_field(wp_unslash($_POST['extra_name'] ?? '')),
+            'description' => sanitize_textarea_field(wp_unslash($_POST['extra_description'] ?? '')),
+            'price' => floatval(wp_unslash($_POST['extra_price'] ?? 0)),
+            'billing_type' => in_array(wp_unslash($_POST['extra_billing_type'] ?? ''), ['per_person', 'per_booking']) ? wp_unslash($_POST['extra_billing_type'] ?? '') : 'per_person',
+            'tax_class' => sanitize_text_field(wp_unslash($_POST['extra_tax_class'] ?? '')),
+            'max_quantity' => absint(wp_unslash($_POST['extra_max_quantity'] ?? 1)),
             'is_required' => isset($_POST['extra_is_required']) ? 1 : 0,
             'is_active' => isset($_POST['extra_is_active']) ? 1 : 0
         ];
@@ -2475,7 +2475,7 @@ class MenuManager {
      * Delete extra
      */
     private function deleteExtra(): void {
-        $id = absint($_POST['extra_id'] ?? 0);
+        $id = absint(wp_unslash($_POST['extra_id'] ?? 0));
         
         if (!$id) {
             add_action('admin_notices', function() {
@@ -2515,12 +2515,12 @@ class MenuManager {
             wp_die(__('You do not have permission to perform this action.', 'fp-esperienze'));
         }
         
-        $action = sanitize_text_field($_POST['action'] ?? '');
+        $action = sanitize_text_field(wp_unslash($_POST['action'] ?? ''));
         
         switch ($action) {
             case 'add_closure':
-                $date = sanitize_text_field($_POST['closure_date'] ?? '');
-                $reason = sanitize_text_field($_POST['closure_reason'] ?? '');
+                $date = sanitize_text_field(wp_unslash($_POST['closure_date'] ?? ''));
+                $reason = sanitize_text_field(wp_unslash($_POST['closure_reason'] ?? ''));
                 
                 if ($date) {
                     $result = OverrideManager::createGlobalClosure($date, $reason);
@@ -2541,7 +2541,7 @@ class MenuManager {
                 break;
                 
             case 'remove_closure':
-                $date = sanitize_text_field($_POST['closure_date'] ?? '');
+                $date = sanitize_text_field(wp_unslash($_POST['closure_date'] ?? ''));
                 
                 if ($date) {
                     $result = OverrideManager::removeGlobalClosure($date);
@@ -2573,7 +2573,7 @@ class MenuManager {
         }
         
         // Get current tab
-        $current_tab = sanitize_text_field($_GET['tab'] ?? 'general');
+        $current_tab = sanitize_text_field(wp_unslash($_GET['tab'] ?? 'general'));
         
         // Get general settings
         $archive_page_id = get_option('fp_esperienze_archive_page_id', 0);
@@ -3828,19 +3828,19 @@ class MenuManager {
             wp_die(__('Security check failed.', 'fp-esperienze'));
         }
         
-        $tab = sanitize_text_field($_POST['settings_tab'] ?? 'general');
+        $tab = sanitize_text_field(wp_unslash($_POST['settings_tab'] ?? 'general'));
         
         if ($tab === 'general') {
             // Update general settings
-            update_option('fp_esperienze_archive_page_id', absint($_POST['archive_page_id'] ?? 0));
+            update_option('fp_esperienze_archive_page_id', absint(wp_unslash($_POST['archive_page_id'] ?? 0)));
             
         } elseif ($tab === 'branding') {
             // Update branding settings
             $branding_settings = [
-                'primary_font' => sanitize_text_field($_POST['primary_font'] ?? 'inherit'),
-                'heading_font' => sanitize_text_field($_POST['heading_font'] ?? 'inherit'),
-                'primary_color' => sanitize_hex_color($_POST['primary_color'] ?? '#ff6b35'),
-                'secondary_color' => sanitize_hex_color($_POST['secondary_color'] ?? '#b24a25'),
+                'primary_font' => sanitize_text_field(wp_unslash($_POST['primary_font'] ?? 'inherit')),
+                'heading_font' => sanitize_text_field(wp_unslash($_POST['heading_font'] ?? 'inherit')),
+                'primary_color' => sanitize_hex_color(wp_unslash($_POST['primary_color'] ?? '#ff6b35')),
+                'secondary_color' => sanitize_hex_color(wp_unslash($_POST['secondary_color'] ?? '#b24a25')),
             ];
             
             // Validate font values - only allow specific safe fonts
@@ -3875,12 +3875,12 @@ class MenuManager {
         } elseif ($tab === 'gift') {
             // Update gift settings
             $settings = [
-                'fp_esperienze_gift_default_exp_months' => absint($_POST['gift_default_exp_months'] ?? 12),
-                'fp_esperienze_gift_pdf_logo' => esc_url_raw($_POST['gift_pdf_logo'] ?? ''),
-                'fp_esperienze_gift_pdf_brand_color' => sanitize_hex_color($_POST['gift_pdf_brand_color'] ?? '#ff6b35'),
-                'fp_esperienze_gift_email_sender_name' => sanitize_text_field($_POST['gift_email_sender_name'] ?? ''),
-                'fp_esperienze_gift_email_sender_email' => sanitize_email($_POST['gift_email_sender_email'] ?? ''),
-                'fp_esperienze_gift_terms' => sanitize_textarea_field($_POST['gift_terms'] ?? ''),
+                'fp_esperienze_gift_default_exp_months' => absint(wp_unslash($_POST['gift_default_exp_months'] ?? 12)),
+                'fp_esperienze_gift_pdf_logo' => esc_url_raw(wp_unslash($_POST['gift_pdf_logo'] ?? '')),
+                'fp_esperienze_gift_pdf_brand_color' => sanitize_hex_color(wp_unslash($_POST['gift_pdf_brand_color'] ?? '#ff6b35')),
+                'fp_esperienze_gift_email_sender_name' => sanitize_text_field(wp_unslash($_POST['gift_email_sender_name'] ?? '')),
+                'fp_esperienze_gift_email_sender_email' => sanitize_email(wp_unslash($_POST['gift_email_sender_email'] ?? '')),
+                'fp_esperienze_gift_terms' => sanitize_textarea_field(wp_unslash($_POST['gift_terms'] ?? '')),
             ];
             
             foreach ($settings as $key => $value) {
@@ -3896,7 +3896,7 @@ class MenuManager {
         } elseif ($tab === 'booking') {
             // Update booking/holds settings
             $enable_holds = !empty($_POST['enable_holds']);
-            $hold_duration = absint($_POST['hold_duration'] ?? 15);
+            $hold_duration = absint(wp_unslash($_POST['hold_duration'] ?? 15));
             
             // Validate hold duration
             if ($hold_duration < 5) $hold_duration = 5;
@@ -3908,27 +3908,27 @@ class MenuManager {
         } elseif ($tab === 'integrations') {
             // Update integrations settings
             $integrations = [
-                'ga4_measurement_id' => sanitize_text_field($_POST['ga4_measurement_id'] ?? ''),
+                'ga4_measurement_id' => sanitize_text_field(wp_unslash($_POST['ga4_measurement_id'] ?? '')),
                 'ga4_ecommerce' => !empty($_POST['ga4_ecommerce']),
-                'gads_conversion_id' => sanitize_text_field($_POST['gads_conversion_id'] ?? ''),
-                'gads_purchase_label' => sanitize_text_field($_POST['gads_purchase_label'] ?? ''),
-                'meta_pixel_id' => sanitize_text_field($_POST['meta_pixel_id'] ?? ''),
+                'gads_conversion_id' => sanitize_text_field(wp_unslash($_POST['gads_conversion_id'] ?? '')),
+                'gads_purchase_label' => sanitize_text_field(wp_unslash($_POST['gads_purchase_label'] ?? '')),
+                'meta_pixel_id' => sanitize_text_field(wp_unslash($_POST['meta_pixel_id'] ?? '')),
                 'meta_capi_enabled' => !empty($_POST['meta_capi_enabled']),
-                'meta_access_token' => sanitize_text_field($_POST['meta_access_token'] ?? ''),
-                'meta_dataset_id' => sanitize_text_field($_POST['meta_dataset_id'] ?? ''),
-                'brevo_api_key' => sanitize_text_field($_POST['brevo_api_key'] ?? ''),
-                'brevo_list_id_it' => absint($_POST['brevo_list_id_it'] ?? 0),
-                'brevo_list_id_en' => absint($_POST['brevo_list_id_en'] ?? 0),
-                'gplaces_api_key' => sanitize_text_field($_POST['gplaces_api_key'] ?? ''),
+                'meta_access_token' => sanitize_text_field(wp_unslash($_POST['meta_access_token'] ?? '')),
+                'meta_dataset_id' => sanitize_text_field(wp_unslash($_POST['meta_dataset_id'] ?? '')),
+                'brevo_api_key' => sanitize_text_field(wp_unslash($_POST['brevo_api_key'] ?? '')),
+                'brevo_list_id_it' => absint(wp_unslash($_POST['brevo_list_id_it'] ?? 0)),
+                'brevo_list_id_en' => absint(wp_unslash($_POST['brevo_list_id_en'] ?? 0)),
+                'gplaces_api_key' => sanitize_text_field(wp_unslash($_POST['gplaces_api_key'] ?? '')),
                 'gplaces_reviews_enabled' => !empty($_POST['gplaces_reviews_enabled']),
-                'gplaces_reviews_limit' => max(1, min(10, absint($_POST['gplaces_reviews_limit'] ?? 5))),
-                'gplaces_cache_ttl' => max(5, min(1440, absint($_POST['gplaces_cache_ttl'] ?? 60))),
-                'gbp_client_id' => sanitize_text_field($_POST['gbp_client_id'] ?? ''),
-                'gbp_client_secret' => sanitize_text_field($_POST['gbp_client_secret'] ?? ''),
+                'gplaces_reviews_limit' => max(1, min(10, absint(wp_unslash($_POST['gplaces_reviews_limit'] ?? 5)))),
+                'gplaces_cache_ttl' => max(5, min(1440, absint(wp_unslash($_POST['gplaces_cache_ttl'] ?? 60)))),
+                'gbp_client_id' => sanitize_text_field(wp_unslash($_POST['gbp_client_id'] ?? '')),
+                'gbp_client_secret' => sanitize_text_field(wp_unslash($_POST['gbp_client_secret'] ?? '')),
                 // Consent Mode v2 settings
                 'consent_mode_enabled' => !empty($_POST['consent_mode_enabled']),
-                'consent_cookie_name' => sanitize_text_field($_POST['consent_cookie_name'] ?? 'marketing_consent'),
-                'consent_js_function' => sanitize_text_field($_POST['consent_js_function'] ?? ''),
+                'consent_cookie_name' => sanitize_text_field(wp_unslash($_POST['consent_cookie_name'] ?? 'marketing_consent')),
+                'consent_js_function' => sanitize_text_field(wp_unslash($_POST['consent_js_function'] ?? '')),
             ];
             
             // Store all integrations in a single option
@@ -3938,7 +3938,7 @@ class MenuManager {
             // Update notification settings
             $notifications = [
                 'staff_notifications_enabled' => !empty($_POST['staff_notifications_enabled']),
-                'staff_emails' => sanitize_textarea_field($_POST['staff_emails'] ?? ''),
+                'staff_emails' => sanitize_textarea_field(wp_unslash($_POST['staff_emails'] ?? '')),
                 'ics_attachment_enabled' => !empty($_POST['ics_attachment_enabled']),
             ];
             
@@ -3971,10 +3971,10 @@ class MenuManager {
         } elseif ($tab === 'webhooks') {
             // Update webhook settings
             $webhook_settings = [
-                'fp_esperienze_webhook_new_booking' => esc_url_raw($_POST['webhook_new_booking'] ?? ''),
-                'fp_esperienze_webhook_cancellation' => esc_url_raw($_POST['webhook_cancellation'] ?? ''),
-                'fp_esperienze_webhook_reschedule' => esc_url_raw($_POST['webhook_reschedule'] ?? ''),
-                'fp_esperienze_webhook_secret' => sanitize_text_field($_POST['webhook_secret'] ?? ''),
+                'fp_esperienze_webhook_new_booking' => esc_url_raw(wp_unslash($_POST['webhook_new_booking'] ?? '')),
+                'fp_esperienze_webhook_cancellation' => esc_url_raw(wp_unslash($_POST['webhook_cancellation'] ?? '')),
+                'fp_esperienze_webhook_reschedule' => esc_url_raw(wp_unslash($_POST['webhook_reschedule'] ?? '')),
+                'fp_esperienze_webhook_secret' => sanitize_text_field(wp_unslash($_POST['webhook_secret'] ?? '')),
                 'fp_esperienze_webhook_hide_pii' => !empty($_POST['webhook_hide_pii']),
             ];
             
@@ -4002,12 +4002,12 @@ class MenuManager {
             wp_die(__('Security check failed.', 'fp-esperienze'));
         }
         
-        $action = sanitize_text_field($_POST['action'] ?? '');
+        $action = sanitize_text_field(wp_unslash($_POST['action'] ?? ''));
         
         switch ($action) {
             case 'update_status':
-                $booking_id = absint($_POST['booking_id'] ?? 0);
-                $new_status = sanitize_text_field($_POST['new_status'] ?? '');
+                $booking_id = absint(wp_unslash($_POST['booking_id'] ?? 0));
+                $new_status = sanitize_text_field(wp_unslash($_POST['new_status'] ?? ''));
 
                 $allowed_statuses = ['confirmed', 'cancelled', 'refunded', 'pending', 'completed', 'no_show'];
                 if (!in_array($new_status, $allowed_statuses, true)) {
@@ -4067,10 +4067,10 @@ class MenuManager {
 
         // Get current filters
         $filters = [
-            'status' => sanitize_text_field($_GET['status'] ?? ''),
-            'product_id' => absint($_GET['product_id'] ?? 0),
-            'date_from' => sanitize_text_field($_GET['date_from'] ?? ''),
-            'date_to' => sanitize_text_field($_GET['date_to'] ?? ''),
+            'status' => sanitize_text_field(wp_unslash($_GET['status'] ?? '')),
+            'product_id' => absint(wp_unslash($_GET['product_id'] ?? 0)),
+            'date_from' => sanitize_text_field(wp_unslash($_GET['date_from'] ?? '')),
+            'date_to' => sanitize_text_field(wp_unslash($_GET['date_to'] ?? '')),
         ];
         
         // Remove empty filters
@@ -4183,13 +4183,13 @@ class MenuManager {
                 wp_die(__('Security check failed.', 'fp-esperienze'));
             }
 
-            $format = sanitize_text_field($_POST['export_format'] ?? 'csv');
+            $format = sanitize_text_field(wp_unslash($_POST['export_format'] ?? 'csv'));
             $filters = [
-                'date_from' => sanitize_text_field($_POST['date_from'] ?? ''),
-                'date_to' => sanitize_text_field($_POST['date_to'] ?? ''),
-                'product_id' => absint($_POST['product_id'] ?? 0),
-                'meeting_point_id' => absint($_POST['meeting_point_id'] ?? 0),
-                'language' => sanitize_text_field($_POST['language'] ?? '')
+                'date_from' => sanitize_text_field(wp_unslash($_POST['date_from'] ?? '')),
+                'date_to' => sanitize_text_field(wp_unslash($_POST['date_to'] ?? '')),
+                'product_id' => absint(wp_unslash($_POST['product_id'] ?? 0)),
+                'meeting_point_id' => absint(wp_unslash($_POST['meeting_point_id'] ?? 0)),
+                'language' => sanitize_text_field(wp_unslash($_POST['language'] ?? ''))
             ];
 
             $reports_manager = new ReportsManager();
@@ -4219,8 +4219,8 @@ class MenuManager {
             wp_send_json_error(['message' => __('Security check failed.', 'fp-esperienze')]);
         }
         
-        $product_id = absint($_POST['product_id'] ?? 0);
-        $date = sanitize_text_field($_POST['date'] ?? '');
+        $product_id = absint(wp_unslash($_POST['product_id'] ?? 0));
+        $date = sanitize_text_field(wp_unslash($_POST['date'] ?? ''));
         
         if (!$product_id || !$date) {
             wp_send_json_error(['message' => __('Invalid parameters.', 'fp-esperienze')]);
@@ -4247,10 +4247,10 @@ class MenuManager {
             wp_send_json_error(['message' => __('Security check failed.', 'fp-esperienze')]);
         }
         
-        $booking_id = absint($_POST['booking_id'] ?? 0);
-        $new_date = sanitize_text_field($_POST['new_date'] ?? '');
-        $new_time = sanitize_text_field($_POST['new_time'] ?? '') . ':00'; // Add seconds
-        $admin_notes = sanitize_textarea_field($_POST['admin_notes'] ?? '');
+        $booking_id = absint(wp_unslash($_POST['booking_id'] ?? 0));
+        $new_date = sanitize_text_field(wp_unslash($_POST['new_date'] ?? ''));
+        $new_time = sanitize_text_field(wp_unslash($_POST['new_time'] ?? '')) . ':00'; // Add seconds
+        $admin_notes = sanitize_textarea_field(wp_unslash($_POST['admin_notes'] ?? ''));
         
         if (!$booking_id || !$new_date || !$new_time) {
             wp_send_json_error(['message' => __('Invalid parameters.', 'fp-esperienze')]);
@@ -4279,7 +4279,7 @@ class MenuManager {
             wp_send_json_error(['message' => __('Security check failed.', 'fp-esperienze')]);
         }
         
-        $booking_id = absint($_POST['booking_id'] ?? 0);
+        $booking_id = absint(wp_unslash($_POST['booking_id'] ?? 0));
         
         if (!$booking_id) {
             wp_send_json_error(['message' => __('Invalid booking ID.', 'fp-esperienze')]);
@@ -4302,8 +4302,8 @@ class MenuManager {
             wp_send_json_error(['message' => __('Security check failed.', 'fp-esperienze')]);
         }
         
-        $booking_id = absint($_POST['booking_id'] ?? 0);
-        $cancel_reason = sanitize_textarea_field($_POST['cancel_reason'] ?? '');
+        $booking_id = absint(wp_unslash($_POST['booking_id'] ?? 0));
+        $cancel_reason = sanitize_textarea_field(wp_unslash($_POST['cancel_reason'] ?? ''));
         
         if (!$booking_id) {
             wp_send_json_error(['message' => __('Invalid booking ID.', 'fp-esperienze')]);
@@ -4355,7 +4355,7 @@ class MenuManager {
             wp_send_json_error(['message' => __('Security check failed.', 'fp-esperienze')]);
         }
         
-        $webhook_url = esc_url_raw($_POST['webhook_url'] ?? '');
+        $webhook_url = esc_url_raw(wp_unslash($_POST['webhook_url'] ?? ''));
         $validated_url = wp_http_validate_url($webhook_url);
 
         if (!$validated_url || !in_array(wp_parse_url($validated_url, PHP_URL_SCHEME), ['http', 'https'], true)) {

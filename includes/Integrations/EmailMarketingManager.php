@@ -216,8 +216,8 @@ class EmailMarketingManager {
 
         check_ajax_referer('fp_esperienze_admin', 'nonce');
 
-        $test_email = sanitize_email($_POST['test_email'] ?? '');
-        $system_type = sanitize_text_field($_POST['system_type'] ?? 'auto');
+        $test_email = sanitize_email(wp_unslash($_POST['test_email'] ?? ''));
+        $system_type = sanitize_text_field(wp_unslash($_POST['system_type'] ?? 'auto'));
 
         if (!is_email($test_email)) {
             wp_send_json_error(['message' => __('Invalid email address', 'fp-esperienze')]);
@@ -244,10 +244,10 @@ class EmailMarketingManager {
         check_ajax_referer('fp_esperienze_admin', 'nonce');
 
         $campaign_data = [
-            'template' => sanitize_text_field($_POST['template'] ?? ''),
-            'subject' => sanitize_text_field($_POST['subject'] ?? ''),
-            'recipient_type' => sanitize_text_field($_POST['recipient_type'] ?? 'all'),
-            'custom_content' => wp_kses_post($_POST['custom_content'] ?? '')
+            'template' => sanitize_text_field(wp_unslash($_POST['template'] ?? '')),
+            'subject' => sanitize_text_field(wp_unslash($_POST['subject'] ?? '')),
+            'recipient_type' => sanitize_text_field(wp_unslash($_POST['recipient_type'] ?? 'all')),
+            'custom_content' => wp_kses_post(wp_unslash($_POST['custom_content'] ?? ''))
         ];
 
         $result = $this->sendCampaign($campaign_data);
