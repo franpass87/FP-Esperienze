@@ -101,18 +101,22 @@ class CacheManager {
         global $wpdb;
         
         // Delete all transients with this product pattern
-        $pattern = '_transient_fp_availability_' . $product_id . '_%';
-        $wpdb->query($wpdb->prepare(
-            "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
-            $pattern
-        ));
-        
+        $pattern = $wpdb->esc_like('_transient_fp_availability_' . $product_id) . '%';
+        $wpdb->query(
+            $wpdb->prepare(
+                "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
+                $pattern
+            )
+        );
+
         // Also delete timeout transients
-        $timeout_pattern = '_transient_timeout_fp_availability_' . $product_id . '_%';
-        $wpdb->query($wpdb->prepare(
-            "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
-            $timeout_pattern
-        ));
+        $timeout_pattern = $wpdb->esc_like('_transient_timeout_fp_availability_' . $product_id) . '%';
+        $wpdb->query(
+            $wpdb->prepare(
+                "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
+                $timeout_pattern
+            )
+        );
     }
     
     /**
