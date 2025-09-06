@@ -116,7 +116,7 @@ jQuery(document).ready(function($) {
             <?php endif; ?>
             
             <div class="fp-hero-info">
-                <div class="container">
+                <div class="fp-container">
                     <h1 class="fp-experience-title"><?php echo esc_html($product->get_name()); ?></h1>
                     
                     <?php if ($product->get_short_description()) : ?>
@@ -137,7 +137,7 @@ jQuery(document).ready(function($) {
 
     <!-- Trust/USP Bar -->
     <section class="fp-trust-bar">
-        <div class="container">
+        <div class="fp-container">
             <div class="fp-trust-items">
                 <?php if ($duration) : ?>
                     <div class="fp-trust-item">
@@ -205,7 +205,7 @@ jQuery(document).ready(function($) {
         </div>
     </section>
 
-    <div class="container fp-experience-content">
+    <div class="fp-container fp-experience-content">
         <div class="fp-content-layout">
             <!-- Main Content -->
             <div class="fp-main-content">
