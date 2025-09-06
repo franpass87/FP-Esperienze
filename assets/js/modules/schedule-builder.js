@@ -326,16 +326,17 @@
          */
         addTimeSlotCardClean: function() {
             try {
-                var $container = $('#fp-time-slots-container .fp-time-slots-container-clean');
+                // The container for time slots is the element with ID fp-time-slots-container
+                var $container = $('#fp-time-slots-container');
                 if (!$container.length) {
                     console.error('FP Esperienze: Time slots container not found');
                     return;
                 }
-                
+
                 var index = $container.find('.fp-time-slot-card-clean').length;
                 var cardHTML = this.createTimeSlotCardHTMLClean(index);
                 var $newCard = $(cardHTML);
-                
+
                 $container.append($newCard);
                 
                 // Show user feedback
@@ -355,33 +356,73 @@
          */
         createTimeSlotCardHTMLClean: function(index) {
             return `
-                <div class="fp-time-slot-card-clean" data-index="${index}">
-                    <div class="fp-time-slot-header-clean">
-                        <h4>Time Slot #${index + 1}</h4>
-                        <button type="button" class="fp-remove-time-slot-clean button-link-delete">
-                            <span class="dashicons dashicons-no-alt"></span>
-                            Remove
-                        </button>
-                    </div>
-                    <div class="fp-time-slot-body-clean">
-                        <div class="fp-time-slot-row-clean">
-                            <label>
-                                Start Time:
-                                <input type="time" name="builder_slots[${index}][start_time]" required />
-                            </label>
-                            <label>
-                                Duration (minutes):
-                                <input type="number" name="builder_slots[${index}][duration_min]" min="1" value="120" />
-                            </label>
-                            <label>
-                                Capacity:
-                                <input type="number" name="builder_slots[${index}][capacity]" min="1" value="10" />
-                            </label>
+                <div class="fp-time-slot-card fp-time-slot-card-clean" data-index="${index}">
+                    <div class="fp-time-slot-content-clean">
+                        <div class="fp-time-slot-header-clean">
+                            <div class="fp-time-field-clean">
+                                <label for="time-${index}">
+                                    <span class="dashicons dashicons-clock"></span>
+                                    Start Time <span class="required">*</span>
+                                </label>
+                                <input type="time" id="time-${index}" name="builder_slots[${index}][start_time]" required />
+                            </div>
+
+                            <div class="fp-days-field-clean">
+                                <label>
+                                    <span class="dashicons dashicons-calendar-alt"></span>
+                                    Days of Week <span class="required">*</span>
+                                </label>
+                                <div class="fp-days-pills-clean">
+                                    ${this.createDayPills(index)}
+                                </div>
+                            </div>
+
+                            <div class="fp-slot-actions-clean">
+                                <button type="button" class="fp-remove-time-slot-clean button">
+                                    <span class="dashicons dashicons-trash"></span>
+                                    Remove
+                                </button>
+                            </div>
                         </div>
-                        <div class="fp-days-selection-clean">
-                            <label>Days of the week:</label>
-                            <div class="fp-days-pills-clean">
-                                ${this.createDayPills(index)}
+
+                        <div class="fp-override-toggle-clean">
+                            <label>
+                                <input type="checkbox" class="fp-show-overrides-toggle-clean">
+                                <span class="dashicons dashicons-admin-tools"></span>
+                                Advanced Settings
+                            </label>
+                            <span class="description">Override default values for this specific time slot</span>
+                            <input type="hidden" name="builder_slots[${index}][advanced_enabled]" value="0" class="fp-advanced-enabled-clean">
+                        </div>
+
+                        <div class="fp-overrides-section-clean" style="display: none;">
+                            <div class="fp-overrides-grid-clean">
+                                <div class="fp-override-field-clean">
+                                    <label>Duration (minutes)</label>
+                                    <input type="number" name="builder_slots[${index}][duration_min]" min="1" />
+                                </div>
+                                <div class="fp-override-field-clean">
+                                    <label>Capacity</label>
+                                    <input type="number" name="builder_slots[${index}][capacity]" min="1" />
+                                </div>
+                                <div class="fp-override-field-clean">
+                                    <label>Language</label>
+                                    <input type="text" name="builder_slots[${index}][lang]" maxlength="10" />
+                                </div>
+                                <div class="fp-override-field-clean">
+                                    <label>Meeting Point</label>
+                                    <select name="builder_slots[${index}][meeting_point_id]" class="fp-meeting-point-select">
+                                        <option value="">Use default</option>
+                                    </select>
+                                </div>
+                                <div class="fp-override-field-clean">
+                                    <label>Adult Price</label>
+                                    <input type="number" name="builder_slots[${index}][price_adult]" min="0" step="0.01" />
+                                </div>
+                                <div class="fp-override-field-clean">
+                                    <label>Child Price</label>
+                                    <input type="number" name="builder_slots[${index}][price_child]" min="0" step="0.01" />
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -395,19 +436,19 @@
         createDayPills: function(index) {
             const days = [
                 {value: '1', label: 'Mon'},
-                {value: '2', label: 'Tue'}, 
+                {value: '2', label: 'Tue'},
                 {value: '3', label: 'Wed'},
                 {value: '4', label: 'Thu'},
                 {value: '5', label: 'Fri'},
                 {value: '6', label: 'Sat'},
                 {value: '0', label: 'Sun'}
             ];
-            
+
             return days.map(day => `
-                <label class="fp-day-pill-clean">
-                    <input type="checkbox" name="builder_slots[${index}][days][]" value="${day.value}" />
-                    <span>${day.label}</span>
-                </label>
+                <div class="fp-day-pill-clean">
+                    <input type="checkbox" id="day-${index}-${day.value}" name="builder_slots[${index}][days][]" value="${day.value}">
+                    <label for="day-${index}-${day.value}">${day.label}</label>
+                </div>
             `).join('');
         }
     };
