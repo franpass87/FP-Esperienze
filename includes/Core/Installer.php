@@ -45,6 +45,9 @@ class Installer {
      * Plugin deactivation
      */
     public static function deactivate(): void {
+        // Clear scheduled cleanup holds event
+        wp_clear_scheduled_hook('fp_esperienze_cleanup_holds');
+
         // Flush rewrite rules
         flush_rewrite_rules();
     }
