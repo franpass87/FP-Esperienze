@@ -46,6 +46,14 @@ add_filter( 'fp_trusted_proxies', function() {
 
 Only requests that originate from a trusted proxy will have their `X-Forwarded-*` headers processed. Otherwise the plugin falls back to `$_SERVER['REMOTE_ADDR']`.
 
+## Uninstall
+
+Removing the plugin via WordPress will drop all custom database tables beginning with `fp_` and delete any options or transients with the `fp_esperienze_` prefix. To preserve this data during uninstall, define the following constant in your `wp-config.php` before removing the plugin:
+
+```php
+define('FP_ESPERIENZE_PRESERVE_DATA', true);
+```
+
 ## Features
 
 - **Experience Product Type**: Custom WooCommerce product type for bookable experiences
