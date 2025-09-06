@@ -106,8 +106,8 @@ class EmailMarketingManager {
         }
 
         $user_id = get_current_user_id();
-        $session_id = WC()->session->get_customer_id();
-        
+        $session_id = sanitize_key(WC()->session->get_customer_id());
+
         $cart_data = [
             'user_id' => $user_id,
             'session_id' => $session_id,
@@ -117,7 +117,7 @@ class EmailMarketingManager {
             'last_activity' => current_time('mysql')
         ];
 
-        update_option('fp_cart_activity_' . ($user_id ?: $session_id), $cart_data);
+        set_transient('fp_cart_activity_' . ($user_id ?: $session_id), $cart_data, HOUR_IN_SECONDS * 2);
     }
 
     /**
@@ -132,22 +132,23 @@ class EmailMarketingManager {
         $abandoned_carts = $wpdb->get_results($wpdb->prepare("
             SELECT option_name, option_value
             FROM {$wpdb->options}
-            WHERE option_name LIKE 'fp_cart_activity_%'
+            WHERE option_name LIKE '_transient_fp_cart_activity_%'
             AND option_value LIKE %s
         ", '%"last_activity"%'));
 
         foreach ($abandoned_carts as $cart_option) {
-            $cart_data = maybe_unserialize($cart_option->option_value);
-            
+            $transient_key = str_replace('_transient_', '', $cart_option->option_name);
+            $cart_data = get_transient($transient_key);
+
             if (!$cart_data || !is_array($cart_data)) {
                 continue;
             }
 
             if ($cart_data['last_activity'] < $abandoned_time) {
                 $this->sendAbandonedCartEmail($cart_data);
-                
+
                 // Remove from tracking after sending email
-                delete_option($cart_option->option_name);
+                delete_transient($transient_key);
             }
         }
     }
