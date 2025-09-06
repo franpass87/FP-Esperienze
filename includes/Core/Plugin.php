@@ -456,12 +456,13 @@ class Plugin {
      * Initialize holds cleanup cron
      */
     public function initHoldsCron(): void {
+        // Add custom cron interval first
+        add_filter('cron_schedules', [$this, 'addHoldsCronInterval']);
+
+        // Schedule the event only after the interval is available
         if (!wp_next_scheduled('fp_esperienze_cleanup_holds')) {
             wp_schedule_event(time(), 'fp_esperienze_every_5_minutes', 'fp_esperienze_cleanup_holds');
         }
-        
-        // Add custom cron interval
-        add_filter('cron_schedules', [$this, 'addHoldsCronInterval']);
     }
     
     /**
