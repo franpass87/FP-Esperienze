@@ -239,12 +239,18 @@ class BrevoManager {
             ],
             'timeout' => 30,
         ];
-        
+
         if (!empty($body)) {
             $args['body'] = wp_json_encode($body);
         }
-        
-        return wp_remote_request($url, $args);
+
+        $url = wp_http_validate_url($url);
+        if (!$url || !str_starts_with($url, 'https://api.brevo.com/')) {
+            $this->logError('Invalid Brevo API URL', ['url' => $url]);
+            return new \WP_Error('invalid_url', __('Invalid API URL', 'fp-esperienze'));
+        }
+
+        return wp_safe_remote_request($url, $args);
     }
     
     /**
