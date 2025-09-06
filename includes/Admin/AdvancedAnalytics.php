@@ -41,8 +41,8 @@ class AdvancedAnalytics {
 
         check_ajax_referer('fp_esperienze_admin', 'nonce');
 
-        $date_from = sanitize_text_field($_POST['date_from'] ?? date('Y-m-d', strtotime('-30 days')));
-        $date_to = sanitize_text_field($_POST['date_to'] ?? date('Y-m-d'));
+        $date_from = isset($_POST['date_from']) ? sanitize_text_field(wp_unslash($_POST['date_from'])) : date('Y-m-d', strtotime('-30 days'));
+        $date_to   = isset($_POST['date_to']) ? sanitize_text_field(wp_unslash($_POST['date_to'])) : date('Y-m-d');
 
         $funnel_data = $this->getConversionFunnelData($date_from, $date_to);
 
@@ -59,8 +59,8 @@ class AdvancedAnalytics {
 
         check_ajax_referer('fp_esperienze_admin', 'nonce');
 
-        $date_from = sanitize_text_field($_POST['date_from'] ?? date('Y-m-d', strtotime('-30 days')));
-        $date_to = sanitize_text_field($_POST['date_to'] ?? date('Y-m-d'));
+        $date_from = isset($_POST['date_from']) ? sanitize_text_field(wp_unslash($_POST['date_from'])) : date('Y-m-d', strtotime('-30 days'));
+        $date_to   = isset($_POST['date_to']) ? sanitize_text_field(wp_unslash($_POST['date_to'])) : date('Y-m-d');
 
         $attribution_data = $this->getAttributionReportData($date_from, $date_to);
 
@@ -77,8 +77,8 @@ class AdvancedAnalytics {
 
         check_ajax_referer('fp_esperienze_admin', 'nonce');
 
-        $date_from = sanitize_text_field($_POST['date_from'] ?? date('Y-m-d', strtotime('-30 days')));
-        $date_to = sanitize_text_field($_POST['date_to'] ?? date('Y-m-d'));
+        $date_from = isset($_POST['date_from']) ? sanitize_text_field(wp_unslash($_POST['date_from'])) : date('Y-m-d', strtotime('-30 days'));
+        $date_to   = isset($_POST['date_to']) ? sanitize_text_field(wp_unslash($_POST['date_to'])) : date('Y-m-d');
 
         $roi_data = $this->getRoiAnalysisData($date_from, $date_to);
 
@@ -95,10 +95,10 @@ class AdvancedAnalytics {
 
         check_ajax_referer('fp_esperienze_admin', 'nonce');
 
-        $export_type = sanitize_text_field($_POST['export_type'] ?? 'funnel');
-        $format = sanitize_text_field($_POST['format'] ?? 'csv');
-        $date_from = sanitize_text_field($_POST['date_from'] ?? date('Y-m-d', strtotime('-30 days')));
-        $date_to = sanitize_text_field($_POST['date_to'] ?? date('Y-m-d'));
+        $export_type = isset($_POST['export_type']) ? sanitize_text_field(wp_unslash($_POST['export_type'])) : 'funnel';
+        $format     = isset($_POST['format']) ? sanitize_text_field(wp_unslash($_POST['format'])) : 'csv';
+        $date_from  = isset($_POST['date_from']) ? sanitize_text_field(wp_unslash($_POST['date_from'])) : date('Y-m-d', strtotime('-30 days'));
+        $date_to    = isset($_POST['date_to']) ? sanitize_text_field(wp_unslash($_POST['date_to'])) : date('Y-m-d');
 
         $this->exportData($export_type, $format, $date_from, $date_to);
     }
@@ -113,8 +113,8 @@ class AdvancedAnalytics {
 
         check_ajax_referer('fp_esperienze_admin', 'nonce');
 
-        $date_from = sanitize_text_field($_POST['date_from'] ?? date('Y-m-d', strtotime('-30 days')));
-        $date_to = sanitize_text_field($_POST['date_to'] ?? date('Y-m-d'));
+        $date_from = isset($_POST['date_from']) ? sanitize_text_field(wp_unslash($_POST['date_from'])) : date('Y-m-d', strtotime('-30 days'));
+        $date_to   = isset($_POST['date_to']) ? sanitize_text_field(wp_unslash($_POST['date_to'])) : date('Y-m-d');
 
         $channel_data = $this->getRevenueByChannelData($date_from, $date_to);
 
@@ -131,8 +131,8 @@ class AdvancedAnalytics {
 
         check_ajax_referer('fp_esperienze_admin', 'nonce');
 
-        $customer_id = intval($_POST['customer_id'] ?? 0);
-        $order_id = intval($_POST['order_id'] ?? 0);
+        $customer_id = isset($_POST['customer_id']) ? intval(wp_unslash($_POST['customer_id'])) : 0;
+        $order_id    = isset($_POST['order_id']) ? intval(wp_unslash($_POST['order_id'])) : 0;
 
         $journey_data = $this->getCustomerJourneyData($customer_id, $order_id);
 
