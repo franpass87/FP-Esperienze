@@ -1185,10 +1185,13 @@ class MobileAPIManager {
     }
 
     private function generateBookingQRData(int $booking_id): string {
+        $ts   = time();
+        $hash = hash_hmac('sha256', 'booking_' . $booking_id . '_' . $ts, wp_salt('auth'));
+
         $data = [
             'booking_id' => $booking_id,
-            'timestamp' => time(),
-            'hash' => wp_hash('booking_' . $booking_id . '_' . time())
+            'timestamp'  => $ts,
+            'hash'       => $hash,
         ];
 
         return base64_encode(wp_json_encode($data));
@@ -1204,15 +1207,15 @@ class MobileAPIManager {
 
     private function decodeQRData(string $qr_data): ?array {
         $decoded = base64_decode($qr_data);
-        $data = json_decode($decoded, true);
+        $data    = json_decode($decoded, true);
 
-        if (!$data || !isset($data['booking_id'], $data['hash'])) {
+        if (!$data || !isset($data['booking_id'], $data['timestamp'], $data['hash'])) {
             return null;
         }
 
         // Verify hash
-        $expected_hash = wp_hash('booking_' . $data['booking_id'] . '_' . $data['timestamp']);
-        if ($data['hash'] !== $expected_hash) {
+        $expected_hash = hash_hmac('sha256', 'booking_' . $data['booking_id'] . '_' . $data['timestamp'], wp_salt('auth'));
+        if (!hash_equals($expected_hash, $data['hash'])) {
             return null;
         }
 
