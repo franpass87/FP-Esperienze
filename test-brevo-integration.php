@@ -8,17 +8,17 @@
  * REMOVE THIS FILE AFTER TESTING!
  */
 
-// This is a test file and should be removed in production
-if (!defined('WP_DEBUG') || !WP_DEBUG) {
-    die('This test file can only be run in debug mode.');
+require_once 'wp-config.php';
+require_once 'wp-load.php';
+
+defined( 'ABSPATH' ) || exit;
+
+if ( ! current_user_can( 'manage_options' ) ) {
+    wp_die( 'Only administrators can run this test.' );
 }
 
-require_once('wp-config.php');
-require_once('wp-load.php');
-
-// Check if user is admin
-if (!current_user_can('manage_options')) {
-    die('Only administrators can run this test.');
+if ( ! defined( 'WP_DEBUG' ) || ! WP_DEBUG ) {
+    wp_die( 'This test file can only be run in debug mode.' );
 }
 
 echo '<h1>FP Esperienze - Brevo Integration Test</h1>';
