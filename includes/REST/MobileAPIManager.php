@@ -159,8 +159,8 @@ class MobileAPIManager {
             return new WP_Error('rate_limit_exceeded', __('Too many login attempts. Please try again later.', 'fp-esperienze'), ['status' => 429]);
         }
 
-        $username = sanitize_text_field($request->get_param('username'));
-        $password = sanitize_text_field($request->get_param('password'));
+        $username = sanitize_text_field(wp_unslash($request->get_param('username')));
+        $password = wp_unslash($request->get_param('password'));
         $device_info = $request->get_param('device_info');
 
         if (empty($username) || empty($password)) {
@@ -210,9 +210,9 @@ class MobileAPIManager {
      * @return WP_REST_Response|WP_Error Response
      */
     public function mobileRegister(WP_REST_Request $request): WP_REST_Response|WP_Error {
-        $username = sanitize_text_field($request->get_param('username'));
+        $username = sanitize_text_field(wp_unslash($request->get_param('username')));
         $email = sanitize_email($request->get_param('email'));
-        $password = sanitize_text_field($request->get_param('password'));
+        $password = wp_unslash($request->get_param('password'));
 
         if (empty($username) || empty($email) || empty($password)) {
             return new WP_Error('missing_fields', __('Username, email and password are required', 'fp-esperienze'), ['status' => 400]);
