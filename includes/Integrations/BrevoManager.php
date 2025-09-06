@@ -95,6 +95,17 @@ class BrevoManager {
         
         // Add to appropriate language list
         $this->addContactToList($customer_data['email'], $customer_data['language']);
+
+        // Send automation event
+        $this->sendAutomationEvent(
+            $customer_data['email'],
+            'ExperiencePurchase',
+            [
+                'order_id' => $order->get_id(),
+                'order_total' => (float) $order->get_total(),
+                'currency' => $order->get_currency(),
+            ]
+        );
     }
     
     /**
@@ -219,6 +230,52 @@ class BrevoManager {
         }
         
         $this->logError('List subscription unexpected response', ['code' => $response_code]);
+        return false;
+    }
+
+    /**
+     * Send automation event to Brevo
+     *
+     * @param string $email Contact email
+     * @param string $event_name Event name
+     * @param array $properties Additional event properties
+     * @return bool Success
+     */
+    public function sendAutomationEvent(string $email, string $event_name, array $properties = []): bool {
+        if (!$this->isEnabled()) {
+            return false;
+        }
+
+        $url = self::API_BASE_URL . '/events';
+
+        $body = [
+            'email' => $email,
+            'event' => $event_name,
+        ];
+
+        if (!empty($properties)) {
+            $body['properties'] = $properties;
+        }
+
+        $response = $this->makeApiRequest('POST', $url, $body);
+
+        if (is_wp_error($response)) {
+            $this->logError('Automation event failed', [
+                'error' => $response->get_error_message(),
+                'event' => $event_name,
+            ]);
+            return false;
+        }
+
+        $response_code = wp_remote_retrieve_response_code($response);
+        if ($response_code >= 200 && $response_code < 300) {
+            return true;
+        }
+
+        $this->logError('Automation event unexpected response', [
+            'code' => $response_code,
+            'event' => $event_name,
+        ]);
         return false;
     }
     
