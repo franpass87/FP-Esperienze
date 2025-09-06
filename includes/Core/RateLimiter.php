@@ -49,31 +49,34 @@ class RateLimiter {
      * @return string Client IP address
      */
     private static function getClientIP(): string {
-        $ip_headers = [
-            'HTTP_CF_CONNECTING_IP',     // Cloudflare
-            'HTTP_X_FORWARDED_FOR',      // Load balancers/proxies
-            'HTTP_X_FORWARDED',          // Proxies
-            'HTTP_X_CLUSTER_CLIENT_IP',  // Cluster balancers
-            'HTTP_FORWARDED_FOR',        // Proxies
-            'HTTP_FORWARDED',            // Proxies
-            'HTTP_CLIENT_IP',            // Proxies
-            'REMOTE_ADDR'                // Standard
-        ];
+        $remote_addr = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
 
-        foreach ($ip_headers as $header) {
-            if (!empty($_SERVER[$header])) {
+        $trusted_proxies = apply_filters('fp_trusted_proxies', []);
+
+        if (!empty($trusted_proxies) && in_array($remote_addr, $trusted_proxies, true)) {
+            $forwarded_headers = [
+                'HTTP_X_FORWARDED_FOR',
+                'HTTP_X_FORWARDED'
+            ];
+
+            foreach ($forwarded_headers as $header) {
+                if (empty($_SERVER[$header])) {
+                    continue;
+                }
+
                 $ips = explode(',', $_SERVER[$header]);
-                $ip = trim($ips[0]);
-                
-                // Validate IP address
-                if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
-                    return $ip;
+
+                foreach ($ips as $ip) {
+                    $ip = trim($ip);
+
+                    if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+                        return $ip;
+                    }
                 }
             }
         }
 
-        // Fallback to REMOTE_ADDR even if it's a private IP
-        return $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+        return $remote_addr;
     }
 
     /**

@@ -33,6 +33,19 @@ A WordPress + WooCommerce plugin for experience booking management by Francesco 
 
 **Note:** If you see an error about missing dependencies, make sure you have run `composer install --no-dev` in the plugin directory.
 
+### Trusted Proxy Configuration
+
+If your WordPress installation sits behind a reverse proxy or load balancer, add its IP address to the list of trusted proxies so the rate limiter can read the original client address from `X-Forwarded-*` headers.
+
+```php
+// In wp-config.php or a custom plugin.
+add_filter( 'fp_trusted_proxies', function() {
+    return [ '203.0.113.1', '198.51.100.0' ];
+} );
+```
+
+Only requests that originate from a trusted proxy will have their `X-Forwarded-*` headers processed. Otherwise the plugin falls back to `$_SERVER['REMOTE_ADDR']`.
+
 ## Features
 
 - **Experience Product Type**: Custom WooCommerce product type for bookable experiences
