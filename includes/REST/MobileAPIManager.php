@@ -881,7 +881,10 @@ class MobileAPIManager {
             'iat' => time()
         ];
 
-        return base64_encode(wp_json_encode($payload) . '|' . wp_hash(wp_json_encode($payload)));
+        $payload_json = wp_json_encode($payload);
+        $signature    = hash_hmac('sha256', $payload_json, wp_salt('auth'));
+
+        return base64_encode($payload_json . '|' . $signature);
     }
 
     private function validateMobileToken(string $token): ?int {
@@ -892,11 +895,16 @@ class MobileAPIManager {
             return null;
         }
 
-        $payload = $parts[0];
+        $payload   = $parts[0];
         $signature = $parts[1];
 
-        if (wp_hash($payload) !== $signature) {
-            return null;
+        $expected_signature = hash_hmac('sha256', $payload, wp_salt('auth'));
+
+        if (!hash_equals($expected_signature, $signature)) {
+            // Fallback for legacy tokens signed with wp_hash during migration
+            if (wp_hash($payload) !== $signature) {
+                return null;
+            }
         }
 
         $data = json_decode($payload, true);
