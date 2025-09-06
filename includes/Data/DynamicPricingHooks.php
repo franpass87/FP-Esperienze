@@ -7,6 +7,8 @@
 
 namespace FP\Esperienze\Data;
 
+use FP\Esperienze\Core\CapabilityManager;
+
 defined('ABSPATH') || exit;
 
 /**
@@ -102,7 +104,7 @@ class DynamicPricingHooks {
     public function savePricingRule() {
         check_ajax_referer('fp_pricing_nonce', 'nonce');
         
-        if (!current_user_can('manage_fp_experiences')) {
+        if (!CapabilityManager::canManageFPEsperienze()) {
             wp_send_json_error(['message' => __('Permission denied.', 'fp-esperienze')]);
         }
         
@@ -141,7 +143,7 @@ class DynamicPricingHooks {
     public function deletePricingRule() {
         check_ajax_referer('fp_pricing_nonce', 'nonce');
         
-        if (!current_user_can('manage_fp_experiences')) {
+        if (!CapabilityManager::canManageFPEsperienze()) {
             wp_send_json_error(['message' => __('Permission denied.', 'fp-esperienze')]);
         }
         
@@ -160,7 +162,7 @@ class DynamicPricingHooks {
     public function previewPricing() {
         check_ajax_referer('fp_pricing_nonce', 'nonce');
         
-        if (!current_user_can('manage_fp_experiences')) {
+        if (!CapabilityManager::canManageFPEsperienze()) {
             wp_send_json_error(['message' => __('Permission denied.', 'fp-esperienze')]);
         }
         
