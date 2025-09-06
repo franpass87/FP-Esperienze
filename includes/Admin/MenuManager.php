@@ -2238,18 +2238,26 @@ class MenuManager {
             "SELECT voucher_code, pdf_path FROM $table_name WHERE id = %d",
             $voucher_id
         ));
-        
-        if (!$voucher || empty($voucher->pdf_path) || !file_exists($voucher->pdf_path)) {
+
+        if (!$voucher || empty($voucher->pdf_path)) {
             wp_die(__('PDF not found.', 'fp-esperienze'));
         }
-        
+
+        $real_path = realpath($voucher->pdf_path);
+        $uploads   = wp_upload_dir();
+        $basedir   = trailingslashit($uploads['basedir']);
+
+        if (!$real_path || strpos($real_path, $basedir) !== 0) {
+            wp_die(__('PDF not found.', 'fp-esperienze'));
+        }
+
         $filename = 'voucher-' . $voucher->voucher_code . '.pdf';
-        
+
         header('Content-Type: application/pdf');
         header('Content-Disposition: attachment; filename="' . $filename . '"');
-        header('Content-Length: ' . filesize($voucher->pdf_path));
-        
-        readfile($voucher->pdf_path);
+        header('Content-Length: ' . filesize($real_path));
+
+        readfile($real_path);
         exit;
     }
 
