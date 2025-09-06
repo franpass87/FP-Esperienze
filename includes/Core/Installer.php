@@ -51,6 +51,7 @@ class Installer {
             'fp_send_upselling_emails',
             'fp_daily_ai_analysis',
             'fp_esperienze_prebuild_availability',
+            'fp_esperienze_retry_webhook',
         ];
 
         // Clear all scheduled events for the plugin
