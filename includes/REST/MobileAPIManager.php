@@ -676,29 +676,34 @@ class MobileAPIManager {
     }
 
     /**
-     * Register push notification token
+     * Register push notification token.
      *
-     * @param WP_REST_Request $request Request object
-     * @return WP_REST_Response Response
+     * Allowed token characters: letters, numbers, colon (:), dash (-), period (.), underscore (_).
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response Response.
      */
-    public function registerPushToken(WP_REST_Request $request): WP_REST_Response {
-        $user_id = $this->getCurrentMobileUserId($request);
-        $token = sanitize_text_field($request->get_param('token'));
-        $platform = sanitize_text_field($request->get_param('platform')); // ios, android
+    public function registerPushToken( WP_REST_Request $request ): WP_REST_Response {
+        $user_id = $this->getCurrentMobileUserId( $request );
+        // Allow letters, numbers, colon, dash, dot and underscore in token.
+        $token    = preg_replace( '/[^A-Za-z0-9:\-._]/', '', wp_unslash( $request->get_param( 'token' ) ) );
+        $platform = sanitize_text_field( $request->get_param( 'platform' ) ); // ios, android
 
-        if (empty($token)) {
-            return new WP_REST_Response(['error' => 'Token is required'], 400);
+        if ( empty( $token ) ) {
+            return new WP_REST_Response( [ 'error' => 'Token is required' ], 400 );
         }
 
-        // Store push token
-        update_user_meta($user_id, '_push_notification_token', $token);
-        update_user_meta($user_id, '_push_platform', $platform);
-        update_user_meta($user_id, '_push_registered_at', current_time('mysql'));
+        // Store push token.
+        update_user_meta( $user_id, '_push_notification_token', $token );
+        update_user_meta( $user_id, '_push_platform', $platform );
+        update_user_meta( $user_id, '_push_registered_at', current_time( 'mysql' ) );
 
-        return new WP_REST_Response([
-            'success' => true,
-            'message' => __('Push token registered successfully', 'fp-esperienze')
-        ]);
+        return new WP_REST_Response(
+            [
+                'success' => true,
+                'message' => __( 'Push token registered successfully', 'fp-esperienze' ),
+            ]
+        );
     }
 
     /**
