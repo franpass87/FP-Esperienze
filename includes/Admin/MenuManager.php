@@ -3997,7 +3997,17 @@ class MenuManager {
             case 'update_status':
                 $booking_id = absint($_POST['booking_id'] ?? 0);
                 $new_status = sanitize_text_field($_POST['new_status'] ?? '');
-                
+
+                $allowed_statuses = ['confirmed', 'cancelled', 'refunded', 'pending', 'completed', 'no_show'];
+                if (!in_array($new_status, $allowed_statuses, true)) {
+                    add_action('admin_notices', function() {
+                        echo '<div class="notice notice-error is-dismissible"><p>' .
+                             esc_html__('Invalid booking status.', 'fp-esperienze') .
+                             '</p></div>';
+                    });
+                    break;
+                }
+
                 if ($booking_id && $new_status) {
                     // Get booking details first
                     global $wpdb;
