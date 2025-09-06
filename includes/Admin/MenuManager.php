@@ -4333,12 +4333,13 @@ class MenuManager {
         }
         
         $webhook_url = esc_url_raw($_POST['webhook_url'] ?? '');
-        
-        if (!$webhook_url) {
+        $validated_url = wp_http_validate_url($webhook_url);
+
+        if (!$validated_url || !in_array(wp_parse_url($validated_url, PHP_URL_SCHEME), ['http', 'https'], true)) {
             wp_send_json_error(['message' => __('Invalid webhook URL.', 'fp-esperienze')]);
         }
-        
-        $result = WebhookManager::testWebhook($webhook_url);
+
+        $result = WebhookManager::testWebhook($validated_url);
         
         if ($result['success']) {
             wp_send_json_success($result);
