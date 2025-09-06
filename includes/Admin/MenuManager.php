@@ -409,6 +409,9 @@ class MenuManager {
             return;
         }
         
+        // Create nonce for CSV export
+        $export_nonce = wp_create_nonce('fp_export_bookings');
+
         // Get current filters
         $filters = [
             'status' => sanitize_text_field($_GET['status'] ?? ''),
@@ -457,7 +460,7 @@ class MenuManager {
                         
                         <input type="submit" class="button" value="<?php _e('Filter', 'fp-esperienze'); ?>">
                         <a href="<?php echo admin_url('admin.php?page=fp-esperienze-bookings'); ?>" class="button"><?php _e('Clear', 'fp-esperienze'); ?></a>
-                        <a href="<?php echo add_query_arg(array_merge($_GET, ['action' => 'export_csv']), admin_url('admin.php')); ?>" class="button button-secondary"><?php _e('Export CSV', 'fp-esperienze'); ?></a>
+                        <a href="<?php echo add_query_arg(array_merge($_GET, ['action' => 'export_csv', '_wpnonce' => $export_nonce]), admin_url('admin.php')); ?>" class="button button-secondary"><?php _e('Export CSV', 'fp-esperienze'); ?></a>
                     </div>
                 </form>
             </div>
@@ -4051,7 +4054,9 @@ class MenuManager {
         if (!CapabilityManager::canManageFPEsperienze()) {
             wp_die(__('Insufficient permissions.', 'fp-esperienze'));
         }
-        
+
+        check_admin_referer('fp_export_bookings');
+
         // Get current filters
         $filters = [
             'status' => sanitize_text_field($_GET['status'] ?? ''),
