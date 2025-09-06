@@ -353,13 +353,17 @@ class TrackingManager {
         }
         
         if (!empty($items)) {
+            $event_id = $this->generateEventId('purchase', $order_id);
+            $order->update_meta_data('_meta_event_id', $event_id);
+            $order->save();
+
             $tracking_data = [
                 'event' => 'purchase',
                 'transaction_id' => $order->get_order_number(),
                 'currency' => $order->get_currency(),
                 'value' => $total_value,
                 'items' => $items,
-                'event_id' => $this->generateEventId('purchase', $order_id),
+                'event_id' => $event_id,
             ];
             
             // Add UTM attribution data if available

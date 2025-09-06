@@ -84,9 +84,9 @@ class MetaCAPIManager {
             'num_items' => count($content_ids),
         ];
         
-        // Generate event ID for deduplication with frontend tracking
-        $event_id = 'purchase_' . $order_id . '_' . time();
-        
+        // Retrieve event ID for deduplication with frontend tracking
+        $event_id = $order->get_meta('_meta_event_id');
+
         // Send to Meta Conversions API
         $this->sendEvent('Purchase', $event_data, $order, $event_id);
     }
