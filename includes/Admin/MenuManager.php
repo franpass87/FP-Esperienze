@@ -460,7 +460,7 @@ class MenuManager {
                         
                         <input type="submit" class="button" value="<?php _e('Filter', 'fp-esperienze'); ?>">
                         <a href="<?php echo admin_url('admin.php?page=fp-esperienze-bookings'); ?>" class="button"><?php _e('Clear', 'fp-esperienze'); ?></a>
-                        <a href="<?php echo add_query_arg(array_merge($_GET, ['action' => 'export_csv', '_wpnonce' => $export_nonce]), admin_url('admin.php')); ?>" class="button button-secondary"><?php _e('Export CSV', 'fp-esperienze'); ?></a>
+                        <a href="<?php echo esc_url(add_query_arg(array_merge(array_map('sanitize_text_field', $_GET), ['action' => 'export_csv', '_wpnonce' => $export_nonce]), admin_url('admin.php'))); ?>" class="button button-secondary"><?php _e('Export CSV', 'fp-esperienze'); ?></a>
                     </div>
                 </form>
             </div>
