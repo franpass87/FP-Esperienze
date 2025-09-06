@@ -188,9 +188,23 @@
 - Integration triggers only on "processing" and "completed" statuses
 - Other status changes are ignored
 
+### 13. Test Automation Event Trigger
+
+**Objective**: Verify automation events are sent to Brevo with order data
+
+**Steps**:
+1. Create a test order with experience product(s)
+2. Change order status to "processing" or "completed"
+3. Check WordPress error logs for Brevo API errors
+4. Verify `ExperiencePurchase` event appears in Brevo with correct properties
+
+**Expected Results**:
+- No errors in WordPress logs
+- Event recorded in Brevo with order ID, total, and currency
+
 ## Error Scenarios
 
-### 13. Network Connectivity Issues
+### 14. Network Connectivity Issues
 
 **Objective**: Test behavior with network problems
 
@@ -204,7 +218,7 @@
 - Appropriate error logging
 - No site disruption
 
-### 14. API Rate Limiting
+### 15. API Rate Limiting
 
 **Objective**: Test behavior with Brevo rate limits
 
@@ -218,7 +232,7 @@
 
 ## Performance Testing
 
-### 15. High Volume Processing
+### 16. High Volume Processing
 
 **Objective**: Verify performance with multiple orders
 
@@ -234,7 +248,7 @@
 
 ## Security Testing
 
-### 16. Log Security
+### 17. Log Security
 
 **Objective**: Verify no sensitive data in logs
 
@@ -251,7 +265,7 @@
 
 ## Cleanup
 
-### 17. Test Data Cleanup
+### 18. Test Data Cleanup
 
 **Steps**:
 1. Remove all test contacts from Brevo lists
