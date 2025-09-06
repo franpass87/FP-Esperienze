@@ -99,6 +99,15 @@ class WebhookManager {
      * @param string $event_id Unique event ID for deduplication
      */
     private function sendWebhook(string $url, array $payload, string $event_id): void {
+        $validated_url = wp_http_validate_url($url);
+
+        if (!$validated_url || !in_array(wp_parse_url($validated_url, PHP_URL_SCHEME), ['http', 'https'], true)) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('FP Esperienze: Invalid webhook URL.');
+            }
+            return;
+        }
+
         // Add event ID for deduplication
         $payload['event_id'] = $event_id;
 
@@ -115,7 +124,7 @@ class WebhookManager {
         }
 
         // Send the webhook
-        $response = wp_remote_post($url, [
+        $response = wp_safe_remote_post($validated_url, [
             'headers' => $headers,
             'body' => wp_json_encode($payload),
             'timeout' => 10,
@@ -126,11 +135,11 @@ class WebhookManager {
 
         // If webhook fails, schedule retry
         if (is_wp_error($response)) {
-            $this->scheduleRetry($url, $payload, $event_id);
+            $this->scheduleRetry($validated_url, $payload, $event_id);
         } else {
             $response_code = wp_remote_retrieve_response_code($response);
             if ($response_code < 200 || $response_code >= 300) {
-                $this->scheduleRetry($url, $payload, $event_id);
+                $this->scheduleRetry($validated_url, $payload, $event_id);
             }
         }
     }
@@ -176,6 +185,15 @@ class WebhookManager {
      * @param int $attempt Attempt number
      */
     public function retryWebhook(string $url, array $payload, string $event_id, int $attempt): void {
+        $validated_url = wp_http_validate_url($url);
+
+        if (!$validated_url || !in_array(wp_parse_url($validated_url, PHP_URL_SCHEME), ['http', 'https'], true)) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('FP Esperienze: Invalid webhook URL during retry.');
+            }
+            return;
+        }
+
         // Add retry information to payload
         $payload['retry_attempt'] = $attempt;
 
@@ -190,7 +208,7 @@ class WebhookManager {
             $headers['X-FP-Signature'] = 'sha256=' . $signature;
         }
 
-        $response = wp_remote_post($url, [
+        $response = wp_safe_remote_post($validated_url, [
             'headers' => $headers,
             'body' => wp_json_encode($payload),
             'timeout' => 10,
@@ -200,11 +218,11 @@ class WebhookManager {
         ]);
 
         if (is_wp_error($response)) {
-            $this->scheduleRetry($url, $payload, $event_id, $attempt);
+            $this->scheduleRetry($validated_url, $payload, $event_id, $attempt);
         } else {
             $response_code = wp_remote_retrieve_response_code($response);
             if ($response_code < 200 || $response_code >= 300) {
-                $this->scheduleRetry($url, $payload, $event_id, $attempt);
+                $this->scheduleRetry($validated_url, $payload, $event_id, $attempt);
             } else {
                 // Success - log if debug is enabled
                 if (defined('WP_DEBUG') && WP_DEBUG) {
@@ -257,6 +275,15 @@ class WebhookManager {
      * @return array Test result
      */
     public static function testWebhook(string $url): array {
+        $validated_url = wp_http_validate_url($url);
+
+        if (!$validated_url || !in_array(wp_parse_url($validated_url, PHP_URL_SCHEME), ['http', 'https'], true)) {
+            return [
+                'success' => false,
+                'message' => __('Invalid webhook URL.', 'fp-esperienze')
+            ];
+        }
+
         $test_payload = [
             'event' => 'test',
             'timestamp' => current_time('c'),
@@ -274,7 +301,7 @@ class WebhookManager {
             $headers['X-FP-Signature'] = 'sha256=' . $signature;
         }
 
-        $response = wp_remote_post($url, [
+        $response = wp_safe_remote_post($validated_url, [
             'headers' => $headers,
             'body' => wp_json_encode($test_payload),
             'timeout' => 10,
@@ -297,7 +324,7 @@ class WebhookManager {
             'success' => $response_code >= 200 && $response_code < 300,
             'status_code' => $response_code,
             'response_body' => $response_body,
-            'message' => $response_code >= 200 && $response_code < 300 
+            'message' => $response_code >= 200 && $response_code < 300
                 ? __('Webhook test successful', 'fp-esperienze')
                 : sprintf(__('Webhook test failed with status %d', 'fp-esperienze'), $response_code)
         ];
