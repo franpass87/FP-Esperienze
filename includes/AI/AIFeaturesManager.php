@@ -504,19 +504,24 @@ class AIFeaturesManager {
             return [];
         }
 
-        $customer_list = implode(',', array_map('intval', $customers));
+        $placeholders = implode(',', array_fill(0, count($customers), '%d'));
 
         // Find other products these customers bought
-        $related_products = $wpdb->get_results("
+        $query = $wpdb->prepare(
+            "
             SELECT product_id, COUNT(*) as purchase_count
             FROM {$wpdb->prefix}fp_bookings b
-            WHERE b.customer_id IN ({$customer_list})
-            AND b.product_id != {$product_id}
+            WHERE b.customer_id IN ($placeholders)
+            AND b.product_id != %d
             AND b.status IN ('confirmed', 'completed')
             GROUP BY product_id
             ORDER BY purchase_count DESC
             LIMIT 5
-        ");
+            ",
+            array_merge($customers, [$product_id])
+        );
+
+        $related_products = $wpdb->get_results($query);
 
         return $this->formatRecommendations($related_products, 'collaborative');
     }
@@ -726,14 +731,18 @@ class AIFeaturesManager {
         global $wpdb;
 
         // Get historical booking data
-        $historical_data = $wpdb->get_results("
-            SELECT DATE(booking_date) as date, COUNT(*) as bookings
-            FROM {$wpdb->prefix}fp_bookings
-            WHERE booking_date >= DATE_SUB(NOW(), INTERVAL 1 YEAR)
-            AND status IN ('confirmed', 'completed')
-            GROUP BY DATE(booking_date)
-            ORDER BY date
-        ");
+        $historical_data = $wpdb->get_results(
+            $wpdb->prepare(
+                "
+                SELECT DATE(booking_date) as date, COUNT(*) as bookings
+                FROM {$wpdb->prefix}fp_bookings
+                WHERE booking_date >= DATE_SUB(NOW(), INTERVAL 1 YEAR)
+                AND status IN ('confirmed', 'completed')
+                GROUP BY DATE(booking_date)
+                ORDER BY date
+                "
+            )
+        );
 
         // Simple moving average forecast
         if (count($historical_data) < 30) {
@@ -769,17 +778,23 @@ class AIFeaturesManager {
         global $wpdb;
 
         // Identify customers who haven't booked in 90+ days
-        $churned_customers = $wpdb->get_results("
-            SELECT customer_id, MAX(booking_date) as last_booking,
-                   DATEDIFF(NOW(), MAX(booking_date)) as days_since_last
-            FROM {$wpdb->prefix}fp_bookings
-            WHERE status IN ('confirmed', 'completed')
-            GROUP BY customer_id
-            HAVING days_since_last >= 90
-            ORDER BY days_since_last DESC
-        ");
+        $churned_customers = $wpdb->get_results(
+            $wpdb->prepare(
+                "
+                SELECT customer_id, MAX(booking_date) as last_booking,
+                       DATEDIFF(NOW(), MAX(booking_date)) as days_since_last
+                FROM {$wpdb->prefix}fp_bookings
+                WHERE status IN ('confirmed', 'completed')
+                GROUP BY customer_id
+                HAVING days_since_last >= 90
+                ORDER BY days_since_last DESC
+                "
+            )
+        );
 
-        $total_customers = $wpdb->get_var("SELECT COUNT(DISTINCT customer_id) FROM {$wpdb->prefix}fp_bookings");
+        $total_customers = $wpdb->get_var(
+            $wpdb->prepare("SELECT COUNT(DISTINCT customer_id) FROM {$wpdb->prefix}fp_bookings")
+        );
 
         $churn_analysis = [
             'total_customers' => intval($total_customers),
@@ -800,8 +815,10 @@ class AIFeaturesManager {
         global $wpdb;
 
         // Get monthly revenue for the past year
-        $monthly_revenue = $wpdb->get_results("
-            SELECT 
+        $monthly_revenue = $wpdb->get_results(
+            $wpdb->prepare(
+                "
+            SELECT
                 DATE_FORMAT(booking_date, '%Y-%m') as month,
                 SUM(total_amount) as revenue
             FROM {$wpdb->prefix}fp_bookings
@@ -809,7 +826,9 @@ class AIFeaturesManager {
             AND status IN ('confirmed', 'completed')
             GROUP BY DATE_FORMAT(booking_date, '%Y-%m')
             ORDER BY month
-        ");
+                "
+            )
+        );
 
         if (count($monthly_revenue) < 3) {
             return; // Need at least 3 months of data
@@ -881,7 +900,9 @@ class AIFeaturesManager {
             LIMIT 10
         ";
 
-        $trending = $wpdb->get_results($trending_query);
+        $trending = $wpdb->get_results(
+            $wpdb->prepare($trending_query)
+        );
 
         $trending_experiences = [];
         foreach ($trending as $trend) {
