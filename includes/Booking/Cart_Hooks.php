@@ -66,7 +66,7 @@ class Cart_Hooks {
         $lang = sanitize_text_field($_POST['fp_lang'] ?? '');
         $qty_adult = absint($_POST['fp_qty_adult'] ?? 0);
         $qty_child = absint($_POST['fp_qty_child'] ?? 0);
-        $extras_json = sanitize_text_field($_POST['fp_extras'] ?? '');
+        $extras_data = json_decode(wp_unslash($_POST['fp_extras'] ?? ''), true);
         
         // Get gift data from POST
         $is_gift = !empty($_POST['fp_is_gift']);
@@ -78,12 +78,9 @@ class Cart_Hooks {
 
         if ($slot_start) {
             $extras = [];
-            if (!empty($extras_json)) {
-                $extras_data = json_decode($extras_json, true);
-                if (is_array($extras_data)) {
-                    foreach ($extras_data as $extra_id => $quantity) {
-                        $extras[absint($extra_id)] = absint($quantity);
-                    }
+            if (is_array($extras_data)) {
+                foreach ($extras_data as $extra_id => $quantity) {
+                    $extras[absint($extra_id)] = absint($quantity);
                 }
             }
 
