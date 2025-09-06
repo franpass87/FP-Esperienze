@@ -382,6 +382,12 @@
     transform: scale(1.05);
 }
 
+@media (max-width: 768px) {
+    .fp-gallery-thumbs {
+        display: none;
+    }
+}
+
 .fp-hero-info {
     padding: 40px;
     background: white;
