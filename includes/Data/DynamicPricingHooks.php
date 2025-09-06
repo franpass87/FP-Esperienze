@@ -111,20 +111,20 @@ class DynamicPricingHooks {
         }
         
         $rule_data = [
-            'id' => absint($_POST['id'] ?? 0),
-            'product_id' => absint($_POST['product_id'] ?? 0),
-            'rule_type' => sanitize_text_field($_POST['rule_type'] ?? ''),
-            'rule_name' => sanitize_text_field($_POST['rule_name'] ?? ''),
+            'id' => absint( wp_unslash( $_POST['id'] ?? 0 ) ),
+            'product_id' => absint( wp_unslash( $_POST['product_id'] ?? 0 ) ),
+            'rule_type' => sanitize_text_field( wp_unslash( $_POST['rule_type'] ?? '' ) ),
+            'rule_name' => sanitize_text_field( wp_unslash( $_POST['rule_name'] ?? '' ) ),
             'is_active' => isset($_POST['is_active']),
-            'priority' => absint($_POST['priority'] ?? 0),
-            'date_start' => sanitize_text_field($_POST['date_start'] ?? ''),
-            'date_end' => sanitize_text_field($_POST['date_end'] ?? ''),
-            'applies_to' => sanitize_text_field($_POST['applies_to'] ?? ''),
-            'days_before' => absint($_POST['days_before'] ?? 0),
-            'min_participants' => absint($_POST['min_participants'] ?? 0),
-            'adjustment_type' => sanitize_text_field($_POST['adjustment_type'] ?? 'percentage'),
-            'adult_adjustment' => floatval($_POST['adult_adjustment'] ?? 0),
-            'child_adjustment' => floatval($_POST['child_adjustment'] ?? 0)
+            'priority' => absint( wp_unslash( $_POST['priority'] ?? 0 ) ),
+            'date_start' => sanitize_text_field( wp_unslash( $_POST['date_start'] ?? '' ) ),
+            'date_end' => sanitize_text_field( wp_unslash( $_POST['date_end'] ?? '' ) ),
+            'applies_to' => sanitize_text_field( wp_unslash( $_POST['applies_to'] ?? '' ) ),
+            'days_before' => absint( wp_unslash( $_POST['days_before'] ?? 0 ) ),
+            'min_participants' => absint( wp_unslash( $_POST['min_participants'] ?? 0 ) ),
+            'adjustment_type' => sanitize_text_field( wp_unslash( $_POST['adjustment_type'] ?? 'percentage' ) ),
+            'adult_adjustment' => floatval( wp_unslash( $_POST['adult_adjustment'] ?? 0 ) ),
+            'child_adjustment' => floatval( wp_unslash( $_POST['child_adjustment'] ?? 0 ) )
         ];
         
         $rule_id = DynamicPricingManager::saveRule($rule_data);
@@ -149,7 +149,7 @@ class DynamicPricingHooks {
             wp_send_json_error(['message' => __('Permission denied.', 'fp-esperienze')]);
         }
         
-        $rule_id = absint($_POST['rule_id'] ?? 0);
+        $rule_id = absint( wp_unslash( $_POST['rule_id'] ?? 0 ) );
         
         if (DynamicPricingManager::deleteRule($rule_id)) {
             wp_send_json_success(['message' => __('Pricing rule deleted successfully.', 'fp-esperienze')]);
@@ -168,12 +168,12 @@ class DynamicPricingHooks {
             wp_send_json_error(['message' => __('Permission denied.', 'fp-esperienze')]);
         }
         
-        $product_id = absint($_POST['product_id'] ?? 0);
+        $product_id = absint( wp_unslash( $_POST['product_id'] ?? 0 ) );
         $test_data = [
-            'booking_date' => sanitize_text_field($_POST['booking_date'] ?? date('Y-m-d')),
-            'purchase_date' => sanitize_text_field($_POST['purchase_date'] ?? date('Y-m-d')),
-            'qty_adult' => absint($_POST['qty_adult'] ?? 1),
-            'qty_child' => absint($_POST['qty_child'] ?? 0)
+            'booking_date' => sanitize_text_field( wp_unslash( $_POST['booking_date'] ?? date('Y-m-d') ) ),
+            'purchase_date' => sanitize_text_field( wp_unslash( $_POST['purchase_date'] ?? date('Y-m-d') ) ),
+            'qty_adult' => absint( wp_unslash( $_POST['qty_adult'] ?? 1 ) ),
+            'qty_child' => absint( wp_unslash( $_POST['qty_child'] ?? 0 ) )
         ];
         
         $preview = DynamicPricingManager::previewPricing($product_id, $test_data);
