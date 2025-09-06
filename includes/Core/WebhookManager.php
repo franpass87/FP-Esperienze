@@ -21,6 +21,7 @@ class WebhookManager {
         add_action('fp_esperienze_booking_created', [$this, 'handleBookingCreated'], 10, 2);
         add_action('fp_esperienze_booking_cancelled', [$this, 'handleBookingCancelled'], 10, 2);
         add_action('fp_esperienze_booking_rescheduled', [$this, 'handleBookingRescheduled'], 10, 3);
+        add_action('fp_esperienze_retry_webhook', [$this, 'retryWebhook'], 10, 4);
     }
 
     /**
@@ -169,11 +170,6 @@ class WebhookManager {
             'fp_esperienze_retry_webhook',
             [$url, $payload, $event_id, $attempt + 1]
         );
-
-        // Add the retry hook if not already registered
-        if (!has_action('fp_esperienze_retry_webhook', [$this, 'retryWebhook'])) {
-            add_action('fp_esperienze_retry_webhook', [$this, 'retryWebhook'], 10, 4);
-        }
     }
 
     /**
