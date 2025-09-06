@@ -263,6 +263,11 @@ class MobileAPIManager {
      * @return WP_REST_Response|WP_Error Response
      */
     public function getMobileExperiences(WP_REST_Request $request): WP_REST_Response|WP_Error {
+        // Apply rate limiting (30 requests per minute per IP)
+        if (!RateLimiter::checkRateLimit('mobile_experiences', 30, 60)) {
+            return RateLimiter::createRateLimitResponse();
+        }
+
         // Enhanced input validation
         $page = max(1, intval($request->get_param('page') ?: 1));
         $per_page = max(1, min(intval($request->get_param('per_page') ?: 20), 100));
@@ -343,6 +348,11 @@ class MobileAPIManager {
      * @return WP_REST_Response|WP_Error Response
      */
     public function getMobileExperience(WP_REST_Request $request): WP_REST_Response|WP_Error {
+        // Apply rate limiting (30 requests per minute per IP)
+        if (!RateLimiter::checkRateLimit('mobile_experience', 30, 60)) {
+            return RateLimiter::createRateLimitResponse();
+        }
+
         $id = intval($request->get_param('id'));
         $product = wc_get_product($id);
 
