@@ -170,9 +170,10 @@ class TrackingManager {
         }
         
         if ($this->isMetaPixelEnabled()) {
-            $pixel_id = esc_js($this->settings['meta_pixel_id']);
-            
-            // Add Meta Pixel inline script  
+            $pixel_id_raw = $this->settings['meta_pixel_id'];
+            $pixel_id = esc_js($pixel_id_raw);
+
+            // Add Meta Pixel inline script
             $meta_pixel_script = "
                 !function(f,b,e,v,n,t,s)
                 {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
@@ -186,13 +187,15 @@ class TrackingManager {
                 fbq('track', 'PageView');
             ";
             wp_add_inline_script('fp-esperienze-tracking', $meta_pixel_script);
-            
-            // Add noscript fallback for Meta Pixel
-            add_action('wp_footer', function() use ($pixel_id) {
-                echo '<noscript><img height="1" width="1" style="display:none" src="' . 
-                     esc_url("https://www.facebook.com/tr?id={$pixel_id}&ev=PageView&noscript=1") . 
-                     '" /></noscript>' . "\n";
-            });
+
+            // Output noscript fallback for Meta Pixel
+            $pixel_url = esc_url(sprintf(
+                'https://www.facebook.com/tr?id=%s&ev=PageView&noscript=1',
+                rawurlencode($pixel_id_raw)
+            ));
+            echo '<noscript><img height="1" width="1" style="display:none" src="' .
+                 $pixel_url .
+                 '" /></noscript>' . "\n";
         }
         
         // Output tracking data for JavaScript
