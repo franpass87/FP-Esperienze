@@ -85,6 +85,27 @@ class ICSAPI {
                 ]
             ]
         ]);
+
+        // Endpoint for downloading stored ICS files
+        register_rest_route('fp-esperienze/v1', '/ics/file/(?P<filename>[\w\-]+\.ics)', [
+            'methods'  => 'GET',
+            'callback' => [$this, 'serveICSFile'],
+            'permission_callback' => '__return_true',
+            'args'    => [
+                'filename' => [
+                    'required'          => true,
+                    'validate_callback' => function($param) {
+                        return is_string($param) && preg_match('/^[\w\-]+\.ics$/', $param);
+                    }
+                ],
+                'token' => [
+                    'required'          => false,
+                    'validate_callback' => function($param) {
+                        return empty($param) || (is_string($param) && strlen($param) === 32);
+                    }
+                ]
+            ]
+        ]);
     }
     
     /**
@@ -233,7 +254,56 @@ class ICSAPI {
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
             'Cache-Control' => 'no-cache, must-revalidate'
         ]);
-        
+
+        return $response;
+    }
+
+    /**
+     * Serve stored ICS file with access control
+     *
+     * @param \WP_REST_Request $request Request object
+     * @return \WP_REST_Response|\WP_Error
+     */
+    public function serveICSFile(\WP_REST_Request $request) {
+        $filename = basename($request->get_param('filename'));
+        $token    = (string) $request->get_param('token');
+        $file_path = FP_ESPERIENZE_ICS_DIR . '/' . $filename;
+
+        if (!file_exists($file_path)) {
+            return new \WP_Error(
+                'file_not_found',
+                __('ICS file not found.', 'fp-esperienze'),
+                ['status' => 404]
+            );
+        }
+
+        if (!current_user_can('manage_options')) {
+            if (preg_match('/^booking-(\d+)-/', $filename, $matches)) {
+                $booking_id = (int) $matches[1];
+                if (!$this->validateBookingToken($booking_id, $token)) {
+                    return new \WP_Error(
+                        'invalid_token',
+                        __('Invalid access token.', 'fp-esperienze'),
+                        ['status' => 403]
+                    );
+                }
+            } else {
+                return new \WP_Error(
+                    'forbidden',
+                    __('Access denied.', 'fp-esperienze'),
+                    ['status' => 403]
+                );
+            }
+        }
+
+        $content = file_get_contents($file_path);
+        $response = new \WP_REST_Response($content);
+        $response->set_headers([
+            'Content-Type' => 'text/calendar; charset=utf-8',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Cache-Control' => 'no-cache, must-revalidate'
+        ]);
+
         return $response;
     }
     

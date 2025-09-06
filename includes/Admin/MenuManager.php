@@ -3508,8 +3508,8 @@ class MenuManager {
                         <tr>
                             <th scope="row"><?php _e('Single Booking Calendar', 'fp-esperienze'); ?></th>
                             <td>
-                                <code><?php echo esc_html(rest_url('fp-esperienze/v1/ics/booking/{booking_id}?token={token}')); ?></code>
-                                <p class="description"><?php _e('Public endpoint with token-based access to get calendar for a specific booking. Tokens are generated automatically and included in booking emails.', 'fp-esperienze'); ?></p>
+                                <code><?php echo esc_html(rest_url('fp-esperienze/v1/ics/file/booking-{booking_id}-{product}.ics?token={token}')); ?></code>
+                                <p class="description"><?php _e('Token-protected endpoint that serves stored ICS files for individual bookings.', 'fp-esperienze'); ?></p>
                             </td>
                         </tr>
                     </table>

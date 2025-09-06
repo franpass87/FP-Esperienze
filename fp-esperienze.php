@@ -29,6 +29,7 @@ define('FP_ESPERIENZE_PLUGIN_FILE', __FILE__);
 define('FP_ESPERIENZE_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('FP_ESPERIENZE_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('FP_ESPERIENZE_PLUGIN_BASENAME', plugin_basename(__FILE__));
+define('FP_ESPERIENZE_ICS_DIR', WP_CONTENT_DIR . '/fp-private/fp-esperienze-ics');
 
 // Feature flags
 define('FP_ESPERIENZE_ENABLE_SCHEDULE_NULL_MIGRATION', false); // Set to true to enable NULL migration for schedule override fields
