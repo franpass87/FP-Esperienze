@@ -276,12 +276,14 @@
                 return;
             }
             
-            if (typeof window.dataLayer !== 'undefined') {
+            if (typeof window.gtag === 'function') {
+                window.gtag('event', eventName, eventData);
+            } else if (typeof window.dataLayer !== 'undefined') {
                 window.dataLayer.push({
                     event: eventName,
                     ecommerce: eventData
                 });
-                
+
                 // Debug logging removed for production
             }
         },
