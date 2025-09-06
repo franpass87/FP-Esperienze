@@ -132,8 +132,8 @@ class SetupWizard {
      * Handle step form submissions
      */
     public function handleStepSubmission(): void {
-        if (!isset($_POST['fp_setup_wizard_nonce']) || 
-            !wp_verify_nonce($_POST['fp_setup_wizard_nonce'], 'fp_setup_wizard_step')) {
+        if (!isset($_POST['fp_setup_wizard_nonce']) ||
+            !wp_verify_nonce(wp_unslash($_POST['fp_setup_wizard_nonce']), 'fp_setup_wizard_step')) {
             return;
         }
 
@@ -141,8 +141,8 @@ class SetupWizard {
             return;
         }
 
-        $step = absint($_POST['current_step'] ?? 1);
-        $action = sanitize_text_field($_POST['wizard_action'] ?? '');
+        $step = absint(isset($_POST['current_step']) ? wp_unslash($_POST['current_step']) : 1);
+        $action = sanitize_text_field(isset($_POST['wizard_action']) ? wp_unslash($_POST['wizard_action']) : '');
 
         switch ($action) {
             case 'next':
@@ -194,10 +194,10 @@ class SetupWizard {
         }
         
         $settings = [
-            'fp_esperienze_currency' => sanitize_text_field($_POST['currency'] ?? (function_exists('get_woocommerce_currency') ? get_woocommerce_currency() : 'USD')),
-            'fp_esperienze_default_duration' => absint($_POST['default_duration'] ?? 60),
-            'fp_esperienze_default_capacity' => absint($_POST['default_capacity'] ?? 10),
-            'fp_esperienze_default_language' => sanitize_text_field($_POST['default_language'] ?? $default_lang),
+            'fp_esperienze_currency' => sanitize_text_field(isset($_POST['currency']) ? wp_unslash($_POST['currency']) : (function_exists('get_woocommerce_currency') ? get_woocommerce_currency() : 'USD')),
+            'fp_esperienze_default_duration' => absint(isset($_POST['default_duration']) ? wp_unslash($_POST['default_duration']) : 60),
+            'fp_esperienze_default_capacity' => absint(isset($_POST['default_capacity']) ? wp_unslash($_POST['default_capacity']) : 10),
+            'fp_esperienze_default_language' => sanitize_text_field(isset($_POST['default_language']) ? wp_unslash($_POST['default_language']) : $default_lang),
         ];
 
         foreach ($settings as $key => $value) {
@@ -206,7 +206,7 @@ class SetupWizard {
 
         // Update WordPress timezone if provided
         if (!empty($_POST['timezone'])) {
-            update_option('timezone_string', sanitize_text_field($_POST['timezone']));
+            update_option('timezone_string', sanitize_text_field(wp_unslash($_POST['timezone'])));
         }
     }
 
@@ -215,21 +215,21 @@ class SetupWizard {
      */
     private function processIntegrationsSettings(): void {
         $integrations = [
-            'ga4_measurement_id' => sanitize_text_field($_POST['ga4_measurement_id'] ?? ''),
+            'ga4_measurement_id' => sanitize_text_field(isset($_POST['ga4_measurement_id']) ? wp_unslash($_POST['ga4_measurement_id']) : ''),
             'ga4_ecommerce' => !empty($_POST['ga4_ecommerce']),
-            'gads_conversion_id' => sanitize_text_field($_POST['gads_conversion_id'] ?? ''),
-            'gads_purchase_label' => sanitize_text_field($_POST['gads_purchase_label'] ?? ''),
-            'meta_pixel_id' => sanitize_text_field($_POST['meta_pixel_id'] ?? ''),
+            'gads_conversion_id' => sanitize_text_field(isset($_POST['gads_conversion_id']) ? wp_unslash($_POST['gads_conversion_id']) : ''),
+            'gads_purchase_label' => sanitize_text_field(isset($_POST['gads_purchase_label']) ? wp_unslash($_POST['gads_purchase_label']) : ''),
+            'meta_pixel_id' => sanitize_text_field(isset($_POST['meta_pixel_id']) ? wp_unslash($_POST['meta_pixel_id']) : ''),
             'meta_capi_enabled' => !empty($_POST['meta_capi_enabled']),
-            'meta_access_token' => sanitize_text_field($_POST['meta_access_token'] ?? ''),
-            'meta_dataset_id' => sanitize_text_field($_POST['meta_dataset_id'] ?? ''),
-            'brevo_api_key' => sanitize_text_field($_POST['brevo_api_key'] ?? ''),
-            'brevo_list_id_it' => sanitize_text_field($_POST['brevo_list_id_it'] ?? ''),
-            'brevo_list_id_en' => sanitize_text_field($_POST['brevo_list_id_en'] ?? ''),
-            'gplaces_api_key' => sanitize_text_field($_POST['gplaces_api_key'] ?? ''),
+            'meta_access_token' => sanitize_text_field(isset($_POST['meta_access_token']) ? wp_unslash($_POST['meta_access_token']) : ''),
+            'meta_dataset_id' => sanitize_text_field(isset($_POST['meta_dataset_id']) ? wp_unslash($_POST['meta_dataset_id']) : ''),
+            'brevo_api_key' => sanitize_text_field(isset($_POST['brevo_api_key']) ? wp_unslash($_POST['brevo_api_key']) : ''),
+            'brevo_list_id_it' => sanitize_text_field(isset($_POST['brevo_list_id_it']) ? wp_unslash($_POST['brevo_list_id_it']) : ''),
+            'brevo_list_id_en' => sanitize_text_field(isset($_POST['brevo_list_id_en']) ? wp_unslash($_POST['brevo_list_id_en']) : ''),
+            'gplaces_api_key' => sanitize_text_field(isset($_POST['gplaces_api_key']) ? wp_unslash($_POST['gplaces_api_key']) : ''),
             'consent_mode_enabled' => !empty($_POST['consent_mode_enabled']),
-            'consent_cookie_name' => sanitize_text_field($_POST['consent_cookie_name'] ?? 'marketing_consent'),
-            'consent_js_function' => sanitize_text_field($_POST['consent_js_function'] ?? ''),
+            'consent_cookie_name' => sanitize_text_field(isset($_POST['consent_cookie_name']) ? wp_unslash($_POST['consent_cookie_name']) : 'marketing_consent'),
+            'consent_js_function' => sanitize_text_field(isset($_POST['consent_js_function']) ? wp_unslash($_POST['consent_js_function']) : ''),
         ];
 
         update_option('fp_esperienze_integrations', $integrations);
@@ -240,9 +240,9 @@ class SetupWizard {
      */
     private function processBrandSettings(): void {
         $settings = [
-            'fp_esperienze_gift_pdf_logo' => esc_url_raw($_POST['pdf_logo'] ?? ''),
-            'fp_esperienze_gift_pdf_brand_color' => sanitize_hex_color($_POST['brand_color'] ?? '#ff6b35'),
-            'fp_esperienze_gift_terms' => sanitize_textarea_field($_POST['voucher_terms'] ?? ''),
+            'fp_esperienze_gift_pdf_logo' => esc_url_raw(isset($_POST['pdf_logo']) ? wp_unslash($_POST['pdf_logo']) : ''),
+            'fp_esperienze_gift_pdf_brand_color' => sanitize_hex_color(isset($_POST['brand_color']) ? wp_unslash($_POST['brand_color']) : '#ff6b35'),
+            'fp_esperienze_gift_terms' => sanitize_textarea_field(isset($_POST['voucher_terms']) ? wp_unslash($_POST['voucher_terms']) : ''),
         ];
 
         foreach ($settings as $key => $value) {
