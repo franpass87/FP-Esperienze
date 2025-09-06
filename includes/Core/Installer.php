@@ -69,10 +69,51 @@ class Installer {
     }
 
     /**
-     * Plugin uninstall - remove capabilities
+     * Plugin uninstall - remove capabilities and plugin data
      */
     public static function uninstall(): void {
         CapabilityManager::removeCapabilitiesFromRoles();
+
+        if (defined('FP_ESPERIENZE_PRESERVE_DATA') && FP_ESPERIENZE_PRESERVE_DATA) {
+            return;
+        }
+
+        global $wpdb;
+
+        $tables = [
+            $wpdb->prefix . 'fp_meeting_points',
+            $wpdb->prefix . 'fp_extras',
+            $wpdb->prefix . 'fp_product_extras',
+            $wpdb->prefix . 'fp_schedules',
+            $wpdb->prefix . 'fp_overrides',
+            $wpdb->prefix . 'fp_bookings',
+            $wpdb->prefix . 'fp_exp_vouchers',
+            $wpdb->prefix . 'fp_vouchers',
+            $wpdb->prefix . 'fp_dynamic_pricing_rules',
+            $wpdb->prefix . 'fp_exp_holds',
+        ];
+
+        foreach ($tables as $table) {
+            $wpdb->query("DROP TABLE IF EXISTS $table");
+        }
+
+        $option_like = $wpdb->esc_like('fp_esperienze_') . '%';
+        $wpdb->query(
+            $wpdb->prepare(
+                "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
+                $option_like
+            )
+        );
+
+        $transient_like = $wpdb->esc_like('_transient_fp_esperienze_') . '%';
+        $timeout_like   = $wpdb->esc_like('_transient_timeout_fp_esperienze_') . '%';
+        $wpdb->query(
+            $wpdb->prepare(
+                "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s OR option_name LIKE %s",
+                $transient_like,
+                $timeout_like
+            )
+        );
     }
 
     /**
