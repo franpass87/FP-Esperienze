@@ -710,8 +710,19 @@ class MobileAPIManager {
     public function sendPushNotification(WP_REST_Request $request): WP_REST_Response|WP_Error {
         $recipient_id = intval($request->get_param('recipient_id'));
         $title = sanitize_text_field($request->get_param('title'));
-        $message = sanitize_text_field($request->get_param('message'));
-        $data = $request->get_param('data') ?: [];
+        $message = sanitize_text_field( $request->get_param( 'message' ) );
+        $data    = array_map( 'sanitize_text_field', (array) $request->get_param( 'data' ) );
+
+        $allowed_keys = [ 'url', 'booking_id' ];
+        $data         = array_intersect_key( $data, array_flip( $allowed_keys ) );
+
+        if ( isset( $data['url'] ) ) {
+            $data['url'] = esc_url_raw( $data['url'] );
+        }
+
+        if ( isset( $data['booking_id'] ) ) {
+            $data['booking_id'] = absint( $data['booking_id'] );
+        }
 
         if (empty($recipient_id) || empty($title) || empty($message)) {
             return new WP_Error('missing_params', __('Recipient, title and message are required', 'fp-esperienze'), ['status' => 400]);
@@ -1232,17 +1243,34 @@ class MobileAPIManager {
         }
     }
 
+    /**
+     * Send a push notification to a user.
+     *
+     * @param int    $user_id User ID.
+     * @param string $title   Notification title.
+     * @param string $message Notification message.
+     * @param array  $data    Optional additional data.
+     *
+     * @return bool Whether the push notification was sent.
+     */
     private function sendPushToUser(int $user_id, string $title, string $message, array $data = []): bool {
-        $push_token = get_user_meta($user_id, '_push_notification_token', true);
-        $platform = get_user_meta($user_id, '_push_platform', true);
+        $push_token = get_user_meta( $user_id, '_push_notification_token', true );
+        $platform   = get_user_meta( $user_id, '_push_platform', true );
 
-        if (!$push_token) {
+        if ( ! $push_token ) {
             return false;
         }
 
-        // Placeholder for actual push notification service integration
+        $payload = [
+            'title'   => $title,
+            'message' => $message,
+            'data'    => $data,
+        ];
+
+        // Placeholder for actual push notification service integration.
         // Would integrate with Firebase Cloud Messaging, Apple Push Notification Service, etc.
-        
+        // $platform and $payload would be used here.
+
         return true;
     }
 
