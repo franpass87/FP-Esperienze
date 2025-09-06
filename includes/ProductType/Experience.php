@@ -1535,12 +1535,12 @@ class Experience {
      */
     public function saveProductData(int $post_id): void {
         // Check nonce
-        if (!isset($_POST['woocommerce_meta_nonce']) || !wp_verify_nonce($_POST['woocommerce_meta_nonce'], 'woocommerce_save_data')) {
+        if (!isset($_POST['woocommerce_meta_nonce']) || !wp_verify_nonce(wp_unslash($_POST['woocommerce_meta_nonce']), 'woocommerce_save_data')) {
             return;
         }
         
         // Only proceed if this is an experience product
-        $product_type = sanitize_text_field($_POST['product-type'] ?? '');
+        $product_type = sanitize_text_field(isset($_POST['product-type']) ? wp_unslash($_POST['product-type']) : '');
         if ($product_type !== 'experience') {
             return;
         }
@@ -1572,7 +1572,7 @@ class Experience {
 
         foreach ($fields as $field) {
             if (isset($_POST[$field])) {
-                update_post_meta($post_id, $field, sanitize_text_field($_POST[$field]));
+                update_post_meta($post_id, $field, sanitize_text_field(wp_unslash($_POST[$field])));
             }
         }
         
@@ -1584,7 +1584,7 @@ class Experience {
         
         foreach ($textarea_fields as $field) {
             if (isset($_POST[$field])) {
-                update_post_meta($post_id, $field, sanitize_textarea_field($_POST[$field]));
+                update_post_meta($post_id, $field, sanitize_textarea_field(wp_unslash($_POST[$field])));
             }
         }
         
@@ -1608,7 +1608,7 @@ class Experience {
      */
     public function ensureProductType(int $product_id): void {
         // Only proceed if we're saving an experience product
-        $product_type = sanitize_text_field($_POST['product-type'] ?? '');
+        $product_type = sanitize_text_field(isset($_POST['product-type']) ? wp_unslash($_POST['product-type']) : '');
         if ($product_type !== 'experience') {
             return;
         }
