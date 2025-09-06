@@ -146,10 +146,16 @@ class MetaCAPIManager {
             'access_token' => $this->settings['meta_access_token'],
         ];
         
+        // Validate dataset ID
+        if (!ctype_digit((string) $this->settings['meta_dataset_id'])) {
+            error_log('FP Esperienze Meta CAPI Error: Invalid dataset ID');
+            return false;
+        }
+
         // Send to Meta Conversions API
         $endpoint = self::API_ENDPOINT . $this->settings['meta_dataset_id'] . '/events';
-        
-        $response = wp_remote_post($endpoint, [
+
+        $response = wp_safe_remote_post($endpoint, [
             'headers' => [
                 'Content-Type' => 'application/json',
             ],
@@ -213,9 +219,17 @@ class MetaCAPIManager {
             'access_token' => $this->settings['meta_access_token'],
         ];
         
+        if (!ctype_digit((string) $this->settings['meta_dataset_id'])) {
+            error_log('FP Esperienze Meta CAPI Error: Invalid dataset ID');
+            return [
+                'success' => false,
+                'message' => __('Invalid Meta dataset ID.', 'fp-esperienze'),
+            ];
+        }
+
         $endpoint = self::API_ENDPOINT . $this->settings['meta_dataset_id'] . '/events';
-        
-        $response = wp_remote_post($endpoint, [
+
+        $response = wp_safe_remote_post($endpoint, [
             'headers' => [
                 'Content-Type' => 'application/json',
             ],
