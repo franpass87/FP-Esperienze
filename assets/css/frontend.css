@@ -809,8 +809,12 @@
     border-radius: 12px;
     padding: 24px;
     position: sticky;
-    top: 20px;
+    top: var(--fp-banner-offset, 20px);
     box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+}
+
+body.admin-bar .fp-booking-widget {
+    top: calc(32px + var(--fp-banner-offset, 20px));
 }
 
 .fp-booking-header {

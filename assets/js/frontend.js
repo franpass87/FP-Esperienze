@@ -5,6 +5,10 @@
 (function($) {
     'use strict';
 
+    if (typeof fp_esperienze_params !== 'undefined' && typeof fp_esperienze_params.banner_offset !== 'undefined') {
+        document.documentElement.style.setProperty('--fp-banner-offset', fp_esperienze_params.banner_offset + 'px');
+    }
+
     $(document).ready(function() {
         // Initialize frontend functionality
         FPEsperienze.init();
