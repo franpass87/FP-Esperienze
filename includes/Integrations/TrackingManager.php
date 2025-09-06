@@ -431,17 +431,17 @@ class TrackingManager {
         }
         
         $utm_params = [
-            'utm_source' => sanitize_text_field($_GET['utm_source'] ?? ''),
-            'utm_medium' => sanitize_text_field($_GET['utm_medium'] ?? ''),
-            'utm_campaign' => sanitize_text_field($_GET['utm_campaign'] ?? ''),
-            'utm_term' => sanitize_text_field($_GET['utm_term'] ?? ''),
-            'utm_content' => sanitize_text_field($_GET['utm_content'] ?? ''),
-            'gclid' => sanitize_text_field($_GET['gclid'] ?? ''), // Google Ads click ID
-            'fbclid' => sanitize_text_field($_GET['fbclid'] ?? ''), // Facebook click ID
+            'utm_source' => sanitize_text_field(wp_unslash($_GET['utm_source'] ?? '')),
+            'utm_medium' => sanitize_text_field(wp_unslash($_GET['utm_medium'] ?? '')),
+            'utm_campaign' => sanitize_text_field(wp_unslash($_GET['utm_campaign'] ?? '')),
+            'utm_term' => sanitize_text_field(wp_unslash($_GET['utm_term'] ?? '')),
+            'utm_content' => sanitize_text_field(wp_unslash($_GET['utm_content'] ?? '')),
+            'gclid' => sanitize_text_field(wp_unslash($_GET['gclid'] ?? '')), // Google Ads click ID
+            'fbclid' => sanitize_text_field(wp_unslash($_GET['fbclid'] ?? '')), // Facebook click ID
         ];
-        
-        // Remove empty parameters
-        $utm_params = array_filter($utm_params);
+
+        // Remove empty parameters but keep values like '0'
+        $utm_params = array_filter($utm_params, 'strlen');
         
         if (!empty($utm_params)) {
             WC()->session->set('utm_parameters', $utm_params);
