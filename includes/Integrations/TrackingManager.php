@@ -128,6 +128,8 @@ class TrackingManager {
                 null,
                 true
             );
+            wp_script_add_data('google-analytics-gtag', 'async', true);
+            wp_script_add_data('google-analytics-gtag', 'defer', true);
             
             // Add inline script for GA4 initialization
             $ga4_init_script = "
@@ -151,6 +153,8 @@ class TrackingManager {
                     null,
                     true
                 );
+                wp_script_add_data('google-analytics-gtag', 'async', true);
+                wp_script_add_data('google-analytics-gtag', 'defer', true);
                 
                 $gads_init_script = "
                     window.dataLayer = window.dataLayer || [];
