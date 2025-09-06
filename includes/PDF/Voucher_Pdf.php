@@ -55,23 +55,33 @@ class Voucher_Pdf {
         
         // Save PDF file
         $upload_dir = wp_upload_dir();
-        $voucher_dir = $upload_dir['basedir'] . '/fp-esperienze/voucher/';
-        
+        $base_dir   = trailingslashit(wp_normalize_path($upload_dir['basedir']));
+        $voucher_dir = $base_dir . 'fp-esperienze/voucher/';
+
         if (!file_exists($voucher_dir)) {
             wp_mkdir_p($voucher_dir);
             // Create .htaccess for security
             self::createSecurityHtaccess($voucher_dir);
         }
-        
-        $filename = 'voucher-' . $voucher_data['code'] . '-' . time() . '.pdf';
-        $file_path = $voucher_dir . $filename;
-        
+
+        $sanitized_code = sanitize_file_name($voucher_data['code']);
+        if ($sanitized_code === '') {
+            throw new \Exception('Invalid voucher code.');
+        }
+
+        $filename  = 'voucher-' . $sanitized_code . '-' . time() . '.pdf';
+        $file_path = wp_normalize_path($voucher_dir . $filename);
+
+        if (strpos($file_path, $base_dir) !== 0) {
+            throw new \Exception('Invalid file path for PDF voucher.');
+        }
+
         $result = file_put_contents($file_path, $dompdf->output());
-        
+
         if ($result === false) {
             throw new \Exception('Failed to save PDF voucher to: ' . $file_path);
         }
-        
+
         return $file_path;
     }
     
@@ -90,22 +100,32 @@ class Voucher_Pdf {
         
         // Save HTML file
         $upload_dir = wp_upload_dir();
-        $voucher_dir = $upload_dir['basedir'] . '/fp-esperienze/voucher/';
-        
+        $base_dir   = trailingslashit(wp_normalize_path($upload_dir['basedir']));
+        $voucher_dir = $base_dir . 'fp-esperienze/voucher/';
+
         if (!file_exists($voucher_dir)) {
             wp_mkdir_p($voucher_dir);
             self::createSecurityHtaccess($voucher_dir);
         }
-        
-        $filename = 'voucher-' . $voucher_data['code'] . '-' . time() . '.html';
-        $file_path = $voucher_dir . $filename;
-        
+
+        $sanitized_code = sanitize_file_name($voucher_data['code']);
+        if ($sanitized_code === '') {
+            throw new \Exception('Invalid voucher code.');
+        }
+
+        $filename  = 'voucher-' . $sanitized_code . '-' . time() . '.html';
+        $file_path = wp_normalize_path($voucher_dir . $filename);
+
+        if (strpos($file_path, $base_dir) !== 0) {
+            throw new \Exception('Invalid file path for HTML voucher.');
+        }
+
         $result = file_put_contents($file_path, $html);
-        
+
         if ($result === false) {
             throw new \Exception('Failed to save HTML voucher to: ' . $file_path);
         }
-        
+
         return $file_path;
     }
     
