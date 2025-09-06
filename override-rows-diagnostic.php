@@ -1,20 +1,15 @@
 <?php
 /**
  * Diagnostic Script: Override Rows Fix Verification
- * 
+ *
  * This script helps verify that the override rows fix is working correctly.
  * Usage: Load this in WordPress admin to check for potential issues.
  */
 
-// Prevent direct access
-if (!defined('ABSPATH')) {
-    // For standalone testing, define basic constants
-    if (!defined('WP_DEBUG')) {
-        define('WP_DEBUG', true);
-    }
-    if (!defined('WP_DEBUG_LOG')) {
-        define('WP_DEBUG_LOG', true);
-    }
+defined( 'ABSPATH' ) || exit;
+
+if ( ! current_user_can( 'manage_options' ) ) {
+    return;
 }
 
 class FPOverrideRowsDiagnostic {
@@ -243,14 +238,6 @@ class FPOverrideRowsDiagnostic {
         }
     }
 }
-
-// Run the diagnostic if accessed directly
-if (basename($_SERVER['SCRIPT_NAME']) === 'override-rows-diagnostic.php') {
-    echo "<!DOCTYPE html><html><head><title>Override Rows Fix Diagnostic</title></head><body>";
-    FPOverrideRowsDiagnostic::run();
-    echo "</body></html>";
-}
-
 // WordPress action hook for admin access
 if (function_exists('add_action')) {
     add_action('wp_loaded', function() {

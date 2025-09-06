@@ -1,14 +1,15 @@
 <?php
 /**
  * Security Test Script for FP Esperienze
- * 
+ *
  * Run this script to verify security implementation
  * Usage: wp eval-file security-test.php
  */
 
-if (!defined('ABSPATH')) {
-    echo "This script must be run within WordPress context.\n";
-    exit(1);
+defined( 'ABSPATH' ) || exit;
+
+if ( ! current_user_can( 'manage_options' ) ) {
+    return;
 }
 
 echo "=== FP Esperienze Security Test ===\n\n";

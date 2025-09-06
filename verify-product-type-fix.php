@@ -1,17 +1,17 @@
 <?php
 /**
  * Verification test for the Experience Product Type Fix
- * 
+ *
  * This simulates the WooCommerce product type registration to verify
  * that 'experience' is now properly recognized as a valid product type.
- * 
+ *
  * Run this in a WordPress environment with WooCommerce active to test.
  */
 
-// Ensure this is run in WordPress context
-if (!defined('ABSPATH')) {
-    echo "This test must be run within WordPress environment.\n";
-    exit;
+defined( 'ABSPATH' ) || exit;
+
+if ( ! current_user_can( 'manage_options' ) ) {
+    return;
 }
 
 echo "<h1>Experience Product Type Fix - Verification Test</h1>\n";
