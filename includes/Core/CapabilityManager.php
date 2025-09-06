@@ -63,12 +63,57 @@ class CapabilityManager {
     }
 
     /**
+     * Map logical capability keys to actual WordPress capabilities.
+     *
+     * @param string $cap Logical capability name.
+     * @return string Mapped WordPress capability.
+     */
+    protected static function mapCapability(string $cap): string {
+        $capabilities = [
+            'view_reports'       => self::MANAGE_FP_ESPERIENZE,
+            'manage_settings'    => self::MANAGE_FP_ESPERIENZE,
+            'manage_campaigns'   => self::MANAGE_FP_ESPERIENZE,
+            'export_data'        => self::MANAGE_FP_ESPERIENZE,
+            'manage_bookings'    => self::MANAGE_FP_ESPERIENZE,
+            'check_in_customers' => self::MANAGE_FP_ESPERIENZE,
+        ];
+
+        return $capabilities[$cap] ?? $cap;
+    }
+
+    /**
+     * Check if the current user has a given logical capability.
+     *
+     * @param string $cap Logical capability name.
+     * @return bool
+     */
+    public static function currentUserCan(string $cap): bool {
+        return current_user_can(self::mapCapability($cap));
+    }
+
+    /**
+     * Check if a user has a given logical capability.
+     *
+     * @param int    $user_id User ID.
+     * @param string $cap     Logical capability name.
+     * @return bool
+     */
+    public static function userCan(int $user_id, string $cap): bool {
+        $user = get_user_by('id', $user_id);
+        if (!$user) {
+            return false;
+        }
+
+        return user_can($user, self::mapCapability($cap));
+    }
+
+    /**
      * Check if current user can manage FP Esperienze
      *
      * @return bool
      */
     public static function canManageFPEsperienze(): bool {
-        return current_user_can(self::MANAGE_FP_ESPERIENZE);
+        return self::currentUserCan(self::MANAGE_FP_ESPERIENZE);
     }
 
     /**
