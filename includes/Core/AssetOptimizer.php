@@ -160,18 +160,18 @@ class AssetOptimizer {
         
         // Simple CSS minification
         $minified_css = self::minifyCSSContent($combined_css);
-        
+
         // Add header comment
         $header = "/* FP Esperienze - Minified CSS - Generated: " . date('Y-m-d H:i:s') . " */\n";
         $minified_css = $header . $minified_css;
-        
-        $result = file_put_contents($output_path, $minified_css);
-        
-        if ($result !== false && defined('WP_DEBUG') && WP_DEBUG) {
+
+        $result = self::writeFile($output_path, $minified_css);
+
+        if ($result && defined('WP_DEBUG') && WP_DEBUG) {
             error_log("FP Assets: Generated minified CSS: " . basename($output_path));
         }
-        
-        return $result !== false;
+
+        return $result;
     }
     
     /**
@@ -196,18 +196,58 @@ class AssetOptimizer {
         
         // Simple JS minification
         $minified_js = self::minifyJSContent($combined_js);
-        
+
         // Add header comment
         $header = "/* FP Esperienze - Minified JS - Generated: " . date('Y-m-d H:i:s') . " */\n";
         $minified_js = $header . $minified_js;
-        
-        $result = file_put_contents($output_path, $minified_js);
-        
-        if ($result !== false && defined('WP_DEBUG') && WP_DEBUG) {
+
+        $result = self::writeFile($output_path, $minified_js);
+
+        if ($result && defined('WP_DEBUG') && WP_DEBUG) {
             error_log("FP Assets: Generated minified JS: " . basename($output_path));
         }
-        
-        return $result !== false;
+
+        return $result;
+    }
+
+    /**
+     * Write file content using the most compatible method available
+     *
+     * @param string $output_path Output path
+     * @param string $content File content
+     * @return bool
+     */
+    private static function writeFile(string $output_path, string $content): bool {
+        $directory = dirname($output_path);
+
+        if (!is_writable($directory)) {
+            error_log("FP Assets: Directory not writable: {$directory}");
+            return false;
+        }
+
+        // Try to use WP_Filesystem for better compatibility with non-standard hosting
+        if (!function_exists('WP_Filesystem')) {
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+        }
+
+        if (function_exists('WP_Filesystem')) {
+            global $wp_filesystem;
+            if (WP_Filesystem() && isset($wp_filesystem)) {
+                if ($wp_filesystem->put_contents($output_path, $content, FS_CHMOD_FILE)) {
+                    return true;
+                }
+            }
+        }
+
+        // Fallback to file_put_contents
+        $result = file_put_contents($output_path, $content);
+
+        if ($result === false) {
+            error_log("FP Assets: Failed to write file: {$output_path}");
+            return false;
+        }
+
+        return true;
     }
     
     /**
