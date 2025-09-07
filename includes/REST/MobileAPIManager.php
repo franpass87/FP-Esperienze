@@ -725,15 +725,23 @@ class MobileAPIManager {
 
         // Store push token in array to support multiple devices.
         $tokens = get_user_meta( $user_id, '_push_notification_tokens', true );
+        $expiries = get_user_meta( $user_id, '_push_token_expires_at', true );
 
         if ( ! is_array( $tokens ) ) {
             $tokens = [];
+        }
+
+        if ( ! is_array( $expiries ) ) {
+            $expiries = [];
         }
 
         if ( ! in_array( $token, $tokens, true ) ) {
             $tokens[] = $token;
             update_user_meta( $user_id, '_push_notification_tokens', $tokens );
         }
+
+        $expiries[ $token ] = time() + ( 90 * DAY_IN_SECONDS );
+        update_user_meta( $user_id, '_push_token_expires_at', $expiries );
 
         update_user_meta( $user_id, '_push_platform', $platform );
         update_user_meta( $user_id, '_push_registered_at', current_time( 'mysql' ) );
@@ -1362,10 +1370,15 @@ class MobileAPIManager {
      * @return bool Whether the push notification was sent.
      */
     private function sendPushToUser(int $user_id, string $title, string $message, array $data = []): bool {
-        $tokens = get_user_meta( $user_id, '_push_notification_tokens', true );
+        $tokens   = get_user_meta( $user_id, '_push_notification_tokens', true );
+        $expiries = get_user_meta( $user_id, '_push_token_expires_at', true );
 
         if ( ! is_array( $tokens ) || empty( $tokens ) ) {
             return false;
+        }
+
+        if ( ! is_array( $expiries ) ) {
+            $expiries = [];
         }
 
         $payload = [
@@ -1374,18 +1387,33 @@ class MobileAPIManager {
             'data'    => $data,
         ];
 
-        $sent        = false;
-        $valid_tokens = [];
+        $sent             = false;
+        $valid_tokens     = [];
+        $valid_expiries   = [];
+        $now              = time();
 
         foreach ( $tokens as $token ) {
+            $expiry = isset( $expiries[ $token ] ) ? (int) $expiries[ $token ] : 0;
+
+            if ( $expiry <= $now ) {
+                continue;
+            }
+
             if ( $this->sendPushPayload( $token, $payload ) ) {
-                $sent          = true;
-                $valid_tokens[] = $token;
+                $sent               = true;
+                $valid_tokens[]     = $token;
+                $valid_expiries[ $token ] = $expiry;
             }
         }
 
         if ( $valid_tokens !== $tokens ) {
-            update_user_meta( $user_id, '_push_notification_tokens', $valid_tokens );
+            if ( ! empty( $valid_tokens ) ) {
+                update_user_meta( $user_id, '_push_notification_tokens', $valid_tokens );
+                update_user_meta( $user_id, '_push_token_expires_at', $valid_expiries );
+            } else {
+                delete_user_meta( $user_id, '_push_notification_tokens' );
+                delete_user_meta( $user_id, '_push_token_expires_at' );
+            }
         }
 
         return $sent;

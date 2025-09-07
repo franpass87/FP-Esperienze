@@ -115,6 +115,10 @@ class Plugin {
         // Initialize holds cleanup cron
         add_action('init', [$this, 'initHoldsCron']);
         add_action('fp_esperienze_cleanup_holds', [$this, 'cleanupExpiredHolds']);
+
+        // Initialize push token cleanup cron
+        add_action('init', [$this, 'initPushTokenCron']);
+        add_action('fp_cleanup_push_tokens', [$this, 'cleanupExpiredPushTokens']);
         
         // Initialize performance monitoring
         if (defined('WP_DEBUG') && WP_DEBUG) {
@@ -550,6 +554,62 @@ class Plugin {
         $count = HoldManager::cleanupExpiredHolds();
         if ($count > 0 && defined('WP_DEBUG') && WP_DEBUG) {
             error_log("FP Esperienze: Cleaned up {$count} expired holds");
+        }
+    }
+
+    /**
+     * Initialize push token cleanup cron
+     */
+    public function initPushTokenCron(): void {
+        if (!wp_next_scheduled('fp_cleanup_push_tokens')) {
+            wp_schedule_event(time(), 'daily', 'fp_cleanup_push_tokens');
+        }
+    }
+
+    /**
+     * Cleanup expired push notification tokens
+     */
+    public function cleanupExpiredPushTokens(): void {
+        $users = get_users([
+            'meta_key' => '_push_notification_tokens',
+            'fields'   => 'ID',
+        ]);
+
+        $now = time();
+
+        foreach ($users as $user_id) {
+            $tokens   = get_user_meta($user_id, '_push_notification_tokens', true);
+            $expiries = get_user_meta($user_id, '_push_token_expires_at', true);
+
+            if (!is_array($tokens) || empty($tokens)) {
+                continue;
+            }
+
+            if (!is_array($expiries)) {
+                $expiries = [];
+            }
+
+            $valid_tokens   = [];
+            $valid_expiries = [];
+
+            foreach ($tokens as $token) {
+                $expiry = isset($expiries[$token]) ? (int) $expiries[$token] : 0;
+
+                if ($expiry > $now) {
+                    $valid_tokens[]           = $token;
+                    $valid_expiries[$token] = $expiry;
+                }
+            }
+
+            if ($valid_tokens !== $tokens) {
+                if (!empty($valid_tokens)) {
+                    update_user_meta($user_id, '_push_notification_tokens', $valid_tokens);
+                    update_user_meta($user_id, '_push_token_expires_at', $valid_expiries);
+                } else {
+                    delete_user_meta($user_id, '_push_notification_tokens');
+                    delete_user_meta($user_id, '_push_token_expires_at');
+                }
+            }
         }
     }
     
