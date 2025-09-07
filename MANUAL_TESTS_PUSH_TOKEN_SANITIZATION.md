@@ -16,6 +16,6 @@
    - `platform` set to `ios`
    - Authorization header set to `Bearer YOUR_AUTH_TOKEN`
 4. Confirm the response is `{"success": true, "message": "Push token registered successfully"}`.
-5. Verify the token is stored in user meta (`_push_notification_token`).
+5. Verify the token is stored in user meta (`_push_notification_tokens`).
 6. Repeat steps 2-5 using an Android device and `platform` set to `android`.
 7. Optionally send a token containing disallowed characters and confirm they are stripped in storage.

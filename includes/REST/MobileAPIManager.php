@@ -723,8 +723,18 @@ class MobileAPIManager {
             return new WP_REST_Response( [ 'error' => 'Token is required' ], 400 );
         }
 
-        // Store push token.
-        update_user_meta( $user_id, '_push_notification_token', $token );
+        // Store push token in array to support multiple devices.
+        $tokens = get_user_meta( $user_id, '_push_notification_tokens', true );
+
+        if ( ! is_array( $tokens ) ) {
+            $tokens = [];
+        }
+
+        if ( ! in_array( $token, $tokens, true ) ) {
+            $tokens[] = $token;
+            update_user_meta( $user_id, '_push_notification_tokens', $tokens );
+        }
+
         update_user_meta( $user_id, '_push_platform', $platform );
         update_user_meta( $user_id, '_push_registered_at', current_time( 'mysql' ) );
 
@@ -1352,10 +1362,9 @@ class MobileAPIManager {
      * @return bool Whether the push notification was sent.
      */
     private function sendPushToUser(int $user_id, string $title, string $message, array $data = []): bool {
-        $push_token = get_user_meta( $user_id, '_push_notification_token', true );
-        $platform   = get_user_meta( $user_id, '_push_platform', true );
+        $tokens = get_user_meta( $user_id, '_push_notification_tokens', true );
 
-        if ( ! $push_token ) {
+        if ( ! is_array( $tokens ) || empty( $tokens ) ) {
             return false;
         }
 
@@ -1365,9 +1374,34 @@ class MobileAPIManager {
             'data'    => $data,
         ];
 
-        // Placeholder for actual push notification service integration.
+        $sent        = false;
+        $valid_tokens = [];
+
+        foreach ( $tokens as $token ) {
+            if ( $this->sendPushPayload( $token, $payload ) ) {
+                $sent          = true;
+                $valid_tokens[] = $token;
+            }
+        }
+
+        if ( $valid_tokens !== $tokens ) {
+            update_user_meta( $user_id, '_push_notification_tokens', $valid_tokens );
+        }
+
+        return $sent;
+    }
+
+    /**
+     * Placeholder for actual push notification service integration.
+     *
+     * @param string $token   Device token.
+     * @param array  $payload Notification payload.
+     *
+     * @return bool Whether the notification was sent successfully.
+     */
+    private function sendPushPayload( string $token, array $payload ): bool {
         // Would integrate with Firebase Cloud Messaging, Apple Push Notification Service, etc.
-        // $platform and $payload would be used here.
+        // $token and $payload would be used here.
 
         return true;
     }
