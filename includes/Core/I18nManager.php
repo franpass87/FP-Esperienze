@@ -312,14 +312,30 @@ class I18nManager {
             return $meeting_point;
         }
 
+        $current_lang = self::getCurrentLanguage();
+
         // Get translated strings
         $translated = clone $meeting_point;
-        
+
         $translated->name = icl_t(
             'fp-esperienze',
             'meeting_point_name_' . $meeting_point->id,
             $meeting_point->name
         );
+
+        do_action(
+            'wpml_register_single_string',
+            'fp-esperienze',
+            'meeting_point_name_' . $meeting_point->id,
+            $meeting_point->name
+        );
+
+        if ($current_lang && $translated->name === $meeting_point->name) {
+            $translated->name = AutoTranslator::translate(
+                $meeting_point->name,
+                $current_lang
+            );
+        }
 
         $translated->address = icl_t(
             'fp-esperienze',
@@ -327,12 +343,40 @@ class I18nManager {
             $meeting_point->address
         );
 
+        do_action(
+            'wpml_register_single_string',
+            'fp-esperienze',
+            'meeting_point_address_' . $meeting_point->id,
+            $meeting_point->address
+        );
+
+        if ($current_lang && $translated->address === $meeting_point->address) {
+            $translated->address = AutoTranslator::translate(
+                $meeting_point->address,
+                $current_lang
+            );
+        }
+
         if (!empty($meeting_point->note)) {
             $translated->note = icl_t(
                 'fp-esperienze',
                 'meeting_point_note_' . $meeting_point->id,
                 $meeting_point->note
             );
+
+            do_action(
+                'wpml_register_single_string',
+                'fp-esperienze',
+                'meeting_point_note_' . $meeting_point->id,
+                $meeting_point->note
+            );
+
+            if ($current_lang && $translated->note === $meeting_point->note) {
+                $translated->note = AutoTranslator::translate(
+                    $meeting_point->note,
+                    $current_lang
+                );
+            }
         }
 
         return $translated;
