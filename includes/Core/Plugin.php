@@ -350,27 +350,51 @@ class Plugin {
             FP_ESPERIENZE_VERSION
         );
 
-        // Enqueue JS (minified if available)
-        $admin_js_url = AssetOptimizer::getMinifiedAssetUrl('js', 'admin');
-        if (!$admin_js_url) {
-            $admin_js_url = FP_ESPERIENZE_PLUGIN_URL . 'assets/js/admin.js';
+        // Enqueue modular JS system
+        $use_modular = apply_filters('fp_esperienze_use_modular_admin', true);
+        
+        if ($use_modular && !AssetOptimizer::getMinifiedAssetUrl('js', 'admin')) {
+            // Load modular system: first load modules, then main controller
+            $this->enqueueAdminModules();
+            
+            wp_enqueue_script(
+                'fp-esperienze-admin-modular',
+                FP_ESPERIENZE_PLUGIN_URL . 'assets/js/admin-modular.js',
+                ['jquery', 'fp-esperienze-modules'],
+                FP_ESPERIENZE_VERSION,
+                true
+            );
+            
+            // Localize the modular script
+            wp_localize_script('fp-esperienze-admin-modular', 'fp_esperienze_admin', [
+                'ajax_url' => admin_url('admin-ajax.php'),
+                'rest_url' => get_rest_url(),
+                'nonce' => wp_create_nonce('fp_esperienze_admin_nonce'),
+                'banner_offset' => apply_filters('fp_esperienze_banner_offset', 20),
+            ]);
+        } else {
+            // Fallback to monolithic or minified version
+            $admin_js_url = AssetOptimizer::getMinifiedAssetUrl('js', 'admin');
+            if (!$admin_js_url) {
+                $admin_js_url = FP_ESPERIENZE_PLUGIN_URL . 'assets/js/admin.js';
+            }
+            
+            wp_enqueue_script(
+                'fp-esperienze-admin',
+                $admin_js_url,
+                ['jquery'],
+                FP_ESPERIENZE_VERSION,
+                true
+            );
+            
+            // Localize script with admin data
+            wp_localize_script('fp-esperienze-admin', 'fp_esperienze_admin', [
+                'ajax_url' => admin_url('admin-ajax.php'),
+                'rest_url' => get_rest_url(),
+                'nonce' => wp_create_nonce('fp_esperienze_admin_nonce'),
+                'banner_offset' => apply_filters('fp_esperienze_banner_offset', 20),
+            ]);
         }
-        
-        wp_enqueue_script(
-            'fp-esperienze-admin',
-            $admin_js_url,
-            ['jquery'],
-            FP_ESPERIENZE_VERSION,
-            true
-        );
-        
-        // Localize script with admin data
-        wp_localize_script('fp-esperienze-admin', 'fp_esperienze_admin', [
-            'ajax_url' => admin_url('admin-ajax.php'),
-            'rest_url' => get_rest_url(),
-            'nonce' => wp_create_nonce('fp_esperienze_admin_nonce'),
-            'banner_offset' => apply_filters('fp_esperienze_banner_offset', 20),
-        ]);
 
         // Enqueue reports script only on reports page
         $current_screen = get_current_screen();
@@ -391,6 +415,43 @@ class Plugin {
                 'ajax_url' => admin_url('admin-ajax.php'),
             ]);
         }
+    }
+
+    /**
+     * Enqueue individual admin modules
+     */
+    private function enqueueAdminModules(): void {
+        $modules = [
+            'error-handler' => 'error-handler.js',
+            'performance' => 'performance.js', 
+            'accessibility' => 'accessibility.js',
+            'schedule-builder' => 'schedule-builder.js'
+        ];
+
+        $module_handles = [];
+        
+        foreach ($modules as $handle => $filename) {
+            $module_handle = 'fp-esperienze-module-' . $handle;
+            
+            wp_enqueue_script(
+                $module_handle,
+                FP_ESPERIENZE_PLUGIN_URL . 'assets/js/modules/' . $filename,
+                ['jquery'],
+                FP_ESPERIENZE_VERSION,
+                true
+            );
+            
+            $module_handles[] = $module_handle;
+        }
+        
+        // Register combined modules handle for dependency management
+        wp_register_script(
+            'fp-esperienze-modules',
+            '', // No source file - virtual handle
+            $module_handles,
+            FP_ESPERIENZE_VERSION,
+            true
+        );
     }
 
     /**
