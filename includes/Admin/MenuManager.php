@@ -22,6 +22,7 @@ use FP\Esperienze\Core\WebhookManager;
 use FP\Esperienze\Core\Log;
 use FP\Esperienze\Admin\DependencyChecker;
 use FP\Esperienze\Admin\Settings\AutoTranslateSettings;
+use FP\Esperienze\Admin\Settings\TranslationHelp;
 
 defined('ABSPATH') || exit;
 
@@ -44,6 +45,7 @@ class MenuManager {
         new ReportsManager();
         new SEOSettings();
         new AutoTranslateSettings();
+        new TranslationHelp();
         
         // Handle setup wizard redirect
         add_action('admin_init', [$this, 'handleSetupWizardRedirect']);
