@@ -13,6 +13,11 @@ defined('ABSPATH') || exit;
  * Dynamic pricing manager class for CRUD operations and price calculations
  */
 class DynamicPricingManager {
+
+    /**
+     * Cache group for dynamic pricing rules.
+     */
+    private const CACHE_GROUP = 'fp_dynamic_pricing_rules';
     
     /**
      * Get all pricing rules for a product
@@ -23,21 +28,30 @@ class DynamicPricingManager {
      */
     public static function getProductRules(int $product_id, bool $active_only = true): array {
         global $wpdb;
-        
-        $table_name = $wpdb->prefix . 'fp_dynamic_pricing_rules';
-        $where_clause = "WHERE product_id = %d";
-        $params = [$product_id];
-        
-        if ($active_only) {
-            $where_clause .= " AND is_active = 1";
+
+        $cache_key = self::getCacheKey($product_id, $active_only);
+        $cached    = wp_cache_get($cache_key, self::CACHE_GROUP);
+        if (false !== $cached) {
+            return $cached;
         }
-        
+
+        $table_name  = $wpdb->prefix . 'fp_dynamic_pricing_rules';
+        $where_clause = 'WHERE product_id = %d';
+        $params       = [$product_id];
+
+        if ($active_only) {
+            $where_clause .= ' AND is_active = 1';
+        }
+
         $results = $wpdb->get_results($wpdb->prepare(
             "SELECT id, product_id, rule_type, priority, conditions, action_type, action_value, start_date, end_date, is_active FROM $table_name $where_clause ORDER BY priority ASC, rule_type ASC",
             ...$params
         ));
-        
-        return $results ?: [];
+
+        $results = $results ?: [];
+        wp_cache_set($cache_key, $results, self::CACHE_GROUP);
+
+        return $results;
     }
     
     /**
@@ -84,8 +98,13 @@ class DynamicPricingManager {
                 ['%d', '%s', '%s', '%d', '%d', '%s', '%s', '%s', '%d', '%d', '%s', '%f', '%f'],
                 ['%d']
             );
-            
-            return $result !== false ? $rule_id : false;
+
+            if (false !== $result) {
+                self::clearCache($rule_data['product_id']);
+                return $rule_id;
+            }
+
+            return false;
         } else {
             // Create new rule
             $result = $wpdb->insert(
@@ -93,8 +112,13 @@ class DynamicPricingManager {
                 $rule_data,
                 ['%d', '%s', '%s', '%d', '%d', '%s', '%s', '%s', '%d', '%d', '%s', '%f', '%f']
             );
-            
-            return $result ? $wpdb->insert_id : false;
+
+            if ($result) {
+                self::clearCache($rule_data['product_id']);
+                return $wpdb->insert_id;
+            }
+
+            return false;
         }
     }
     
@@ -106,15 +130,42 @@ class DynamicPricingManager {
      */
     public static function deleteRule(int $rule_id): bool {
         global $wpdb;
-        
-        $table_name = $wpdb->prefix . 'fp_dynamic_pricing_rules';
-        $result = $wpdb->delete(
+
+        $table_name  = $wpdb->prefix . 'fp_dynamic_pricing_rules';
+        $product_id  = (int) $wpdb->get_var($wpdb->prepare("SELECT product_id FROM $table_name WHERE id = %d", $rule_id));
+        $result      = $wpdb->delete(
             $table_name,
             ['id' => $rule_id],
             ['%d']
         );
-        
+
+        if (false !== $result && $product_id) {
+            self::clearCache($product_id);
+        }
+
         return $result !== false;
+    }
+
+    /**
+     * Generate cache key for product rules.
+     *
+     * @param int  $product_id  Product ID.
+     * @param bool $active_only Whether to return only active rules.
+     * @return string
+     */
+    private static function getCacheKey(int $product_id, bool $active_only): string {
+        return 'product_' . $product_id . ($active_only ? '_active' : '_all');
+    }
+
+    /**
+     * Clear cached rules for a product.
+     *
+     * @param int $product_id Product ID.
+     * @return void
+     */
+    private static function clearCache(int $product_id): void {
+        wp_cache_delete(self::getCacheKey($product_id, true), self::CACHE_GROUP);
+        wp_cache_delete(self::getCacheKey($product_id, false), self::CACHE_GROUP);
     }
     
     /**
