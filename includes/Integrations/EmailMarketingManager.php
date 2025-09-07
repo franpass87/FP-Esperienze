@@ -211,7 +211,7 @@ class EmailMarketingManager {
      */
     public function ajaxTestEmailSystem(): void {
         if (!CapabilityManager::currentUserCan('manage_settings')) {
-            wp_die('Unauthorized', 403);
+            wp_send_json_error(['message' => __('Unauthorized', 'fp-esperienze')], 403);
         }
 
         check_ajax_referer('fp_esperienze_admin', 'nonce');
@@ -238,7 +238,7 @@ class EmailMarketingManager {
      */
     public function ajaxSendCampaign(): void {
         if (!CapabilityManager::currentUserCan('manage_campaigns')) {
-            wp_die('Unauthorized', 403);
+            wp_send_json_error(['message' => __('Unauthorized', 'fp-esperienze')], 403);
         }
 
         check_ajax_referer('fp_esperienze_admin', 'nonce');
@@ -264,7 +264,7 @@ class EmailMarketingManager {
      */
     public function ajaxGetEmailTemplates(): void {
         if (!CapabilityManager::currentUserCan('view_reports')) {
-            wp_die('Unauthorized', 403);
+            wp_send_json_error(['message' => __('Unauthorized', 'fp-esperienze')], 403);
         }
 
         check_ajax_referer('fp_esperienze_admin', 'nonce');
