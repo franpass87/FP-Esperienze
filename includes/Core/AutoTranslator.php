@@ -30,7 +30,8 @@ class AutoTranslator {
             return (string) $cached;
         }
 
-        $endpoint = apply_filters('fp_es_auto_translator_endpoint', 'https://libretranslate.de/translate');
+        $endpoint = get_option('fp_lt_endpoint', 'https://libretranslate.de/translate');
+        $endpoint = apply_filters('fp_es_auto_translator_endpoint', $endpoint);
 
         $body = [
             'q'      => $text,
@@ -66,7 +67,8 @@ class AutoTranslator {
         }
 
         $translated = (string) $data['translatedText'];
-        set_transient($cache_key, $translated, WEEK_IN_SECONDS);
+        $cache_ttl = (int) get_option('fp_lt_cache_ttl', WEEK_IN_SECONDS);
+        set_transient($cache_key, $translated, $cache_ttl);
 
         return $translated;
     }

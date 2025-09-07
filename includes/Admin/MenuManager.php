@@ -21,6 +21,7 @@ use FP\Esperienze\Core\I18nManager;
 use FP\Esperienze\Core\WebhookManager;
 use FP\Esperienze\Core\Log;
 use FP\Esperienze\Admin\DependencyChecker;
+use FP\Esperienze\Admin\Settings\AutoTranslateSettings;
 
 defined('ABSPATH') || exit;
 
@@ -42,6 +43,7 @@ class MenuManager {
         new PerformanceSettings();
         new ReportsManager();
         new SEOSettings();
+        new AutoTranslateSettings();
         
         // Handle setup wizard redirect
         add_action('admin_init', [$this, 'handleSetupWizardRedirect']);
@@ -2648,12 +2650,19 @@ class MenuManager {
                 <a href="<?php echo admin_url('admin.php?page=fp-esperienze-settings&tab=notifications'); ?>" class="nav-tab <?php echo $current_tab === 'notifications' ? 'nav-tab-active' : ''; ?>"><?php _e('Notifications', 'fp-esperienze'); ?></a>
                 <a href="<?php echo admin_url('admin.php?page=fp-esperienze-settings&tab=integrations'); ?>" class="nav-tab <?php echo $current_tab === 'integrations' ? 'nav-tab-active' : ''; ?>"><?php _e('Integrations', 'fp-esperienze'); ?></a>
                 <a href="<?php echo admin_url('admin.php?page=fp-esperienze-settings&tab=webhooks'); ?>" class="nav-tab <?php echo $current_tab === 'webhooks' ? 'nav-tab-active' : ''; ?>"><?php _e('Webhooks', 'fp-esperienze'); ?></a>
+                <a href="<?php echo admin_url('admin.php?page=fp-esperienze-settings&tab=autotranslate'); ?>" class="nav-tab <?php echo $current_tab === 'autotranslate' ? 'nav-tab-active' : ''; ?>"><?php _e('Auto Translate', 'fp-esperienze'); ?></a>
             </h2>
-            
-            <form method="post" action="">
-                <?php wp_nonce_field('fp_settings_nonce', 'fp_settings_nonce'); ?>
-                <input type="hidden" name="settings_tab" value="<?php echo esc_attr($current_tab); ?>" />
-                
+
+            <form method="post" action="<?php echo $current_tab === 'autotranslate' ? 'options.php' : ''; ?>">
+                <?php
+                if ($current_tab === 'autotranslate') {
+                    settings_fields('fp_lt_settings');
+                } else {
+                    wp_nonce_field('fp_settings_nonce', 'fp_settings_nonce');
+                    echo '<input type="hidden" name="settings_tab" value="' . esc_attr($current_tab) . '" />';
+                }
+                ?>
+
                 <?php if ($current_tab === 'general') : ?>
                 <div class="tab-content">
                     <table class="form-table">
@@ -3644,6 +3653,15 @@ class MenuManager {
                     <?php submit_button(__('Save Webhook Settings', 'fp-esperienze')); ?>
                 </div>
                 
+                <?php endif; ?>
+
+                <?php if ($current_tab === 'autotranslate') : ?>
+                <div class="tab-content">
+                    <?php
+                    do_settings_sections('fp_lt_settings');
+                    submit_button(__('Save Settings', 'fp-esperienze'));
+                    ?>
+                </div>
                 <?php endif; ?>
             </form>
         </div>
