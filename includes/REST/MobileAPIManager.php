@@ -681,9 +681,13 @@ class MobileAPIManager {
      * Allowed token characters: letters, numbers, colon (:), dash (-), period (.), underscore (_).
      *
      * @param WP_REST_Request $request Request object.
-     * @return WP_REST_Response Response.
+     * @return WP_REST_Response|WP_Error Response.
      */
-    public function registerPushToken( WP_REST_Request $request ): WP_REST_Response {
+    public function registerPushToken( WP_REST_Request $request ): WP_REST_Response|WP_Error {
+        if (!RateLimiter::checkRateLimit('register_push_token', 30, 60)) {
+            return new WP_Error('rate_limit_exceeded', __('Too many requests', 'fp-esperienze'), ['status' => 429]);
+        }
+
         $user_id = $this->getCurrentMobileUserId( $request );
         // Allow letters, numbers, colon, dash, dot and underscore in token.
         $token    = preg_replace( '/[^A-Za-z0-9:\-._]/', '', wp_unslash( $request->get_param( 'token' ) ) );
@@ -713,6 +717,10 @@ class MobileAPIManager {
      * @return WP_REST_Response|WP_Error Response
      */
     public function sendPushNotification(WP_REST_Request $request): WP_REST_Response|WP_Error {
+        if (!RateLimiter::checkRateLimit('send_push_notification', 30, 60)) {
+            return new WP_Error('rate_limit_exceeded', __('Too many requests', 'fp-esperienze'), ['status' => 429]);
+        }
+
         $recipient_id = intval($request->get_param('recipient_id'));
         $title = sanitize_text_field($request->get_param('title'));
         $message = sanitize_text_field( $request->get_param( 'message' ) );
