@@ -80,6 +80,37 @@ class I18nManager {
     }
 
     /**
+     * Translate a string using automatic translation with caching
+     * and register it for manual review in WPML.
+     *
+     * @param string $original Original text.
+     * @param string $key      Unique string key.
+     *
+     * @return string Translated text.
+     */
+    public static function translateString(string $original, string $key): string {
+        $lang = self::getCurrentLanguage();
+
+        if (empty($lang)) {
+            return $original;
+        }
+
+        $cache_key = 'fp_i18n_' . md5($key . $lang);
+        $cached    = get_transient($cache_key);
+
+        if (false !== $cached) {
+            $translated = (string) $cached;
+        } else {
+            $translated = AutoTranslator::translate($original, $lang);
+            set_transient($cache_key, $translated, WEEK_IN_SECONDS);
+        }
+
+        do_action('wpml_register_single_string', 'fp-esperienze', $key, $original);
+
+        return $translated;
+    }
+
+    /**
      * Get available languages
      *
      * @return array
