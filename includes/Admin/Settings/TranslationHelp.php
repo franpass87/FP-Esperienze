@@ -71,6 +71,9 @@ class TranslationHelp {
                     );
                     ?>
                 </li>
+                <li>
+                    <?php esc_html_e('Choose the target languages for automatic translation in the Auto Translation settings.', 'fp-esperienze'); ?>
+                </li>
             </ol>
             <p>
                 <?php

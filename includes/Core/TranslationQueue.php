@@ -9,6 +9,8 @@
 
 namespace FP\Esperienze\Core;
 
+use FP\Esperienze\Admin\Settings\AutoTranslateSettings;
+
 defined('ABSPATH') || exit;
 
 /**
@@ -183,7 +185,10 @@ class TranslationQueue {
             return;
         }
 
-        $languages = I18nManager::getAvailableLanguages();
+        $available       = I18nManager::getAvailableLanguages();
+        $target_langs    = (array) get_option(AutoTranslateSettings::OPTION_TARGET_LANGUAGES, []);
+        $languages       = !empty($target_langs) ? array_values(array_intersect($available, $target_langs)) : $available;
+
         foreach ($languages as $lang) {
             if (function_exists('wpml_tm_create_post_job')) {
                 wpml_tm_create_post_job($post_id, $lang);

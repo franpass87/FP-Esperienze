@@ -7,6 +7,7 @@
 
 namespace FP\Esperienze\Frontend;
 
+use FP\Esperienze\Admin\Settings\AutoTranslateSettings;
 use FP\Esperienze\Data\Availability;
 use FP\Esperienze\Data\MeetingPointManager;
 use FP\Esperienze\Core\I18nManager;
@@ -411,6 +412,10 @@ class Shortcodes {
         // Use multilingual plugin languages if available
         if (I18nManager::isMultilingualActive()) {
             $available_languages = I18nManager::getAvailableLanguages();
+            $selected            = (array) get_option(AutoTranslateSettings::OPTION_TARGET_LANGUAGES, []);
+            if (!empty($selected)) {
+                $available_languages = array_values(array_intersect($available_languages, $selected));
+            }
             if (!empty($available_languages)) {
                 return $available_languages;
             }
@@ -435,7 +440,12 @@ class Shortcodes {
             $languages = array_merge($languages, $langs);
         }
 
-        return array_unique(array_filter($languages));
+        $languages = array_unique(array_filter($languages));
+        $selected  = (array) get_option(AutoTranslateSettings::OPTION_TARGET_LANGUAGES, []);
+        if (!empty($selected)) {
+            $languages = array_values(array_intersect($languages, $selected));
+        }
+        return $languages;
     }
 
     /**

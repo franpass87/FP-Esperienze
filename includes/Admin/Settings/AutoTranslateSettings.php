@@ -7,6 +7,8 @@
 
 namespace FP\Esperienze\Admin\Settings;
 
+use FP\Esperienze\Core\I18nManager;
+
 defined('ABSPATH') || exit;
 
 /**
@@ -24,6 +26,9 @@ class AutoTranslateSettings {
 
     /** Option name for translation logging */
     public const OPTION_ENABLE_LOG = 'fp_lt_enable_log';
+
+    /** Option name for target languages */
+    public const OPTION_TARGET_LANGUAGES = 'fp_lt_target_languages';
 
     /**
      * Constructor.
@@ -83,6 +88,16 @@ class AutoTranslateSettings {
             ]
         );
 
+        register_setting(
+            'fp_lt_settings',
+            self::OPTION_TARGET_LANGUAGES,
+            [
+                'type'              => 'array',
+                'default'           => [],
+                'sanitize_callback' => [ $this, 'sanitizeLanguages' ],
+            ]
+        );
+
         add_settings_section(
             'fp_lt_section',
             __('Auto Translation', 'fp-esperienze'),
@@ -118,6 +133,14 @@ class AutoTranslateSettings {
             self::OPTION_ENABLE_LOG,
             __('Enable logging', 'fp-esperienze'),
             [$this, 'enableLogField'],
+            'fp_lt_settings',
+            'fp_lt_section'
+        );
+
+        add_settings_field(
+            self::OPTION_TARGET_LANGUAGES,
+            __('Target languages', 'fp-esperienze'),
+            [$this, 'targetLanguagesField'],
             'fp_lt_settings',
             'fp_lt_section'
         );
@@ -173,6 +196,21 @@ class AutoTranslateSettings {
     }
 
     /**
+     * Target languages field callback.
+     */
+    public function targetLanguagesField(): void {
+        $selected   = (array) get_option(self::OPTION_TARGET_LANGUAGES, []);
+        $languages  = I18nManager::getAvailableLanguages();
+
+        echo '<select multiple id="' . esc_attr(self::OPTION_TARGET_LANGUAGES) . '" name="' . esc_attr(self::OPTION_TARGET_LANGUAGES) . '[]" class="regular-text">';
+        foreach ($languages as $lang) {
+            echo '<option value="' . esc_attr($lang) . '" ' . selected(in_array($lang, $selected, true), true, false) . '>' . esc_html($lang) . '</option>';
+        }
+        echo '</select>';
+        echo '<p class="description">' . esc_html__('Languages to translate automatically.', 'fp-esperienze') . '</p>';
+    }
+
+    /**
      * Clear cache button field.
      */
     public function clearCacheField(): void {
@@ -193,6 +231,22 @@ class AutoTranslateSettings {
                 delete_transient($key);
             }
         }
+    }
+
+    /**
+     * Sanitize target languages.
+     *
+     * @param mixed $value Submitted value.
+     */
+    public function sanitizeLanguages($value): array {
+        if (!is_array($value)) {
+            return [];
+        }
+        $available = I18nManager::getAvailableLanguages();
+        $value     = array_map('sanitize_text_field', $value);
+        $value     = array_intersect($value, $available);
+
+        return array_values($value);
     }
 }
 
