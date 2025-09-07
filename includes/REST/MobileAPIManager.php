@@ -53,6 +53,12 @@ class MobileAPIManager {
             'permission_callback' => '__return_true'
         ]);
 
+        register_rest_route(self::API_NAMESPACE, '/mobile/auth/confirm', [
+            'methods' => 'GET',
+            'callback' => [$this, 'mobileConfirm'],
+            'permission_callback' => '__return_true'
+        ]);
+
         register_rest_route(self::API_NAMESPACE, '/mobile/auth/logout', [
             'methods' => 'POST',
             'callback' => [$this, 'mobileLogout'],
@@ -185,6 +191,14 @@ class MobileAPIManager {
         // Clear rate limiting on successful login
         delete_transient($rate_limit_key);
 
+        if (!get_user_meta($user->ID, '_mobile_email_verified', true)) {
+            return new WP_Error(
+                'email_not_verified',
+                __('Please verify your email before logging in.', 'fp-esperienze'),
+                ['status' => 403]
+            );
+        }
+
         // Generate mobile auth token
         $token = $this->generateMobileToken($user->ID);
         
@@ -248,18 +262,59 @@ class MobileAPIManager {
             return $user_id;
         }
 
-        $user = get_user_by('id', $user_id);
-        $token = $this->generateMobileToken($user_id);
+        $verify_token = wp_generate_password(20, false);
+        update_user_meta($user_id, '_mobile_confirm_token', $verify_token);
+        update_user_meta($user_id, '_mobile_email_verified', 0);
+
+        $verification_url = add_query_arg(
+            [
+                'user_id' => $user_id,
+                'token'   => $verify_token,
+            ],
+            rest_url(self::API_NAMESPACE . '/mobile/auth/confirm')
+        );
+
+        $subject = __('Confirm your account', 'fp-esperienze');
+        $message = sprintf(
+            __('Please confirm your account by clicking the following link: %s', 'fp-esperienze'),
+            $verification_url
+        );
+
+        wp_mail($email, $subject, $message);
 
         return new WP_REST_Response([
-            'token' => $token,
-            'user' => [
-                'id' => $user->ID,
-                'username' => $user->user_login,
-                'email' => $user->user_email,
-                'display_name' => $user->display_name
-            ]
+            'success' => true,
+            'message' => __('Registration successful. Please check your email to confirm your account.', 'fp-esperienze')
         ], 201);
+    }
+
+    /**
+     * Email confirmation endpoint
+     *
+     * @param WP_REST_Request $request Request object
+     * @return WP_REST_Response|WP_Error Response
+     */
+    public function mobileConfirm(WP_REST_Request $request): WP_REST_Response|WP_Error {
+        $user_id = absint($request->get_param('user_id'));
+        $token   = sanitize_text_field($request->get_param('token'));
+
+        if (!$user_id || empty($token)) {
+            return new WP_Error('invalid_token', __('Invalid verification link.', 'fp-esperienze'), ['status' => 400]);
+        }
+
+        $saved_token = get_user_meta($user_id, '_mobile_confirm_token', true);
+
+        if (!$saved_token || !hash_equals($saved_token, $token)) {
+            return new WP_Error('invalid_token', __('Invalid or expired token.', 'fp-esperienze'), ['status' => 400]);
+        }
+
+        update_user_meta($user_id, '_mobile_email_verified', 1);
+        delete_user_meta($user_id, '_mobile_confirm_token');
+
+        return new WP_REST_Response([
+            'success' => true,
+            'message' => __('Email verified. You can now login.', 'fp-esperienze')
+        ]);
     }
 
     /**
@@ -269,8 +324,9 @@ class MobileAPIManager {
      * @return WP_REST_Response|WP_Error Response
      */
     public function mobileLogout(WP_REST_Request $request): WP_REST_Response|WP_Error {
-        if (!$this->checkMobileAuth($request)) {
-            return new WP_Error('invalid_token', __('Unauthorized', 'fp-esperienze'), ['status' => 401]);
+        $auth = $this->checkMobileAuth($request);
+        if ($auth !== true) {
+            return $auth;
         }
 
         $user_id = $this->getCurrentMobileUserId($request);
@@ -985,13 +1041,27 @@ class MobileAPIManager {
      * Permission callbacks
      */
 
-    public function checkMobileAuth(WP_REST_Request $request): bool {
-        return $this->getCurrentMobileUserId($request) !== null;
+    public function checkMobileAuth(WP_REST_Request $request): bool|WP_Error {
+        $user_id = $this->getCurrentMobileUserId($request);
+        if (!$user_id) {
+            return new WP_Error('invalid_token', __('Unauthorized', 'fp-esperienze'), ['status' => 401]);
+        }
+
+        if (!get_user_meta($user_id, '_mobile_email_verified', true)) {
+            return new WP_Error('email_not_verified', __('Email not verified', 'fp-esperienze'), ['status' => 403]);
+        }
+
+        return true;
     }
 
-    public function checkStaffAuth(WP_REST_Request $request): bool {
+    public function checkStaffAuth(WP_REST_Request $request): bool|WP_Error {
+        $auth = $this->checkMobileAuth($request);
+        if ($auth !== true) {
+            return $auth;
+        }
+
         $user_id = $this->getCurrentMobileUserId($request);
-        return $user_id && CapabilityManager::userCan($user_id, 'manage_bookings');
+        return CapabilityManager::userCan($user_id, 'manage_bookings');
     }
 
     /**
