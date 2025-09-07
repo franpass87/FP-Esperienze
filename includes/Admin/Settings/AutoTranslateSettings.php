@@ -22,6 +22,9 @@ class AutoTranslateSettings {
     /** Option name for cache TTL */
     public const OPTION_CACHE_TTL = 'fp_lt_cache_ttl';
 
+    /** Option name for translation logging */
+    public const OPTION_ENABLE_LOG = 'fp_lt_enable_log';
+
     /**
      * Constructor.
      */
@@ -70,6 +73,16 @@ class AutoTranslateSettings {
             ]
         );
 
+        register_setting(
+            'fp_lt_settings',
+            self::OPTION_ENABLE_LOG,
+            [
+                'type'              => 'integer',
+                'default'           => 0,
+                'sanitize_callback' => 'absint',
+            ]
+        );
+
         add_settings_section(
             'fp_lt_section',
             __('Auto Translation', 'fp-esperienze'),
@@ -97,6 +110,14 @@ class AutoTranslateSettings {
             self::OPTION_CACHE_TTL,
             __('Cache TTL', 'fp-esperienze'),
             [$this, 'cacheTtlField'],
+            'fp_lt_settings',
+            'fp_lt_section'
+        );
+
+        add_settings_field(
+            self::OPTION_ENABLE_LOG,
+            __('Enable logging', 'fp-esperienze'),
+            [$this, 'enableLogField'],
             'fp_lt_settings',
             'fp_lt_section'
         );
@@ -141,6 +162,14 @@ class AutoTranslateSettings {
         $value = (int) get_option(self::OPTION_CACHE_TTL, WEEK_IN_SECONDS);
         echo '<input type="number" id="' . esc_attr(self::OPTION_CACHE_TTL) . '" name="' . esc_attr(self::OPTION_CACHE_TTL) . '" value="' . esc_attr($value) . '" class="small-text" min="0" />';
         echo '<p class="description">' . esc_html__('Time in seconds to cache translations.', 'fp-esperienze') . '</p>';
+    }
+
+    /**
+     * Enable logging field callback.
+     */
+    public function enableLogField(): void {
+        $value = (int) get_option(self::OPTION_ENABLE_LOG, 0);
+        echo '<label><input type="checkbox" id="' . esc_attr(self::OPTION_ENABLE_LOG) . '" name="' . esc_attr(self::OPTION_ENABLE_LOG) . '" value="1" ' . checked(1, $value, false) . ' /> ' . esc_html__('Enable translation logging', 'fp-esperienze') . '</label>';
     }
 
     /**

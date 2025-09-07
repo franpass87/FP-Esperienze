@@ -23,6 +23,10 @@ class TranslationLogger {
             return;
         }
 
+        if (!get_option('fp_lt_enable_log')) {
+            return;
+        }
+
         $uploads = wp_upload_dir();
         if (empty($uploads['basedir'])) {
             return;
