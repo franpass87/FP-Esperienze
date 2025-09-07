@@ -101,8 +101,16 @@ class I18nManager {
         if (false === $cached) {
             if ($queue) {
                 TranslationQueue::addString($key, $original, $lang);
+                $translated = $original;
+            } else {
+                $translated = AutoTranslator::translate($original, $lang);
+                $ttl        = (int) get_option('fp_lt_cache_ttl', WEEK_IN_SECONDS);
+                set_transient($cache_key, $translated, $ttl);
+
+                if ($translated === $original) {
+                    TranslationLogger::log('I18nManager translation unchanged for key ' . $key);
+                }
             }
-            $translated = $original;
         } else {
             $translated = (string) $cached;
         }
