@@ -221,38 +221,38 @@
                         };
                     },
                     failure: function() {
-                        alert('There was an error while fetching events!');
+                        alert(__('There was an error while fetching events!', 'fp-esperienze'));
                     }
                 },
                 eventClick: function(info) {
                     var booking = info.event.extendedProps;
                     var content = '<div class="fp-booking-popup">' +
                         '<h3>' + info.event.title + '</h3>' +
-                        '<p><strong>Order:</strong> #' + booking.order_id + '</p>' +
-                        '<p><strong>Customer:</strong> ' + booking.customer_name + '</p>' +
-                        '<p><strong>Status:</strong> ' + booking.status + '</p>' +
-                        '<p><strong>Participants:</strong> ' + booking.adults + ' adults, ' + booking.children + ' children</p>' +
-                        '<p><strong>Date:</strong> ' + info.event.start.toLocaleDateString() + '</p>' +
-                        '<p><strong>Time:</strong> ' + info.event.start.toLocaleTimeString() + '</p>' +
+                        '<p><strong>' + __('Order', 'fp-esperienze') + ':</strong> #' + booking.order_id + '</p>' +
+                        '<p><strong>' + __('Customer', 'fp-esperienze') + ':</strong> ' + booking.customer_name + '</p>' +
+                        '<p><strong>' + __('Status', 'fp-esperienze') + ':</strong> ' + booking.status + '</p>' +
+                        '<p><strong>' + __('Participants', 'fp-esperienze') + ':</strong> ' + booking.adults + ' ' + __('adults', 'fp-esperienze') + ', ' + booking.children + ' ' + __('children', 'fp-esperienze') + '</p>' +
+                        '<p><strong>' + __('Date', 'fp-esperienze') + ':</strong> ' + info.event.start.toLocaleDateString() + '</p>' +
+                        '<p><strong>' + __('Time', 'fp-esperienze') + ':</strong> ' + info.event.start.toLocaleTimeString() + '</p>' +
                         '</div>';
                     
                     // Show popup (using WordPress admin modal or simple alert)
                     if (typeof tb_show !== 'undefined') {
                         $('body').append('<div id="fp-booking-details" style="display:none">' + content + '</div>');
-                        tb_show('Booking Details', '#TB_inline?inlineId=fp-booking-details&width=400&height=300');
+                        tb_show(__('Booking Details', 'fp-esperienze'), '#TB_inline?inlineId=fp-booking-details&width=400&height=300');
                     } else {
-                        alert(info.event.title + '\n' + 
-                              'Order: #' + booking.order_id + '\n' +
-                              'Status: ' + booking.status + '\n' +
-                              'Participants: ' + (booking.adults + booking.children));
+                        alert(info.event.title + '\n' +
+                              __('Order', 'fp-esperienze') + ': #' + booking.order_id + '\n' +
+                              __('Status', 'fp-esperienze') + ': ' + booking.status + '\n' +
+                              __('Participants', 'fp-esperienze') + ': ' + (booking.adults + booking.children));
                     }
                 },
                 eventDidMount: function(info) {
                     // Add tooltip
-                    info.el.setAttribute('title', 
+                    info.el.setAttribute('title',
                         info.event.title + '\n' +
-                        'Order: #' + info.event.extendedProps.order_id + '\n' +
-                        'Status: ' + info.event.extendedProps.status
+                        __('Order', 'fp-esperienze') + ': #' + info.event.extendedProps.order_id + '\n' +
+                        __('Status', 'fp-esperienze') + ': ' + info.event.extendedProps.status
                     );
                 }
             });
@@ -630,15 +630,17 @@
             // Build new summary HTML
             var summaryHtml;
             if (slots.length === 0) {
-                summaryHtml = '<div class="fp-summary-table"><div class="fp-empty-state">No time slots configured yet. Click "Add Time Slot" below to get started.</div></div>';
+                summaryHtml = '<div class="fp-summary-table"><div class="fp-empty-state">' +
+                    sprintf(__('No time slots configured yet. Click "%s" below to get started.', 'fp-esperienze'), __('Add Time Slot', 'fp-esperienze')) +
+                    '</div></div>';
             } else {
                 summaryHtml = '<table class="fp-summary-table">' +
                     '<thead><tr>' +
-                        '<th>Time</th>' +
-                        '<th>Days</th>' +
-                        '<th>Duration</th>' +
-                        '<th>Capacity</th>' +
-                        '<th>Customized</th>' +
+                        '<th>' + __('Time', 'fp-esperienze') + '</th>' +
+                        '<th>' + __('Days', 'fp-esperienze') + '</th>' +
+                        '<th>' + __('Duration', 'fp-esperienze') + '</th>' +
+                        '<th>' + __('Capacity', 'fp-esperienze') + '</th>' +
+                        '<th>' + __('Customized', 'fp-esperienze') + '</th>' +
                     '</tr></thead><tbody>';
                 
                 slots.forEach(function(slot) {
@@ -656,9 +658,9 @@
                     });
                     
                     summaryHtml += '</div></td>' +
-                        '<td>' + (slot.duration ? slot.duration + ' min' : '<em>Default</em>') + '</td>' +
-                        '<td>' + (slot.capacity ? slot.capacity : '<em>Default</em>') + '</td>' +
-                        '<td>' + (slot.customCount > 0 ? slot.customCount + ' setting' + (slot.customCount > 1 ? 's' : '') : '<em>None</em>') + '</td>' +
+                        '<td>' + (slot.duration ? slot.duration + ' ' + __('min', 'fp-esperienze') : '<em>' + __('Default', 'fp-esperienze') + '</em>') + '</td>' +
+                        '<td>' + (slot.capacity ? slot.capacity : '<em>' + __('Default', 'fp-esperienze') + '</em>') + '</td>' +
+                        '<td>' + (slot.customCount > 0 ? slot.customCount + ' ' + (slot.customCount === 1 ? __('setting', 'fp-esperienze') : __('settings', 'fp-esperienze')) : '<em>' + __('None', 'fp-esperienze') + '</em>') + '</td>' +
                         '</tr>';
                 });
                 
@@ -1785,7 +1787,7 @@
                 // Show empty state if no cards left
                 if (container.find('.fp-time-slot-card-clean').length === 0) {
                     var emptyMessage = '<div class="fp-empty-slots-message" style="opacity: 0;">' +
-                        '<p>No time slots configured yet. Add your first time slot below.</p>' +
+                        '<p>' + __('No time slots configured yet. Add your first time slot below.', 'fp-esperienze') + '</p>' +
                     '</div>';
                     var $emptyMsg = $(emptyMessage);
                     container.prepend($emptyMsg);
@@ -1795,9 +1797,9 @@
                     var button = $('#fp-add-time-slot');
                     var $buttonText = button.find('span:not(.dashicons)');
                     if ($buttonText.length) {
-                        $buttonText.text('Add Time Slot');
+                        $buttonText.text(__('Add Time Slot', 'fp-esperienze'));
                     } else {
-                        button.text('Add Time Slot');
+                        button.text(__('Add Time Slot', 'fp-esperienze'));
                     }
                 } else {
                     // Update button text if cards remain
@@ -1966,7 +1968,7 @@
                     // Announce state change
                     var dayName = $(this).text().trim();
                     var isChecked = $(this).closest('.fp-day-pill-clean').find('input').is(':checked');
-                    this.announceToScreenReader(dayName + ' ' + (isChecked ? 'selected' : 'deselected'));
+                    this.announceToScreenReader(dayName + ' ' + (isChecked ? __('selected', 'fp-esperienze') : __('deselected', 'fp-esperienze')));
                 }
             });
             
@@ -2090,13 +2092,10 @@
                 var button = $('#fp-add-time-slot');
                 
                 if (count > 0) {
-                    var currentText = button.find('span:not(.dashicons)').text() || button.text();
-                    if (currentText.indexOf('Another') === -1) {
-                        button.find('span:not(.dashicons)').text('Add Another Time Slot');
-                    }
+                    button.find('span:not(.dashicons)').text(__('Add Another Time Slot', 'fp-esperienze'));
                     button.attr('aria-expanded', 'true');
                 } else {
-                    button.find('span:not(.dashicons)').text('Add Time Slot');
+                    button.find('span:not(.dashicons)').text(__('Add Time Slot', 'fp-esperienze'));
                     button.attr('aria-expanded', 'false');
                 }
                 
@@ -2105,7 +2104,8 @@
                 
                 // Announce change to screen readers
                 if (count > 0) {
-                    this.announceToScreenReader(count + ' time slot' + (count === 1 ? '' : 's') + ' configured');
+                    var slotMsg = count === 1 ? __('1 time slot configured', 'fp-esperienze') : sprintf(__('%d time slots configured', 'fp-esperienze'), count);
+                    this.announceToScreenReader(slotMsg);
                 }
             } catch (error) {
                 console.warn('FP Esperienze: Error updating slot count feedback:', error);
@@ -2122,13 +2122,10 @@
                 var button = $('#fp-add-override');
                 
                 if (count > 0) {
-                    var currentText = button.find('span:not(.dashicons)').text() || button.text();
-                    if (currentText.indexOf('Another') === -1) {
-                        button.find('span:not(.dashicons)').text('Add Another Date Override');
-                    }
+                    button.find('span:not(.dashicons)').text(__('Add Another Date Override', 'fp-esperienze'));
                     button.attr('aria-expanded', 'true');
                 } else {
-                    button.find('span:not(.dashicons)').text('Add Date Override');
+                    button.find('span:not(.dashicons)').text(__('Add Date Override', 'fp-esperienze'));
                     button.attr('aria-expanded', 'false');
                 }
                 
@@ -2137,7 +2134,8 @@
                 
                 // Announce change to screen readers
                 if (count > 0) {
-                    this.announceToScreenReader(count + ' date override' + (count === 1 ? '' : 's') + ' configured');
+                    var overrideMsg = count === 1 ? __('1 date override configured', 'fp-esperienze') : sprintf(__('%d date overrides configured', 'fp-esperienze'), count);
+                    this.announceToScreenReader(overrideMsg);
                 }
             } catch (error) {
                 console.warn('FP Esperienze: Error updating override count feedback:', error);
@@ -2282,13 +2280,13 @@
                 // Show empty state if no cards left
                 if (container.find('.fp-override-card-clean').length === 0) {
                     var emptyMessage = '<div class="fp-overrides-empty-clean">' +
-                        '<p>No date overrides configured. Add exceptions below for specific dates when you need to close, change capacity, or modify pricing.</p>' +
+                        '<p>' + __('No date overrides configured. Add exceptions below for specific dates when you need to close, change capacity, or modify pricing.', 'fp-esperienze') + '</p>' +
                     '</div>';
                     container.prepend(emptyMessage);
-                    
+
                     // Reset button text
                     var button = $('#fp-add-override');
-                    button.find('span:not(.dashicons)').text('Add Date Override');
+                    button.find('span:not(.dashicons)').text(__('Add Date Override', 'fp-esperienze'));
                 } else {
                     // Update button text if only one left
                     self.updateOverrideCountFeedback();
@@ -2413,7 +2411,7 @@
             } catch (recoveryError) {
                 console.error('FP Esperienze: Error recovery failed:', recoveryError);
                 // Fallback: show basic alert
-                alert('A critical error occurred. Please refresh the page.');
+                alert(__('A critical error occurred. Please refresh the page.', 'fp-esperienze'));
             }
         },
 
@@ -2516,7 +2514,7 @@
                 if (isChecked) {
                     $card.addClass('is-closed');
                     $fields.addClass('is-closed');
-                    this.announceToScreenReader('Date marked as closed');
+                    this.announceToScreenReader(__('Date marked as closed', 'fp-esperienze'));
                 } else {
                     $card.removeClass('is-closed');
                     $fields.removeClass('is-closed');

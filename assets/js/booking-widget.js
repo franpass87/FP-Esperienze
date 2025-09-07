@@ -1,3 +1,4 @@
+
 /**
  * FP Esperienze Booking Widget
  * GetYourGuide-style functionality
@@ -322,7 +323,7 @@
                            'aria-label="' + sprintf(__('Time slot %1$s to %2$s, %3$s, price from €%4$s', 'fp-esperienze'), slot.start_time, slot.end_time, availableLabel, slot.adult_price) + '">' +
                            '<div class="fp-slot-time">' + slot.start_time + ' - ' + slot.end_time + '</div>' +
                            '<div class="fp-slot-info">' +
-                           '<div class="fp-slot-price">From €' + slot.adult_price + '</div>' +
+                           '<div class="fp-slot-price">' + sprintf(__('From €%s', 'fp-esperienze'), slot.adult_price) + '</div>' +
                            '<div class="' + availableColorClass + '">' + availableText + '</div>' +
                            '</div>' +
                            '</div>';
@@ -383,10 +384,12 @@
             
             var detailsHtml = '';
             if (adultQty > 0) {
-                detailsHtml += '<div>' + adultQty + ' Adult' + (adultQty > 1 ? 's' : '') + ': €' + adultTotal.toFixed(2) + '</div>';
+                var adultLabel = adultQty === 1 ? __('Adult', 'fp-esperienze') : __('Adults', 'fp-esperienze');
+                detailsHtml += '<div>' + adultQty + ' ' + adultLabel + ': €' + adultTotal.toFixed(2) + '</div>';
             }
             if (childQty > 0) {
-                detailsHtml += '<div>' + childQty + ' Child' + (childQty > 1 ? 'ren' : '') + ': €' + childTotal.toFixed(2) + '</div>';
+                var childLabel = childQty === 1 ? __('Child', 'fp-esperienze') : __('Children', 'fp-esperienze');
+                detailsHtml += '<div>' + childQty + ' ' + childLabel + ': €' + childTotal.toFixed(2) + '</div>';
             }
             
             // Calculate extras
@@ -403,7 +406,7 @@
                     var extraItemTotal = 0;
                     if (billingType === 'per_person') {
                         extraItemTotal = extraPrice * extraQty * totalParticipants;
-                        detailsHtml += '<div>' + extraName + ' (' + extraQty + ' × ' + totalParticipants + ' people): €' + extraItemTotal.toFixed(2) + '</div>';
+                        detailsHtml += '<div>' + extraName + ' (' + extraQty + ' × ' + totalParticipants + ' ' + __('people', 'fp-esperienze') + '): €' + extraItemTotal.toFixed(2) + '</div>';
                     } else {
                         extraItemTotal = extraPrice * extraQty;
                         detailsHtml += '<div>' + extraName + ' (' + extraQty + '): €' + extraItemTotal.toFixed(2) + '</div>';
@@ -476,15 +479,15 @@
             
             // Update button text and help text
             if (isValid) {
-                $('#fp-cart-help').text('Ready to book this experience');
+                $('#fp-cart-help').text(__('Ready to book this experience', 'fp-esperienze'));
             } else if (!this.selectedDate) {
-                $('#fp-cart-help').text('Select a date to continue');
+                $('#fp-cart-help').text(__('Select a date to continue', 'fp-esperienze'));
             } else if (!this.selectedSlot) {
-                $('#fp-cart-help').text('Select a time slot to continue');
+                $('#fp-cart-help').text(__('Select a time slot to continue', 'fp-esperienze'));
             } else if (adultQty === 0 && childQty === 0) {
-                $('#fp-cart-help').text('Select at least one participant');
+                $('#fp-cart-help').text(__('Select at least one participant', 'fp-esperienze'));
             } else {
-                $('#fp-cart-help').text('Complete all required fields');
+                $('#fp-cart-help').text(__('Complete all required fields', 'fp-esperienze'));
             }
         },
 
@@ -500,7 +503,7 @@
             var childQty = parseInt($('#fp-qty-child').val()) || 0;
             var meetingPointId = $('#fp-meeting-point-id').val() || 1;
             
-            $('#fp-add-to-cart').prop('disabled', true).text('Adding...');
+            $('#fp-add-to-cart').prop('disabled', true).text(__('Adding...', 'fp-esperienze'));
             
             // Collect extras data
             var extras = {};
@@ -523,7 +526,7 @@
             } else {
                 // Fallback: redirect to shop with error
                 self.showError(fp_booking_widget_i18n.error_booking_unavailable || __('Booking system temporarily unavailable. Please try again.', 'fp-esperienze'));
-                $('#fp-add-to-cart').prop('disabled', false).text('Add to Cart');
+                $('#fp-add-to-cart').prop('disabled', false).text(__('Add to Cart', 'fp-esperienze'));
             }
         },
 
