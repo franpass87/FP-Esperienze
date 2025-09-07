@@ -6,6 +6,8 @@
 (function($) {
     'use strict';
 
+    const { __, sprintf } = wp.i18n;
+
     $(document).ready(function() {
         // Initialize booking widget functionality
         FPBookingWidget.init();
@@ -260,7 +262,7 @@
             var productId = $('#fp-product-id').val();
             
             $('#fp-loading').show();
-            $('#fp-time-slots').html('<p class="fp-slots-placeholder">' + 'Loading available times...' + '</p>');
+            $('#fp-time-slots').html('<p class="fp-slots-placeholder">' + __('Loading available times...', 'fp-esperienze') + '</p>');
             $('#fp-error-messages').empty();
             
             var restUrl = (typeof fp_esperienze_params !== 'undefined' && fp_esperienze_params.rest_url) 
@@ -297,13 +299,16 @@
             var html = '';
             
             if (!slots || slots.length === 0) {
-                html = '<p class="fp-no-slots">No availability for this date.</p>';
+                html = '<p class="fp-no-slots">' + __('No availability for this date.', 'fp-esperienze') + '</p>';
             } else {
                 slots.forEach(function(slot) {
                     var availableClass = slot.is_available ? 'available' : 'unavailable';
-                    var availableText = slot.is_available ? 
-                        slot.available + ' spots left' : 
-                        'Sold out';
+                    var availableText = slot.is_available ?
+                        slot.available + ' ' + __('spots left', 'fp-esperienze') :
+                        __('Sold out', 'fp-esperienze');
+                    var availableLabel = slot.is_available ?
+                        sprintf(__('%d spots available', 'fp-esperienze'), slot.available) :
+                        __('sold out', 'fp-esperienze');
                     var availableColorClass = slot.is_available ? 'fp-slot-available' : 'fp-slot-unavailable';
                     
                     html += '<div class="fp-time-slot ' + availableClass + '" ' +
@@ -314,9 +319,7 @@
                            'role="radio" ' +
                            'tabindex="0" ' +
                            'aria-checked="false" ' +
-                           'aria-label="Time slot ' + slot.start_time + ' to ' + slot.end_time + ', ' + 
-                           (slot.is_available ? slot.available + ' spots available' : 'sold out') + 
-                           ', price from €' + slot.adult_price + '">' +
+                           'aria-label="' + sprintf(__('Time slot %1$s to %2$s, %3$s, price from €%4$s', 'fp-esperienze'), slot.start_time, slot.end_time, availableLabel, slot.adult_price) + '">' +
                            '<div class="fp-slot-time">' + slot.start_time + ' - ' + slot.end_time + '</div>' +
                            '<div class="fp-slot-info">' +
                            '<div class="fp-slot-price">From €' + slot.adult_price + '</div>' +
@@ -339,9 +342,9 @@
             var $socialProof = $('#fp-social-proof');
             
             if (this.selectedSlot && this.selectedSlot.available <= 5 && this.selectedSlot.available > 0) {
-                var message = this.selectedSlot.available === 1 ? 
-                    'Only 1 spot left!' : 
-                    'Only ' + this.selectedSlot.available + ' spots left!';
+                var message = this.selectedSlot.available === 1 ?
+                    __('Only 1 spot left!', 'fp-esperienze') :
+                    sprintf(__('Only %d spots left!', 'fp-esperienze'), this.selectedSlot.available);
                 
                 $socialProof.find('.fp-urgency-text').text(message);
                 $socialProof.show();
@@ -519,7 +522,7 @@
                 window.FPEsperienze.addToCart();
             } else {
                 // Fallback: redirect to shop with error
-                self.showError(fp_booking_widget_i18n.error_booking_unavailable || 'Booking system temporarily unavailable. Please try again.');
+                self.showError(fp_booking_widget_i18n.error_booking_unavailable || __('Booking system temporarily unavailable. Please try again.', 'fp-esperienze'));
                 $('#fp-add-to-cart').prop('disabled', false).text('Add to Cart');
             }
         },

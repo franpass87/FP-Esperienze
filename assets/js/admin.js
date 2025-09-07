@@ -5,6 +5,8 @@
 (function($) {
     'use strict';
 
+    const { __, sprintf } = wp.i18n;
+
     if (typeof fp_esperienze_admin !== 'undefined' && typeof fp_esperienze_admin.banner_offset !== 'undefined') {
         document.documentElement.style.setProperty('--fp-banner-offset', fp_esperienze_admin.banner_offset + 'px');
     }
@@ -521,7 +523,7 @@
             
             if (hasErrors) {
                 var uniqueMessages = [...new Set(errorMessages)];
-                alert('Please fix the following errors:\n\n' + uniqueMessages.join('\n'));
+                alert(__('Please fix the following errors:', 'fp-esperienze') + '\n\n' + uniqueMessages.join('\n'));
                 return false;
             }
             
@@ -561,7 +563,7 @@
             window.addEventListener('beforeunload', function(e) {
                 if (FPEsperienzeAdmin.hasUnsavedChanges) {
                     e.preventDefault();
-                    e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+                    e.returnValue = __('You have unsaved changes. Are you sure you want to leave?', 'fp-esperienze');
                     return e.returnValue;
                 }
             });
@@ -813,7 +815,7 @@
                     }, 300);
                 } catch (error) {
                     console.error('FP Esperienze: Error adding time slot:', error);
-                    alert('Error adding time slot. Please try again.');
+                    alert(__('Error adding time slot. Please try again.', 'fp-esperienze'));
                     $button.prop('disabled', false).removeClass('fp-loading');
                 }
             });
@@ -827,14 +829,14 @@
                 var $card = $button.closest('.fp-time-slot-card-clean');
                 
                 // Add confirmation for destructive action
-                if (confirm('Are you sure you want to remove this time slot?')) {
+                if (confirm(__('Are you sure you want to remove this time slot?', 'fp-esperienze'))) {
                     $button.prop('disabled', true).addClass('fp-loading');
                     
                     try {
                         self.removeTimeSlotCardClean($button);
                     } catch (error) {
                         console.error('FP Esperienze: Error removing time slot:', error);
-                        alert('Error removing time slot. Please try again.');
+                        alert(__('Error removing time slot. Please try again.', 'fp-esperienze'));
                         $button.prop('disabled', false).removeClass('fp-loading');
                     }
                 }
@@ -1078,7 +1080,7 @@
             
             // Confirm removal if there's a date value
             if (dateValue) {
-                if (!confirm(fp_esperienze_admin.strings.confirm_remove_override || 'Are you sure you want to remove this date override?')) {
+                if (!confirm(fp_esperienze_admin.strings.confirm_remove_override || __('Are you sure you want to remove this date override?', 'fp-esperienze'))) {
                     return;
                 }
             }
@@ -1331,7 +1333,7 @@
                 
                 // Confirm removal if there's a date value
                 if (dateValue) {
-                    if (!confirm(fp_esperienze_admin.strings.confirm_remove_override || 'Are you sure you want to remove this date override?')) {
+                    if (!confirm(fp_esperienze_admin.strings.confirm_remove_override || __('Are you sure you want to remove this date override?', 'fp-esperienze'))) {
                         return;
                     }
                 }
@@ -1576,7 +1578,7 @@
                 var container = $('#fp-time-slots-container');
                 if (!container.length) {
                     console.error('FP Esperienze: Time slots container not found');
-                    this.showUserFeedback('Error: Unable to find time slots container. Please refresh the page.', 'error');
+                    this.showUserFeedback(__('Error: Unable to find time slots container. Please refresh the page.', 'fp-esperienze'), 'error');
                     return;
                 }
                 
@@ -1592,7 +1594,7 @@
                 var cardHtml = this.createTimeSlotCardHTMLClean(index);
                 if (!cardHtml) {
                     console.error('FP Esperienze: Failed to create card HTML');
-                    this.showUserFeedback('Error creating time slot card. Please try again.', 'error');
+                    this.showUserFeedback(__('Error creating time slot card. Please try again.', 'fp-esperienze'), 'error');
                     return;
                 }
                 
@@ -1839,7 +1841,7 @@
             var container = $('#fp-overrides-container .fp-overrides-container-clean');
             if (!container.length) {
                 console.error('FP Esperienze: Override container not found');
-                alert('Error: Override container not found. Please refresh the page.');
+                alert(__('Error: Override container not found. Please refresh the page.', 'fp-esperienze'));
                 return;
             }
             
@@ -1876,7 +1878,7 @@
                 
             } catch (error) {
                 console.error('FP Esperienze: Error in addOverrideCardClean:', error);
-                alert('Error adding override. Please try again.');
+                alert(__('Error adding override. Please try again.', 'fp-esperienze'));
             }
         },
 
@@ -1900,16 +1902,16 @@
             // Validate at least one day selected
             var checkedDays = $card.find('.fp-day-pill-clean input:checked').length;
             if (checkedDays === 0) {
-                errors.push('Select at least one day of the week');
+                errors.push(__('Select at least one day of the week', 'fp-esperienze'));
                 $card.find('.fp-days-selection-clean').addClass('fp-error-field');
                 isValid = false;
             } else {
                 $card.find('.fp-days-selection-clean').removeClass('fp-error-field');
             }
-            
+
             // Show errors if any
             if (!isValid) {
-                var errorMsg = 'Please fix the following errors:\n' + errors.join('\n');
+                var errorMsg = __('Please fix the following errors:', 'fp-esperienze') + '\n' + errors.join('\n');
                 alert(errorMsg);
             }
             
@@ -2157,24 +2159,24 @@
                 // Validate time input
                 var $timeInput = $card.find('input[type="time"]');
                 if ($timeInput.length && !$timeInput.val()) {
-                    errors.push('Start time is required');
+                    errors.push(__('Start time is required', 'fp-esperienze'));
                     $timeInput.addClass('fp-error-field');
-                    this.showFieldError($timeInput, 'Please select a start time');
+                    this.showFieldError($timeInput, __('Please select a start time', 'fp-esperienze'));
                     isValid = false;
                 }
                 
                 // Validate at least one day selected
                 var checkedDays = $card.find('.fp-day-pill-clean input:checked').length;
                 if (checkedDays === 0) {
-                    errors.push('Select at least one day of the week');
+                    errors.push(__('Select at least one day of the week', 'fp-esperienze'));
                     $card.find('.fp-days-pills-clean').addClass('fp-error-field');
-                    this.showFieldError($card.find('.fp-days-pills-clean'), 'Please select at least one day');
+                    this.showFieldError($card.find('.fp-days-pills-clean'), __('Please select at least one day', 'fp-esperienze'));
                     isValid = false;
                 }
                 
                 // Show consolidated error feedback
                 if (!isValid) {
-                    this.showUserFeedback('Please fix the validation errors in the time slot configuration', 'error');
+                    this.showUserFeedback(__('Please fix the validation errors in the time slot configuration', 'fp-esperienze'), 'error');
                     $card.addClass('fp-error-shake');
                     setTimeout(function() {
                         $card.removeClass('fp-error-shake');
@@ -2361,14 +2363,14 @@
                 window.addEventListener('error', (event) => {
                     if (event.filename && event.filename.includes('admin.js')) {
                         console.error('FP Esperienze: Uncaught error:', event.error);
-                        this.handleCriticalError('Unexpected error occurred', event.error);
+                        this.handleCriticalError(__('Unexpected error occurred', 'fp-esperienze'), event.error);
                     }
                 });
                 
                 // Promise rejection handler
                 window.addEventListener('unhandledrejection', (event) => {
                     console.error('FP Esperienze: Unhandled promise rejection:', event.reason);
-                    this.handleCriticalError('Promise rejection', event.reason);
+                    this.handleCriticalError(__('Promise rejection', 'fp-esperienze'), event.reason);
                 });
                 
                 // Set up periodic health checks
@@ -2518,7 +2520,7 @@
                 } else {
                     $card.removeClass('is-closed');
                     $fields.removeClass('is-closed');
-                    this.announceToScreenReader('Date reopened for bookings');
+                    this.announceToScreenReader(__('Date reopened for bookings', 'fp-esperienze'));
                 }
                 
                 // Track the interaction
@@ -2528,7 +2530,7 @@
                 
             } catch (error) {
                 console.error('FP Esperienze: Error handling override closed:', error);
-                this.showUserFeedback('Error updating closed status. Please try again.', 'error');
+                this.showUserFeedback(__('Error updating closed status. Please try again.', 'fp-esperienze'), 'error');
             }
         },
 
@@ -2579,7 +2581,7 @@
             var self = this;
             
             // Add loading overlay functionality
-            $('body').append('<div id="fp-loading-overlay" class="fp-loading-overlay" style="display: none;"><div class="fp-spinner"></div><div class="fp-loading-text">Loading...</div></div>');
+            $('body').append('<div id="fp-loading-overlay" class="fp-loading-overlay" style="display: none;"><div class="fp-spinner"></div><div class="fp-loading-text">' + __('Loading...', 'fp-esperienze') + '</div></div>');
             
             // Enhance AJAX requests with loading states
             $(document).on('click', '.fp-async-button', function(e) {
@@ -2588,7 +2590,7 @@
                 
                 $button.prop('disabled', true)
                        .addClass('loading')
-                       .html('<span class="fp-spinner-small"></span> ' + ($button.data('loading-text') || 'Loading...'));
+                       .html('<span class="fp-spinner-small"></span> ' + ($button.data('loading-text') || __('Loading...', 'fp-esperienze')));
                 
                 // Restore button after timeout if no other action
                 setTimeout(function() {
@@ -2610,7 +2612,7 @@
                 
                 // Show loading overlay for complex forms
                 if ($form.hasClass('fp-complex-form')) {
-                    self.showLoadingOverlay($form.data('loading-message') || 'Processing...');
+                    self.showLoadingOverlay($form.data('loading-message') || __('Processing...', 'fp-esperienze'));
                 }
             });
         },

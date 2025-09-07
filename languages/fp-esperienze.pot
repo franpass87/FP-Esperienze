@@ -2441,3 +2441,124 @@ msgstr ""
 #: fp-esperienze.php:86
 msgid "FP Esperienze requires WooCommerce 8.0 or higher."
 msgstr ""
+
+#: assets/js/frontend.js:129
+msgid "Applying..."
+msgstr ""
+
+#: assets/js/frontend.js:159 assets/js/frontend.js:200
+msgid "Something went wrong. Please try again."
+msgstr ""
+
+#: assets/js/frontend.js:175
+msgid "Removing..."
+msgstr ""
+
+#: assets/js/frontend.js:440
+msgid "Request timed out. Please try again."
+msgstr ""
+
+#: assets/js/frontend.js:442
+msgid "Network error. Please check your connection."
+msgstr ""
+
+#: assets/js/booking-widget.js:305
+msgid "%d spots available"
+msgstr ""
+
+#: assets/js/booking-widget.js:346
+msgid "Only 1 spot left!"
+msgstr ""
+
+#: assets/js/booking-widget.js:347
+msgid "Only %d spots left!"
+msgstr ""
+
+#: assets/js/booking-widget.js:319
+#, php-format
+msgid "Time slot %1$s to %2$s, %3$s, price from €%4$s"
+msgstr ""
+
+#: assets/js/admin.js:2584 assets/js/admin.js:2593
+msgid "Loading..."
+msgstr ""
+
+#: assets/js/admin.js:2615
+msgid "Processing..."
+msgstr ""
+
+#: assets/js/admin.js:818
+msgid "Error adding time slot. Please try again."
+msgstr ""
+
+#: assets/js/admin.js:839
+msgid "Error removing time slot. Please try again."
+msgstr ""
+
+#: assets/js/admin.js:1844
+msgid "Error: Override container not found. Please refresh the page."
+msgstr ""
+
+#: assets/js/admin.js:1881
+msgid "Error adding override. Please try again."
+msgstr ""
+
+#: assets/js/admin.js:1581
+msgid "Error: Unable to find time slots container. Please refresh the page."
+msgstr ""
+
+#: assets/js/admin.js:1597
+msgid "Error creating time slot card. Please try again."
+msgstr ""
+
+#: assets/js/admin.js:2533
+msgid "Error updating closed status. Please try again."
+msgstr ""
+
+#: assets/js/admin.js:2164
+msgid "Please select a start time"
+msgstr ""
+
+#: assets/js/admin.js:2173
+msgid "Please select at least one day"
+msgstr ""
+
+#: assets/js/admin.js:2158
+msgid "Start time is required"
+msgstr ""
+
+#: assets/js/admin.js:2170 assets/js/admin.js:1904
+msgid "Select at least one day of the week"
+msgstr ""
+
+#: assets/js/admin.js:2179
+msgid "Please fix the validation errors in the time slot configuration"
+msgstr ""
+
+#: assets/js/admin.js:526 assets/js/admin.js:1914
+msgid "Please fix the following errors:"
+msgstr ""
+
+#: assets/js/admin.js:2523
+msgid "Date reopened for bookings"
+msgstr ""
+
+#: assets/js/admin.js:2366
+msgid "Unexpected error occurred"
+msgstr ""
+
+#: assets/js/admin.js:2373
+msgid "Promise rejection"
+msgstr ""
+
+#: assets/js/admin.js:566
+msgid "You have unsaved changes. Are you sure you want to leave?"
+msgstr ""
+
+#: assets/js/admin.js:832
+msgid "Are you sure you want to remove this time slot?"
+msgstr ""
+
+#: assets/js/admin.js:1083 assets/js/admin.js:1333
+msgid "Are you sure you want to remove this date override?"
+msgstr ""

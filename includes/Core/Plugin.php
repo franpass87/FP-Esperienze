@@ -302,6 +302,12 @@ class Plugin {
             );
         }
 
+        wp_set_script_translations(
+            'fp-esperienze-frontend',
+            'fp-esperienze',
+            FP_ESPERIENZE_PLUGIN_DIR . 'languages'
+        );
+
         // Enqueue booking widget JS only on single experience pages
         if (is_singular('product')) {
             $booking_widget_url = AssetOptimizer::getMinifiedAssetUrl('js', 'booking-widget');
@@ -315,6 +321,12 @@ class Plugin {
                 ['jquery', 'fp-esperienze-frontend'],
                 FP_ESPERIENZE_VERSION,
                 true
+            );
+
+            wp_set_script_translations(
+                'fp-esperienze-booking-widget',
+                'fp-esperienze',
+                FP_ESPERIENZE_PLUGIN_DIR . 'languages'
             );
             
             // Localize booking widget with translated strings
@@ -372,6 +384,12 @@ class Plugin {
                 FP_ESPERIENZE_VERSION,
                 true
             );
+
+            wp_set_script_translations(
+                'fp-esperienze-admin-modular',
+                'fp-esperienze',
+                FP_ESPERIENZE_PLUGIN_DIR . 'languages'
+            );
             
             // Localize the modular script
             wp_localize_script('fp-esperienze-admin-modular', 'fp_esperienze_admin', [
@@ -393,6 +411,12 @@ class Plugin {
                 ['jquery'],
                 FP_ESPERIENZE_VERSION,
                 true
+            );
+
+            wp_set_script_translations(
+                'fp-esperienze-admin',
+                'fp-esperienze',
+                FP_ESPERIENZE_PLUGIN_DIR . 'languages'
             );
             
             // Localize script with admin data
