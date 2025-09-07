@@ -93,13 +93,21 @@ class BookingsAPI {
      */
     public function getBookings(\WP_REST_Request $request): \WP_REST_Response {
         $filters = [];
-        
+
         if ($request->get_param('start')) {
-            $filters['date_from'] = $request->get_param('start');
+            $start = $request->get_param('start');
+            if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $start)) {
+                return new \WP_Error('rest_invalid_param', __('Invalid start date format', 'fp-esperienze'), ['status' => 400]);
+            }
+            $filters['date_from'] = $start;
         }
-        
+
         if ($request->get_param('end')) {
-            $filters['date_to'] = $request->get_param('end');
+            $end = $request->get_param('end');
+            if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $end)) {
+                return new \WP_Error('rest_invalid_param', __('Invalid end date format', 'fp-esperienze'), ['status' => 400]);
+            }
+            $filters['date_to'] = $end;
         }
         
         if ($request->get_param('status')) {
@@ -124,7 +132,15 @@ class BookingsAPI {
     public function getBookingsForCalendar(\WP_REST_Request $request): \WP_REST_Response {
         $start_date = $request->get_param('start');
         $end_date = $request->get_param('end');
-        
+
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $start_date)) {
+            return new \WP_Error('rest_invalid_param', __('Invalid start date format', 'fp-esperienze'), ['status' => 400]);
+        }
+
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $end_date)) {
+            return new \WP_Error('rest_invalid_param', __('Invalid end date format', 'fp-esperienze'), ['status' => 400]);
+        }
+
         $filters = [
             'date_from' => $start_date,
             'date_to' => $end_date,
