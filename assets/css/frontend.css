@@ -170,6 +170,12 @@
     text-decoration: none;
 }
 
+.fp-pagination-link:focus-visible,
+.fp-btn-secondary:focus-visible {
+    outline: 2px solid var(--fp-brand-orange);
+    outline-offset: 2px;
+}
+
 .fp-pagination-current .fp-pagination-link {
     background: var(--fp-brand-orange);
     color: white;
