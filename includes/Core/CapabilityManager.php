@@ -150,7 +150,8 @@ class CapabilityManager {
         }
 
         // Check nonce
-        if (!isset($_POST[$nonce_name]) || !wp_verify_nonce($_POST[$nonce_name], $nonce_action)) {
+        // wp_unslash removes slashes added by WordPress before verifying the nonce.
+        if (!isset($_POST[$nonce_name]) || !wp_verify_nonce(wp_unslash($_POST[$nonce_name]), $nonce_action)) {
             return false;
         }
 
