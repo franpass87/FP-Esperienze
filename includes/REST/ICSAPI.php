@@ -9,6 +9,7 @@ namespace FP\Esperienze\REST;
 
 use FP\Esperienze\Data\ICSGenerator;
 use FP\Esperienze\Data\MeetingPointManager;
+use FP\Esperienze\Core\CapabilityManager;
 
 defined('ABSPATH') || exit;
 
@@ -267,9 +268,10 @@ class ICSAPI {
     public function serveICSFile(\WP_REST_Request $request) {
         $filename = basename($request->get_param('filename'));
         $token    = (string) $request->get_param('token');
-        $file_path = FP_ESPERIENZE_ICS_DIR . '/' . $filename;
+        $base_dir = rtrim(realpath(FP_ESPERIENZE_ICS_DIR), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+        $file_path = realpath($base_dir . $filename);
 
-        if (!file_exists($file_path)) {
+        if ($file_path === false) {
             return new \WP_Error(
                 'file_not_found',
                 __('ICS file not found.', 'fp-esperienze'),
@@ -277,7 +279,15 @@ class ICSAPI {
             );
         }
 
-        if (!current_user_can('manage_options')) {
+        if (strpos($file_path, $base_dir) !== 0) {
+            return new \WP_Error(
+                'forbidden',
+                __('Access denied.', 'fp-esperienze'),
+                ['status' => 403]
+            );
+        }
+
+        if (!CapabilityManager::canManageFPEsperienze()) {
             if (preg_match('/^booking-(\d+)-/', $filename, $matches)) {
                 $booking_id = (int) $matches[1];
                 if (!$this->validateBookingToken($booking_id, $token)) {
@@ -327,7 +337,7 @@ class ICSAPI {
         }
         
         // Can access own bookings or admin can access any
-        if ($current_user->ID === $user_id || current_user_can('manage_options')) {
+        if ($current_user->ID === $user_id || CapabilityManager::canManageFPEsperienze()) {
             return true;
         }
         
