@@ -5,6 +5,8 @@
 (function($) {
     'use strict';
 
+    const { __, sprintf } = wp.i18n;
+
     if (typeof fp_esperienze_params !== 'undefined' && typeof fp_esperienze_params.banner_offset !== 'undefined') {
         document.documentElement.style.setProperty('--fp-banner-offset', fp_esperienze_params.banner_offset + 'px');
     }
@@ -91,7 +93,7 @@
                 var cartItemKey = $form.data('cart-item-key');
                 
                 if (!voucherCode) {
-                    self.showVoucherMessage($form, 'error', 'Please enter a voucher code.');
+                    self.showVoucherMessage($form, 'error', __('Please enter a voucher code.', 'fp-esperienze'));
                     return;
                 }
                 
@@ -126,7 +128,7 @@
             var $btn = $form.find('.fp-apply-voucher-btn');
             var originalText = $btn.text();
             
-            $btn.prop('disabled', true).text('Applying...');
+            $btn.prop('disabled', true).text(__('Applying...', 'fp-esperienze'));
             self.clearVoucherMessage($form);
             
             $.ajax({
@@ -156,7 +158,7 @@
                     }
                 },
                 error: function() {
-                    self.showVoucherMessage($form, 'error', 'Something went wrong. Please try again.');
+                    self.showVoucherMessage($form, 'error', __('Something went wrong. Please try again.', 'fp-esperienze'));
                 },
                 complete: function() {
                     $btn.prop('disabled', false).text(originalText);
@@ -172,7 +174,7 @@
             var $btn = $form.find('.fp-remove-voucher-btn');
             var originalText = $btn.text();
             
-            $btn.prop('disabled', true).text('Removing...');
+            $btn.prop('disabled', true).text(__('Removing...', 'fp-esperienze'));
             self.clearVoucherMessage($form);
             
             $.ajax({
@@ -197,7 +199,7 @@
                     }
                 },
                 error: function() {
-                    self.showVoucherMessage($form, 'error', 'Something went wrong. Please try again.');
+                    self.showVoucherMessage($form, 'error', __('Something went wrong. Please try again.', 'fp-esperienze'));
                 },
                 complete: function() {
                     $btn.prop('disabled', false).text(originalText);
@@ -222,7 +224,7 @@
                 $status.html(
                     '<span class="fp-voucher-applied">' +
                     '<i class="dashicons dashicons-yes-alt"></i> ' +
-                    'Voucher applied: ' + data.discount_info.description +
+                    sprintf(__('Voucher applied: %s', 'fp-esperienze'), data.discount_info.description) +
                     '</span>'
                 ).addClass('success').show();
                 
@@ -435,13 +437,13 @@
                     self.displayTimeSlots(response.slots);
                 },
                 error: function(xhr, status, error) {
-                    var errorMsg = 'Failed to load availability.';
+                    var errorMsg = __('Failed to load availability.', 'fp-esperienze');
                     if (xhr.responseJSON && xhr.responseJSON.message) {
                         errorMsg = xhr.responseJSON.message;
                     } else if (status === 'timeout') {
-                        errorMsg = 'Request timed out. Please try again.';
+                        errorMsg = __('Request timed out. Please try again.', 'fp-esperienze');
                     } else if (status === 'error') {
-                        errorMsg = 'Network error. Please check your connection.';
+                        errorMsg = __('Network error. Please check your connection.', 'fp-esperienze');
                     }
                     self.showError(errorMsg);
                     $('#fp-time-slots').html('<p class="fp-slots-placeholder">' + errorMsg + '</p>');
