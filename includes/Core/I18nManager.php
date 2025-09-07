@@ -98,11 +98,11 @@ class I18nManager {
         $cache_key = 'fp_i18n_' . md5($key . $lang);
         $cached    = get_transient($cache_key);
 
-        if (false !== $cached) {
-            $translated = (string) $cached;
+        if (false === $cached) {
+            AutoTranslationQueue::addString($key, $original, $lang);
+            $translated = $original;
         } else {
-            $translated = AutoTranslator::translate($original, $lang);
-            set_transient($cache_key, $translated, WEEK_IN_SECONDS);
+            $translated = (string) $cached;
         }
 
         do_action('wpml_register_single_string', 'fp-esperienze', $key, $original);
