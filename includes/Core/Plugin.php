@@ -344,17 +344,20 @@ class Plugin {
             ]);
         }
 
-        // Localize script with WooCommerce data
+        // Localize frontend script with dynamic data
+        $frontend_params = [
+            'ajax_url' => admin_url('admin-ajax.php'),
+            'rest_url' => get_rest_url(),
+            'nonce' => wp_create_nonce('fp_esperienze_nonce'),
+            'voucher_nonce' => wp_create_nonce('fp_voucher_nonce'),
+            'banner_offset' => apply_filters('fp_esperienze_banner_offset', 20),
+        ];
+
         if (function_exists('wc_get_cart_url')) {
-            wp_localize_script('fp-esperienze-frontend', 'fp_esperienze_params', [
-                'cart_url' => wc_get_cart_url(),
-                'ajax_url' => admin_url('admin-ajax.php'),
-                'rest_url' => get_rest_url(),
-                'nonce' => wp_create_nonce('fp_esperienze_nonce'),
-                'voucher_nonce' => wp_create_nonce('fp_voucher_nonce'),
-                'banner_offset' => apply_filters('fp_esperienze_banner_offset', 20),
-            ]);
+            $frontend_params['cart_url'] = wc_get_cart_url();
         }
+
+        wp_localize_script('fp-esperienze-frontend', 'fp_esperienze_params', $frontend_params);
     }
 
     /**

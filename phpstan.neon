@@ -11,4 +11,5 @@ parameters:
         - '#Function wp_die invoked with 1 parameter#'
     checkMissingIterableValueType: false
     checkGenericClassInNonGenericObjectType: false
-    bootstrap: phpstan-bootstrap.php
+    bootstrapFiles:
+        - phpstan-bootstrap.php

@@ -605,7 +605,7 @@
             var childQty = parseInt($('#fp-qty-child').val()) || 0;
             var meetingPointId = $('#fp-meeting-point-id').val() || 1;
             
-            $('#fp-add-to-cart').prop('disabled', true).text('Adding...');
+            $('#fp-add-to-cart').prop('disabled', true).text(__('Adding...', 'fp-esperienze'));
             
             // Collect extras data
             var extras = {};
@@ -655,12 +655,12 @@
                         : '/cart';
                     window.location.href = cartUrl;
                 } else {
-                    throw new Error('Failed to add to cart');
+                    throw new Error(__('Failed to add to cart', 'fp-esperienze'));
                 }
             })
             .catch(function(error) {
-                self.showError('Failed to add to cart. Please try again.');
-                $('#fp-add-to-cart').prop('disabled', false).text('Add to Cart');
+                self.showError(__('Failed to add to cart. Please try again.', 'fp-esperienze'));
+                $('#fp-add-to-cart').prop('disabled', false).text(__('Add to Cart', 'fp-esperienze'));
             });
         },
 
