@@ -58,10 +58,10 @@ defined('ABSPATH') || exit;
                         <td>
                             <select name="language" id="fp-language-filter">
                                 <option value=""><?php _e('All Languages', 'fp-esperienze'); ?></option>
-                                <option value="en">English</option>
-                                <option value="it">Italiano</option>
-                                <option value="es">Español</option>
-                                <option value="fr">Français</option>
+                                <option value="en"><?php echo esc_html( \FP\Esperienze\Core\I18nManager::translateString('English', 'language_english') ); ?></option>
+                                <option value="it"><?php echo esc_html( \FP\Esperienze\Core\I18nManager::translateString('Italiano', 'language_italian') ); ?></option>
+                                <option value="es"><?php echo esc_html( \FP\Esperienze\Core\I18nManager::translateString('Español', 'language_spanish') ); ?></option>
+                                <option value="fr"><?php echo esc_html( \FP\Esperienze\Core\I18nManager::translateString('Français', 'language_french') ); ?></option>
                             </select>
                         </td>
                     </tr>
