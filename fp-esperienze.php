@@ -75,6 +75,11 @@ if (!$composer_available) {
     require_once $autoloader_path;
 }
 
+// Register WP-CLI commands.
+if (defined('WP_CLI') && WP_CLI) {
+    \WP_CLI::add_command('fp-esperienze', \FP\Esperienze\CLI\TranslateCommand::class);
+}
+
 /**
  * Initialize the plugin
  */

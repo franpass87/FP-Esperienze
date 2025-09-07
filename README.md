@@ -1324,7 +1324,15 @@ find . -name "*.php" -not -path "./vendor/*" | xargs xgettext \
   --default-domain=fp-esperienze \
   --output=languages/fp-esperienze.pot \
   --add-comments=translators \
-  --force-po
+--force-po
+```
+
+### WP-CLI Translation Command
+
+Queue all plugin content for translation via WP-CLI:
+
+```bash
+wp fp-esperienze translate
 ```
 
 ### JavaScript Localization
