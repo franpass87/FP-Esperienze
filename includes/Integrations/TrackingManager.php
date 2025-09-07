@@ -91,20 +91,32 @@ class TrackingManager {
                 true
             );
             
-            // Localize script with tracking settings
+            // Localize script with sanitized tracking settings
             wp_localize_script('fp-esperienze-tracking', 'fpTrackingSettings', [
-                'ga4_enabled' => $this->isGA4Enabled(),
-                'meta_enabled' => $this->isMetaPixelEnabled(),
-                'gads_enabled' => $this->isGoogleAdsEnabled(),
-                'ga4_measurement_id' => $this->settings['ga4_measurement_id'] ?? '',
-                'meta_pixel_id' => $this->settings['meta_pixel_id'] ?? '',
-                'gads_conversion_id' => $this->settings['gads_conversion_id'] ?? '',
-                'gads_purchase_label' => $this->settings['gads_purchase_label'] ?? '',
-                'currency' => get_woocommerce_currency(),
+                'ga4_enabled'       => $this->isGA4Enabled(),
+                'meta_enabled'      => $this->isMetaPixelEnabled(),
+                'gads_enabled'      => $this->isGoogleAdsEnabled(),
+                'ga4_measurement_id'=> isset($this->settings['ga4_measurement_id'])
+                    ? esc_js(sanitize_text_field($this->settings['ga4_measurement_id']))
+                    : '',
+                'meta_pixel_id'     => isset($this->settings['meta_pixel_id'])
+                    ? esc_js(sanitize_text_field($this->settings['meta_pixel_id']))
+                    : '',
+                'gads_conversion_id'=> isset($this->settings['gads_conversion_id'])
+                    ? esc_js(sanitize_text_field($this->settings['gads_conversion_id']))
+                    : '',
+                'gads_purchase_label'=> isset($this->settings['gads_purchase_label'])
+                    ? esc_js(sanitize_text_field($this->settings['gads_purchase_label']))
+                    : '',
+                'currency'          => esc_js(sanitize_text_field(get_woocommerce_currency())),
                 // Consent Mode v2 settings
                 'consent_mode_enabled' => !empty($this->settings['consent_mode_enabled']),
-                'consent_cookie_name' => $this->settings['consent_cookie_name'] ?? 'marketing_consent',
-                'consent_js_function' => $this->settings['consent_js_function'] ?? '',
+                'consent_cookie_name'  => isset($this->settings['consent_cookie_name'])
+                    ? esc_js(sanitize_text_field($this->settings['consent_cookie_name']))
+                    : 'marketing_consent',
+                'consent_js_function'  => isset($this->settings['consent_js_function'])
+                    ? esc_js(sanitize_text_field($this->settings['consent_js_function']))
+                    : '',
             ]);
         }
     }
