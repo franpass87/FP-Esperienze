@@ -177,7 +177,7 @@ jQuery(document).ready(function($) {
                                     $flag = isset($language_flags[$trimmed_lang]) ? $language_flags[$trimmed_lang] : '🌐';
                                 ?>
                                     <span class="fp-language-chip">
-                                        <span class="fp-language-flag"><?php echo $flag; ?></span>
+                                        <span class="fp-language-flag"><?php echo wp_kses_post($flag); ?></span>
                                         <?php echo esc_html($trimmed_lang); ?>
                                     </span>
                                 <?php endforeach; ?>
