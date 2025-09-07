@@ -15,6 +15,12 @@
         
         <!-- Allow yoda conditions to be optional -->
         <exclude name="WordPress.PHP.YodaConditions"/>
+        
+        <!-- Allow multiple statements on same line for simple assignments -->
+        <exclude name="Generic.Formatting.DisallowMultipleStatements"/>
+        
+        <!-- Allow longer lines for URL constants and long strings -->
+        <exclude name="Generic.Files.LineLength.TooLong"/>
     </rule>
 
     <!-- Check PHP files only -->

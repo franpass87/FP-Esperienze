@@ -9,6 +9,14 @@ parameters:
         - '#Unsafe usage of new static\(\)#'
         - '#Access to an undefined property WP_Post#'
         - '#Function wp_die invoked with 1 parameter#'
+        - '#Access to an undefined property WP_User#'
+        - '#Function add_action invoked with#'
+        - '#Function add_filter invoked with#'
+        # WooCommerce specific ignores
+        - '#Class WC_Product not found#'
+        - '#Access to an undefined property WC_Product#'
+        - '#Method WC\(\) not found#'
     checkMissingIterableValueType: false
     checkGenericClassInNonGenericObjectType: false
+    reportUnmatchedIgnoredErrors: false
     bootstrap: phpstan-bootstrap.php

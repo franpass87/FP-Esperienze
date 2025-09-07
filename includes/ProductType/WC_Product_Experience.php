@@ -1,6 +1,9 @@
 <?php
 /**
  * WooCommerce Experience Product Class
+ * 
+ * Note: This class intentionally doesn't use namespace to maintain compatibility
+ * with WooCommerce's product registration system which expects global classes.
  *
  * @package FP\Esperienze\ProductType
  */

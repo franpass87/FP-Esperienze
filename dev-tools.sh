@@ -159,8 +159,29 @@ run_all_tests() {
     
     local failed=0
     
-    run_phpstan || failed=1
-    run_phpcs || failed=1
+    # Run PHP standards check first
+    print_status "Running PHP standards compliance check..."
+    if [ -f "php-standards-checker.php" ]; then
+        php php-standards-checker.php || failed=1
+    else
+        print_warning "PHP standards checker not found"
+    fi
+    
+    # Try to run PHPStan if available
+    if [ -f "vendor/bin/phpstan" ]; then
+        run_phpstan || failed=1
+    else
+        print_warning "PHPStan not available, skipping static analysis"
+    fi
+    
+    # Try to run PHPCS if available  
+    if [ -f "vendor/bin/phpcs" ]; then
+        run_phpcs || failed=1
+    else
+        print_warning "PHPCS not available, skipping code style check"
+    fi
+    
+    # Run JavaScript validation
     validate_js || failed=1
     
     if [ $failed -eq 0 ]; then
@@ -247,6 +268,7 @@ show_help() {
     echo "  fix-style      Fix code style issues with PHPCBF"
     echo "  js-check       Validate JavaScript syntax"
     echo "  minify         Minify assets"
+    echo "  standards      Run PHP standards compliance check"
     echo "  test           Run all quality checks"
     echo "  performance    Generate performance report"
     echo "  security       Run basic security checks"
@@ -277,6 +299,14 @@ case "${1:-help}" in
         ;;
     "minify")
         minify_assets
+        ;;
+    "standards")
+        if [ -f "php-standards-checker.php" ]; then
+            php php-standards-checker.php
+        else
+            print_error "PHP standards checker not found"
+            exit 1
+        fi
         ;;
     "test")
         run_all_tests
