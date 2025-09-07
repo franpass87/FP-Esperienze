@@ -1555,7 +1555,7 @@ class Experience {
         // Save basic experience fields
         $fields = [
             '_fp_exp_duration',
-            '_fp_exp_capacity', 
+            '_fp_exp_capacity',
             '_fp_exp_language',
             '_fp_exp_price_child',
             '_experience_adult_price',
@@ -1570,10 +1570,37 @@ class Experience {
             '_fp_exp_no_show_policy'
         ];
 
+        $int_fields = [
+            '_fp_exp_duration',
+            '_fp_exp_capacity',
+            '_fp_exp_meeting_point_id',
+            '_fp_exp_cutoff_minutes',
+            '_fp_exp_free_cancel_until_minutes'
+        ];
+
+        $float_fields = [
+            '_fp_exp_price_child',
+            '_experience_adult_price',
+            '_experience_child_price',
+            '_fp_exp_cancel_fee_percent'
+        ];
+
         foreach ($fields as $field) {
-            if (isset($_POST[$field])) {
-                update_post_meta($post_id, $field, sanitize_text_field(wp_unslash($_POST[$field])));
+            if (!isset($_POST[$field])) {
+                continue;
             }
+
+            $raw_value = wp_unslash($_POST[$field]);
+
+            if (in_array($field, $int_fields, true)) {
+                $value = absint($raw_value);
+            } elseif (in_array($field, $float_fields, true)) {
+                $value = floatval($raw_value);
+            } else {
+                $value = sanitize_text_field($raw_value);
+            }
+
+            update_post_meta($post_id, $field, $value);
         }
         
         // Save textarea fields with appropriate sanitization
