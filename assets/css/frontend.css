@@ -1365,6 +1365,16 @@ body.admin-bar .fp-booking-widget {
     100% { transform: rotate(360deg); }
 }
 
+@media (prefers-reduced-motion: reduce) {
+    .fp-experience-card.fp-skeleton,
+    .fp-experience-image img,
+    .fp-btn-primary,
+    .fp-btn-secondary {
+        animation: none;
+        transition: none;
+    }
+}
+
 /* Error Messages */
 .fp-error-messages {
     margin-top: 16px;
