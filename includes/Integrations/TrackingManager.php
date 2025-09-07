@@ -506,35 +506,26 @@ class TrackingManager {
             return false;
         }
         
-        // This is a placeholder for Meta Conversions API implementation
-        // Requires Meta access token and proper server-side setup
-        // For now, we'll log the event for future implementation
-        
-        $payload = [
-            'data' => [
-                [
-                    'event_name' => $event_name,
-                    'event_time' => time(),
-                    'action_source' => 'website',
-                    'event_source_url' => home_url(),
-                    'custom_data' => $event_data,
-                ]
-            ]
-        ];
-        
-        if ($event_id) {
-            $payload['data'][0]['event_id'] = $event_id;
+        $access_token = $this->settings['meta_access_token'] ?? '';
+        $dataset_id   = $this->settings['meta_dataset_id'] ?? '';
+
+        if (empty($access_token) || empty($dataset_id)) {
+            error_log('FP Esperienze Meta CAPI Error: Missing access token or dataset ID');
+            return false;
         }
-        
-        // TODO: Implement actual Meta Conversions API call
-        // This would require:
-        // 1. Meta access token configuration
-        // 2. Dataset ID configuration  
-        // 3. Proper API authentication
-        // 4. HTTP request to Meta's Conversions API endpoint
-        
-        error_log('FP Esperienze: Meta CAPI event (placeholder): ' . wp_json_encode($payload));
-        
-        return true;
+
+        if (!ctype_digit((string) $dataset_id)) {
+            error_log('FP Esperienze Meta CAPI Error: Invalid dataset ID');
+            return false;
+        }
+
+        $manager = new MetaCAPIManager();
+        $response = $manager->sendEvent($event_name, $event_data, null, $event_id);
+
+        if (!$response) {
+            error_log('FP Esperienze Meta CAPI Failed to send event: ' . $event_name);
+        }
+
+        return $response;
     }
 }
