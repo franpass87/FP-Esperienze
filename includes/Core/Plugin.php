@@ -35,7 +35,7 @@ use FP\Esperienze\Core\I18nManager;
 use FP\Esperienze\Core\CacheManager;
 use FP\Esperienze\Core\AssetOptimizer;
 use FP\Esperienze\Core\QueryMonitor;
-use FP\Esperienze\Core\AutoTranslationQueue;
+use FP\Esperienze\Core\TranslationQueue;
 
 defined('ABSPATH') || exit;
 
@@ -77,8 +77,8 @@ class Plugin {
         // Initialize the Experience product type EARLY to ensure it's registered before WooCommerce loads product types
         add_action('init', [$this, 'initExperienceProductType'], 5);
 
-        // Initialize auto translation queue
-        AutoTranslationQueue::init();
+        // Initialize translation queue
+        TranslationQueue::init();
         
         // Initialize other components later
         add_action('init', [$this, 'initComponents'], 20);

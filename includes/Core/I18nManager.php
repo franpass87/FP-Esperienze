@@ -88,7 +88,7 @@ class I18nManager {
      *
      * @return string Translated text.
      */
-    public static function translateString(string $original, string $key): string {
+    public static function translateString(string $original, string $key, bool $queue = true): string {
         $lang = self::getCurrentLanguage();
 
         if (empty($lang)) {
@@ -99,7 +99,9 @@ class I18nManager {
         $cached    = get_transient($cache_key);
 
         if (false === $cached) {
-            AutoTranslationQueue::addString($key, $original, $lang);
+            if ($queue) {
+                TranslationQueue::addString($key, $original, $lang);
+            }
             $translated = $original;
         } else {
             $translated = (string) $cached;
