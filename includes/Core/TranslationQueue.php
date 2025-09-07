@@ -41,6 +41,11 @@ class TranslationQueue {
         add_action('init', [self::class, 'registerPostType']);
         add_action(self::CRON_HOOK, [self::class, 'processQueue']);
         add_action('save_post', [self::class, 'queuePost'], 10, 2);
+
+        // Ensure the cron event is scheduled.
+        if (!wp_next_scheduled(self::CRON_HOOK)) {
+            wp_schedule_event(time() + MINUTE_IN_SECONDS, 'hourly', self::CRON_HOOK);
+        }
     }
 
     /**
