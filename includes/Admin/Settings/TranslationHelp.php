@@ -49,7 +49,7 @@ class TranslationHelp {
                     echo wp_kses_post(
                         sprintf(
                             /* translators: %s: WPML translation modes documentation URL */
-                            __('Enable WPML and select the <strong>Translate Everything</strong> mode in <a href="%s" target="_blank">WPML → Settings</a>.', 'fp-esperienze'),
+                            __('Install and activate WPML, then go to <a href="%s" target="_blank">WPML → Settings</a> and choose the <strong>Translate Everything</strong> mode.', 'fp-esperienze'),
                             'https://wpml.org/documentation/getting-started-guide/translation-modes/'
                         )
                     );
@@ -64,7 +64,7 @@ class TranslationHelp {
                     echo wp_kses_post(
                         sprintf(
                             /* translators: %s: LibreTranslate URL */
-                            __('Configure the automatic translator endpoint (e.g., %1$sLibreTranslate%2$s) in the Auto Translation settings page.', 'fp-esperienze'),
+                            __('Set the automatic translator endpoint and API key (e.g., %1$sLibreTranslate%2$s) in the Auto Translation settings page.', 'fp-esperienze'),
                             '<a href="https://libretranslate.com/" target="_blank">',
                             '</a>'
                         )
