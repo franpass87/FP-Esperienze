@@ -8,6 +8,7 @@
 namespace FP\Esperienze\Core;
 
 use FP\Esperienze\Core\CapabilityManager;
+use FP\Esperienze\Core\TranslationQueue;
 
 defined('ABSPATH') || exit;
 
@@ -34,6 +35,11 @@ class Installer {
         
         // Update version option
         update_option('fp_esperienze_version', FP_ESPERIENZE_VERSION);
+
+        // Schedule translation queue processing
+        if (!wp_next_scheduled(TranslationQueue::CRON_HOOK)) {
+            wp_schedule_event(time() + MINUTE_IN_SECONDS, 'hourly', TranslationQueue::CRON_HOOK);
+        }
         
         // Set activation redirect transient (only if not already complete)
         if (!get_option('fp_esperienze_setup_complete', false)) {
@@ -52,6 +58,7 @@ class Installer {
             'fp_daily_ai_analysis',
             'fp_esperienze_prebuild_availability',
             'fp_esperienze_retry_webhook',
+            'fp_es_process_translation_queue',
         ];
 
         // Clear all scheduled events for the plugin
