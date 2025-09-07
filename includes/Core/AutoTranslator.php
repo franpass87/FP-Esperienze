@@ -53,16 +53,19 @@ class AutoTranslator {
         ]);
 
         if (is_wp_error($response)) {
+            TranslationLogger::log('AutoTranslator request error: ' . $response->get_error_message());
             return $text;
         }
 
         $code = wp_remote_retrieve_response_code($response);
         if (200 !== $code) {
+            TranslationLogger::log('AutoTranslator HTTP status ' . $code);
             return $text;
         }
 
         $data = json_decode(wp_remote_retrieve_body($response), true);
         if (!is_array($data) || empty($data['translatedText'])) {
+            TranslationLogger::log('AutoTranslator invalid response: ' . wp_remote_retrieve_body($response));
             return $text;
         }
 

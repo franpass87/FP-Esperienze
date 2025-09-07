@@ -33,6 +33,14 @@ class AutoTranslateSettings {
      * Register settings and fields.
      */
     public function registerSettings(): void {
+        if (
+            isset($_POST['fp_lt_clear_cache']) &&
+            check_admin_referer('fp_lt_clear_cache_action', 'fp_lt_clear_cache_nonce')
+        ) {
+            $this->clearTranslationCache();
+            add_settings_error('fp_lt_settings', 'cache_cleared', esc_html__('Translation cache cleared.', 'fp-esperienze'), 'updated');
+        }
+
         register_setting(
             'fp_lt_settings',
             self::OPTION_ENDPOINT,
@@ -92,6 +100,14 @@ class AutoTranslateSettings {
             'fp_lt_settings',
             'fp_lt_section'
         );
+
+        add_settings_field(
+            'fp_lt_clear_cache',
+            __('Svuota cache', 'fp-esperienze'),
+            [$this, 'clearCacheField'],
+            'fp_lt_settings',
+            'fp_lt_section'
+        );
     }
 
     /**
@@ -125,6 +141,29 @@ class AutoTranslateSettings {
         $value = (int) get_option(self::OPTION_CACHE_TTL, WEEK_IN_SECONDS);
         echo '<input type="number" id="' . esc_attr(self::OPTION_CACHE_TTL) . '" name="' . esc_attr(self::OPTION_CACHE_TTL) . '" value="' . esc_attr($value) . '" class="small-text" min="0" />';
         echo '<p class="description">' . esc_html__('Time in seconds to cache translations.', 'fp-esperienze') . '</p>';
+    }
+
+    /**
+     * Clear cache button field.
+     */
+    public function clearCacheField(): void {
+        wp_nonce_field('fp_lt_clear_cache_action', 'fp_lt_clear_cache_nonce');
+        echo '<button type="submit" name="fp_lt_clear_cache" class="button">' . esc_html__('Svuota cache', 'fp-esperienze') . '</button>';
+    }
+
+    /**
+     * Delete translation transients.
+     */
+    private function clearTranslationCache(): void {
+        global $wpdb;
+        $patterns = ['_transient_fp_tr_%', '_transient_fp_i18n_%'];
+        foreach ($patterns as $pattern) {
+            $names = $wpdb->get_col($wpdb->prepare("SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE %s", $pattern));
+            foreach ($names as $option_name) {
+                $key = substr($option_name, strlen('_transient_'));
+                delete_transient($key);
+            }
+        }
     }
 }
 
