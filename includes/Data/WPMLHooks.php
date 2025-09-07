@@ -7,6 +7,7 @@
 
 namespace FP\Esperienze\Data;
 
+use FP\Esperienze\Admin\Settings\AutoTranslateSettings;
 use FP\Esperienze\Core\I18nManager;
 
 defined('ABSPATH') || exit;
@@ -43,7 +44,9 @@ class WPMLHooks {
         }
 
         // Determine available languages.
-        $languages = I18nManager::getAvailableLanguages();
+        $available = I18nManager::getAvailableLanguages();
+        $selected  = (array) get_option(AutoTranslateSettings::OPTION_TARGET_LANGUAGES, []);
+        $languages = !empty($selected) ? array_values(array_intersect($available, $selected)) : $available;
         if (empty($languages)) {
             return;
         }

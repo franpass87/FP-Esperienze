@@ -7,6 +7,7 @@
 
 namespace FP\Esperienze\CLI;
 
+use FP\Esperienze\Admin\Settings\AutoTranslateSettings;
 use FP\Esperienze\Core\I18nManager;
 use FP\Esperienze\Data\MeetingPointManager;
 use WP_CLI;
@@ -27,7 +28,9 @@ class TranslateCommand extends WP_CLI_Command {
      *     wp fp-esperienze translate
      */
     public function translate($args, $assoc_args): void {
-        $languages = I18nManager::getAvailableLanguages();
+        $available = I18nManager::getAvailableLanguages();
+        $selected  = (array) get_option(AutoTranslateSettings::OPTION_TARGET_LANGUAGES, []);
+        $languages = !empty($selected) ? array_values(array_intersect($available, $selected)) : $available;
 
         // Process experience products.
         $experience_ids = get_posts([
