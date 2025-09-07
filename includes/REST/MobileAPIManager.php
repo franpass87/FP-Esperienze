@@ -53,6 +53,12 @@ class MobileAPIManager {
             'permission_callback' => '__return_true'
         ]);
 
+        register_rest_route(self::API_NAMESPACE, '/mobile/auth/logout', [
+            'methods' => 'POST',
+            'callback' => [$this, 'mobileLogout'],
+            'permission_callback' => [$this, 'checkMobileAuth']
+        ]);
+
         // Experience endpoints
         register_rest_route(self::API_NAMESPACE, '/mobile/experiences', [
             'methods' => 'GET',
@@ -254,6 +260,26 @@ class MobileAPIManager {
                 'display_name' => $user->display_name
             ]
         ], 201);
+    }
+
+    /**
+     * Mobile logout endpoint
+     *
+     * @param WP_REST_Request $request Request object
+     * @return WP_REST_Response|WP_Error Response
+     */
+    public function mobileLogout(WP_REST_Request $request): WP_REST_Response|WP_Error {
+        if (!$this->checkMobileAuth($request)) {
+            return new WP_Error('invalid_token', __('Unauthorized', 'fp-esperienze'), ['status' => 401]);
+        }
+
+        $user_id = $this->getCurrentMobileUserId($request);
+
+        if ($user_id) {
+            update_user_meta($user_id, '_mobile_token_revoked', time());
+        }
+
+        return new WP_REST_Response(['success' => true]);
     }
 
     /**
@@ -1001,12 +1027,19 @@ class MobileAPIManager {
         }
 
         $data = json_decode($payload, true);
-        
+
         if (!$data || $data['exp'] < time()) {
             return null;
         }
 
-        return intval($data['user_id']);
+        $user_id = intval($data['user_id']);
+        $revoked = (int) get_user_meta($user_id, '_mobile_token_revoked', true);
+
+        if ($revoked && (!isset($data['iat']) || (int) $data['iat'] <= $revoked)) {
+            return null;
+        }
+
+        return $user_id;
     }
 
     private function getMobileProductImages(\WC_Product $product): array {
