@@ -171,7 +171,7 @@ class Shortcodes {
 
         // Language filter
         if (in_array('lang', $enabled_filters) && !empty($_GET['fp_lang'])) {
-            $language = sanitize_text_field($_GET['fp_lang']);
+            $language = sanitize_text_field(wp_unslash($_GET['fp_lang']));
             $args['meta_query'][] = [
                 'key'     => '_fp_exp_langs',
                 'value'   => $language,
@@ -181,7 +181,7 @@ class Shortcodes {
 
         // Meeting point filter
         if (in_array('mp', $enabled_filters) && !empty($_GET['fp_mp'])) {
-            $meeting_point_id = absint($_GET['fp_mp']);
+            $meeting_point_id = absint(wp_unslash($_GET['fp_mp']));
             $args['meta_query'][] = [
                 'key'     => '_fp_exp_meeting_point_id',
                 'value'   => $meeting_point_id,
@@ -191,7 +191,7 @@ class Shortcodes {
 
         // Duration filter
         if (in_array('duration', $enabled_filters) && !empty($_GET['fp_duration'])) {
-            $duration_range = sanitize_text_field($_GET['fp_duration']);
+            $duration_range = sanitize_text_field(wp_unslash($_GET['fp_duration']));
             switch ($duration_range) {
                 case '<=90':
                     $args['meta_query'][] = [
@@ -222,7 +222,7 @@ class Shortcodes {
 
         // Date availability filter
         if (in_array('date', $enabled_filters) && !empty($_GET['fp_date'])) {
-            $date = sanitize_text_field($_GET['fp_date']);
+            $date = sanitize_text_field(wp_unslash($_GET['fp_date']));
             if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
                 // Get products with availability on this date
                 $available_products = $this->getAvailableProductsForDate($date);
