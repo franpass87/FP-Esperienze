@@ -2,7 +2,7 @@
 
 /* CSS Custom Properties for consistent colors and accessibility */
 :root {
-    --fp-brand-orange: var(--fp-brand-orange); /* Original for backgrounds and borders */
+    --fp-brand-orange: #ff6b35; /* Brand primary orange for backgrounds and borders */
     --fp-brand-orange-text: #b24a25; /* Darker variant for text - meets AA contrast */
     --fp-text-gray: #555; /* Improved from #666 for better contrast */
     --fp-text-light-gray: #666; /* Improved from #999 for better contrast */
