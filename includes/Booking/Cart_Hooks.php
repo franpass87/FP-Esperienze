@@ -67,7 +67,10 @@ class Cart_Hooks {
         $qty_adult = absint(wp_unslash($_POST['fp_qty_adult'] ?? 0));
         $qty_child = absint(wp_unslash($_POST['fp_qty_child'] ?? 0));
         $extras_data = json_decode(wp_unslash($_POST['fp_extras'] ?? ''), true);
-        
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            wp_send_json_error(['message' => __('Invalid extras payload', 'fp-esperienze')]);
+        }
+
         // Get gift data from POST
         $is_gift = !empty($_POST['fp_is_gift']);
         $gift_sender_name = sanitize_text_field(wp_unslash($_POST['fp_gift_sender_name'] ?? ''));
