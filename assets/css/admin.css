@@ -1,3 +1,7 @@
+html {
+    font-size: 16px;
+}
+
 /* FP Esperienze Admin Styles with Modern Design System */
 
 /* ========================================
@@ -85,7 +89,7 @@
     margin-top: 0;
     margin-bottom: 15px;
     color: #1d2327;
-    font-size: 16px;
+    font-size: 1rem;
 }
 
 /* Experience Product Type */
@@ -242,7 +246,7 @@
     border-bottom: 1px solid #c3c4c7;
     margin: 0;
     padding: 15px 20px;
-    font-size: 14px;
+    font-size: 0.875rem;
     font-weight: 600;
     color: #1d2327;
     border-radius: 6px 6px 0 0;
@@ -257,7 +261,7 @@
     border-left: 4px solid #0073aa;
     padding: 12px 16px;
     margin-bottom: 20px;
-    font-size: 13px;
+    font-size: 0.8125rem;
     line-height: 1.5;
     color: #1d2327;
     border-radius: 0 4px 4px 0;
@@ -274,20 +278,20 @@
 }
 
 .fp-empty-state-icon {
-    font-size: 48px;
+    font-size: 3rem;
     color: #8c8f94;
     margin-bottom: 16px;
 }
 
 .fp-empty-state-title {
-    font-size: 16px;
+    font-size: 1rem;
     font-weight: 600;
     color: #1d2327;
     margin-bottom: 8px;
 }
 
 .fp-empty-state-description {
-    font-size: 13px;
+    font-size: 0.8125rem;
     color: #646970;
     margin-bottom: 20px;
     line-height: 1.5;
@@ -300,12 +304,12 @@
     padding: 12px;
     margin: 16px 0 20px;
     text-align: left;
-    font-size: 12px;
+    font-size: 0.75rem;
 }
 
 .fp-empty-state-examples h5 {
     margin: 0 0 8px 0;
-    font-size: 13px;
+    font-size: 0.8125rem;
     font-weight: 600;
     color: #1d2327;
 }
@@ -326,7 +330,7 @@
     border: none;
     padding: 12px 24px;
     border-radius: 6px;
-    font-size: 14px;
+    font-size: 0.875rem;
     font-weight: 500;
     cursor: pointer;
     display: inline-flex;
@@ -343,7 +347,7 @@
 }
 
 .fp-primary-button .dashicons {
-    font-size: 16px;
+    font-size: 1rem;
 }
 
 /* Enhanced summary table */
@@ -358,7 +362,7 @@
     background: #f6f7f7;
     border-bottom: 1px solid #e1e5e9;
     padding: 12px 16px;
-    font-size: 13px;
+    font-size: 0.8125rem;
     font-weight: 600;
     color: #1d2327;
     display: flex;
@@ -385,7 +389,7 @@
     border: 1px solid #e1e5e9;
     padding: 8px 12px;
     text-align: left;
-    font-size: 12px;
+    font-size: 0.75rem;
     font-weight: 600;
     color: #1d2327;
 }
@@ -393,7 +397,7 @@
 .fp-summary-table td {
     border: 1px solid #e1e5e9;
     padding: 8px 12px;
-    font-size: 13px;
+    font-size: 0.8125rem;
     color: #1d2327;
 }
 
@@ -402,7 +406,7 @@
     color: #fff;
     padding: 4px 8px;
     border-radius: 3px;
-    font-size: 12px;
+    font-size: 0.75rem;
     font-weight: 500;
     font-family: monospace;
 }
@@ -413,7 +417,7 @@
     color: #2271b1;
     padding: 2px 6px;
     border-radius: 3px;
-    font-size: 11px;
+    font-size: 0.6875rem;
     font-weight: 500;
     margin-right: 4px;
     margin-bottom: 2px;
@@ -531,7 +535,7 @@
     padding: 6px 8px;
     border: 1px solid #ddd;
     border-radius: 4px;
-    font-size: 13px;
+    font-size: 0.8125rem;
     background: #fff;
 }
 
@@ -556,7 +560,7 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 13px;
+    font-size: 0.8125rem;
     color: #1d2327;
 }
 
@@ -585,7 +589,7 @@
     padding: 6px 12px;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 12px;
+    font-size: 0.75rem;
     font-weight: 500;
     white-space: nowrap;
     transition: all 0.2s ease;
@@ -602,7 +606,7 @@
 }
 
 .fp-override-remove .dashicons {
-    font-size: 14px;
+    font-size: 0.875rem;
 }
 
 /* Status indicators */
@@ -610,7 +614,7 @@
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    font-size: 12px;
+    font-size: 0.75rem;
     font-weight: 500;
 }
 
@@ -633,7 +637,7 @@
     border-radius: 4px;
     padding: 8px 12px;
     margin-top: 4px;
-    font-size: 12px;
+    font-size: 0.75rem;
     color: #b32d2e;
     display: none;
 }
@@ -672,7 +676,7 @@
     border-left: 4px solid #0073aa;
     padding: 12px 16px;
     margin-bottom: 20px;
-    font-size: 13px;
+    font-size: 0.8125rem;
     line-height: 1.5;
     color: #50575e;
 }
@@ -726,7 +730,7 @@
 
 .fp-override-date-field .dashicons {
     color: #646970;
-    font-size: 16px;
+    font-size: 1rem;
 }
 
 .fp-override-actions {
@@ -750,7 +754,7 @@
 }
 
 .fp-override-field label {
-    font-size: 12px;
+    font-size: 0.75rem;
     font-weight: 600;
     color: #1d2327;
     text-transform: uppercase;
@@ -767,7 +771,7 @@
     padding: 8px 12px;
     border: 1px solid #c3c4c7;
     border-radius: 4px;
-    font-size: 13px;
+    font-size: 0.8125rem;
     transition: all 0.2s ease;
     background: #fff;
 }
@@ -802,7 +806,7 @@
 }
 
 .fp-override-checkbox label {
-    font-size: 13px;
+    font-size: 0.8125rem;
     font-weight: 500;
     color: #1d2327;
     cursor: pointer;
@@ -836,7 +840,7 @@
     color: #d63638;
     padding: 6px 12px;
     border-radius: 4px;
-    font-size: 12px;
+    font-size: 0.75rem;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -853,7 +857,7 @@
 }
 
 .fp-override-remove .dashicons {
-    font-size: 14px;
+    font-size: 0.875rem;
 }
 
 /* Empty state styling */
@@ -866,7 +870,7 @@
 
 .fp-overrides-empty p {
     margin: 0 0 16px 0;
-    font-size: 14px;
+    font-size: 0.875rem;
 }
 
 /* Add override button */
@@ -876,7 +880,7 @@
     border: none;
     padding: 10px 16px;
     border-radius: 4px;
-    font-size: 13px;
+    font-size: 0.8125rem;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -891,7 +895,7 @@
 }
 
 .fp-add-override .dashicons {
-    font-size: 16px;
+    font-size: 1rem;
 }
 
 /* Enhanced add override button */
@@ -901,7 +905,7 @@
     color: #fff !important;
     padding: 12px 20px !important;
     border-radius: 6px !important;
-    font-size: 14px !important;
+    font-size: 0.875rem !important;
     font-weight: 500 !important;
     cursor: pointer !important;
     display: inline-flex !important;
@@ -919,7 +923,7 @@
 }
 
 .fp-add-override .dashicons {
-    font-size: 16px;
+    font-size: 1rem;
 }
 
 /* WordPress standard responsive styles */
@@ -933,7 +937,7 @@
 }
 
 .fp-section-legend {
-    font-size: 14px;
+    font-size: 0.875rem;
     font-weight: 600;
     color: #1d2327;
     margin-bottom: 16px;
@@ -1065,7 +1069,7 @@
     }
     
     .fp-summary-table {
-        font-size: 12px;
+        font-size: 0.75rem;
     }
     
     .fp-summary-table th,
@@ -1101,7 +1105,7 @@
 
 }    
     .fp-summary-table {
-        font-size: 12px;
+        font-size: 0.75rem;
     }
     
       .fp-summary-table th,
@@ -1137,7 +1141,7 @@
     }
 
     .fp-summary-table {
-        font-size: 11px;
+        font-size: 0.6875rem;
         display: block;
         overflow-x: auto;
         white-space: nowrap;
@@ -1151,17 +1155,17 @@
     
     .fp-time-field label,
     .fp-days-field label {
-        font-size: 12px !important;
+        font-size: 0.75rem !important;
     }
     
     .fp-time-field input[type="time"] {
         padding: 6px 10px !important;
-        font-size: 14px !important;
+        font-size: 0.875rem !important;
     }
     
     .fp-remove-time-slot {
         padding: 6px 10px !important;
-        font-size: 12px !important;
+        font-size: 0.75rem !important;
         margin-top: 10px !important;
     }
     
@@ -1192,7 +1196,7 @@
         width: 100%;
         justify-content: center;
         padding: 14px 20px !important;
-        font-size: 14px !important;
+        font-size: 0.875rem !important;
     }
     
     /* Hide summary table on very small screens */
@@ -1268,7 +1272,7 @@
 
 .fp-builder-section h5 {
     margin: 0 0 10px 0;
-    font-size: 14px;
+    font-size: 0.875rem;
     font-weight: 600;
     color: #1d2327;
 }
@@ -1287,7 +1291,7 @@
     margin: 0 0 20px 0;
     padding: 20px 20px 15px;
     border-bottom: 1px solid #c3c4c7;
-    font-size: 16px;
+    font-size: 1rem;
     font-weight: 600;
     color: #1d2327;
     display: flex;
@@ -1299,7 +1303,7 @@
 .fp-schedules-section h4::before {
     content: "\f507"; /* dashicons-clock */
     font-family: "dashicons";
-    font-size: 18px;
+    font-size: 1.125rem;
     color: #646970;
 }
 
@@ -1309,7 +1313,7 @@
     border-left: 4px solid #0073aa;
     padding: 15px 20px;
     border-radius: 0 4px 4px 0;
-    font-size: 13px;
+    font-size: 0.8125rem;
     color: #50575e;
     line-height: 1.6;
 }
@@ -1368,7 +1372,7 @@
 }
 
 .fp-time-field label {
-    font-size: 12px;
+    font-size: 0.75rem;
     font-weight: 600;
     color: #1d2327;
     text-transform: uppercase;
@@ -1386,7 +1390,7 @@
     padding: 10px 12px;
     border: 1px solid #c3c4c7;
     border-radius: 4px;
-    font-size: 14px;
+    font-size: 0.875rem;
     font-weight: 500;
     background: #fff;
     transition: all 0.2s ease;
@@ -1406,7 +1410,7 @@
 }
 
 .fp-days-field label {
-    font-size: 12px;
+    font-size: 0.75rem;
     font-weight: 600;
     color: #1d2327;
     text-transform: uppercase;
@@ -1448,7 +1452,7 @@
     background: #f6f7f7;
     border: 2px solid #e1e5e9;
     border-radius: 6px;
-    font-size: 11px;
+    font-size: 0.6875rem;
     font-weight: 600;
     color: #646970;
     cursor: pointer;
@@ -1478,7 +1482,7 @@
     color: #d63638;
     padding: 8px 12px;
     border-radius: 4px;
-    font-size: 12px;
+    font-size: 0.75rem;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -1496,7 +1500,7 @@
 }
 
 .fp-remove-time-slot .dashicons {
-    font-size: 14px;
+    font-size: 0.875rem;
 }
 
 /* Override toggle modern design */
@@ -1518,7 +1522,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 13px;
+    font-size: 0.8125rem;
     font-weight: 500;
     color: #1d2327;
     cursor: pointer;
@@ -1532,7 +1536,7 @@
 }
 
 .fp-override-toggle .description {
-    font-size: 12px;
+    font-size: 0.75rem;
     color: #646970;
     font-style: italic;
 }
@@ -1561,7 +1565,7 @@
 }
 
 .fp-overrides-grid .fp-override-field label {
-    font-size: 12px;
+    font-size: 0.75rem;
     font-weight: 600;
     color: #1d2327;
     text-transform: uppercase;
@@ -1573,7 +1577,7 @@
     padding: 8px 12px;
     border: 1px solid #c3c4c7;
     border-radius: 4px;
-    font-size: 13px;
+    font-size: 0.8125rem;
     background: #fff;
     transition: all 0.2s ease;
 }
@@ -1597,7 +1601,7 @@
     border: none;
     padding: 12px 20px;
     border-radius: 6px;
-    font-size: 14px;
+    font-size: 0.875rem;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -1613,7 +1617,7 @@
 }
 
 .fp-add-time-slot .dashicons {
-    font-size: 16px;
+    font-size: 1rem;
 }
 
 /* ========================================
@@ -1686,7 +1690,7 @@
     .fp-day-pill label {
         min-width: 32px;
         height: 32px;
-        font-size: 10px;
+        font-size: 0.625rem;
     }
     
     .fp-add-time-slot,
@@ -1713,12 +1717,12 @@
     gap: 8px !important;
     margin-bottom: 10px !important;
     color: #2d3748 !important;
-    font-size: 14px !important;
+    font-size: 0.875rem !important;
     letter-spacing: 0.025em;
 }
 
 .fp-time-field .dashicons {
-    font-size: 18px;
+    font-size: 1.125rem;
     background: linear-gradient(135deg, #667eea, #764ba2);
     -webkit-background-clip: text;
     background-clip: text;
@@ -1731,7 +1735,7 @@
     padding: 12px 16px !important;
     border: 2px solid #e2e8f0 !important;
     border-radius: 12px !important;
-    font-size: 15px !important;
+    font-size: 0.9375rem !important;
     font-weight: 500 !important;
     box-sizing: border-box !important;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
@@ -1760,12 +1764,12 @@
     gap: 8px !important;
     margin-bottom: 10px !important;
     color: #2d3748 !important;
-    font-size: 14px !important;
+    font-size: 0.875rem !important;
     letter-spacing: 0.025em;
 }
 
 .fp-days-field .dashicons {
-    font-size: 18px;
+    font-size: 1.125rem;
     background: linear-gradient(135deg, #667eea, #764ba2);
     -webkit-background-clip: text;
     background-clip: text;
@@ -1781,7 +1785,7 @@
     padding: 6px 10px !important;
     border-radius: 4px !important;
     cursor: pointer !important;
-    font-size: 13px !important;
+    font-size: 0.8125rem !important;
     font-weight: 500 !important;
     display: flex !important;
     align-items: center !important;
@@ -1797,13 +1801,13 @@
 }
 
 .fp-remove-time-slot .dashicons {
-    font-size: 16px !important;
+    font-size: 1rem !important;
     width: 16px !important;
     height: 16px !important;
 }
 
 .fp-remove-time-slot .dashicons {
-    font-size: 16px;
+    font-size: 1rem;
 }
 
 /* Enhanced override toggle styling with auto-enable feedback */
@@ -1834,7 +1838,7 @@
     align-items: center !important;
     gap: 10px !important;
     cursor: pointer !important;
-    font-size: 13px !important;
+    font-size: 0.8125rem !important;
     color: #1d2327 !important;
     transition: color 0.3s ease;
 }
@@ -1844,7 +1848,7 @@
 }
 
 .fp-override-toggle label .dashicons {
-    font-size: 16px;
+    font-size: 1rem;
     color: #72aee6;
     transition: color 0.3s ease;
 }
@@ -1862,7 +1866,7 @@
     font-style: italic !important;
     color: #666 !important;
     margin-top: 8px !important;
-    font-size: 12px !important;
+    font-size: 0.75rem !important;
     margin-left: 26px !important;
 }
 
@@ -1887,7 +1891,7 @@
     display: block;
     margin-bottom: 5px;
     color: #23282d;
-    font-size: 13px;
+    font-size: 0.8125rem;
 }
 
 .fp-overrides-section input,
@@ -1895,7 +1899,7 @@
     width: 160px;
     padding: 3px 5px;
     border: 1px solid #ddd;
-    font-size: 13px;
+    font-size: 0.8125rem;
     background: #fff;
 }
 
@@ -1918,7 +1922,7 @@
     border-bottom: 1px solid #ccd0d4;
     font-weight: 600;
     color: #23282d;
-    font-size: 14px;
+    font-size: 0.875rem;
 }
 
 .fp-slots-summary-header .dashicons {
@@ -1933,7 +1937,7 @@
 .fp-summary-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 14px;
+    font-size: 0.875rem;
     border-radius: 12px;
     overflow: hidden;
     box-shadow: 0 2px 8px rgba(0,0,0,0.04);
@@ -1952,7 +1956,7 @@
     font-weight: 700;
     color: #2d3748;
     border-bottom: 2px solid #e2e8f0;
-    font-size: 13px;
+    font-size: 0.8125rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
@@ -1972,7 +1976,7 @@
     color: #fff;
     padding: 4px 8px;
     border-radius: 12px;
-    font-size: 11px;
+    font-size: 0.6875rem;
     font-weight: 600;
 }
 
@@ -1980,7 +1984,7 @@
     background: #23282d;
     color: #fff;
     padding: 3px 8px;
-    font-size: 13px;
+    font-size: 0.8125rem;
 }
 
 .fp-summary-table .fp-empty-state {
@@ -1997,7 +2001,7 @@
     border: none;
     color: #fff;
     padding: 6px 10px;
-    font-size: 13px;
+    font-size: 0.8125rem;
     cursor: pointer;
     text-decoration: none;
     margin-top: 10px;
@@ -2013,7 +2017,7 @@
     border: none;
     color: #fff;
     padding: 6px 10px;
-    font-size: 13px;
+    font-size: 0.8125rem;
     cursor: pointer;
     text-decoration: none;
     margin-top: 10px;
@@ -2028,7 +2032,7 @@
     color: white;
     border: none;
     padding: 3px 8px;
-    font-size: 13px;
+    font-size: 0.8125rem;
     cursor: pointer;
 }
 
@@ -2037,7 +2041,7 @@
 }
 
 .fp-remove-time-slot .dashicons {
-    font-size: 14px !important;
+    font-size: 0.875rem !important;
     width: 14px !important;
     height: 14px !important;
 }
@@ -2235,7 +2239,7 @@ body.fp-reduced-animations .fp-loading::after {
     padding: 16px 24px;
     border-radius: 8px;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 0.875rem;
     font-weight: 600;
     text-decoration: none;
     display: inline-flex;
@@ -2296,7 +2300,7 @@ body.fp-reduced-animations .fp-loading::after {
     padding: 16px 24px;
     border-radius: 8px;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 0.875rem;
     font-weight: 600;
     text-decoration: none;
     display: inline-flex;
@@ -2390,7 +2394,7 @@ body.fp-reduced-animations .fp-loading::after {
 .fp-add-time-slot .dashicons,
 #fp-add-override .dashicons,
 .fp-add-override .dashicons {
-    font-size: 18px;
+    font-size: 1.125rem;
     font-weight: normal;
 }
 
@@ -2464,7 +2468,7 @@ body.fp-reduced-animations .fp-loading::after {
 .booking-status {
     padding: 4px 10px;
     border-radius: 4px;
-    font-size: 11px;
+    font-size: 0.6875rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -2549,7 +2553,7 @@ body.fp-reduced-animations .fp-loading::after {
 .fp-modal-close {
     color: #72aee6;
     float: right;
-    font-size: 24px;
+    font-size: 1.5rem;
     font-weight: bold;
     cursor: pointer;
     position: absolute;
@@ -2574,7 +2578,7 @@ body.fp-reduced-animations .fp-loading::after {
     margin-top: 0;
     margin-bottom: 20px;
     color: #1d2327;
-    font-size: 18px;
+    font-size: 1.125rem;
     font-weight: 600;
     padding-right: 40px; /* Space for close button */
 }
@@ -2584,7 +2588,7 @@ body.fp-reduced-animations .fp-loading::after {
     display: block;
     margin-bottom: 6px;
     color: #1d2327;
-    font-size: 14px;
+    font-size: 0.875rem;
 }
 
 .fp-modal-content input,
@@ -2595,7 +2599,7 @@ body.fp-reduced-animations .fp-loading::after {
     margin-bottom: 16px;
     border: 1px solid #c3c4c7;
     border-radius: 4px;
-    font-size: 14px;
+    font-size: 0.875rem;
     line-height: 1.4;
     box-sizing: border-box;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
@@ -2617,7 +2621,7 @@ body.fp-reduced-animations .fp-loading::after {
 .fp-modal-content .button {
     margin-right: 8px;
     padding: 8px 16px;
-    font-size: 14px;
+    font-size: 0.875rem;
     line-height: 1.4;
     border-radius: 4px;
     transition: all 0.2s ease;
@@ -2685,7 +2689,7 @@ body.fp-reduced-animations .fp-loading::after {
     margin-top: 0;
     margin-bottom: 16px;
     color: #1d2327;
-    font-size: 20px;
+    font-size: 1.25rem;
     font-weight: 600;
     border-bottom: 1px solid #e1e5e9;
     padding-bottom: 12px;
@@ -2693,7 +2697,7 @@ body.fp-reduced-animations .fp-loading::after {
 
 .fp-admin-section h3 {
     color: #1d2327;
-    font-size: 16px;
+    font-size: 1rem;
     font-weight: 600;
     margin-bottom: 12px;
 }
@@ -2720,7 +2724,7 @@ body.fp-reduced-animations .fp-loading::after {
     background: #f6f7f7;
     font-weight: 600;
     color: #1d2327;
-    font-size: 14px;
+    font-size: 0.875rem;
 }
 
 .fp-admin-table tbody tr:hover {
@@ -2750,7 +2754,7 @@ body.fp-reduced-animations .fp-loading::after {
     font-weight: 600;
     color: #1d2327;
     margin-bottom: 6px;
-    font-size: 14px;
+    font-size: 0.875rem;
 }
 
 .fp-form-group input,
@@ -2760,7 +2764,7 @@ body.fp-reduced-animations .fp-loading::after {
     padding: 8px 12px;
     border: 1px solid #c3c4c7;
     border-radius: 4px;
-    font-size: 14px;
+    font-size: 0.875rem;
     line-height: 1.4;
     box-sizing: border-box;
 }
@@ -2779,7 +2783,7 @@ body.fp-reduced-animations .fp-loading::after {
     align-items: center;
     gap: 6px;
     padding: 8px 16px;
-    font-size: 14px;
+    font-size: 0.875rem;
     font-weight: 500;
     border-radius: 4px;
     border: 1px solid;
@@ -2987,14 +2991,14 @@ body.fp-reduced-animations .fp-loading::after {
 .fp-empty-slots-message::before {
     content: '⏰';
     display: block;
-    font-size: 48px;
+    font-size: 3rem;
     margin-bottom: 16px;
     opacity: 0.6;
 }
 
 .fp-empty-slots-message p {
     margin: 0;
-    font-size: 16px;
+    font-size: 1rem;
     line-height: 1.5;
 }
 
@@ -3059,7 +3063,7 @@ body.fp-reduced-animations .fp-loading::after {
     padding: 10px 12px;
     border: 1px solid #ddd;
     border-radius: 6px;
-    font-size: 14px;
+    font-size: 0.875rem;
     transition: all 0.2s ease;
     background: #fff;
 }
@@ -3097,7 +3101,7 @@ body.fp-reduced-animations .fp-loading::after {
     background: linear-gradient(135deg, #f1f1f1 0%, #e8e8e8 100%);
     border: 1px solid #ddd;
     border-radius: 6px;
-    font-size: 12px;
+    font-size: 0.75rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -3133,7 +3137,7 @@ body.fp-reduced-animations .fp-loading::after {
     padding: 10px 16px;
     border-radius: 6px;
     cursor: pointer;
-    font-size: 13px;
+    font-size: 0.8125rem;
     font-weight: 600;
     transition: all 0.2s ease;
     box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
@@ -3175,7 +3179,7 @@ body.fp-reduced-animations .fp-loading::after {
     display: block;
     margin-top: 5px;
     color: #666;
-    font-size: 13px;
+    font-size: 0.8125rem;
 }
 
 /* Override section clean */
@@ -3204,7 +3208,7 @@ body.fp-reduced-animations .fp-loading::after {
     padding: 10px 12px;
     border: 1px solid #ddd;
     border-radius: 6px;
-    font-size: 14px;
+    font-size: 0.875rem;
     transition: all 0.2s ease;
     background: #fff;
 }
@@ -3237,14 +3241,14 @@ body.fp-reduced-animations .fp-loading::after {
 .fp-overrides-empty-clean::before {
     content: '📅';
     display: block;
-    font-size: 48px;
+    font-size: 3rem;
     margin-bottom: 16px;
     opacity: 0.6;
 }
 
 .fp-overrides-empty-clean p {
     margin: 0;
-    font-size: 16px;
+    font-size: 1rem;
     line-height: 1.5;
 }
 
@@ -3312,7 +3316,7 @@ body.fp-reduced-animations .fp-loading::after {
     padding: 10px 12px;
     border: 1px solid #ddd;
     border-radius: 6px;
-    font-size: 14px;
+    font-size: 0.875rem;
     width: 200px;
     transition: all 0.2s ease;
     background: #fff;
@@ -3353,7 +3357,7 @@ body.fp-reduced-animations .fp-loading::after {
     padding: 10px 16px;
     border-radius: 6px;
     cursor: pointer;
-    font-size: 13px;
+    font-size: 0.8125rem;
     font-weight: 600;
     transition: all 0.2s ease;
     box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
@@ -3448,7 +3452,7 @@ body.fp-reduced-animations .fp-loading::after {
 }
 
 .fp-override-toggle-clean .description {
-    font-size: 12px;
+    font-size: 0.75rem;
     color: #666;
     font-style: italic;
     margin-top: 5px;
@@ -3498,7 +3502,7 @@ body.fp-reduced-animations .fp-loading::after {
 }
 
 .fp-loading-text {
-    font-size: 16px;
+    font-size: 1rem;
     color: #555;
     font-weight: 500;
 }
@@ -3539,7 +3543,7 @@ body.fp-reduced-animations .fp-loading::after {
 
 .field-error {
     color: #dc3232;
-    font-size: 12px;
+    font-size: 0.75rem;
     margin-top: 5px;
     display: none;
 }
@@ -3570,7 +3574,7 @@ body.fp-reduced-animations .fp-loading::after {
 
 .step-counter {
     text-align: center;
-    font-size: 14px;
+    font-size: 0.875rem;
     color: #666;
 }
 
@@ -3606,7 +3610,7 @@ body.fp-reduced-animations .fp-loading::after {
     transform: translateX(100%);
     transition: transform 0.3s ease-in-out;
     max-width: 400px;
-    font-size: 14px;
+    font-size: 0.875rem;
     line-height: 1.4;
 }
 
@@ -3658,7 +3662,7 @@ body.admin-bar .fp-notification {
     color: white;
     padding: 8px 15px;
     border-radius: 20px;
-    font-size: 12px;
+    font-size: 0.75rem;
     opacity: 0;
     transition: opacity 0.3s ease;
 }
@@ -3676,7 +3680,7 @@ body.admin-bar .fp-notification {
     }
     
     .fp-loading-overlay .fp-loading-text {
-        font-size: 14px;
+        font-size: 0.875rem;
         text-align: center;
         padding: 0 20px;
     }
