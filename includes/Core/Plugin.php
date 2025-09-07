@@ -24,6 +24,7 @@ use FP\Esperienze\Data\VoucherManager;
 use FP\Esperienze\Data\NotificationManager;
 use FP\Esperienze\Data\DynamicPricingHooks;
 use FP\Esperienze\Data\HoldManager;
+use FP\Esperienze\Data\WPMLHooks;
 use FP\Esperienze\Integrations\TrackingManager;
 use FP\Esperienze\Integrations\BrevoManager;
 use FP\Esperienze\Integrations\GooglePlacesManager;
@@ -186,12 +187,15 @@ class Plugin {
         
         // Initialize Google Places manager for meeting point reviews
         new GooglePlacesManager();
-        
+
         // Initialize enhanced email marketing manager
         new \FP\Esperienze\Integrations\EmailMarketingManager();
-        
+
         // Initialize AI features manager
         new \FP\Esperienze\AI\AIFeaturesManager();
+
+        // Initialize WPML hooks for automatic translation jobs
+        new WPMLHooks();
     }
 
     /**

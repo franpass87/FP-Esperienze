@@ -2580,7 +2580,8 @@ class MenuManager {
         $current_tab = sanitize_text_field(wp_unslash($_GET['tab'] ?? 'general'));
         
         // Get general settings
-        $archive_page_id = get_option('fp_esperienze_archive_page_id', 0);
+        $archive_page_id    = get_option('fp_esperienze_archive_page_id', 0);
+        $wpml_auto_send     = (bool) get_option('fp_esperienze_wpml_auto_send', false);
         
         // Get current settings
         $gift_exp_months = get_option('fp_esperienze_gift_default_exp_months', 12);
@@ -2711,8 +2712,20 @@ class MenuManager {
                             </td>
                         </tr>
                         <?php endif; ?>
+
+                        <?php if (I18nManager::getActivePlugin() === 'wpml') : ?>
+                        <tr>
+                            <th scope="row">
+                                <label for="wpml_auto_send"><?php _e('Auto-send to WPML', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <input type="checkbox" id="wpml_auto_send" name="wpml_auto_send" value="1" <?php checked($wpml_auto_send); ?> />
+                                <p class="description"><?php _e('Automatically create WPML translation jobs when saving experiences or meeting points.', 'fp-esperienze'); ?></p>
+                            </td>
+                        </tr>
+                        <?php endif; ?>
                     </table>
-                    
+
                     <?php submit_button(__('Save Settings', 'fp-esperienze')); ?>
                 </div>
                 <?php endif; ?>
@@ -3868,7 +3881,8 @@ class MenuManager {
         if ($tab === 'general') {
             // Update general settings
             update_option('fp_esperienze_archive_page_id', absint(wp_unslash($_POST['archive_page_id'] ?? 0)));
-            
+            update_option('fp_esperienze_wpml_auto_send', !empty($_POST['wpml_auto_send']));
+
         } elseif ($tab === 'branding') {
             // Update branding settings
             $branding_settings = [
