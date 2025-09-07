@@ -3399,13 +3399,28 @@ class MenuManager {
                         .then(response => response.json())
                         .then(result => {
                             if (result.success) {
-                                resultDiv.innerHTML = '<div class="notice notice-success inline"><p><strong><?php _e('Success!', 'fp-esperienze'); ?></strong> ' + result.data.message + '</p></div>';
+                                const text = document.createTextNode(result.data.message);
+                                const wrapper = document.createElement('div');
+                                wrapper.className = 'notice notice-success inline';
+                                wrapper.appendChild(document.createElement('p')).appendChild(text);
+                                resultDiv.innerHTML = '';
+                                resultDiv.appendChild(wrapper);
                             } else {
-                                resultDiv.innerHTML = '<div class="notice notice-error inline"><p><strong><?php _e('Error:', 'fp-esperienze'); ?></strong> ' + result.data.message + '</p></div>';
+                                const text = document.createTextNode(result.data.message);
+                                const wrapper = document.createElement('div');
+                                wrapper.className = 'notice notice-error inline';
+                                wrapper.appendChild(document.createElement('p')).appendChild(text);
+                                resultDiv.innerHTML = '';
+                                resultDiv.appendChild(wrapper);
                             }
                         })
                         .catch(error => {
-                            resultDiv.innerHTML = '<div class="notice notice-error inline"><p><strong><?php _e('Error:', 'fp-esperienze'); ?></strong> ' + error.message + '</p></div>';
+                            const text = document.createTextNode(error.message);
+                            const wrapper = document.createElement('div');
+                            wrapper.className = 'notice notice-error inline';
+                            wrapper.appendChild(document.createElement('p')).appendChild(text);
+                            resultDiv.innerHTML = '';
+                            resultDiv.appendChild(wrapper);
                         })
                         .finally(() => {
                             button.textContent = originalText;
