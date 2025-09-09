@@ -479,13 +479,12 @@ class Experience {
                         <?php _e('Duration (minutes)', 'fp-esperienze'); ?> <span style="color: red;">*</span>
                         <span class="dashicons dashicons-info" title="<?php esc_attr_e('How long the experience lasts in minutes', 'fp-esperienze'); ?>" style="font-size: 14px; color: #666;"></span>
                     </label>
-                    <input type="number" 
-                           name="schedules[<?php echo esc_attr($index); ?>][duration_min]" 
-                           value="<?php echo esc_attr($schedule->duration_min ?? 60); ?>" 
-                           placeholder="60" 
-                           min="1" 
-                           step="1" 
-                           required 
+                    <input type="number"
+                           name="schedules[<?php echo esc_attr($index); ?>][duration_min]"
+                           value="<?php echo esc_attr($schedule->duration_min ?? 60); ?>"
+                           min="1"
+                           step="1"
+                           required
                            style="width: 100%;"
                            title="<?php esc_attr_e('Duration in minutes (minimum 1)', 'fp-esperienze'); ?>">
                 </div>
@@ -495,13 +494,12 @@ class Experience {
                         <?php _e('Max Capacity', 'fp-esperienze'); ?> <span style="color: red;">*</span>
                         <span class="dashicons dashicons-info" title="<?php esc_attr_e('Maximum number of participants for this schedule', 'fp-esperienze'); ?>" style="font-size: 14px; color: #666;"></span>
                     </label>
-                    <input type="number" 
-                           name="schedules[<?php echo esc_attr($index); ?>][capacity]" 
-                           value="<?php echo esc_attr($schedule->capacity ?? 10); ?>" 
-                           placeholder="10" 
-                           min="1" 
-                           step="1" 
-                           required 
+                    <input type="number"
+                           name="schedules[<?php echo esc_attr($index); ?>][capacity]"
+                           value="<?php echo esc_attr($schedule->capacity ?? 10); ?>"
+                           min="1"
+                           step="1"
+                           required
                            style="width: 100%;"
                            title="<?php esc_attr_e('Maximum participants (minimum 1)', 'fp-esperienze'); ?>">
                 </div>
@@ -513,12 +511,12 @@ class Experience {
                         <?php _e('Language', 'fp-esperienze'); ?>
                         <span class="dashicons dashicons-info" title="<?php esc_attr_e('Experience language code (e.g., en, it, es)', 'fp-esperienze'); ?>" style="font-size: 14px; color: #666;"></span>
                     </label>
-                    <input type="text" 
-                           name="schedules[<?php echo esc_attr($index); ?>][lang]" 
-                           value="<?php echo esc_attr($schedule->lang ?? 'en'); ?>" 
-                           placeholder="en" 
-                           maxlength="10" 
+                    <input type="text"
+                           name="schedules[<?php echo esc_attr($index); ?>][lang]"
+                           value="<?php echo esc_attr($schedule->lang ?? 'en'); ?>"
+                           maxlength="10"
                            style="width: 100%;"
+                           required
                            title="<?php esc_attr_e('Language code (ISO format preferred)', 'fp-esperienze'); ?>">
                 </div>
                 
@@ -527,7 +525,7 @@ class Experience {
                         <?php _e('Meeting Point', 'fp-esperienze'); ?>
                         <span class="dashicons dashicons-info" title="<?php esc_attr_e('Where participants should meet for this experience', 'fp-esperienze'); ?>" style="font-size: 14px; color: #666;"></span>
                     </label>
-                    <select name="schedules[<?php echo esc_attr($index); ?>][meeting_point_id]" style="width: 100%;">
+                    <select name="schedules[<?php echo esc_attr($index); ?>][meeting_point_id]" style="width: 100%;" required>
                         <?php foreach ($meeting_points as $value => $label): ?>
                             <option value="<?php echo esc_attr($value); ?>" <?php selected($schedule->meeting_point_id ?? '', $value); ?>>
                                 <?php echo esc_html($label); ?>
@@ -539,31 +537,31 @@ class Experience {
                 <div>
                     <label style="font-weight: bold; display: block; margin-bottom: 5px;">
                         <?php _e('Adult Price', 'fp-esperienze'); ?>
-                        <span class="dashicons dashicons-info" title="<?php esc_attr_e('Price per adult participant (leave empty to use default product price)', 'fp-esperienze'); ?>" style="font-size: 14px; color: #666;"></span>
+                        <span class="dashicons dashicons-info" title="<?php esc_attr_e('Price per adult participant', 'fp-esperienze'); ?>" style="font-size: 14px; color: #666;"></span>
                     </label>
-                    <input type="number" 
-                           name="schedules[<?php echo esc_attr($index); ?>][price_adult]" 
-                           value="<?php echo esc_attr($schedule->price_adult ?? ''); ?>" 
-                           placeholder="0.00" 
-                           min="0" 
-                           step="0.01" 
+                    <input type="number"
+                           name="schedules[<?php echo esc_attr($index); ?>][price_adult]"
+                           value="<?php echo esc_attr($schedule->price_adult ?? ''); ?>"
+                           min="0"
+                           step="0.01"
                            style="width: 100%;"
-                           title="<?php esc_attr_e('Adult price (optional override)', 'fp-esperienze'); ?>">
+                           required
+                           title="<?php esc_attr_e('Adult price', 'fp-esperienze'); ?>">
                 </div>
                 
                 <div>
                     <label style="font-weight: bold; display: block; margin-bottom: 5px;">
                         <?php _e('Child Price', 'fp-esperienze'); ?>
-                        <span class="dashicons dashicons-info" title="<?php esc_attr_e('Price per child participant (leave empty to use default or no child pricing)', 'fp-esperienze'); ?>" style="font-size: 14px; color: #666;"></span>
+                        <span class="dashicons dashicons-info" title="<?php esc_attr_e('Price per child participant', 'fp-esperienze'); ?>" style="font-size: 14px; color: #666;"></span>
                     </label>
-                    <input type="number" 
-                           name="schedules[<?php echo esc_attr($index); ?>][price_child]" 
-                           value="<?php echo esc_attr($schedule->price_child ?? ''); ?>" 
-                           placeholder="0.00" 
-                           min="0" 
-                           step="0.01" 
+                    <input type="number"
+                           name="schedules[<?php echo esc_attr($index); ?>][price_child]"
+                           value="<?php echo esc_attr($schedule->price_child ?? ''); ?>"
+                           min="0"
+                           step="0.01"
                            style="width: 100%;"
-                           title="<?php esc_attr_e('Child price (optional)', 'fp-esperienze'); ?>">
+                           required
+                           title="<?php esc_attr_e('Child price', 'fp-esperienze'); ?>">
                 </div>
             </div>
             
@@ -697,7 +695,7 @@ class Experience {
                     <span class="dashicons dashicons-admin-tools"></span>
                     <?php _e('Advanced Settings', 'fp-esperienze'); ?>
                 </label>
-                <span class="description"><?php _e('Override default values for this specific time slot', 'fp-esperienze'); ?></span>
+                <span class="description"><?php _e('Specify values for this time slot', 'fp-esperienze'); ?></span>
                 <input type="hidden" name="builder_slots[<?php echo esc_attr($index); ?>][advanced_enabled]" value="<?php echo $advanced_explicitly_enabled ? '1' : '0'; ?>" class="fp-advanced-enabled-clean">
             </div>
             
@@ -706,37 +704,36 @@ class Experience {
                 <div class="fp-overrides-grid-clean">
                     <div class="fp-override-field-clean">
                         <label><?php _e('Duration (minutes)', 'fp-esperienze'); ?></label>
-                        <input type="number" 
-                               name="builder_slots[<?php echo esc_attr($index); ?>][duration_min]" 
-                               value="<?php echo esc_attr($overrides['duration_min'] ?? ''); ?>" 
-                               placeholder="<?php echo esc_attr($default_duration); ?>" 
-                               min="1">
+                        <input type="number"
+                               name="builder_slots[<?php echo esc_attr($index); ?>][duration_min]"
+                               value="<?php echo esc_attr($overrides['duration_min'] ?? $default_duration); ?>"
+                               min="1"
+                               required>
                     </div>
                     
                     <div class="fp-override-field-clean">
                         <label><?php _e('Capacity', 'fp-esperienze'); ?></label>
-                        <input type="number" 
-                               name="builder_slots[<?php echo esc_attr($index); ?>][capacity]" 
-                               value="<?php echo esc_attr($overrides['capacity'] ?? ''); ?>" 
-                               placeholder="<?php echo esc_attr($default_capacity); ?>" 
-                               min="1">
+                        <input type="number"
+                               name="builder_slots[<?php echo esc_attr($index); ?>][capacity]"
+                               value="<?php echo esc_attr($overrides['capacity'] ?? $default_capacity); ?>"
+                               min="1"
+                               required>
                     </div>
                     
                     <div class="fp-override-field-clean">
                         <label><?php _e('Language', 'fp-esperienze'); ?></label>
-                        <input type="text" 
-                               name="builder_slots[<?php echo esc_attr($index); ?>][lang]" 
-                               value="<?php echo esc_attr($overrides['lang'] ?? ''); ?>" 
-                               placeholder="<?php echo esc_attr($default_language); ?>" 
-                               maxlength="10">
+                        <input type="text"
+                               name="builder_slots[<?php echo esc_attr($index); ?>][lang]"
+                               value="<?php echo esc_attr($overrides['lang'] ?? $default_language); ?>"
+                               maxlength="10"
+                               required>
                     </div>
                     
                     <div class="fp-override-field-clean">
                         <label><?php _e('Meeting Point', 'fp-esperienze'); ?></label>
-                        <select name="builder_slots[<?php echo esc_attr($index); ?>][meeting_point_id]">
-                            <option value=""><?php _e('Use default', 'fp-esperienze'); ?></option>
+                        <select name="builder_slots[<?php echo esc_attr($index); ?>][meeting_point_id]" required>
                             <?php foreach ($meeting_points as $mp_id => $mp_name): ?>
-                                <option value="<?php echo esc_attr($mp_id); ?>" <?php selected($overrides['meeting_point_id'] ?? '', $mp_id); ?>>
+                                <option value="<?php echo esc_attr($mp_id); ?>" <?php selected($overrides['meeting_point_id'] ?? $default_meeting_point, $mp_id); ?>>
                                     <?php echo esc_html($mp_name); ?>
                                 </option>
                             <?php endforeach; ?>
@@ -745,22 +742,22 @@ class Experience {
                     
                     <div class="fp-override-field-clean">
                         <label><?php _e('Adult Price', 'fp-esperienze'); ?> (<?php echo get_woocommerce_currency_symbol(); ?>)</label>
-                        <input type="number" 
-                               name="builder_slots[<?php echo esc_attr($index); ?>][price_adult]" 
-                               value="<?php echo esc_attr($overrides['price_adult'] ?? ''); ?>" 
-                               placeholder="<?php echo esc_attr($default_price_adult); ?>" 
-                               min="0" 
-                               step="0.01">
+                        <input type="number"
+                               name="builder_slots[<?php echo esc_attr($index); ?>][price_adult]"
+                               value="<?php echo esc_attr($overrides['price_adult'] ?? $default_price_adult); ?>"
+                               min="0"
+                               step="0.01"
+                               required>
                     </div>
                     
                     <div class="fp-override-field-clean">
                         <label><?php _e('Child Price', 'fp-esperienze'); ?> (<?php echo get_woocommerce_currency_symbol(); ?>)</label>
-                        <input type="number" 
-                               name="builder_slots[<?php echo esc_attr($index); ?>][price_child]" 
-                               value="<?php echo esc_attr($overrides['price_child'] ?? ''); ?>" 
-                               placeholder="<?php echo esc_attr($default_price_child); ?>" 
-                               min="0" 
-                               step="0.01">
+                        <input type="number"
+                               name="builder_slots[<?php echo esc_attr($index); ?>][price_child]"
+                               value="<?php echo esc_attr($overrides['price_child'] ?? $default_price_child); ?>"
+                               min="0"
+                               step="0.01"
+                               required>
                     </div>
                 </div>
             </div>
@@ -840,7 +837,7 @@ class Experience {
                     <span class="dashicons dashicons-admin-tools"></span>
                     <?php _e('Advanced Settings', 'fp-esperienze'); ?>
                 </label>
-                <span class="description"><?php _e('Override default values for this specific time slot', 'fp-esperienze'); ?></span>
+                <span class="description"><?php _e('Specify values for this time slot', 'fp-esperienze'); ?></span>
                 <!-- Hidden field to track if advanced settings are enabled for this slot -->
                 <input type="hidden" name="builder_slots[<?php echo esc_attr($index); ?>][advanced_enabled]" value="<?php echo $advanced_explicitly_enabled ? '1' : '0'; ?>" class="fp-advanced-enabled">
             </div>
@@ -851,32 +848,32 @@ class Experience {
                         <label>
                             <?php _e('Duration (minutes)', 'fp-esperienze'); ?>
                         </label>
-                        <input type="number" 
-                               name="builder_slots[<?php echo esc_attr($index); ?>][duration_min]" 
-                               value="<?php echo esc_attr($overrides['duration_min'] ?? ''); ?>" 
-                               placeholder="<?php echo esc_attr(sprintf(__('Default: %s', 'fp-esperienze'), $default_duration)); ?>" 
-                               min="1">
+                        <input type="number"
+                               name="builder_slots[<?php echo esc_attr($index); ?>][duration_min]"
+                               value="<?php echo esc_attr($overrides['duration_min'] ?? $default_duration); ?>"
+                               min="1"
+                               required>
                     </div>
                     
                     <div>
                         <label>
                             <?php _e('Capacity', 'fp-esperienze'); ?>
                         </label>
-                        <input type="number" 
-                               name="builder_slots[<?php echo esc_attr($index); ?>][capacity]" 
-                               value="<?php echo esc_attr($overrides['capacity'] ?? ''); ?>" 
-                               placeholder="<?php echo esc_attr(sprintf(__('Default: %s', 'fp-esperienze'), $default_capacity)); ?>">
+                        <input type="number"
+                               name="builder_slots[<?php echo esc_attr($index); ?>][capacity]"
+                               value="<?php echo esc_attr($overrides['capacity'] ?? $default_capacity); ?>"
+                               required>
                     </div>
                     
                     <div>
                         <label>
                             <?php _e('Language', 'fp-esperienze'); ?>
                         </label>
-                        <input type="text" 
-                               name="builder_slots[<?php echo esc_attr($index); ?>][lang]" 
-                               value="<?php echo esc_attr($overrides['lang'] ?? ''); ?>" 
-                               placeholder="<?php echo esc_attr(sprintf(__('Default: %s', 'fp-esperienze'), $default_language)); ?>" 
-                               maxlength="10">
+                        <input type="text"
+                               name="builder_slots[<?php echo esc_attr($index); ?>][lang]"
+                               value="<?php echo esc_attr($overrides['lang'] ?? $default_language); ?>"
+                               maxlength="10"
+                               required>
                     </div>
                 </div>
                 
@@ -885,10 +882,9 @@ class Experience {
                         <label>
                             <?php _e('Meeting Point', 'fp-esperienze'); ?>
                         </label>
-                        <select name="builder_slots[<?php echo esc_attr($index); ?>][meeting_point_id]">
-                            <option value=""><?php echo esc_html(sprintf(__('Default: %s', 'fp-esperienze'), $meeting_points[$default_meeting_point] ?? __('None', 'fp-esperienze'))); ?></option>
+                        <select name="builder_slots[<?php echo esc_attr($index); ?>][meeting_point_id]" required>
                             <?php foreach ($meeting_points as $mp_id => $mp_name): ?>
-                                <option value="<?php echo esc_attr($mp_id); ?>" <?php selected($overrides['meeting_point_id'] ?? '', $mp_id); ?>>
+                                <option value="<?php echo esc_attr($mp_id); ?>" <?php selected($overrides['meeting_point_id'] ?? $default_meeting_point, $mp_id); ?>>
                                     <?php echo esc_html($mp_name); ?>
                                 </option>
                             <?php endforeach; ?>
@@ -899,24 +895,24 @@ class Experience {
                         <label>
                             <?php _e('Adult Price', 'fp-esperienze'); ?> (<?php echo get_woocommerce_currency_symbol(); ?>)
                         </label>
-                        <input type="number" 
-                               name="builder_slots[<?php echo esc_attr($index); ?>][price_adult]" 
-                               value="<?php echo esc_attr($overrides['price_adult'] ?? ''); ?>" 
-                               placeholder="<?php echo esc_attr(sprintf(__('Default: %.2f', 'fp-esperienze'), $default_price_adult)); ?>" 
-                               min="0" 
-                               step="0.01">
+                        <input type="number"
+                               name="builder_slots[<?php echo esc_attr($index); ?>][price_adult]"
+                               value="<?php echo esc_attr($overrides['price_adult'] ?? $default_price_adult); ?>"
+                               min="0"
+                               step="0.01"
+                               required>
                     </div>
                     
                     <div>
                         <label>
                             <?php _e('Child Price', 'fp-esperienze'); ?> (<?php echo get_woocommerce_currency_symbol(); ?>)
                         </label>
-                        <input type="number" 
-                               name="builder_slots[<?php echo esc_attr($index); ?>][price_child]" 
-                               value="<?php echo esc_attr($overrides['price_child'] ?? ''); ?>" 
-                               placeholder="<?php echo esc_attr(sprintf(__('Default: %.2f', 'fp-esperienze'), $default_price_child)); ?>" 
-                               min="0" 
-                               step="0.01">
+                        <input type="number"
+                               name="builder_slots[<?php echo esc_attr($index); ?>][price_child]"
+                               value="<?php echo esc_attr($overrides['price_child'] ?? $default_price_child); ?>"
+                               min="0"
+                               step="0.01"
+                               required>
                     </div>
                 </div>
             </div>
@@ -1002,21 +998,13 @@ class Experience {
                                     <td>
                                         <?php 
                                         $duration = $slot['overrides']['duration_min'] ?? null;
-                                        if ($duration) {
-                                            echo esc_html($duration . ' min');
-                                        } else {
-                                            echo '<em>' . esc_html__('Default', 'fp-esperienze') . '</em>';
-                                        }
+                                        echo $duration ? esc_html($duration . ' min') : '-';
                                         ?>
                                     </td>
                                     <td>
                                         <?php 
                                         $capacity = $slot['overrides']['capacity'] ?? null;
-                                        if ($capacity) {
-                                            echo esc_html($capacity);
-                                        } else {
-                                            echo '<em>' . esc_html__('Default', 'fp-esperienze') . '</em>';
-                                        }
+                                        echo $capacity ? esc_html($capacity) : '-';
                                         ?>
                                     </td>
                                     <td>
@@ -1788,39 +1776,38 @@ class Experience {
                 continue;
             }
             
-            // Get override values or null for inheritance
-            // Only process overrides if advanced settings are explicitly enabled
-            $advanced_enabled = !empty($slot_data['advanced_enabled']) && $slot_data['advanced_enabled'] === '1';
-            
-            // Process overrides with better validation - allow empty strings as "reset to default"
-            $duration_override = null;
-            if ($advanced_enabled && isset($slot_data['duration_min']) && $slot_data['duration_min'] !== '') {
-                $duration_override = max(1, (int) $slot_data['duration_min']); // Ensure minimum 1 minute
+            // Require all slot fields
+            $required_fields = [
+                'duration_min'     => __('duration', 'fp-esperienze'),
+                'capacity'         => __('capacity', 'fp-esperienze'),
+                'lang'             => __('language', 'fp-esperienze'),
+                'meeting_point_id' => __('meeting point', 'fp-esperienze'),
+                'price_adult'      => __('adult price', 'fp-esperienze'),
+                'price_child'      => __('child price', 'fp-esperienze'),
+            ];
+
+            $missing = [];
+            foreach ($required_fields as $field_key => $label) {
+                if (!isset($slot_data[$field_key]) || $slot_data[$field_key] === '') {
+                    $missing[] = $label;
+                }
             }
-            
-            $capacity_override = ($advanced_enabled && isset($slot_data['capacity']) && $slot_data['capacity'] !== '')
-                ? max(1, (int) $slot_data['capacity']) // Ensure minimum 1 person
-                : null;
-            
-            $lang_override = null;
-            if ($advanced_enabled && isset($slot_data['lang']) && $slot_data['lang'] !== '') {
-                $lang_override = sanitize_text_field($slot_data['lang']);
+
+            if (!empty($missing)) {
+                $validation_errors[] = sprintf(
+                    __('Time slot %d: Missing %s.', 'fp-esperienze'),
+                    $slot_index + 1,
+                    implode(', ', $missing)
+                );
+                continue;
             }
-            
-            $meeting_point_override = null;
-            if ($advanced_enabled && isset($slot_data['meeting_point_id']) && $slot_data['meeting_point_id'] !== '') {
-                $meeting_point_override = (int) $slot_data['meeting_point_id'];
-            }
-            
-            $price_adult_override = null;
-            if ($advanced_enabled && isset($slot_data['price_adult']) && $slot_data['price_adult'] !== '') {
-                $price_adult_override = max(0, (float) $slot_data['price_adult']); // Ensure non-negative
-            }
-            
-            $price_child_override = null;
-            if ($advanced_enabled && isset($slot_data['price_child']) && $slot_data['price_child'] !== '') {
-                $price_child_override = max(0, (float) $slot_data['price_child']); // Ensure non-negative
-            }
+
+            $duration_override = max(1, (int) $slot_data['duration_min']);
+            $capacity_override = max(1, (int) $slot_data['capacity']);
+            $lang_override = sanitize_text_field($slot_data['lang']);
+            $meeting_point_override = (int) $slot_data['meeting_point_id'];
+            $price_adult_override = max(0, (float) $slot_data['price_adult']);
+            $price_child_override = max(0, (float) $slot_data['price_child']);
             
             // Track existing schedule IDs for this slot
             $existing_slot_ids = !empty($slot_data['schedule_ids']) ? array_map('intval', $slot_data['schedule_ids']) : [];
@@ -1891,27 +1878,54 @@ class Experience {
                 $discarded_count++;
                 continue;
             }
-            
+
             // Validate time format (HH:MM)
             if (!preg_match('/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/', $schedule_data['start_time'])) {
                 $validation_errors[] = sprintf(__('Row %d: Invalid time format. Use HH:MM format.', 'fp-esperienze'), $index + 1);
                 $discarded_count++;
                 continue;
             }
-            
+
+            // Ensure all fields are provided
+            $required_fields = [
+                'duration_min'     => __('duration', 'fp-esperienze'),
+                'capacity'         => __('capacity', 'fp-esperienze'),
+                'lang'             => __('language', 'fp-esperienze'),
+                'meeting_point_id' => __('meeting point', 'fp-esperienze'),
+                'price_adult'      => __('adult price', 'fp-esperienze'),
+                'price_child'      => __('child price', 'fp-esperienze'),
+            ];
+
+            $missing = [];
+            foreach ($required_fields as $field_key => $label) {
+                if (!isset($schedule_data[$field_key]) || $schedule_data[$field_key] === '') {
+                    $missing[] = $label;
+                }
+            }
+
+            if (!empty($missing)) {
+                $validation_errors[] = sprintf(
+                    __('Row %d: Missing %s.', 'fp-esperienze'),
+                    $index + 1,
+                    implode(', ', $missing)
+                );
+                $discarded_count++;
+                continue;
+            }
+
             $schedule_id = !empty($schedule_data['id']) ? (int) $schedule_data['id'] : 0;
-            
-            // Prepare data for raw schedule (use defaults if empty, but allow overrides)
+
+            // Prepare data for raw schedule
             $data = [
                 'product_id' => $product_id,
                 'day_of_week' => (int) $schedule_data['day_of_week'],
                 'start_time' => sanitize_text_field($schedule_data['start_time']),
-                'duration_min' => !empty($schedule_data['duration_min']) ? (int) $schedule_data['duration_min'] : null,
-                'capacity' => !empty($schedule_data['capacity']) ? (int) $schedule_data['capacity'] : null,
-                'lang' => !empty($schedule_data['lang']) ? sanitize_text_field($schedule_data['lang']) : null,
-                'meeting_point_id' => !empty($schedule_data['meeting_point_id']) ? (int) $schedule_data['meeting_point_id'] : null,
-                'price_adult' => !empty($schedule_data['price_adult']) ? (float) $schedule_data['price_adult'] : null,
-                'price_child' => !empty($schedule_data['price_child']) ? (float) $schedule_data['price_child'] : null,
+                'duration_min' => (int) $schedule_data['duration_min'],
+                'capacity' => (int) $schedule_data['capacity'],
+                'lang' => sanitize_text_field($schedule_data['lang']),
+                'meeting_point_id' => (int) $schedule_data['meeting_point_id'],
+                'price_adult' => (float) $schedule_data['price_adult'],
+                'price_child' => (float) $schedule_data['price_child'],
                 'is_active' => 1
             ];
             
