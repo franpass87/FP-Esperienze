@@ -119,11 +119,14 @@ class ScheduleHelper {
         
         foreach ($schedules as $schedule) {
             $hydrated = self::hydrateEffectiveValues($schedule, $product_id);
-            
+
+            // Normalize start time to HH:MM for grouping
+            $start_time = substr($schedule->start_time, 0, 5);
+
             // Create grouping key based on schedule attributes (excluding day and ID)
             $key = sprintf(
                 '%s_%d_%d_%s_%s_%.2f_%.2f',
-                $schedule->start_time,
+                $start_time,
                 $hydrated->effective->duration_min,
                 $hydrated->effective->capacity,
                 $hydrated->effective->lang,
@@ -131,10 +134,10 @@ class ScheduleHelper {
                 $hydrated->effective->price_adult,
                 $hydrated->effective->price_child
             );
-            
+
             if (!isset($groups[$key])) {
                 $groups[$key] = [
-                    'start_time' => $schedule->start_time,
+                    'start_time' => $start_time,
                     'duration_min' => $hydrated->effective->duration_min,
                     'capacity' => $hydrated->effective->capacity,
                     'lang' => $hydrated->effective->lang,
@@ -146,7 +149,7 @@ class ScheduleHelper {
                     'can_aggregate' => true
                 ];
             }
-            
+
             $groups[$key]['days'][] = (int) $schedule->day_of_week;
             $groups[$key]['schedule_ids'][] = $schedule->id;
         }

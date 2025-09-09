@@ -500,14 +500,15 @@
                     $slot.find('input[name*="[start_time]"]').css('border-color', '#d63638');
                     errorMessages.push('All time slots must have a start time.');
                 } else {
-                    // Validate time format on frontend too
-                    var timePattern = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
+                    // Validate time format on frontend too (allow optional seconds)
+                    var timePattern = /^([01]?[0-9]|2[0-3]):[0-5][0-9](?::[0-5][0-9])?$/;
                     if (!timePattern.test(startTime)) {
                         hasErrors = true;
                         $slot.find('input[name*="[start_time]"]').css('border-color', '#d63638');
                         errorMessages.push('Time "' + startTime + '" has invalid format. Use HH:MM format.');
                     } else {
-                        $slot.find('input[name*="[start_time]"]').css('border-color', '');
+                        startTime = startTime.substring(0,5);
+                        $slot.find('input[name*="[start_time]"]').val(startTime).css('border-color', '');
                     }
                 }
                 

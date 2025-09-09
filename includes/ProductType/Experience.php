@@ -1764,25 +1764,18 @@ class Experience {
                 continue;
             }
             
-            // Sanitize time before validation
+            // Sanitize and validate time (allow optional seconds)
             $start_time = trim($slot_data['start_time']);
-            
-            // Handle common time format variations (convert to HH:MM)
-            if (preg_match('/^(\d{1,2}):(\d{2})$/', $start_time, $matches)) {
-                $hours = str_pad($matches[1], 2, '0', STR_PAD_LEFT);
-                $minutes = $matches[2];
-                $start_time = $hours . ':' . $minutes;
-            }
-            
-            // Validate time format - enhanced validation with better error reporting
-            if (!preg_match('/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/', $start_time)) {
+            if (preg_match('/^(\d{1,2}):(\d{2})(?::\d{2})?$/', $start_time, $m)) {
+                $start_time = sprintf('%02d:%02d', $m[1], $m[2]);
+            } else {
                 // Add debug information if logging is enabled
                 if (apply_filters('fp_esperienze_debug_validation', false)) {
                     error_log("FP Esperienze: Invalid time format for slot {$slot_index}: '{$start_time}' (original: '{$slot_data['start_time']}')");
                 }
-                
+
                 $validation_errors[] = sprintf(
-                    __('Time slot %d: Invalid time format "%s". Use HH:MM format (e.g., 09:30).', 'fp-esperienze'), 
+                    __('Time slot %d: Invalid time format "%s". Use HH:MM format (e.g., 09:30).', 'fp-esperienze'),
                     $slot_index + 1,
                     esc_html($slot_data['start_time']) // Show original for user feedback
                 );
