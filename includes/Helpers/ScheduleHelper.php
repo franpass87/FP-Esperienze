@@ -120,6 +120,16 @@ class ScheduleHelper {
         foreach ($schedules as $schedule) {
             $hydrated = self::hydrateEffectiveValues($schedule, $product_id);
 
+            // Determine if this schedule has any explicit overrides
+            $schedule_has_overrides = (
+                $schedule->duration_min !== null && $schedule->duration_min !== '' ||
+                $schedule->capacity !== null && $schedule->capacity !== '' ||
+                $schedule->lang !== null && $schedule->lang !== '' ||
+                $schedule->meeting_point_id !== null && $schedule->meeting_point_id !== '' ||
+                $schedule->price_adult !== null && $schedule->price_adult !== '' ||
+                $schedule->price_child !== null && $schedule->price_child !== ''
+            );
+
             // Normalize start time to HH:MM for grouping
             $start_time = substr($schedule->start_time, 0, 5);
 
@@ -146,19 +156,23 @@ class ScheduleHelper {
                     'price_child' => $hydrated->effective->price_child,
                     'days' => [],
                     'schedule_ids' => [],
-                    'can_aggregate' => true
+                    'can_aggregate' => true,
+                    'has_explicit_overrides' => $schedule_has_overrides,
                 ];
+            } else {
+                if ($schedule_has_overrides) {
+                    $groups[$key]['has_explicit_overrides'] = true;
+                }
             }
 
             $groups[$key]['days'][] = (int) $schedule->day_of_week;
             $groups[$key]['schedule_ids'][] = $schedule->id;
         }
-        
+
         // Convert groups to time slots and identify non-aggregatable schedules
         foreach ($groups as $group) {
-            // Check if any schedule in this group has explicit overrides
-            $has_explicit_overrides = self::hasExplicitOverrides($group, $product_id);
-            
+            $has_explicit_overrides = !empty($group['has_explicit_overrides']);
+
             // Always try to create a time slot if it has valid data
             // Single day slots with overrides can still be represented in the builder
             $time_slots[] = [
@@ -255,15 +269,4 @@ class ScheduleHelper {
         return $overrides;
     }
     
-    /**
-     * Check if a group has explicit overrides (not defaults)
-     *
-     * @param array $group Schedule group data
-     * @param int $product_id Product ID
-     * @return bool True if group has explicit overrides
-     */
-    private static function hasExplicitOverrides(array $group, int $product_id): bool {
-        // A group has explicit overrides if any value is not null and not equal to the product default
-        return !empty(self::extractOverrides($group, $product_id));
-    }
 }

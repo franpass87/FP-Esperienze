@@ -1592,6 +1592,12 @@ class Experience {
 
             $raw_value = wp_unslash($_POST[$field]);
 
+            // Special handling for capacity to avoid saving zero as an override
+            if ('_fp_exp_capacity' === $field && '' === trim((string) $raw_value)) {
+                delete_post_meta($post_id, '_fp_exp_capacity');
+                continue;
+            }
+
             if (in_array($field, $int_fields, true)) {
                 $value = absint($raw_value);
             } elseif (in_array($field, $float_fields, true)) {
@@ -1792,10 +1798,9 @@ class Experience {
                 $duration_override = max(1, (int) $slot_data['duration_min']); // Ensure minimum 1 minute
             }
             
-            $capacity_override = null;
-            if ($advanced_enabled && isset($slot_data['capacity']) && $slot_data['capacity'] !== '') {
-                $capacity_override = max(1, (int) $slot_data['capacity']); // Ensure minimum 1 person
-            }
+            $capacity_override = ($advanced_enabled && isset($slot_data['capacity']) && $slot_data['capacity'] !== '')
+                ? max(1, (int) $slot_data['capacity']) // Ensure minimum 1 person
+                : null;
             
             $lang_override = null;
             if ($advanced_enabled && isset($slot_data['lang']) && $slot_data['lang'] !== '') {
