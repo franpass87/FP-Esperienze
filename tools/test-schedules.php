@@ -1,12 +1,16 @@
 <?php
 /**
  * Simple test script to verify schedules and overrides functionality
- * 
+ *
  * This script can be run by placing it in the WordPress root directory
  * and accessing it via browser (only for testing purposes).
- * 
+ *
  * REMOVE THIS FILE AFTER TESTING!
  */
+
+if ( PHP_SAPI !== 'cli' && ! defined( 'WP_CLI' ) ) {
+    die();
+}
 
 require_once 'wp-config.php';
 require_once 'wp-load.php';

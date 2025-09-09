@@ -6,6 +6,10 @@
  * Usage: Load this in WordPress admin to check for potential issues.
  */
 
+if ( PHP_SAPI !== 'cli' && ! defined( 'WP_CLI' ) ) {
+    die();
+}
+
 defined( 'ABSPATH' ) || exit;
 
 if ( ! current_user_can( 'manage_options' ) ) {
