@@ -57,23 +57,38 @@ if (version_compare(PHP_VERSION, '8.1', '<')) {
 
 // WooCommerce dependency checks will be performed in plugins_loaded hook
 
-// Update the main plugin file to handle missing composer dependencies gracefully
+// Handle composer dependencies gracefully.
 $autoloader_path = FP_ESPERIENZE_PLUGIN_DIR . 'vendor/autoload.php';
-$composer_available = file_exists($autoloader_path);
-
-if (!$composer_available) {
-    // Add notice but don't prevent plugin from loading
-    add_action('admin_notices', function() {
-        echo '<div class="notice notice-warning"><p>' . 
-             sprintf(
-                 esc_html__('FP Esperienze: Some advanced features (PDF generation, QR codes) require composer dependencies. Run %s in the plugin directory to enable all features.', 'fp-esperienze'),
-                 '<code>composer install --no-dev</code>'
-             ) . 
-             '</p></div>';
-    });
-} else {
-    // Autoloader
+if (file_exists($autoloader_path)) {
+    // Use composer autoloader when available.
     require_once $autoloader_path;
+} else {
+    // Lightweight PSR-4 autoloader for plugin classes.
+    spl_autoload_register(function ($class) {
+        $prefix   = 'FP\\Esperienze\\';
+        $base_dir = FP_ESPERIENZE_PLUGIN_DIR . 'includes/';
+        $len      = strlen($prefix);
+        if (strncmp($prefix, $class, $len) !== 0) {
+            return;
+        }
+
+        $relative_class = substr($class, $len);
+        $file = $base_dir . str_replace('\\', '/', $relative_class) . '.php';
+
+        if (file_exists($file)) {
+            require $file;
+        }
+    });
+
+    // Show admin notice for missing dependencies.
+    add_action('admin_notices', function () {
+        echo '<div class="notice notice-warning"><p>' .
+            sprintf(
+                esc_html__('FP Esperienze: Composer dependencies are missing. Run %s in the plugin directory to enable all features.', 'fp-esperienze'),
+                '<code>composer install --no-dev</code>'
+            ) .
+            '</p></div>';
+    });
 }
 
 // Register WP-CLI commands.
@@ -129,6 +144,16 @@ add_action('before_woocommerce_init', function() {
  * Activation hook
  */
 register_activation_hook(__FILE__, function() {
+    // Ensure composer dependencies are installed.
+    if (!file_exists(FP_ESPERIENZE_PLUGIN_DIR . 'vendor/autoload.php')) {
+        wp_die(
+            sprintf(
+                esc_html__('FP Esperienze cannot be activated because composer dependencies are missing. Run %s in the plugin directory.', 'fp-esperienze'),
+                '<code>composer install --no-dev</code>'
+            )
+        );
+    }
+
     // Check WooCommerce is available during activation
     if (!class_exists('WooCommerce')) {
         wp_die(esc_html__('FP Esperienze requires WooCommerce to be installed and activated.', 'fp-esperienze'));
