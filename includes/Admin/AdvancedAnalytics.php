@@ -36,7 +36,10 @@ class AdvancedAnalytics {
      */
     public function ajaxGetConversionFunnel(): void {
         if (!CapabilityManager::currentUserCan('view_reports')) {
-            wp_die('Unauthorized', 403);
+            wp_send_json_error(
+                ['message' => __('Unauthorized', 'fp-esperienze')],
+                403
+            );
         }
 
         check_ajax_referer('fp_esperienze_admin', 'nonce');
@@ -54,7 +57,10 @@ class AdvancedAnalytics {
      */
     public function ajaxGetAttributionReport(): void {
         if (!CapabilityManager::currentUserCan('view_reports')) {
-            wp_die('Unauthorized', 403);
+            wp_send_json_error(
+                ['message' => __('Unauthorized', 'fp-esperienze')],
+                403
+            );
         }
 
         check_ajax_referer('fp_esperienze_admin', 'nonce');
@@ -72,7 +78,10 @@ class AdvancedAnalytics {
      */
     public function ajaxGetRoiAnalysis(): void {
         if (!CapabilityManager::currentUserCan('view_reports')) {
-            wp_die('Unauthorized', 403);
+            wp_send_json_error(
+                ['message' => __('Unauthorized', 'fp-esperienze')],
+                403
+            );
         }
 
         check_ajax_referer('fp_esperienze_admin', 'nonce');
@@ -90,7 +99,10 @@ class AdvancedAnalytics {
      */
     public function ajaxExportAnalyticsData(): void {
         if (!CapabilityManager::currentUserCan('export_data')) {
-            wp_die('Unauthorized', 403);
+            wp_send_json_error(
+                ['message' => __('Unauthorized', 'fp-esperienze')],
+                403
+            );
         }
 
         check_ajax_referer('fp_esperienze_admin', 'nonce');
@@ -108,7 +120,10 @@ class AdvancedAnalytics {
      */
     public function ajaxGetRevenueByChannel(): void {
         if (!CapabilityManager::currentUserCan('view_reports')) {
-            wp_die('Unauthorized', 403);
+            wp_send_json_error(
+                ['message' => __('Unauthorized', 'fp-esperienze')],
+                403
+            );
         }
 
         check_ajax_referer('fp_esperienze_admin', 'nonce');
@@ -126,7 +141,10 @@ class AdvancedAnalytics {
      */
     public function ajaxGetCustomerJourney(): void {
         if (!CapabilityManager::currentUserCan('view_reports')) {
-            wp_die('Unauthorized', 403);
+            wp_send_json_error(
+                ['message' => __('Unauthorized', 'fp-esperienze')],
+                403
+            );
         }
 
         check_ajax_referer('fp_esperienze_admin', 'nonce');
