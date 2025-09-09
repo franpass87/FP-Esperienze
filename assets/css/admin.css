@@ -2168,7 +2168,7 @@ html {
 
 /* Better focus indicators for accessibility */
 .fp-day-pill-clean input:focus + label {
-    outline: 3px solid #005177;
+    outline: 2px solid #2271b1;
     outline-offset: 2px;
     z-index: 10;
     position: relative;
@@ -3098,9 +3098,9 @@ body.fp-reduced-animations .fp-loading::after {
 .fp-day-pill-clean label {
     display: inline-block;
     padding: 8px 14px;
-    background: linear-gradient(135deg, #f1f1f1 0%, #e8e8e8 100%);
-    border: 1px solid #ddd;
-    border-radius: 6px;
+    background-color: #f7f7f7;
+    border: 1px solid #ccd0d4;
+    border-radius: 3px;
     font-size: 0.75rem;
     font-weight: 600;
     cursor: pointer;
@@ -3108,25 +3108,22 @@ body.fp-reduced-animations .fp-loading::after {
     margin: 0;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    color: #1d2327;
 }
 
 .fp-day-pill-clean label:hover {
-    background: linear-gradient(135deg, #e8e8e8 0%, #ddd 100%);
-    border-color: #ccc;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    background-color: #fafafa;
+    border-color: #bbb;
 }
 
 .fp-day-pill-clean input[type="checkbox"]:checked + label {
-    background: linear-gradient(135deg, #0073aa 0%, #005177 100%);
+    background-color: #2271b1;
     color: #fff;
-    border-color: #005177;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0, 115, 170, 0.3);
+    border-color: #2271b1;
 }
 
 .fp-day-pill-clean input[type="checkbox"]:focus + label {
-    outline: 2px solid #005177;
+    outline: 2px solid #2271b1;
     outline-offset: 2px;
 }
 
