@@ -63,7 +63,7 @@ class SystemStatus {
                 break;
             case 'flush_rewrite':
                 flush_rewrite_rules();
-                wp_redirect(admin_url('admin.php?page=fp-esperienze-system-status&fixed=rewrite'));
+                wp_safe_redirect(admin_url('admin.php?page=fp-esperienze-system-status&fixed=rewrite'));
                 exit;
                 break;
         }
@@ -74,7 +74,7 @@ class SystemStatus {
      */
     private function createMissingTables(): void {
         Installer::activate();
-        wp_redirect(admin_url('admin.php?page=fp-esperienze-system-status&fixed=tables'));
+        wp_safe_redirect(admin_url('admin.php?page=fp-esperienze-system-status&fixed=tables'));
         exit;
     }
 

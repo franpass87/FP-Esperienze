@@ -175,11 +175,11 @@ class SetupWizard {
 
         // Redirect to next step or finish
         if ($step < $this->total_steps) {
-            wp_redirect(add_query_arg(['step' => $step + 1], admin_url('admin.php?page=fp-esperienze-setup-wizard')));
+            wp_safe_redirect(add_query_arg(['step' => $step + 1], admin_url('admin.php?page=fp-esperienze-setup-wizard')));
+            exit;
         } else {
             $this->finishSetup();
         }
-        exit;
     }
 
     /**
@@ -255,11 +255,11 @@ class SetupWizard {
      */
     private function skipStep(int $step): void {
         if ($step < $this->total_steps) {
-            wp_redirect(add_query_arg(['step' => $step + 1], admin_url('admin.php?page=fp-esperienze-setup-wizard')));
+            wp_safe_redirect(add_query_arg(['step' => $step + 1], admin_url('admin.php?page=fp-esperienze-setup-wizard')));
+            exit;
         } else {
             $this->finishSetup();
         }
-        exit;
     }
 
     /**
@@ -267,7 +267,7 @@ class SetupWizard {
      */
     private function finishSetup(): void {
         update_option('fp_esperienze_setup_complete', 1);
-        wp_redirect(admin_url('admin.php?page=fp-esperienze&setup=complete'));
+        wp_safe_redirect(admin_url('admin.php?page=fp-esperienze&setup=complete'));
         exit;
     }
 
