@@ -55,6 +55,7 @@ class Qr {
         $qr_dir     = $base_dir . 'fp-esperienze/voucher/qr/';
 
         global $wp_filesystem;
+        require_once ABSPATH . 'wp-admin/includes/file.php';
         if (!WP_Filesystem()) {
             $msg = 'Qr: WP_Filesystem initialization failed.';
             error_log($msg);

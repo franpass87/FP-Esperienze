@@ -288,6 +288,7 @@ class ICSGenerator {
         $ics_dir = FP_ESPERIENZE_ICS_DIR;
 
         global $wp_filesystem;
+        require_once ABSPATH . 'wp-admin/includes/file.php';
         if (!WP_Filesystem()) {
             $msg = 'ICSGenerator: WP_Filesystem initialization failed.';
             error_log($msg);

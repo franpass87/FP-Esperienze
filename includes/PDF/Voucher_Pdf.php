@@ -59,6 +59,7 @@ class Voucher_Pdf {
         $voucher_dir = $base_dir . 'fp-esperienze/voucher/';
 
         global $wp_filesystem;
+        require_once ABSPATH . 'wp-admin/includes/file.php';
         if (!WP_Filesystem()) {
             $msg = 'Voucher_Pdf: WP_Filesystem initialization failed.';
             error_log($msg);
@@ -114,6 +115,7 @@ class Voucher_Pdf {
         $voucher_dir = $base_dir . 'fp-esperienze/voucher/';
 
         global $wp_filesystem;
+        require_once ABSPATH . 'wp-admin/includes/file.php';
         if (!WP_Filesystem()) {
             $msg = 'Voucher_Pdf: WP_Filesystem initialization failed.';
             error_log($msg);
@@ -355,6 +357,7 @@ Options -Indexes
         $htaccess_path = $directory . '.htaccess';
 
         global $wp_filesystem;
+        require_once ABSPATH . 'wp-admin/includes/file.php';
         if (!WP_Filesystem()) {
             $msg = 'Voucher_Pdf: WP_Filesystem initialization failed.';
             error_log($msg);

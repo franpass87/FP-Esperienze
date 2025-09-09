@@ -227,6 +227,7 @@ class AssetOptimizer {
         }
 
         global $wp_filesystem;
+        require_once ABSPATH . 'wp-admin/includes/file.php';
         if (!WP_Filesystem()) {
             $msg = 'FP Assets: WP_Filesystem initialization failed.';
             error_log($msg);
@@ -304,6 +305,7 @@ class AssetOptimizer {
         $minified_path = self::$assets_dir . "{$asset_type}/{$group}.min.{$asset_type}";
 
         global $wp_filesystem;
+        require_once ABSPATH . 'wp-admin/includes/file.php';
         if (!WP_Filesystem()) {
             error_log('FP Assets: WP_Filesystem initialization failed.');
             return false;
@@ -327,6 +329,7 @@ class AssetOptimizer {
         $frontend_js = self::$assets_dir . 'js/frontend.min.js';
 
         global $wp_filesystem;
+        require_once ABSPATH . 'wp-admin/includes/file.php';
         if (!WP_Filesystem()) {
             error_log('FP Assets: WP_Filesystem initialization failed.');
             return false;
@@ -347,6 +350,7 @@ class AssetOptimizer {
         ];
 
         global $wp_filesystem;
+        require_once ABSPATH . 'wp-admin/includes/file.php';
         if (!WP_Filesystem()) {
             $msg = 'FP Assets: WP_Filesystem initialization failed.';
             error_log($msg);

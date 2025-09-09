@@ -54,6 +54,7 @@ class Installer {
         }
 
         global $wp_filesystem;
+        require_once ABSPATH . 'wp-admin/includes/file.php';
         if (!WP_Filesystem()) {
             $msg = 'Installer: WP_Filesystem initialization failed during activation.';
             error_log($msg);
@@ -164,6 +165,7 @@ class Installer {
         // Remove ICS directory and files
         $ics_dir = FP_ESPERIENZE_ICS_DIR;
         global $wp_filesystem;
+        require_once ABSPATH . 'wp-admin/includes/file.php';
         if (!WP_Filesystem()) {
             $msg = 'Installer: WP_Filesystem initialization failed during deactivation.';
             error_log($msg);

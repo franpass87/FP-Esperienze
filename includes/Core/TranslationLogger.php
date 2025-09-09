@@ -37,6 +37,7 @@ class TranslationLogger {
         $entry = sprintf('[%s] %s%s', current_time('mysql'), $message, PHP_EOL);
 
         global $wp_filesystem;
+        require_once ABSPATH . 'wp-admin/includes/file.php';
         if (!WP_Filesystem()) {
             $msg = 'TranslationLogger: WP_Filesystem initialization failed.';
             error_log($msg);
