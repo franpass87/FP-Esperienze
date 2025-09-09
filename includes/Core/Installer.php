@@ -45,6 +45,24 @@ class Installer {
         if (!get_option('fp_esperienze_setup_complete', false)) {
             set_transient('fp_esperienze_activation_redirect', 1, 30);
         }
+
+        // Ensure ICS directory exists and is protected
+        if (!file_exists(FP_ESPERIENZE_ICS_DIR)) {
+            wp_mkdir_p(FP_ESPERIENZE_ICS_DIR);
+        }
+
+        $htaccess_path = FP_ESPERIENZE_ICS_DIR . '/.htaccess';
+        if (!file_exists($htaccess_path)) {
+            file_put_contents($htaccess_path, "Deny from all\n");
+        }
+
+        $index_path = FP_ESPERIENZE_ICS_DIR . '/index.php';
+        if (!file_exists($index_path)) {
+            file_put_contents(
+                $index_path,
+                "<?php\nstatus_header(403);\nexit;\n"
+            );
+        }
     }
 
     /**
@@ -121,6 +139,20 @@ class Installer {
                 $timeout_like
             )
         );
+
+        // Remove ICS directory and files
+        $ics_dir = FP_ESPERIENZE_ICS_DIR;
+        if (is_dir($ics_dir)) {
+            $files = glob($ics_dir . '/*');
+            if ($files) {
+                foreach ($files as $file) {
+                    if (is_file($file)) {
+                        unlink($file);
+                    }
+                }
+            }
+            rmdir($ics_dir);
+        }
     }
 
     /**
