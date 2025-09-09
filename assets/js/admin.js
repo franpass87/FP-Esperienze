@@ -5,7 +5,17 @@
 (function($) {
     'use strict';
 
-    const { __, sprintf } = wp.i18n;
+    let __ = ( text ) => text;
+    let sprintf = ( template, ...args ) => {
+        let i = 0;
+        return template.replace(/%s|%d/g, () => ( i < args.length ? args[i++] : '' ));
+    };
+
+    if ( window.wp && wp.i18n ) {
+        ( { __, sprintf } = wp.i18n );
+    } else {
+        console.warn( 'wp.i18n not found; translations will not be available.' );
+    }
 
     if (typeof fp_esperienze_admin !== 'undefined' && typeof fp_esperienze_admin.banner_offset !== 'undefined') {
         document.documentElement.style.setProperty('--fp-banner-offset', fp_esperienze_admin.banner_offset + 'px');
