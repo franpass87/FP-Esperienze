@@ -135,7 +135,7 @@
             $('form#post').on('submit', function() {
                 if ($('body').hasClass('post-type-product') && $('#product-type').val() !== 'experience') {
                     // Show user-friendly error message
-                    self.showErrorMessage('This product must be of type "Experience"');
+                    self.showUserFeedback('This product must be of type "Experience"', 'error');
                     return false;
                 }
             });
@@ -279,7 +279,7 @@
                         };
                     },
                     failure: function() {
-                        window.FPEsperienzeAdmin.showErrorMessage('Failed to load bookings');
+                        window.FPEsperienzeAdmin.showUserFeedback('Failed to load bookings', 'error');
                     }
                 },
                 eventClick: function(info) {
