@@ -30,8 +30,10 @@ class AutoTranslator {
             return (string) $cached;
         }
 
-        $endpoint = get_option('fp_lt_endpoint', 'https://libretranslate.de/translate');
-        $endpoint = apply_filters('fp_es_auto_translator_endpoint', $endpoint);
+        $default_endpoint = 'https://libretranslate.de/translate';
+        $endpoint         = get_option('fp_lt_endpoint', $default_endpoint);
+        $endpoint         = apply_filters('fp_es_auto_translator_endpoint', $endpoint);
+        $endpoint         = wp_http_validate_url($endpoint) ?: $default_endpoint;
 
         $body = [
             'q'      => $text,
@@ -46,10 +48,12 @@ class AutoTranslator {
         }
 
         $response = wp_remote_post($endpoint, [
-            'headers' => [
+            'headers'            => [
                 'Content-Type' => 'application/json',
             ],
-            'body' => wp_json_encode($body),
+            'body'               => wp_json_encode($body),
+            'timeout'            => 10,
+            'limit_response_size' => 1048576,
         ]);
 
         if (is_wp_error($response)) {
