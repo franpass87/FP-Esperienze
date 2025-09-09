@@ -104,6 +104,20 @@
         },
 
         /**
+         * Initialize error recovery state
+         */
+        initErrorRecovery: function() {
+            // Azzerare i contatori di errore e ripulire eventuali timer
+            this.criticalErrors = 0;
+            this.recoveryAttempts = 0;
+            if (this.recoveryTimeout) {
+                clearTimeout(this.recoveryTimeout);
+                this.recoveryTimeout = null;
+            }
+            // (Eventuale log o hook aggiuntivo)
+        },
+
+        /**
          * Handle global JavaScript errors
          */
         handleGlobalError: function(errorInfo) {
