@@ -1327,6 +1327,18 @@ find . -name "*.php" -not -path "./vendor/*" | xargs xgettext \
 --force-po
 ```
 
+### Automatic Translation Endpoint
+
+Only configure trusted translation endpoints for the automatic translator. The
+plugin validates the endpoint with `wp_http_validate_url()` and falls back to
+the default LibreTranslate URL if the provided value is invalid. Requests use a
+10 second timeout and limit the response size to 1 MB to avoid hanging on slow
+or malicious hosts.
+
+To confirm fast failure behaviour, test with an unreachable endpoint (for
+example `https://127.0.0.1:9/translate`) and ensure the request fails
+promptly.
+
 ### WP-CLI Translation Command
 
 Queue all plugin content for translation via WP-CLI:
