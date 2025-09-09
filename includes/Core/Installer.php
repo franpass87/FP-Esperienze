@@ -7,6 +7,7 @@
 
 namespace FP\Esperienze\Core;
 
+use Exception;
 use FP\Esperienze\Core\CapabilityManager;
 use FP\Esperienze\Core\TranslationQueue;
 

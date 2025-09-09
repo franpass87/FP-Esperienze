@@ -7,6 +7,7 @@
 
 defined('ABSPATH') || exit;
 
+use Exception;
 use FP\Esperienze\Data\MeetingPointManager;
 use FP\Esperienze\Data\ExtraManager;
 use FP\Esperienze\Integrations\GooglePlacesManager;

@@ -7,6 +7,7 @@
 
 namespace FP\Esperienze\Data;
 
+use Exception;
 use FP\Esperienze\PDF\Voucher_Pdf;
 use FP\Esperienze\PDF\Qr;
 

@@ -10,6 +10,7 @@
 
 namespace FP\Esperienze\AI;
 
+use Exception;
 use FP\Esperienze\Core\CapabilityManager;
 
 defined('ABSPATH') || exit;
