@@ -183,7 +183,7 @@ class MenuManager {
             // Don't redirect if setup is already complete
             $setup_wizard = new SetupWizard();
             if (!$setup_wizard->isSetupComplete()) {
-                wp_redirect(admin_url('admin.php?page=fp-esperienze-setup-wizard'));
+                wp_safe_redirect(admin_url('admin.php?page=fp-esperienze-setup-wizard'));
                 exit;
             }
         }
@@ -1139,12 +1139,12 @@ class MenuManager {
             });
             
             // Redirect to list view after successful update
-            wp_redirect(admin_url('admin.php?page=fp-esperienze-meeting-points'));
+            wp_safe_redirect(admin_url('admin.php?page=fp-esperienze-meeting-points'));
             exit;
         } else {
             add_action('admin_notices', function() {
-                echo '<div class="notice notice-error is-dismissible"><p>' . 
-                     esc_html__('Failed to update meeting point.', 'fp-esperienze') . 
+                echo '<div class="notice notice-error is-dismissible"><p>' .
+                     esc_html__('Failed to update meeting point.', 'fp-esperienze') .
                      '</p></div>';
             });
         }

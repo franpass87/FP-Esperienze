@@ -18,7 +18,7 @@ if ( ! current_user_can( 'manage_options' ) ) {
 
 // Check if we're in admin context
 if (!is_admin()) {
-    wp_redirect(admin_url('admin.php?page=fp-esperienze-diagnostic'));
+    wp_safe_redirect(admin_url('admin.php?page=fp-esperienze-diagnostic'));
     exit;
 }
 
