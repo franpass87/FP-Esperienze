@@ -135,7 +135,7 @@
             $('form#post').on('submit', function() {
                 if ($('body').hasClass('post-type-product') && $('#product-type').val() !== 'experience') {
                     // Show user-friendly error message
-                    this.showErrorMessage('This product must be of type "Experience"');
+                    self.showErrorMessage('This product must be of type "Experience"');
                     return false;
                 }
             });
@@ -279,7 +279,7 @@
                         };
                     },
                     failure: function() {
-                        FPEsperienze.showErrorMessage('Failed to load bookings');
+                        window.FPEsperienzeAdmin.showErrorMessage('Failed to load bookings');
                     }
                 },
                 eventClick: function(info) {
@@ -373,6 +373,13 @@
             setTimeout(function() {
                 $notice.fadeOut();
             }, duration);
+        },
+
+        /**
+         * Legacy error message helper
+         */
+        showErrorMessage: function(message, duration = 5000) {
+            this.showUserFeedback(message, 'error', duration);
         },
 
         /**
