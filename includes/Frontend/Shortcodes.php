@@ -85,7 +85,7 @@ class Shortcodes {
 
             <div class="fp-experience-results" aria-live="polite">
                 <?php if (!$products->have_posts()) : ?>
-                    <p class="fp-no-results"><?php _e('No experiences found.', 'fp-esperienze'); ?></p>
+                    <p class="fp-no-results"><?php esc_html_e('No experiences found.', 'fp-esperienze'); ?></p>
                 <?php else : ?>
                     <div class="fp-experience-grid">
                         <?php while ($products->have_posts()) : $products->the_post(); ?>
@@ -328,9 +328,9 @@ class Shortcodes {
                     
                     <?php if (in_array('mp', $enabled_filters)) : ?>
                         <div class="fp-filter-group">
-                            <label for="fp_mp"><?php _e('Meeting Point', 'fp-esperienze'); ?></label>
+                            <label for="fp_mp"><?php esc_html_e('Meeting Point', 'fp-esperienze'); ?></label>
                             <select name="fp_mp" id="fp_mp" class="fp-filter-select" aria-label="<?php esc_attr_e('Filter by meeting point', 'fp-esperienze'); ?>">
-                                <option value=""><?php _e('All locations', 'fp-esperienze'); ?></option>
+                                <option value=""><?php esc_html_e('All locations', 'fp-esperienze'); ?></option>
                                 <?php
                                 $meeting_points = MeetingPointManager::getAllMeetingPoints();
                                 foreach ($meeting_points as $mp) {
@@ -344,9 +344,9 @@ class Shortcodes {
 
                     <?php if (in_array('lang', $enabled_filters)) : ?>
                         <div class="fp-filter-group">
-                            <label for="fp_lang"><?php _e('Language', 'fp-esperienze'); ?></label>
+                            <label for="fp_lang"><?php esc_html_e('Language', 'fp-esperienze'); ?></label>
                             <select name="fp_lang" id="fp_lang" class="fp-filter-select" aria-label="<?php esc_attr_e('Filter by language', 'fp-esperienze'); ?>">
-                                <option value=""><?php _e('All languages', 'fp-esperienze'); ?></option>
+                                <option value=""><?php esc_html_e('All languages', 'fp-esperienze'); ?></option>
                                 <?php
                                 $languages = $this->getAvailableLanguages();
                                 foreach ($languages as $lang) {
@@ -360,19 +360,19 @@ class Shortcodes {
 
                     <?php if (in_array('duration', $enabled_filters)) : ?>
                         <div class="fp-filter-group">
-                            <label for="fp_duration"><?php _e('Duration', 'fp-esperienze'); ?></label>
+                            <label for="fp_duration"><?php esc_html_e('Duration', 'fp-esperienze'); ?></label>
                             <select name="fp_duration" id="fp_duration" class="fp-filter-select" aria-label="<?php esc_attr_e('Filter by duration', 'fp-esperienze'); ?>">
-                                <option value=""><?php _e('Any duration', 'fp-esperienze'); ?></option>
-                                <option value="<=90" <?php selected(isset($_GET['fp_duration']) ? sanitize_text_field($_GET['fp_duration']) : '', '<=90'); ?>><?php _e('Up to 1.5 hours', 'fp-esperienze'); ?></option>
-                                <option value="91-180" <?php selected(isset($_GET['fp_duration']) ? sanitize_text_field($_GET['fp_duration']) : '', '91-180'); ?>><?php _e('1.5 - 3 hours', 'fp-esperienze'); ?></option>
-                                <option value=">180" <?php selected(isset($_GET['fp_duration']) ? sanitize_text_field($_GET['fp_duration']) : '', '>180'); ?>><?php _e('More than 3 hours', 'fp-esperienze'); ?></option>
+                                <option value=""><?php esc_html_e('Any duration', 'fp-esperienze'); ?></option>
+                                <option value="<=90" <?php selected(isset($_GET['fp_duration']) ? sanitize_text_field($_GET['fp_duration']) : '', '<=90'); ?>><?php esc_html_e('Up to 1.5 hours', 'fp-esperienze'); ?></option>
+                                <option value="91-180" <?php selected(isset($_GET['fp_duration']) ? sanitize_text_field($_GET['fp_duration']) : '', '91-180'); ?>><?php esc_html_e('1.5 - 3 hours', 'fp-esperienze'); ?></option>
+                <option value=">180" <?php selected(isset($_GET['fp_duration']) ? sanitize_text_field($_GET['fp_duration']) : '', '>180'); ?>><?php esc_html_e('More than 3 hours', 'fp-esperienze'); ?></option>
                             </select>
                         </div>
                     <?php endif; ?>
 
                     <?php if (in_array('date', $enabled_filters)) : ?>
                         <div class="fp-filter-group">
-                            <label for="fp_date"><?php _e('Available on', 'fp-esperienze'); ?></label>
+                            <label for="fp_date"><?php esc_html_e('Available on', 'fp-esperienze'); ?></label>
                             <input type="date" name="fp_date" id="fp_date" class="fp-filter-date" 
                                    value="<?php echo esc_attr(isset($_GET['fp_date']) ? sanitize_text_field($_GET['fp_date']) : ''); ?>"
                                    min="<?php echo esc_attr(date('Y-m-d')); ?>"
@@ -384,10 +384,10 @@ class Shortcodes {
                 
                 <div class="fp-filters-actions">
                     <button type="submit" class="fp-btn fp-btn-primary fp-filter-apply">
-                        <?php _e('Apply Filters', 'fp-esperienze'); ?>
+                        <?php esc_html_e('Apply Filters', 'fp-esperienze'); ?>
                     </button>
                     <a href="?" class="fp-btn fp-btn-secondary fp-filter-reset">
-                        <?php _e('Clear', 'fp-esperienze'); ?>
+                        <?php esc_html_e('Clear', 'fp-esperienze'); ?>
                     </a>
                 </div>
 
@@ -466,7 +466,7 @@ class Shortcodes {
                 <?php if ($current_page > 1) : ?>
                     <li class="fp-pagination-item">
                         <a href="<?php echo esc_url($this->getPaginationUrl($current_page - 1)); ?>" class="fp-pagination-link fp-pagination-prev">
-                            <?php _e('Previous', 'fp-esperienze'); ?>
+                            <?php esc_html_e('Previous', 'fp-esperienze'); ?>
                         </a>
                     </li>
                 <?php endif; ?>
@@ -492,7 +492,7 @@ class Shortcodes {
                 <?php if ($current_page < $max_pages) : ?>
                     <li class="fp-pagination-item">
                         <a href="<?php echo esc_url($this->getPaginationUrl($current_page + 1)); ?>" class="fp-pagination-link fp-pagination-next">
-                            <?php _e('Next', 'fp-esperienze'); ?>
+                            <?php esc_html_e('Next', 'fp-esperienze'); ?>
                         </a>
                     </li>
                 <?php endif; ?>
@@ -543,7 +543,7 @@ class Shortcodes {
                 </a>
                 <?php if ($duration) : ?>
                     <div class="fp-experience-duration">
-                        <?php printf(__('%d min', 'fp-esperienze'), intval($duration)); ?>
+                        <?php printf( esc_html__( '%d min', 'fp-esperienze' ), intval( $duration ) ); ?>
                     </div>
                 <?php endif; ?>
             </div>
@@ -573,7 +573,7 @@ class Shortcodes {
                 <div class="fp-experience-meta">
                     <?php if ($adult_price) : ?>
                         <div class="fp-experience-price">
-                            <?php printf(__('From %s', 'fp-esperienze'), wc_price($adult_price)); ?>
+                            <?php printf( esc_html__( 'From %s', 'fp-esperienze' ), wp_kses_post( wc_price( $adult_price ) ) ); ?>
                         </div>
                     <?php endif; ?>
                     
@@ -582,7 +582,7 @@ class Shortcodes {
                            class="fp-btn fp-btn-primary fp-details-btn"
                            data-item-id="<?php echo esc_attr($product_id); ?>"
                            data-item-name="<?php echo esc_attr($product->get_name()); ?>">
-                            <?php _e('Dettagli', 'fp-esperienze'); ?>
+                            <?php esc_html_e('Dettagli', 'fp-esperienze'); ?>
                         </a>
                     </div>
                 </div>
