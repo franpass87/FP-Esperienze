@@ -1,13 +1,1 @@
-debug-product-type.php
-setup-wizard-diagnostic.php
-override-rows-diagnostic.php
-performance-test.php
-security-test.php
-verify-product-type-fix.php
-test-autoloading-fix.php
-test-brevo-integration.php
-test-gift-voucher.php
-test-schedules.php
-accessibility-test.py
-dev-tools.sh
-security-validate.sh
+tools/

@@ -6,6 +6,10 @@
  * Place this file in WordPress root directory and access via browser.
  */
 
+if ( PHP_SAPI !== 'cli' && ! defined( 'WP_CLI' ) ) {
+    die();
+}
+
 defined( 'ABSPATH' ) || exit;
 
 if ( ! current_user_can( 'manage_options' ) ) {

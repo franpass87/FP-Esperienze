@@ -6,6 +6,10 @@
  * Usage: wp eval-file security-test.php
  */
 
+if ( PHP_SAPI !== 'cli' && ! defined( 'WP_CLI' ) ) {
+    die();
+}
+
 defined( 'ABSPATH' ) || exit;
 
 if ( ! current_user_can( 'manage_options' ) ) {

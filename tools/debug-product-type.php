@@ -4,6 +4,10 @@
  * Place this in the wp-content/plugins/fp-esperienze/ directory and access via admin
  */
 
+if ( PHP_SAPI !== 'cli' && ! defined( 'WP_CLI' ) ) {
+    die();
+}
+
 defined( 'ABSPATH' ) || exit;
 
 if ( ! current_user_can( 'manage_options' ) ) {

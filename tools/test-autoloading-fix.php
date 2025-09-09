@@ -1,13 +1,17 @@
 <?php
 /**
  * Test script to verify the autoloading fix
- * 
+ *
  * This script tests that the FP\Esperienze\Core\Plugin class can be loaded
  * and instantiated, which should fix the original error:
  * 'Class "FP\Esperienze\Core\Plugin" not found'
- * 
+ *
  * Run this script from the plugin directory to verify the fix.
  */
+
+if ( PHP_SAPI !== 'cli' && ! defined( 'WP_CLI' ) ) {
+    die();
+}
 
 echo "FP Esperienze - Autoloading Test\n";
 echo "=================================\n\n";

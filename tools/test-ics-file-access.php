@@ -1,4 +1,9 @@
 <?php
+namespace {
+    if ( PHP_SAPI !== 'cli' && ! defined( 'WP_CLI' ) ) {
+        die();
+    }
+}
 namespace FP\Esperienze\Core {
     class CapabilityManager {
         public static bool $canManage = true;
@@ -35,7 +40,7 @@ namespace {
         }
     }
 
-    require __DIR__ . '/includes/REST/ICSAPI.php';
+    require __DIR__ . '/../includes/REST/ICSAPI.php';
 
     $baseDir = sys_get_temp_dir() . '/ics-api-test';
     $outsideDir = sys_get_temp_dir() . '/ics-api-test-outside';

@@ -6,6 +6,10 @@
  * Usage: php performance-test.php
  */
 
+if ( PHP_SAPI !== 'cli' && ! defined( 'WP_CLI' ) ) {
+    die();
+}
+
 require_once __DIR__ . '/../../wp-load.php';
 
 defined( 'ABSPATH' ) || exit;
