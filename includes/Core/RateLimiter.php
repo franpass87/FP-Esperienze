@@ -44,32 +44,57 @@ class RateLimiter {
     }
 
     /**
-     * Get client IP address
+     * Get client IP address.
+     *
+     * Uses WordPress' {@see wp_get_ip_address()} when available and falls back
+     * to processing common proxy headers when behind a trusted proxy.
      *
      * @return string Client IP address
      */
     public static function getClientIP(): string {
-        $remote_addr = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+        $remote_addr     = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+        $trusted_proxies = apply_filters( 'fp_trusted_proxies', [] );
 
-        $trusted_proxies = apply_filters('fp_trusted_proxies', []);
+        if ( ! empty( $trusted_proxies ) && in_array( $remote_addr, $trusted_proxies, true ) ) {
+            if ( function_exists( 'wp_get_ip_address' ) ) {
+                $ip = wp_get_ip_address();
+                if ( $ip ) {
+                    return $ip;
+                }
+            }
 
-        if (!empty($trusted_proxies) && in_array($remote_addr, $trusted_proxies, true)) {
             $forwarded_headers = [
+                'HTTP_CLIENT_IP',
+                'HTTP_X_REAL_IP',
                 'HTTP_X_FORWARDED_FOR',
-                'HTTP_X_FORWARDED'
+                'HTTP_X_FORWARDED',
+                'HTTP_FORWARDED_FOR',
+                'HTTP_FORWARDED',
             ];
 
-            foreach ($forwarded_headers as $header) {
-                if (empty($_SERVER[$header])) {
+            foreach ( $forwarded_headers as $header ) {
+                if ( empty( $_SERVER[ $header ] ) ) {
                     continue;
                 }
 
-                $ips = explode(',', $_SERVER[$header]);
+                $ips = [];
+                if ( 'HTTP_FORWARDED' === $header || 'HTTP_FORWARDED_FOR' === $header ) {
+                    $parts = explode( ',', $_SERVER[ $header ] );
+                    foreach ( $parts as $part ) {
+                        if ( preg_match( '/for=([^;]+)/', $part, $matches ) ) {
+                            $ips[] = trim( $matches[1], " \"[]" );
+                        } else {
+                            $ips[] = trim( $part );
+                        }
+                    }
+                } else {
+                    $ips = explode( ',', $_SERVER[ $header ] );
+                }
 
-                foreach ($ips as $ip) {
-                    $ip = trim($ip);
+                foreach ( $ips as $ip ) {
+                    $ip = trim( $ip );
 
-                    if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+                    if ( filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE ) ) {
                         return $ip;
                     }
                 }
