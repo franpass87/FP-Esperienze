@@ -179,9 +179,39 @@
             
             // Load FullCalendar from CDN
             if (typeof FullCalendar === 'undefined') {
-                this.loadFullCalendar().then(function() {
-                    self.renderCalendar();
-                });
+                this.loadFullCalendar()
+                    .then(function() {
+                        self.renderCalendar();
+                    })
+                    .catch(function(error) {
+                        console.error('FullCalendar failed to load', error);
+                        self.showUserFeedback(
+                            __('Failed to load calendar library. Attempting local copy...', 'fp-esperienze'),
+                            'warning',
+                            5000
+                        );
+
+                        if (typeof self.loadLocalFullCalendar === 'function') {
+                            self.loadLocalFullCalendar()
+                                .then(function() {
+                                    self.renderCalendar();
+                                })
+                                .catch(function(localError) {
+                                    console.error('Local FullCalendar failed to load', localError);
+                                    self.showUserFeedback(
+                                        __('Calendar could not be loaded. Please check your network and try again.', 'fp-esperienze'),
+                                        'error',
+                                        8000
+                                    );
+                                });
+                        } else {
+                            self.showUserFeedback(
+                                __('Calendar could not be loaded. Please check your network and try again.', 'fp-esperienze'),
+                                'error',
+                                8000
+                            );
+                        }
+                    });
             } else {
                 this.renderCalendar();
             }
@@ -201,6 +231,33 @@
                 // Load JS
                 var script = document.createElement('script');
                 script.src = 'https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js';
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        },
+
+        /**
+         * Load local FullCalendar library as fallback
+         */
+        loadLocalFullCalendar: function() {
+            return new Promise(function(resolve, reject) {
+                if (!fp_esperienze_admin || !fp_esperienze_admin.plugin_url) {
+                    reject(new Error('Plugin URL not available'));
+                    return;
+                }
+
+                var base = fp_esperienze_admin.plugin_url;
+
+                // Load CSS
+                var css = document.createElement('link');
+                css.rel = 'stylesheet';
+                css.href = base + 'assets/vendor/fullcalendar/index.global.min.css';
+                document.head.appendChild(css);
+
+                // Load JS
+                var script = document.createElement('script');
+                script.src = base + 'assets/vendor/fullcalendar/index.global.min.js';
                 script.onload = resolve;
                 script.onerror = reject;
                 document.head.appendChild(script);
