@@ -59,7 +59,7 @@ class Shortcodes {
             array_map('trim', explode(',', $atts['filters'])) : [];
 
         // Handle pagination
-        $paged = get_query_var('paged') ? get_query_var('paged') : 1;
+        $paged = 1;
         if (isset($_GET['paged'])) {
             $paged = max(1, absint(wp_unslash($_GET['paged'])));
         }
