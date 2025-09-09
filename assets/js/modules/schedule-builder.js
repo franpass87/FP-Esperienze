@@ -385,44 +385,32 @@
                             </div>
                         </div>
 
-                        <div class="fp-override-toggle-clean">
-                            <label>
-                                <input type="checkbox" class="fp-show-overrides-toggle-clean">
-                                <span class="dashicons dashicons-admin-tools"></span>
-                                Advanced Settings
-                            </label>
-                            <span class="description">Override default values for this specific time slot</span>
-                            <input type="hidden" name="builder_slots[${index}][advanced_enabled]" value="0" class="fp-advanced-enabled-clean">
-                        </div>
-
-                        <div class="fp-overrides-section-clean" style="display: none;">
-                            <div class="fp-overrides-grid-clean">
-                                <div class="fp-override-field-clean">
-                                    <label>Duration (minutes)</label>
-                                    <input type="number" name="builder_slots[${index}][duration_min]" min="1" />
-                                </div>
-                                <div class="fp-override-field-clean">
-                                    <label>Capacity</label>
-                                    <input type="number" name="builder_slots[${index}][capacity]" min="1" />
-                                </div>
-                                <div class="fp-override-field-clean">
-                                    <label>Language</label>
-                                    <input type="text" name="builder_slots[${index}][lang]" maxlength="10" />
-                                </div>
-                                <div class="fp-override-field-clean">
-                                    <label>Meeting Point</label>
-                                    <select name="builder_slots[${index}][meeting_point_id]" class="fp-meeting-point-select">
-                                        <option value="">Use default</option>
-                                    </select>
-                                </div>
-                                <div class="fp-override-field-clean">
-                                    <label>Adult Price</label>
-                                    <input type="number" name="builder_slots[${index}][price_adult]" min="0" step="0.01" />
-                                </div>
-                                <div class="fp-override-field-clean">
-                                    <label>Child Price</label>
-                                    <input type="number" name="builder_slots[${index}][price_child]" min="0" step="0.01" />
-                                </div>
+                        <div class="fp-overrides-grid-clean">
+                            <div class="fp-override-field-clean">
+                                <label>Duration (minutes) <span class="required">*</span></label>
+                                <input type="number" name="builder_slots[${index}][duration_min]" min="1" required />
+                            </div>
+                            <div class="fp-override-field-clean">
+                                <label>Capacity <span class="required">*</span></label>
+                                <input type="number" name="builder_slots[${index}][capacity]" min="1" required />
+                            </div>
+                            <div class="fp-override-field-clean">
+                                <label>Language <span class="required">*</span></label>
+                                <input type="text" name="builder_slots[${index}][lang]" maxlength="10" required />
+                            </div>
+                            <div class="fp-override-field-clean">
+                                <label>Meeting Point <span class="required">*</span></label>
+                                <select name="builder_slots[${index}][meeting_point_id]" class="fp-meeting-point-select" required>
+                                    <option value="" disabled selected>Select meeting point</option>
+                                </select>
+                            </div>
+                            <div class="fp-override-field-clean">
+                                <label>Adult Price <span class="required">*</span></label>
+                                <input type="number" name="builder_slots[${index}][price_adult]" min="0" step="0.01" required />
+                            </div>
+                            <div class="fp-override-field-clean">
+                                <label>Child Price <span class="required">*</span></label>
+                                <input type="number" name="builder_slots[${index}][price_child]" min="0" step="0.01" required />
                             </div>
                         </div>
                     </div>

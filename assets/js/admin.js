@@ -400,123 +400,6 @@
                 self.updateSummaryTable();
             });
             
-            // Toggle overrides visibility
-            $(document).on('change', '.fp-show-overrides-toggle', function() {
-                var $this = $(this);
-                var $timeSlotRow = $this.closest('.fp-time-slot-row');
-                var $overridesSection = $timeSlotRow.find('.fp-overrides-section');
-                var $advancedEnabledField = $timeSlotRow.find('.fp-advanced-enabled');
-                var $overrideToggle = $timeSlotRow.find('.fp-override-toggle');
-                
-                if ($this.is(':checked')) {
-                    $overridesSection.show();
-                    $advancedEnabledField.val('1');
-                    // Clear user-disabled flag when explicitly enabling
-                    $overrideToggle.removeData('user-disabled');
-                } else {
-                    $overridesSection.hide();
-                    // Don't automatically clear values - let user decide
-                    // Only clear the advanced enabled flag
-                    $advancedEnabledField.val('0');
-                    // Mark that user explicitly disabled advanced settings
-                    $overrideToggle.data('user-disabled', true);
-                }
-                
-                // Update summary table immediately
-                self.updateSummaryTable();
-            });
-            
-            // Handle override field changes to auto-enable advanced mode if values are entered
-            $(document).on('input change', '.fp-overrides-section input, .fp-overrides-section select', function() {
-                var $timeSlotRow = $(this).closest('.fp-time-slot-row');
-                var $toggle = $timeSlotRow.find('.fp-show-overrides-toggle');
-                var $advancedEnabledField = $timeSlotRow.find('.fp-advanced-enabled');
-                var $overrideToggle = $timeSlotRow.find('.fp-override-toggle');
-                
-                // Track if user explicitly disabled advanced settings
-                var userDisabled = $overrideToggle.data('user-disabled') === true;
-                
-                // Check if any override fields have values
-                var hasOverrideValues = false;
-                $timeSlotRow.find('.fp-overrides-section input, .fp-overrides-section select').each(function() {
-                    if ($(this).val() && $(this).val() !== '') {
-                        hasOverrideValues = true;
-                        return false; // break
-                    }
-                });
-                
-                // Only auto-enable if user hasn't explicitly disabled advanced settings
-                // and this is triggered by user input (not programmatic setting)
-                if (hasOverrideValues && !$toggle.is(':checked') && !userDisabled) {
-                    $toggle.prop('checked', true);
-                    $advancedEnabledField.val('1');
-                    $overrideToggle.addClass('auto-enabled');
-                    
-                    // Show a subtle indication that auto-enable happened
-                    setTimeout(function() {
-                        $overrideToggle.removeClass('auto-enabled');
-                    }, 2000);
-                } else if (!hasOverrideValues && $toggle.is(':checked') && !userDisabled) {
-                    // Auto-disable if no values and currently enabled (only if not user-controlled)
-                    $toggle.prop('checked', false);
-                    $advancedEnabledField.val('0');
-                    $overrideToggle.removeClass('auto-enabled');
-                }
-                
-                // Update summary table
-                self.updateSummaryTable();
-            });
-            
-            // Handle override field changes for clean version - same logic as above
-            $(document).on('input change', '.fp-overrides-section-clean input, .fp-overrides-section-clean select', function() {
-                var $timeSlotCard = $(this).closest('.fp-time-slot-card-clean');
-                var $toggle = $timeSlotCard.find('.fp-show-overrides-toggle-clean');
-                var $advancedEnabledField = $timeSlotCard.find('.fp-advanced-enabled-clean');
-                var $overrideToggle = $timeSlotCard.find('.fp-override-toggle-clean');
-                
-                // Track if user explicitly disabled advanced settings
-                var userDisabled = $overrideToggle.data('user-disabled') === true;
-                
-                // Check if any override fields have values different from their placeholders/defaults
-                var hasOverrideValues = false;
-                $timeSlotCard.find('.fp-overrides-section-clean input, .fp-overrides-section-clean select').each(function() {
-                    var val = $(this).val();
-                    var placeholder = $(this).attr('placeholder');
-
-                    // Extract actual default value from placeholder patterns like "Default: 10" or "Inherit (10)"
-                    if (placeholder) {
-                        // Remove common prefix/suffix patterns to get the raw default value
-                        placeholder = placeholder.replace(/^Default:\s*/, '').replace(/^Inherit \(/, '').replace(/\)$/, '').trim();
-                    }
-
-                    if (val && val !== '' && val !== placeholder) {
-                        hasOverrideValues = true;
-                        return false; // break
-                    }
-                });
-                
-                // Only auto-enable if user hasn't explicitly disabled advanced settings
-                // and this is triggered by user input (not programmatic setting)
-                if (hasOverrideValues && !$toggle.is(':checked') && !userDisabled) {
-                    $toggle.prop('checked', true);
-                    $advancedEnabledField.val('1');
-                    $overrideToggle.addClass('auto-enabled');
-                    
-                    // Show a subtle indication that auto-enable happened
-                    setTimeout(function() {
-                        $overrideToggle.removeClass('auto-enabled');
-                    }, 2000);
-                } else if (!hasOverrideValues && $toggle.is(':checked') && !userDisabled) {
-                    // Auto-disable if no values and currently enabled (only if not user-controlled)
-                    $toggle.prop('checked', false);
-                    $advancedEnabledField.val('0');
-                    $overrideToggle.removeClass('auto-enabled');
-                }
-                
-                // Update summary table
-                self.updateSummaryTable();
-            });
-            
             // Update summary when time or days change
             $(document).on('change', 'input[name*="[start_time]"], input[name*="[days][]"]', function() {
                 self.updateSummaryTable();
@@ -672,34 +555,20 @@
                 var $slot = $(this);
                 var startTime = $slot.find('input[name*="[start_time]"]').val();
                 var selectedDays = [];
-                
+
                 $slot.find('input[name*="[days][]"]:checked').each(function() {
                     selectedDays.push($(this).val());
                 });
-                
+
                 if (startTime && selectedDays.length > 0) {
-                    // Support both old and new override toggle classes
-                    var overridesEnabled = $slot.find('.fp-show-overrides-toggle, .fp-show-overrides-toggle-clean').is(':checked');
-                    var customCount = 0;
-                    
-                    if (overridesEnabled) {
-                        // Support both old and new override section classes
-                        $slot.find('.fp-overrides-section input, .fp-overrides-section select, .fp-overrides-section-clean input, .fp-overrides-section-clean select').each(function() {
-                            if ($(this).val() && $(this).val() !== '') {
-                                customCount++;
-                            }
-                        });
-                    }
-                    
                     var duration = $slot.find('input[name*="[duration_min]"]').val();
                     var capacity = $slot.find('input[name*="[capacity]"]').val();
-                    
+
                     slots.push({
                         time: startTime,
                         days: selectedDays,
                         duration: duration,
-                        capacity: capacity,
-                        customCount: customCount
+                        capacity: capacity
                     });
                 }
             });
@@ -717,7 +586,6 @@
                         '<th>' + __('Days', 'fp-esperienze') + '</th>' +
                         '<th>' + __('Duration', 'fp-esperienze') + '</th>' +
                         '<th>' + __('Capacity', 'fp-esperienze') + '</th>' +
-                        '<th>' + __('Customized', 'fp-esperienze') + '</th>' +
                     '</tr></thead><tbody>';
                 
                 slots.forEach(function(slot) {
@@ -735,9 +603,8 @@
                     });
                     
                     summaryHtml += '</div></td>' +
-                        '<td>' + (slot.duration ? slot.duration + ' ' + __('min', 'fp-esperienze') : '<em>' + __('Default', 'fp-esperienze') + '</em>') + '</td>' +
-                        '<td>' + (slot.capacity ? slot.capacity : '<em>' + __('Default', 'fp-esperienze') + '</em>') + '</td>' +
-                        '<td>' + (slot.customCount > 0 ? slot.customCount + ' ' + (slot.customCount === 1 ? __('setting', 'fp-esperienze') : __('settings', 'fp-esperienze')) : '<em>' + __('None', 'fp-esperienze') + '</em>') + '</td>' +
+                        '<td>' + slot.duration + ' ' + __('min', 'fp-esperienze') + '</td>' +
+                        '<td>' + slot.capacity + '</td>' +
                         '</tr>';
                 });
                 
@@ -803,47 +670,34 @@
                 var timeSlot = $(this);
                 var startTime = timeSlot.find('input[name*="[start_time]"]').val();
                 var selectedDays = [];
-                
+
                 // Get selected days
                 timeSlot.find('input[name*="[days][]"]:checked').each(function() {
                     selectedDays.push($(this).val());
                 });
-                
+
                 if (!startTime || selectedDays.length === 0) {
                     return; // Skip invalid slots
                 }
-                
-                // Get override values - check for both old and new advanced enabled fields
-                var overrides = {};
-                var advancedEnabled = timeSlot.find('.fp-advanced-enabled, .fp-advanced-enabled-clean').val() === '1';
-                
-                if (advancedEnabled) {
-                    var duration = timeSlot.find('input[name*="[duration_min]"]').val();
-                    var capacity = timeSlot.find('input[name*="[capacity]"]').val();
-                    var lang = timeSlot.find('input[name*="[lang]"]').val();
-                    var meetingPoint = timeSlot.find('select[name*="[meeting_point_id]"]').val();
-                    var priceAdult = timeSlot.find('input[name*="[price_adult]"]').val();
-                    var priceChild = timeSlot.find('input[name*="[price_child]"]').val();
-                    
-                    // Include values even if empty (they might be intentional "reset to default")
-                    if (duration !== undefined) overrides.duration_min = duration;
-                    if (capacity !== undefined) overrides.capacity = capacity;
-                    if (lang !== undefined) overrides.lang = lang;
-                    if (meetingPoint !== undefined) overrides.meeting_point_id = meetingPoint;
-                    if (priceAdult !== undefined) overrides.price_adult = priceAdult;
-                    if (priceChild !== undefined) overrides.price_child = priceChild;
-                }
-                
+
+                var duration = timeSlot.find('input[name*="[duration_min]"]').val();
+                var capacity = timeSlot.find('input[name*="[capacity]"]').val();
+                var lang = timeSlot.find('input[name*="[lang]"]').val();
+                var meetingPoint = timeSlot.find('select[name*="[meeting_point_id]"]').val();
+                var priceAdult = timeSlot.find('input[name*="[price_adult]"]').val();
+                var priceChild = timeSlot.find('input[name*="[price_child]"]').val();
+
                 // Generate schedule input for each selected day
                 selectedDays.forEach(function(dayOfWeek) {
                     var scheduleHtml = '<input type="hidden" name="schedules[' + scheduleIndex + '][day_of_week]" value="' + dayOfWeek + '">' +
-                        '<input type="hidden" name="schedules[' + scheduleIndex + '][start_time]" value="' + startTime + '">';
-                    
-                    // Add override values if they exist
-                    for (var key in overrides) {
-                        scheduleHtml += '<input type="hidden" name="schedules[' + scheduleIndex + '][' + key + ']" value="' + overrides[key] + '">';
-                    }
-                    
+                        '<input type="hidden" name="schedules[' + scheduleIndex + '][start_time]" value="' + startTime + '">' +
+                        '<input type="hidden" name="schedules[' + scheduleIndex + '][duration_min]" value="' + duration + '">' +
+                        '<input type="hidden" name="schedules[' + scheduleIndex + '][capacity]" value="' + capacity + '">' +
+                        '<input type="hidden" name="schedules[' + scheduleIndex + '][lang]" value="' + lang + '">' +
+                        '<input type="hidden" name="schedules[' + scheduleIndex + '][meeting_point_id]" value="' + meetingPoint + '">' +
+                        '<input type="hidden" name="schedules[' + scheduleIndex + '][price_adult]" value="' + priceAdult + '">' +
+                        '<input type="hidden" name="schedules[' + scheduleIndex + '][price_child]" value="' + priceChild + '">';
+
                     generatedContainer.append(scheduleHtml);
                     scheduleIndex++;
                 });
@@ -870,7 +724,6 @@
             // Unbind any existing handlers to prevent conflicts
             $(document).off('click.fp-clean', '#fp-add-time-slot, #fp-add-time-slot-empty');
             $(document).off('click.fp-clean', '.fp-remove-time-slot-clean');
-            $(document).off('change.fp-clean', '.fp-show-overrides-toggle-clean');
             $(document).off('click.fp-clean', '#fp-add-override');
             $(document).off('click.fp-clean', '.fp-override-remove-clean');
             $(document).off('change.fp-clean', '.fp-override-checkbox-clean input[type="checkbox"]');
@@ -918,16 +771,6 @@
                         alert(__('Error removing time slot. Please try again.', 'fp-esperienze'));
                         $button.prop('disabled', false).removeClass('fp-loading');
                     }
-                }
-            });
-            
-            // Override toggle - clean version with namespace
-            $(document).on('change.fp-clean', '.fp-show-overrides-toggle-clean', function() {
-                // Debug logging removed for production
-                try {
-                    self.toggleTimeSlotOverridesClean($(this));
-                } catch (error) {
-                    console.error('FP Esperienze: Error toggling overrides:', error);
                 }
             });
             
@@ -1295,45 +1138,33 @@
                         '</button>' +
                     '</div>' +
                 '</div>' +
-                
-                '<div class="fp-override-toggle">' +
-                    '<label>' +
-                        '<input type="checkbox" class="fp-show-overrides-toggle">' +
-                        '<span class="dashicons dashicons-admin-tools"></span>' +
-                        ' Advanced Settings' +
-                    '</label>' +
-                    '<span class="description">Override default values for this specific time slot</span>' +
-                    '<input type="hidden" name="builder_slots[' + index + '][advanced_enabled]" value="0" class="fp-advanced-enabled">' +
-                '</div>' +
-                
-                '<div class="fp-overrides-section">' +
-                    '<div class="fp-overrides-grid">' +
-                        '<div class="fp-override-field">' +
-                            '<label>Duration (minutes)</label>' +
-                            '<input type="number" name="builder_slots[' + index + '][duration_min]" min="1" placeholder="Default: 60">' +
-                        '</div>' +
-                        '<div class="fp-override-field">' +
-                            '<label>Capacity</label>' +
-                            '<input type="number" name="builder_slots[' + index + '][capacity]" placeholder="Default: 10">' +
-                        '</div>' +
-                        '<div class="fp-override-field">' +
-                            '<label>Language</label>' +
-                            '<input type="text" name="builder_slots[' + index + '][lang]" maxlength="10" placeholder="Default: en">' +
-                        '</div>' +
-                        '<div class="fp-override-field">' +
-                            '<label>Meeting Point</label>' +
-                            '<select name="builder_slots[' + index + '][meeting_point_id]">' +
-                                '<option value="">Use default</option>' +
-                            '</select>' +
-                        '</div>' +
-                        '<div class="fp-override-field">' +
-                            '<label>Adult Price</label>' +
-                            '<input type="number" name="builder_slots[' + index + '][price_adult]" min="0" step="0.01" placeholder="Default: 0.00">' +
-                        '</div>' +
-                        '<div class="fp-override-field">' +
-                            '<label>Child Price</label>' +
-                            '<input type="number" name="builder_slots[' + index + '][price_child]" min="0" step="0.01" placeholder="Default: 0.00">' +
-                        '</div>' +
+
+                '<div class="fp-overrides-grid">' +
+                    '<div class="fp-override-field">' +
+                        '<label>Duration (minutes) <span class="required">*</span></label>' +
+                        '<input type="number" name="builder_slots[' + index + '][duration_min]" min="1" required>' +
+                    '</div>' +
+                    '<div class="fp-override-field">' +
+                        '<label>Capacity <span class="required">*</span></label>' +
+                        '<input type="number" name="builder_slots[' + index + '][capacity]" min="1" required>' +
+                    '</div>' +
+                    '<div class="fp-override-field">' +
+                        '<label>Language <span class="required">*</span></label>' +
+                        '<input type="text" name="builder_slots[' + index + '][lang]" maxlength="10" required>' +
+                    '</div>' +
+                    '<div class="fp-override-field">' +
+                        '<label>Meeting Point <span class="required">*</span></label>' +
+                        '<select name="builder_slots[' + index + '][meeting_point_id]" class="fp-meeting-point-select" required>' +
+                            '<option value="" disabled selected>Select meeting point</option>' +
+                        '</select>' +
+                    '</div>' +
+                    '<div class="fp-override-field">' +
+                        '<label>Adult Price <span class="required">*</span></label>' +
+                        '<input type="number" name="builder_slots[' + index + '][price_adult]" min="0" step="0.01" required>' +
+                    '</div>' +
+                    '<div class="fp-override-field">' +
+                        '<label>Child Price <span class="required">*</span></label>' +
+                        '<input type="number" name="builder_slots[' + index + '][price_child]" min="0" step="0.01" required>' +
                     '</div>' +
                 '</div>' +
             '</div>';
@@ -1351,24 +1182,7 @@
             });
         },
 
-        /**
-         * Toggle time slot overrides section
-         */
-        toggleTimeSlotOverrides: function($checkbox) {
-            var $card = $checkbox.closest('.fp-time-slot-card');
-            var $overridesSection = $card.find('.fp-overrides-section');
-            var $hiddenInput = $card.find('.fp-advanced-enabled');
-            
-            if ($checkbox.is(':checked')) {
-                $overridesSection.addClass('active').slideDown(300);
-                $hiddenInput.val('1');
-                $card.addClass('has-overrides');
-            } else {
-                $overridesSection.removeClass('active').slideUp(300);
-                $hiddenInput.val('0');
-                $card.removeClass('has-overrides');
-            }
-        },
+        // Removed toggleTimeSlotOverrides as advanced settings are no longer optional
         
         /**
          * ======================================
@@ -1796,43 +1610,32 @@
                                 '</button>' +
                             '</div>' +
                         '</div>' +
-                        '<div class="fp-override-toggle-clean">' +
-                            '<label>' +
-                                '<input type="checkbox" class="fp-show-overrides-toggle-clean">' +
-                                '<span class="dashicons dashicons-admin-tools"></span>' +
-                                'Advanced Settings' +
-                            '</label>' +
-                            '<span class="description">Override default values for this specific time slot</span>' +
-                            '<input type="hidden" name="builder_slots[' + index + '][advanced_enabled]" value="0" class="fp-advanced-enabled-clean">' +
-                        '</div>' +
-                        '<div class="fp-overrides-section-clean" style="display: none;">' +
-                            '<div class="fp-overrides-grid-clean">' +
-                                '<div class="fp-override-field-clean">' +
-                                    '<label>Duration (minutes)</label>' +
-                                    '<input type="number" name="builder_slots[' + index + '][duration_min]" min="1" placeholder="Default: 60">' +
-                                '</div>' +
-                                '<div class="fp-override-field-clean">' +
-                                    '<label>Capacity</label>' +
-                                    '<input type="number" name="builder_slots[' + index + '][capacity]" min="1" placeholder="Default: 10">' +
-                                '</div>' +
-                                '<div class="fp-override-field-clean">' +
-                                    '<label>Language</label>' +
-                                    '<input type="text" name="builder_slots[' + index + '][lang]" maxlength="10" placeholder="Default: en">' +
-                                '</div>' +
-                                '<div class="fp-override-field-clean">' +
-                                    '<label>Meeting Point</label>' +
-                                    '<select name="builder_slots[' + index + '][meeting_point_id]">' +
-                                        '<option value="">Use default</option>' +
-                                    '</select>' +
-                                '</div>' +
-                                '<div class="fp-override-field-clean">' +
-                                    '<label>Adult Price</label>' +
-                                    '<input type="number" name="builder_slots[' + index + '][price_adult]" min="0" step="0.01" placeholder="Default: Product price">' +
-                                '</div>' +
-                                '<div class="fp-override-field-clean">' +
-                                    '<label>Child Price</label>' +
-                                    '<input type="number" name="builder_slots[' + index + '][price_child]" min="0" step="0.01" placeholder="Default: Product price">' +
-                                '</div>' +
+                        '<div class="fp-overrides-grid-clean">' +
+                            '<div class="fp-override-field-clean">' +
+                                '<label>Duration (minutes) <span class="required">*</span></label>' +
+                                '<input type="number" name="builder_slots[' + index + '][duration_min]" min="1" required>' +
+                            '</div>' +
+                            '<div class="fp-override-field-clean">' +
+                                '<label>Capacity <span class="required">*</span></label>' +
+                                '<input type="number" name="builder_slots[' + index + '][capacity]" min="1" required>' +
+                            '</div>' +
+                            '<div class="fp-override-field-clean">' +
+                                '<label>Language <span class="required">*</span></label>' +
+                                '<input type="text" name="builder_slots[' + index + '][lang]" maxlength="10" required>' +
+                            '</div>' +
+                            '<div class="fp-override-field-clean">' +
+                                '<label>Meeting Point <span class="required">*</span></label>' +
+                                '<select name="builder_slots[' + index + '][meeting_point_id]" class="fp-meeting-point-select" required>' +
+                                    '<option value="" disabled selected>Select meeting point</option>' +
+                                '</select>' +
+                            '</div>' +
+                            '<div class="fp-override-field-clean">' +
+                                '<label>Adult Price <span class="required">*</span></label>' +
+                                '<input type="number" name="builder_slots[' + index + '][price_adult]" min="0" step="0.01" required>' +
+                            '</div>' +
+                            '<div class="fp-override-field-clean">' +
+                                '<label>Child Price <span class="required">*</span></label>' +
+                                '<input type="number" name="builder_slots[' + index + '][price_child]" min="0" step="0.01" required>' +
                             '</div>' +
                         '</div>' +
                     '</div>' +
@@ -1885,31 +1688,6 @@
             });
         },
         
-        /**
-         * Toggle time slot overrides - CLEAN VERSION
-         */
-        toggleTimeSlotOverridesClean: function($checkbox) {
-            var $card = $checkbox.closest('.fp-time-slot-card-clean');
-            var $overridesSection = $card.find('.fp-overrides-section-clean');
-            var $hiddenInput = $card.find('.fp-advanced-enabled-clean');
-            var $overrideToggle = $card.find('.fp-override-toggle-clean');
-            
-            if ($checkbox.is(':checked')) {
-                $overridesSection.slideDown(200);
-                $hiddenInput.val('1');
-                // Clear user-disabled flag when explicitly enabling
-                if ($overrideToggle.length) {
-                    $overrideToggle.removeData('user-disabled');
-                }
-            } else {
-                $overridesSection.slideUp(200);
-                $hiddenInput.val('0');
-                // Mark that user explicitly disabled advanced settings
-                if ($overrideToggle.length) {
-                    $overrideToggle.data('user-disabled', true);
-                }
-            }
-        },
         
         /**
          * Add override card - CLEAN VERSION - ENHANCED
