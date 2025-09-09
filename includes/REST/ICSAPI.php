@@ -10,6 +10,7 @@ namespace FP\Esperienze\REST;
 use FP\Esperienze\Data\ICSGenerator;
 use FP\Esperienze\Data\MeetingPointManager;
 use FP\Esperienze\Core\CapabilityManager;
+use FP\Esperienze\Core\RateLimiter;
 
 defined('ABSPATH') || exit;
 
@@ -116,6 +117,10 @@ class ICSAPI {
      * @return \WP_REST_Response|\WP_Error
      */
     public function getProductICS(\WP_REST_Request $request) {
+        if (!RateLimiter::checkRateLimit('ics_product', 30, 60)) {
+            return RateLimiter::createRateLimitResponse();
+        }
+
         $product_id = (int) $request->get_param('product_id');
         $days = (int) $request->get_param('days');
         
@@ -155,7 +160,11 @@ class ICSAPI {
             'Cache-Control' => 'no-cache, must-revalidate',
             'Expires' => gmdate('D, d M Y H:i:s \G\M\T', time() + 3600) // 1 hour cache
         ]);
-        
+
+        foreach (RateLimiter::getRateLimitHeaders('ics_product', 30, 60) as $header => $value) {
+            $response->header($header, $value);
+        }
+
         return $response;
     }
     
@@ -166,6 +175,10 @@ class ICSAPI {
      * @return \WP_REST_Response|\WP_Error
      */
     public function getUserBookingsICS(\WP_REST_Request $request) {
+        if (!RateLimiter::checkRateLimit('ics_user', 30, 60)) {
+            return RateLimiter::createRateLimitResponse();
+        }
+
         $user_id = (int) $request->get_param('user_id');
         
         // Validate user exists
@@ -194,7 +207,11 @@ class ICSAPI {
             'Content-Disposition' => 'attachment; filename="my-bookings.ics"',
             'Cache-Control' => 'no-cache, must-revalidate'
         ]);
-        
+
+        foreach (RateLimiter::getRateLimitHeaders('ics_user', 30, 60) as $header => $value) {
+            $response->header($header, $value);
+        }
+
         return $response;
     }
     
@@ -205,6 +222,10 @@ class ICSAPI {
      * @return \WP_REST_Response|\WP_Error
      */
     public function getBookingICS(\WP_REST_Request $request) {
+        if (!RateLimiter::checkRateLimit('ics_booking', 30, 60)) {
+            return RateLimiter::createRateLimitResponse();
+        }
+
         $booking_id = (int) $request->get_param('booking_id');
         $token = $request->get_param('token');
         
@@ -256,6 +277,10 @@ class ICSAPI {
             'Cache-Control' => 'no-cache, must-revalidate'
         ]);
 
+        foreach (RateLimiter::getRateLimitHeaders('ics_booking', 30, 60) as $header => $value) {
+            $response->header($header, $value);
+        }
+
         return $response;
     }
 
@@ -266,6 +291,10 @@ class ICSAPI {
      * @return \WP_REST_Response|\WP_Error
      */
     public function serveICSFile(\WP_REST_Request $request) {
+        if (!RateLimiter::checkRateLimit('ics_file', 30, 60)) {
+            return RateLimiter::createRateLimitResponse();
+        }
+
         $filename = basename($request->get_param('filename'));
         $token    = (string) $request->get_param('token');
         $base_dir = rtrim(realpath(FP_ESPERIENZE_ICS_DIR), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
@@ -314,6 +343,10 @@ class ICSAPI {
             'Cache-Control' => 'no-cache, must-revalidate'
         ]);
 
+        foreach (RateLimiter::getRateLimitHeaders('ics_file', 30, 60) as $header => $value) {
+            $response->header($header, $value);
+        }
+
         return $response;
     }
     
@@ -324,6 +357,10 @@ class ICSAPI {
      * @return bool|\WP_Error
      */
     public function checkUserPermission(\WP_REST_Request $request) {
+        if (!RateLimiter::checkRateLimit('ics_user_permission', 30, 60)) {
+            return RateLimiter::createRateLimitResponse();
+        }
+
         $user_id = (int) $request->get_param('user_id');
         $current_user = wp_get_current_user();
         
