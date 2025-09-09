@@ -165,7 +165,10 @@ register_activation_hook(__FILE__, function() {
     }
     
     // Run installer
-    FP\Esperienze\Core\Installer::activate();
+    $result = FP\Esperienze\Core\Installer::activate();
+    if (is_wp_error($result)) {
+        wp_die($result->get_error_message());
+    }
 });
 
 /**
