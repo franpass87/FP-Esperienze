@@ -410,10 +410,19 @@
                 // Track if user explicitly disabled advanced settings
                 var userDisabled = $overrideToggle.data('user-disabled') === true;
                 
-                // Check if any override fields have values
+                // Check if any override fields have values different from their placeholders/defaults
                 var hasOverrideValues = false;
                 $timeSlotCard.find('.fp-overrides-section-clean input, .fp-overrides-section-clean select').each(function() {
-                    if ($(this).val() && $(this).val() !== '') {
+                    var val = $(this).val();
+                    var placeholder = $(this).attr('placeholder');
+
+                    // Extract actual default value from placeholder patterns like "Default: 10" or "Inherit (10)"
+                    if (placeholder) {
+                        // Remove common prefix/suffix patterns to get the raw default value
+                        placeholder = placeholder.replace(/^Default:\s*/, '').replace(/^Inherit \(/, '').replace(/\)$/, '').trim();
+                    }
+
+                    if (val && val !== '' && val !== placeholder) {
                         hasOverrideValues = true;
                         return false; // break
                     }
