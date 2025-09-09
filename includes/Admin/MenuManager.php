@@ -7,6 +7,7 @@
 
 namespace FP\Esperienze\Admin;
 
+use Exception;
 use FP\Esperienze\Data\OverrideManager;
 use FP\Esperienze\Data\MeetingPointManager;
 use FP\Esperienze\Data\ExtraManager;

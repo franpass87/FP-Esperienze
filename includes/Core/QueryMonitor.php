@@ -7,6 +7,7 @@
 
 namespace FP\Esperienze\Core;
 
+use Exception;
 defined('ABSPATH') || exit;
 
 /**
