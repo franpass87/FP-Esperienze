@@ -95,6 +95,7 @@ class Installer {
             'fp_esperienze_prebuild_availability',
             'fp_esperienze_retry_webhook',
             'fp_es_process_translation_queue',
+            'fp_cleanup_push_tokens',
         ];
 
         // Clear all scheduled events for the plugin
