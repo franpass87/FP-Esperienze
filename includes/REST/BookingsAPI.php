@@ -9,6 +9,7 @@ namespace FP\Esperienze\REST;
 
 use FP\Esperienze\Booking\BookingManager;
 use FP\Esperienze\Core\CapabilityManager;
+use FP\Esperienze\Core\RateLimiter;
 
 defined('ABSPATH') || exit;
 
@@ -81,7 +82,11 @@ class BookingsAPI {
     /**
      * Check permissions for REST endpoints
      */
-    public function checkPermissions(\WP_REST_Request $request): bool {
+    public function checkPermissions(\WP_REST_Request $request) {
+        if (!RateLimiter::checkRateLimit('bookings_permission', 30, 60)) {
+            return RateLimiter::createRateLimitResponse();
+        }
+
         return CapabilityManager::canManageFPEsperienze();
     }
     
@@ -92,6 +97,10 @@ class BookingsAPI {
      * @return \WP_REST_Response
      */
     public function getBookings(\WP_REST_Request $request): \WP_REST_Response {
+        if (!RateLimiter::checkRateLimit('bookings', 30, 60)) {
+            return RateLimiter::createRateLimitResponse();
+        }
+
         $filters = [];
 
         if ($request->get_param('start')) {
@@ -119,8 +128,14 @@ class BookingsAPI {
         }
         
         $bookings = BookingManager::getBookings($filters);
-        
-        return new \WP_REST_Response($bookings, 200);
+
+        $response = new \WP_REST_Response($bookings, 200);
+
+        foreach (RateLimiter::getRateLimitHeaders('bookings', 30, 60) as $header => $value) {
+            $response->header($header, $value);
+        }
+
+        return $response;
     }
     
     /**
@@ -130,6 +145,10 @@ class BookingsAPI {
      * @return \WP_REST_Response
      */
     public function getBookingsForCalendar(\WP_REST_Request $request): \WP_REST_Response {
+        if (!RateLimiter::checkRateLimit('bookings_calendar', 30, 60)) {
+            return RateLimiter::createRateLimitResponse();
+        }
+
         $start_date = $request->get_param('start');
         $end_date = $request->get_param('end');
 
@@ -185,7 +204,13 @@ class BookingsAPI {
             ];
         }
         
-        return new \WP_REST_Response($events, 200);
+        $response = new \WP_REST_Response($events, 200);
+
+        foreach (RateLimiter::getRateLimitHeaders('bookings_calendar', 30, 60) as $header => $value) {
+            $response->header($header, $value);
+        }
+
+        return $response;
     }
     
     /**
