@@ -1864,7 +1864,7 @@ class MenuManager {
         }
         
         // Handle individual actions
-        if (!wp_verify_nonce($_POST['fp_voucher_nonce'] ?? '', 'fp_voucher_action')) {
+        if (!wp_verify_nonce(wp_unslash($_POST['fp_voucher_nonce'] ?? ''), 'fp_voucher_action')) {
             wp_die(__('Security check failed.', 'fp-esperienze'));
         }
         
@@ -2083,7 +2083,7 @@ class MenuManager {
      * Handle bulk voucher actions
      */
     private function handleBulkVoucherActions(): void {
-        if (!wp_verify_nonce($_POST['bulk_nonce'] ?? '', 'bulk_voucher_action')) {
+        if (!wp_verify_nonce(wp_unslash($_POST['bulk_nonce'] ?? ''), 'bulk_voucher_action')) {
             return;
         }
 
@@ -2357,7 +2357,7 @@ class MenuManager {
      * Handle extras actions
      */
     private function handleExtrasActions(): void {
-        if (!isset($_POST['fp_extra_nonce']) || !wp_verify_nonce($_POST['fp_extra_nonce'], 'fp_extra_action')) {
+        if (!isset($_POST['fp_extra_nonce']) || !wp_verify_nonce(wp_unslash($_POST['fp_extra_nonce']), 'fp_extra_action')) {
             wp_die(__('Security check failed.', 'fp-esperienze'));
         }
         
@@ -2511,7 +2511,7 @@ class MenuManager {
      * Handle closures actions
      */
     private function handleClosuresActions(): void {
-        if (!isset($_POST['fp_closure_nonce']) || !wp_verify_nonce($_POST['fp_closure_nonce'], 'fp_closure_action')) {
+        if (!isset($_POST['fp_closure_nonce']) || !wp_verify_nonce(wp_unslash($_POST['fp_closure_nonce']), 'fp_closure_action')) {
             wp_die(__('Security check failed.', 'fp-esperienze'));
         }
         
@@ -3872,7 +3872,7 @@ class MenuManager {
      * Handle settings form submission
      */
     private function handleSettingsSubmission(): void {
-        if (!wp_verify_nonce($_POST['fp_settings_nonce'] ?? '', 'fp_settings_nonce')) {
+        if (!wp_verify_nonce(wp_unslash($_POST['fp_settings_nonce'] ?? ''), 'fp_settings_nonce')) {
             wp_die(__('Security check failed.', 'fp-esperienze'));
         }
         
@@ -4047,7 +4047,7 @@ class MenuManager {
             wp_die(__('You do not have permission to perform this action.', 'fp-esperienze'));
         }
         
-        if (!wp_verify_nonce($_POST['fp_booking_nonce'] ?? '', 'fp_booking_action')) {
+        if (!wp_verify_nonce(wp_unslash($_POST['fp_booking_nonce'] ?? ''), 'fp_booking_action')) {
             wp_die(__('Security check failed.', 'fp-esperienze'));
         }
         
@@ -4228,7 +4228,7 @@ class MenuManager {
 
         // Handle form submissions for export
         if (isset($_POST['action']) && $_POST['action'] === 'export_report') {
-            if (!wp_verify_nonce($_POST['fp_report_nonce'] ?? '', 'fp_export_report')) {
+            if (!wp_verify_nonce(wp_unslash($_POST['fp_report_nonce'] ?? ''), 'fp_export_report')) {
                 wp_die(__('Security check failed.', 'fp-esperienze'));
             }
 
@@ -4264,7 +4264,7 @@ class MenuManager {
             wp_send_json_error(['message' => __('Insufficient permissions.', 'fp-esperienze')]);
         }
         
-        if (!wp_verify_nonce($_POST['nonce'] ?? '', 'fp_get_slots')) {
+        if (!check_ajax_referer('fp_get_slots', 'nonce', false)) {
             wp_send_json_error(['message' => __('Security check failed.', 'fp-esperienze')]);
         }
         
@@ -4292,7 +4292,7 @@ class MenuManager {
             wp_send_json_error(['message' => __('Insufficient permissions.', 'fp-esperienze')]);
         }
         
-        if (!wp_verify_nonce($_POST['fp_reschedule_nonce'] ?? '', 'fp_reschedule_booking')) {
+        if (!check_ajax_referer('fp_reschedule_booking', 'fp_reschedule_nonce', false)) {
             wp_send_json_error(['message' => __('Security check failed.', 'fp-esperienze')]);
         }
         
@@ -4324,7 +4324,7 @@ class MenuManager {
             wp_send_json_error(['message' => __('Insufficient permissions.', 'fp-esperienze')]);
         }
         
-        if (!wp_verify_nonce($_POST['nonce'] ?? '', 'fp_check_cancel')) {
+        if (!check_ajax_referer('fp_check_cancel', 'nonce', false)) {
             wp_send_json_error(['message' => __('Security check failed.', 'fp-esperienze')]);
         }
         
@@ -4347,7 +4347,7 @@ class MenuManager {
             wp_send_json_error(['message' => __('Insufficient permissions.', 'fp-esperienze')]);
         }
         
-        if (!wp_verify_nonce($_POST['fp_cancel_nonce'] ?? '', 'fp_cancel_booking')) {
+        if (!check_ajax_referer('fp_cancel_booking', 'fp_cancel_nonce', false)) {
             wp_send_json_error(['message' => __('Security check failed.', 'fp-esperienze')]);
         }
         
@@ -4400,7 +4400,7 @@ class MenuManager {
             wp_send_json_error(['message' => __('Insufficient permissions.', 'fp-esperienze')]);
         }
         
-        if (!wp_verify_nonce($_POST['nonce'] ?? '', 'fp_test_webhook')) {
+        if (!check_ajax_referer('fp_test_webhook', 'nonce', false)) {
             wp_send_json_error(['message' => __('Security check failed.', 'fp-esperienze')]);
         }
         
@@ -4428,7 +4428,7 @@ class MenuManager {
             wp_send_json_error(['message' => __('Insufficient permissions.', 'fp-esperienze')]);
         }
         
-        if (!wp_verify_nonce($_POST['nonce'] ?? '', 'fp_cleanup_holds')) {
+        if (!check_ajax_referer('fp_cleanup_holds', 'nonce', false)) {
             wp_send_json_error(['message' => __('Security check failed.', 'fp-esperienze')]);
         }
         
@@ -4445,7 +4445,7 @@ class MenuManager {
             wp_send_json_error(['message' => __('Insufficient permissions.', 'fp-esperienze')]);
         }
         
-        if (!wp_verify_nonce($_POST['nonce'] ?? '', 'fp_test_meta_capi')) {
+        if (!check_ajax_referer('fp_test_meta_capi', 'nonce', false)) {
             wp_send_json_error(['message' => __('Security check failed.', 'fp-esperienze')]);
         }
         
