@@ -60,7 +60,7 @@ class PerformanceSettings {
      */
     public function renderPage(): void {
         // Handle cache clear action
-        if (isset($_POST['clear_cache']) && wp_verify_nonce($_POST['_wpnonce'], 'fp_esperienze_clear_cache')) {
+        if (isset($_POST['clear_cache']) && wp_verify_nonce(wp_unslash($_POST['_wpnonce']), 'fp_esperienze_clear_cache')) {
             $cleared = CacheManager::clearAllCaches();
             echo '<div class="notice notice-success"><p>' . 
                  sprintf(__('Cleared %d cache entries.', 'fp-esperienze'), $cleared) . 
@@ -68,7 +68,7 @@ class PerformanceSettings {
         }
         
         // Handle minification regeneration
-        if (isset($_POST['regenerate_assets']) && wp_verify_nonce($_POST['_wpnonce'], 'fp_esperienze_regenerate_assets')) {
+        if (isset($_POST['regenerate_assets']) && wp_verify_nonce(wp_unslash($_POST['_wpnonce']), 'fp_esperienze_regenerate_assets')) {
             AssetOptimizer::clearMinified();
             AssetOptimizer::maybeGenerateMinified();
             echo '<div class="notice notice-success"><p>' . 
@@ -77,7 +77,7 @@ class PerformanceSettings {
         }
         
         // Handle manual pre-build
-        if (isset($_POST['prebuild_cache']) && wp_verify_nonce($_POST['_wpnonce'], 'fp_esperienze_prebuild_cache')) {
+        if (isset($_POST['prebuild_cache']) && wp_verify_nonce(wp_unslash($_POST['_wpnonce']), 'fp_esperienze_prebuild_cache')) {
             $cache_manager = new CacheManager();
             $cache_manager->prebuildAvailability();
             echo '<div class="notice notice-success"><p>' . 
