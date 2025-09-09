@@ -30,34 +30,53 @@
          * Initialize the admin interface
          */
         init: function() {
+            // Initialize error handling first
             try {
-                // Initialize error handling first
                 this.initializeErrorHandling();
-                
-                // Initialize performance monitoring
-                this.initializePerformanceMonitoring();
-                
-                // Initialize core functionality
-                this.initializeCore();
-                
-                // Initialize modules
-                this.initializeModules();
-                
-                // Initialize accessibility features
-                this.initializeAccessibility();
-                
-                // Mark as initialized
-                this.initialized = true;
-                
-                // Admin interface initialized successfully
-                
-                // Dispatch custom event
-                $(document).trigger('fp-esperienze-admin-ready');
-                
             } catch (error) {
-                console.error('FP Esperienze: Failed to initialize admin interface:', error);
-                this.handleInitializationError(error);
+                console.error('FP Esperienze: Error initializing error handling:', error);
+                this.handleInitializationError(error, 'error handling');
             }
+
+            // Initialize performance monitoring
+            try {
+                this.initializePerformanceMonitoring();
+            } catch (error) {
+                console.error('FP Esperienze: Error initializing performance monitoring:', error);
+                this.handleInitializationError(error, 'performance monitoring');
+            }
+
+            // Initialize core functionality
+            try {
+                this.initializeCore();
+            } catch (error) {
+                console.error('FP Esperienze: Error initializing core functionality:', error);
+                this.handleInitializationError(error, 'core functionality');
+            }
+
+            // Initialize modules
+            try {
+                this.initializeModules();
+            } catch (error) {
+                console.error('FP Esperienze: Error initializing modules:', error);
+                this.handleInitializationError(error, 'modules');
+            }
+
+            // Initialize accessibility features
+            try {
+                this.initializeAccessibility();
+            } catch (error) {
+                console.error('FP Esperienze: Error initializing accessibility features:', error);
+                this.handleInitializationError(error, 'accessibility features');
+            }
+
+            // Mark as initialized
+            this.initialized = true;
+
+            // Admin interface initialized successfully
+
+            // Dispatch custom event
+            $(document).trigger('fp-esperienze-admin-ready');
         },
 
         /**
@@ -385,12 +404,10 @@
         /**
          * Handle initialization errors
          */
-        handleInitializationError: function(error) {
-            console.error('FP Esperienze: Initialization failed:', error);
-            
+        handleInitializationError: function(error, module = 'unknown') {
             // Show user-friendly error
             this.showUserFeedback(
-                'Failed to initialize FP Esperienze admin interface. Some features may not work correctly.',
+                'Failed to initialize FP Esperienze admin module: ' + module + '. Some features may not work correctly.',
                 'error',
                 8000
             );
