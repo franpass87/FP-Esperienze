@@ -27,9 +27,9 @@ class Voucher_Pdf {
      * Generate voucher PDF
      *
      * @param array $voucher_data Voucher data
-     * @return string PDF file path or HTML content
+     * @return string|\WP_Error PDF file path or WP_Error on failure
      */
-    public static function generate($voucher_data): string {
+    public static function generate($voucher_data) {
         // Check if dompdf is available
         if (!self::isDompdfAvailable()) {
             // Fallback: generate HTML version
@@ -54,14 +54,24 @@ class Voucher_Pdf {
         $dompdf->render();
         
         // Save PDF file
-        $upload_dir = wp_upload_dir();
-        $base_dir   = trailingslashit(wp_normalize_path($upload_dir['basedir']));
+        $upload_dir  = wp_upload_dir();
+        $base_dir    = trailingslashit(wp_normalize_path($upload_dir['basedir']));
         $voucher_dir = $base_dir . 'fp-esperienze/voucher/';
+
+        global $wp_filesystem;
+        if (!WP_Filesystem()) {
+            $msg = 'Voucher_Pdf: WP_Filesystem initialization failed.';
+            error_log($msg);
+            return new \WP_Error('fp_fs_init_failed', $msg);
+        }
 
         if (!file_exists($voucher_dir)) {
             wp_mkdir_p($voucher_dir);
             // Create .htaccess for security
-            self::createSecurityHtaccess($voucher_dir);
+            $htaccess_result = self::createSecurityHtaccess($voucher_dir);
+            if (is_wp_error($htaccess_result)) {
+                return $htaccess_result;
+            }
         }
 
         $sanitized_code = sanitize_file_name($voucher_data['code']);
@@ -76,10 +86,10 @@ class Voucher_Pdf {
             throw new \Exception('Invalid file path for PDF voucher.');
         }
 
-        $result = file_put_contents($file_path, $dompdf->output());
-
-        if ($result === false) {
-            throw new \Exception('Failed to save PDF voucher to: ' . $file_path);
+        if (!$wp_filesystem->put_contents($file_path, $dompdf->output(), FS_CHMOD_FILE)) {
+            $msg = 'Voucher_Pdf: Failed to save PDF voucher to: ' . $file_path;
+            error_log($msg);
+            return new \WP_Error('fp_pdf_write_failed', $msg);
         }
 
         return $file_path;
@@ -89,9 +99,9 @@ class Voucher_Pdf {
      * Generate HTML fallback when PDF libraries are not available
      *
      * @param array $voucher_data Voucher data
-     * @return string HTML file path
+     * @return string|\WP_Error HTML file path or WP_Error on failure
      */
-    private static function generateHtmlFallback($voucher_data): string {
+    private static function generateHtmlFallback($voucher_data) {
         // Generate QR code (will also have fallback)
         $qr_code_path = Qr::generate($voucher_data);
         
@@ -99,13 +109,23 @@ class Voucher_Pdf {
         $html = self::buildHtmlContent($voucher_data, $qr_code_path);
         
         // Save HTML file
-        $upload_dir = wp_upload_dir();
-        $base_dir   = trailingslashit(wp_normalize_path($upload_dir['basedir']));
+        $upload_dir  = wp_upload_dir();
+        $base_dir    = trailingslashit(wp_normalize_path($upload_dir['basedir']));
         $voucher_dir = $base_dir . 'fp-esperienze/voucher/';
+
+        global $wp_filesystem;
+        if (!WP_Filesystem()) {
+            $msg = 'Voucher_Pdf: WP_Filesystem initialization failed.';
+            error_log($msg);
+            return new \WP_Error('fp_fs_init_failed', $msg);
+        }
 
         if (!file_exists($voucher_dir)) {
             wp_mkdir_p($voucher_dir);
-            self::createSecurityHtaccess($voucher_dir);
+            $htaccess_result = self::createSecurityHtaccess($voucher_dir);
+            if (is_wp_error($htaccess_result)) {
+                return $htaccess_result;
+            }
         }
 
         $sanitized_code = sanitize_file_name($voucher_data['code']);
@@ -120,10 +140,10 @@ class Voucher_Pdf {
             throw new \Exception('Invalid file path for HTML voucher.');
         }
 
-        $result = file_put_contents($file_path, $html);
-
-        if ($result === false) {
-            throw new \Exception('Failed to save HTML voucher to: ' . $file_path);
+        if (!$wp_filesystem->put_contents($file_path, $html, FS_CHMOD_FILE)) {
+            $msg = 'Voucher_Pdf: Failed to save HTML voucher to: ' . $file_path;
+            error_log($msg);
+            return new \WP_Error('fp_html_write_failed', $msg);
         }
 
         return $file_path;
@@ -315,8 +335,9 @@ class Voucher_Pdf {
      * Create security .htaccess file in uploads directory
      *
      * @param string $directory Directory path
+     * @return bool|\WP_Error True on success or WP_Error on failure
      */
-    private static function createSecurityHtaccess(string $directory): void {
+    private static function createSecurityHtaccess(string $directory) {
         $htaccess_content = '# FP Esperienze Security - Prevent directory listing and direct access
 Options -Indexes
 <Files "*.pdf">
@@ -332,8 +353,22 @@ Options -Indexes
 </Files>';
         
         $htaccess_path = $directory . '.htaccess';
-        if (!file_exists($htaccess_path)) {
-            file_put_contents($htaccess_path, $htaccess_content);
+
+        global $wp_filesystem;
+        if (!WP_Filesystem()) {
+            $msg = 'Voucher_Pdf: WP_Filesystem initialization failed.';
+            error_log($msg);
+            return new \WP_Error('fp_fs_init_failed', $msg);
         }
+
+        if (!file_exists($htaccess_path)) {
+            if (!$wp_filesystem->put_contents($htaccess_path, $htaccess_content, FS_CHMOD_FILE)) {
+                $msg = 'Voucher_Pdf: Failed to create .htaccess file.';
+                error_log($msg);
+                return new \WP_Error('fp_htaccess_write_failed', $msg);
+            }
+        }
+
+        return true;
     }
 }

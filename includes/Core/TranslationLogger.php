@@ -17,25 +17,38 @@ class TranslationLogger {
      * Log a message to the translation log file.
      *
      * @param string $message Message to log.
+     * @return bool|\WP_Error True on success, WP_Error on failure.
      */
-    public static function log(string $message): void {
+    public static function log(string $message) {
         if ('' === $message) {
-            return;
+            return true;
         }
 
         if (!get_option('fp_lt_enable_log')) {
-            return;
+            return true;
         }
 
         $uploads = wp_upload_dir();
         if (empty($uploads['basedir'])) {
-            return;
+            return true;
         }
 
-        $file = trailingslashit($uploads['basedir']) . 'fp-esperienze-translation.log';
+        $file  = trailingslashit($uploads['basedir']) . 'fp-esperienze-translation.log';
         $entry = sprintf('[%s] %s%s', current_time('mysql'), $message, PHP_EOL);
 
-        // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.file_ops_file_put_contents
-        file_put_contents($file, $entry, FILE_APPEND | LOCK_EX);
+        global $wp_filesystem;
+        if (!WP_Filesystem()) {
+            $msg = 'TranslationLogger: WP_Filesystem initialization failed.';
+            error_log($msg);
+            return new \WP_Error('fp_fs_init_failed', $msg);
+        }
+
+        if (!$wp_filesystem->put_contents($file, $entry, FS_CHMOD_FILE)) {
+            $msg = 'TranslationLogger: Failed to write log file.';
+            error_log($msg);
+            return new \WP_Error('fp_log_write_failed', $msg);
+        }
+
+        return true;
     }
 }

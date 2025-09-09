@@ -27,9 +27,9 @@ class Qr {
      * Generate QR code for voucher
      *
      * @param array $voucher_data Voucher data
-     * @return string QR code file path or empty string
+     * @return string|\WP_Error QR code file path, empty string or WP_Error on failure
      */
-    public static function generate($voucher_data): string {
+    public static function generate($voucher_data) {
         // Check if QR code library is available
         if (!self::isQRCodeAvailable()) {
             // Fallback: generate text-based alternative
@@ -54,6 +54,13 @@ class Qr {
         $base_dir   = trailingslashit(wp_normalize_path($upload_dir['basedir']));
         $qr_dir     = $base_dir . 'fp-esperienze/voucher/qr/';
 
+        global $wp_filesystem;
+        if (!WP_Filesystem()) {
+            $msg = 'Qr: WP_Filesystem initialization failed.';
+            error_log($msg);
+            return new \WP_Error('fp_fs_init_failed', $msg);
+        }
+
         if (!file_exists($qr_dir)) {
             wp_mkdir_p($qr_dir);
         }
@@ -70,10 +77,10 @@ class Qr {
             throw new \Exception('Invalid file path for QR code.');
         }
 
-        $result = file_put_contents($file_path, $qr_image);
-
-        if ($result === false) {
-            throw new \Exception('Failed to save QR code image to: ' . $file_path);
+        if (!$wp_filesystem->put_contents($file_path, $qr_image, FS_CHMOD_FILE)) {
+            $msg = 'Qr: Failed to save QR code image to: ' . $file_path;
+            error_log($msg);
+            return new \WP_Error('fp_qr_write_failed', $msg);
         }
 
         return $file_path;

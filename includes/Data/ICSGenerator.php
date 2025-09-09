@@ -280,13 +280,20 @@ class ICSGenerator {
     /**
      * Create ICS file and return path
      *
-     * @param string $content ICS content
+     * @param string $content  ICS content
      * @param string $filename Filename without extension
-     * @return string|false File path or false on failure
+     * @return string|\WP_Error File path or WP_Error on failure
      */
     public static function createICSFile(string $content, string $filename) {
         $ics_dir = FP_ESPERIENZE_ICS_DIR;
-        
+
+        global $wp_filesystem;
+        if (!WP_Filesystem()) {
+            $msg = 'ICSGenerator: WP_Filesystem initialization failed.';
+            error_log($msg);
+            return new \WP_Error('fp_fs_init_failed', $msg);
+        }
+
         // Create directory if it doesn't exist
         if (!file_exists($ics_dir)) {
             wp_mkdir_p($ics_dir);
@@ -296,14 +303,22 @@ class ICSGenerator {
             $htaccess_content .= "<Files *.ics>\n";
             $htaccess_content .= "    Require all denied\n";
             $htaccess_content .= "</Files>\n";
-            file_put_contents($ics_dir . '/.htaccess', $htaccess_content);
+            if (!$wp_filesystem->put_contents($ics_dir . '/.htaccess', $htaccess_content, FS_CHMOD_FILE)) {
+                $msg = 'ICSGenerator: Failed to create .htaccess file.';
+                error_log($msg);
+                return new \WP_Error('fp_htaccess_write_failed', $msg);
+            }
         }
-        
+
         $file_path = $ics_dir . '/' . sanitize_file_name($filename) . '.ics';
-        
-        $result = file_put_contents($file_path, $content);
-        
-        return $result !== false ? $file_path : false;
+
+        if (!$wp_filesystem->put_contents($file_path, $content, FS_CHMOD_FILE)) {
+            $msg = 'ICSGenerator: Failed to write ICS file.';
+            error_log($msg);
+            return new \WP_Error('fp_ics_write_failed', $msg);
+        }
+
+        return $file_path;
     }
     
     /**
