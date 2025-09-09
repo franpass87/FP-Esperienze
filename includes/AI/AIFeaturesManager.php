@@ -140,7 +140,10 @@ class AIFeaturesManager {
      */
     public function ajaxGetAIInsights(): void {
         if (!CapabilityManager::currentUserCan('view_reports')) {
-            wp_die('Unauthorized', 403);
+            wp_send_json_error(
+                ['message' => __('Unauthorized', 'fp-esperienze')],
+                403
+            );
         }
 
         check_ajax_referer('fp_esperienze_admin', 'nonce');
@@ -158,7 +161,10 @@ class AIFeaturesManager {
      */
     public function ajaxGetRecommendations(): void {
         if (!CapabilityManager::currentUserCan('view_reports')) {
-            wp_die('Unauthorized', 403);
+            wp_send_json_error(
+                ['message' => __('Unauthorized', 'fp-esperienze')],
+                403
+            );
         }
 
         check_ajax_referer('fp_esperienze_admin', 'nonce');
@@ -176,7 +182,10 @@ class AIFeaturesManager {
      */
     public function ajaxAnalyzePerformance(): void {
         if (!CapabilityManager::currentUserCan('view_reports')) {
-            wp_die('Unauthorized', 403);
+            wp_send_json_error(
+                ['message' => __('Unauthorized', 'fp-esperienze')],
+                403
+            );
         }
 
         check_ajax_referer('fp_esperienze_admin', 'nonce');
@@ -195,7 +204,10 @@ class AIFeaturesManager {
      */
     public function ajaxUpdateAISettings(): void {
         if (!CapabilityManager::currentUserCan('manage_settings')) {
-            wp_die('Unauthorized', 403);
+            wp_send_json_error(
+                ['message' => __('Unauthorized', 'fp-esperienze')],
+                403
+            );
         }
 
         check_ajax_referer('fp_esperienze_admin', 'nonce');
