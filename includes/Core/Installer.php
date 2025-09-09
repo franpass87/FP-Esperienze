@@ -19,8 +19,10 @@ class Installer {
 
     /**
      * Plugin activation
+     *
+     * @return bool|\WP_Error True on success or WP_Error on failure
      */
-    public static function activate(): void {
+    public static function activate() {
         self::createTables();
         self::createDefaultOptions();
         self::addCapabilities();
@@ -51,24 +53,40 @@ class Installer {
             wp_mkdir_p(FP_ESPERIENZE_ICS_DIR);
         }
 
+        global $wp_filesystem;
+        if (!WP_Filesystem()) {
+            $msg = 'Installer: WP_Filesystem initialization failed during activation.';
+            error_log($msg);
+            return new \WP_Error('fp_fs_init_failed', $msg);
+        }
+
         $htaccess_path = FP_ESPERIENZE_ICS_DIR . '/.htaccess';
-        if (!file_exists($htaccess_path)) {
-            file_put_contents($htaccess_path, "Deny from all\n");
+        if (!$wp_filesystem->exists($htaccess_path)) {
+            if (!$wp_filesystem->put_contents($htaccess_path, "Deny from all\n", FS_CHMOD_FILE)) {
+                $msg = 'Installer: Failed to create ICS .htaccess file.';
+                error_log($msg);
+                return new \WP_Error('fp_htaccess_write_failed', $msg);
+            }
         }
 
         $index_path = FP_ESPERIENZE_ICS_DIR . '/index.php';
-        if (!file_exists($index_path)) {
-            file_put_contents(
-                $index_path,
-                "<?php\nstatus_header(403);\nexit;\n"
-            );
+        if (!$wp_filesystem->exists($index_path)) {
+            if (!$wp_filesystem->put_contents($index_path, "<?php\nstatus_header(403);\nexit;\n", FS_CHMOD_FILE)) {
+                $msg = 'Installer: Failed to create ICS index.php file.';
+                error_log($msg);
+                return new \WP_Error('fp_index_write_failed', $msg);
+            }
         }
+
+        return true;
     }
 
     /**
      * Plugin deactivation
+     *
+     * @return bool|\WP_Error True on success or WP_Error on failure
      */
-    public static function deactivate(): void {
+    public static function deactivate() {
         $hooks = [
             'fp_esperienze_cleanup_holds',
             'fp_check_abandoned_carts',
@@ -95,12 +113,14 @@ class Installer {
 
     /**
      * Plugin uninstall - remove capabilities and plugin data
+     *
+     * @return bool|\WP_Error True on success or WP_Error on failure
      */
-    public static function uninstall(): void {
+    public static function uninstall() {
         CapabilityManager::removeCapabilitiesFromRoles();
 
         if (defined('FP_ESPERIENZE_PRESERVE_DATA') && FP_ESPERIENZE_PRESERVE_DATA) {
-            return;
+            return true;
         }
 
         global $wpdb;
@@ -142,17 +162,32 @@ class Installer {
 
         // Remove ICS directory and files
         $ics_dir = FP_ESPERIENZE_ICS_DIR;
-        if (is_dir($ics_dir)) {
+        global $wp_filesystem;
+        if (!WP_Filesystem()) {
+            $msg = 'Installer: WP_Filesystem initialization failed during deactivation.';
+            error_log($msg);
+            return new \WP_Error('fp_fs_init_failed', $msg);
+        }
+
+        if ($wp_filesystem->is_dir($ics_dir)) {
             $files = glob($ics_dir . '/*');
             if ($files) {
                 foreach ($files as $file) {
-                    if (is_file($file)) {
-                        unlink($file);
+                    if ($wp_filesystem->exists($file) && !$wp_filesystem->delete($file)) {
+                        $msg = 'Installer: Failed to delete file ' . $file;
+                        error_log($msg);
+                        return new \WP_Error('fp_delete_failed', $msg);
                     }
                 }
             }
-            rmdir($ics_dir);
+            if (!$wp_filesystem->delete($ics_dir, true)) {
+                $msg = 'Installer: Failed to remove ICS directory.';
+                error_log($msg);
+                return new \WP_Error('fp_dir_delete_failed', $msg);
+            }
         }
+
+        return true;
     }
 
     /**

@@ -141,11 +141,11 @@ class AssetOptimizer {
     /**
      * Minify CSS files
      *
-     * @param array $files Source files
+     * @param array  $files       Source files
      * @param string $output_path Output path
-     * @return bool
+     * @return bool|\WP_Error True on success or WP_Error on failure
      */
-    private static function minifyCSS(array $files, string $output_path): bool {
+    private static function minifyCSS(array $files, string $output_path) {
         $combined_css = '';
         
         foreach ($files as $file) {
@@ -167,7 +167,7 @@ class AssetOptimizer {
 
         $result = self::writeFile($output_path, $minified_css);
 
-        if ($result && defined('WP_DEBUG') && WP_DEBUG) {
+        if (!is_wp_error($result) && $result && defined('WP_DEBUG') && WP_DEBUG) {
             error_log("FP Assets: Generated minified CSS: " . basename($output_path));
         }
 
@@ -177,11 +177,11 @@ class AssetOptimizer {
     /**
      * Minify JS files
      *
-     * @param array $files Source files
+     * @param array  $files       Source files
      * @param string $output_path Output path
-     * @return bool
+     * @return bool|\WP_Error True on success or WP_Error on failure
      */
-    private static function minifyJS(array $files, string $output_path): bool {
+    private static function minifyJS(array $files, string $output_path) {
         $combined_js = '';
         
         foreach ($files as $file) {
@@ -203,7 +203,7 @@ class AssetOptimizer {
 
         $result = self::writeFile($output_path, $minified_js);
 
-        if ($result && defined('WP_DEBUG') && WP_DEBUG) {
+        if (!is_wp_error($result) && $result && defined('WP_DEBUG') && WP_DEBUG) {
             error_log("FP Assets: Generated minified JS: " . basename($output_path));
         }
 
@@ -211,40 +211,32 @@ class AssetOptimizer {
     }
 
     /**
-     * Write file content using the most compatible method available
+     * Write file content using WP_Filesystem
      *
      * @param string $output_path Output path
-     * @param string $content File content
-     * @return bool
+     * @param string $content     File content
+     * @return bool|\WP_Error True on success or WP_Error on failure
      */
-    private static function writeFile(string $output_path, string $content): bool {
+    private static function writeFile(string $output_path, string $content) {
         $directory = dirname($output_path);
 
         if (!is_writable($directory)) {
-            error_log("FP Assets: Directory not writable: {$directory}");
-            return false;
+            $msg = "FP Assets: Directory not writable: {$directory}";
+            error_log($msg);
+            return new \WP_Error('fp_dir_not_writable', $msg);
         }
 
-        // Try to use WP_Filesystem for better compatibility with non-standard hosting
-        if (!function_exists('WP_Filesystem')) {
-            require_once ABSPATH . 'wp-admin/includes/file.php';
+        global $wp_filesystem;
+        if (!WP_Filesystem()) {
+            $msg = 'FP Assets: WP_Filesystem initialization failed.';
+            error_log($msg);
+            return new \WP_Error('fp_fs_init_failed', $msg);
         }
 
-        if (function_exists('WP_Filesystem')) {
-            global $wp_filesystem;
-            if (WP_Filesystem() && isset($wp_filesystem)) {
-                if ($wp_filesystem->put_contents($output_path, $content, FS_CHMOD_FILE)) {
-                    return true;
-                }
-            }
-        }
-
-        // Fallback to file_put_contents
-        $result = file_put_contents($output_path, $content);
-
-        if ($result === false) {
-            error_log("FP Assets: Failed to write file: {$output_path}");
-            return false;
+        if (!$wp_filesystem->put_contents($output_path, $content, FS_CHMOD_FILE)) {
+            $msg = "FP Assets: Failed to write file: {$output_path}";
+            error_log($msg);
+            return new \WP_Error('fp_write_failed', $msg);
         }
 
         return true;
@@ -310,11 +302,17 @@ class AssetOptimizer {
      */
     public static function getMinifiedAssetUrl(string $asset_type, string $group) {
         $minified_path = self::$assets_dir . "{$asset_type}/{$group}.min.{$asset_type}";
-        
-        if (!file_exists($minified_path)) {
+
+        global $wp_filesystem;
+        if (!WP_Filesystem()) {
+            error_log('FP Assets: WP_Filesystem initialization failed.');
             return false;
         }
-        
+
+        if (!$wp_filesystem->exists($minified_path)) {
+            return false;
+        }
+
         return FP_ESPERIENZE_PLUGIN_URL . "assets/{$asset_type}/{$group}.min.{$asset_type}";
     }
     
@@ -327,31 +325,51 @@ class AssetOptimizer {
         // Check if at least the main frontend files exist
         $frontend_css = self::$assets_dir . 'css/frontend.min.css';
         $frontend_js = self::$assets_dir . 'js/frontend.min.js';
-        
-        return file_exists($frontend_css) && file_exists($frontend_js);
+
+        global $wp_filesystem;
+        if (!WP_Filesystem()) {
+            error_log('FP Assets: WP_Filesystem initialization failed.');
+            return false;
+        }
+
+        return $wp_filesystem->exists($frontend_css) && $wp_filesystem->exists($frontend_js);
     }
     
     /**
      * Clear all minified files
+     *
+     * @return bool|\WP_Error True on success or WP_Error on failure
      */
-    public static function clearMinified(): void {
+    public static function clearMinified() {
         $patterns = [
             self::$assets_dir . 'css/*.min.css',
             self::$assets_dir . 'js/*.min.js'
         ];
-        
+
+        global $wp_filesystem;
+        if (!WP_Filesystem()) {
+            $msg = 'FP Assets: WP_Filesystem initialization failed.';
+            error_log($msg);
+            return new \WP_Error('fp_fs_init_failed', $msg);
+        }
+
+        $error = false;
         foreach ($patterns as $pattern) {
             $files = glob($pattern);
             foreach ($files as $file) {
-                if (file_exists($file)) {
-                    unlink($file);
+                if ($wp_filesystem->exists($file) && !$wp_filesystem->delete($file)) {
+                    $msg = "FP Assets: Failed to delete file: {$file}";
+                    error_log($msg);
+                    $error = new \WP_Error('fp_delete_failed', $msg);
                 }
             }
         }
-        
-        if (defined('WP_DEBUG') && WP_DEBUG) {
+
+        if (defined('WP_DEBUG') && WP_DEBUG && !$error) {
             error_log("FP Assets: Cleared all minified files");
         }
+
+        return $error ?: true;
     }
     
     /**
