@@ -23,8 +23,6 @@ class CapabilityManager {
      * Constructor
      */
     public function __construct() {
-        add_action('wp_loaded', [$this, 'addCapabilitiesToRoles']);
-        
         // Handle capability checks for AJAX and form submissions
         add_action('wp_ajax_fp_esperienze_admin_action', [$this, 'checkAdminCapability']);
         add_action('wp_ajax_nopriv_fp_esperienze_admin_action', [$this, 'denyUnauthorizedAccess']);
