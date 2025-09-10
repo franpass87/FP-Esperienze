@@ -7,6 +7,19 @@
     'use strict';
 
     window.FPEsperienzeScheduleBuilder = {
+
+        /**
+         * Dispatch an event for the admin controller
+         *
+         * @param {string} eventName
+         * @param {Object} [detail]
+         */
+        dispatchAdminEvent: function(eventName, detail) {
+            if (!window.FPEsperienzeAdmin) {
+                console.warn('FP Esperienze Admin controller not found for event "' + eventName + '"');
+            }
+            $(document).trigger(eventName, detail || {});
+        },
         
         /**
          * Initialize schedule builder
@@ -34,18 +47,18 @@
             $(document).on('click', '.fp-remove-time-slot', function(e) {
                 e.preventDefault();
                 $(this).closest('.fp-time-slot-row').remove();
-                window.FPEsperienzeAdmin.updateSummaryTable();
+                self.dispatchAdminEvent('fp:updateSummaryTable');
             });
             
             // Meeting point dropdown change
             $(document).on('change', '.fp-meeting-point-select', function() {
-                window.FPEsperienzeAdmin.updateSummaryTable();
+                self.dispatchAdminEvent('fp:updateSummaryTable');
             });
             
             // Toggle raw mode
             $(document).on('click', '#fp-toggle-raw-mode', function() {
                 var showRaw = $(this).is(':checked');
-                window.FPEsperienzeAdmin.toggleRawMode(showRaw);
+                self.dispatchAdminEvent('fp:toggleRawMode', { showRaw: showRaw });
             });
         },
 
@@ -57,7 +70,7 @@
             
             // Time slot input changes
             $(document).on('change', 'input[name*=\"[start_time]\"], input[name*=\"[duration_min]\"], input[name*=\"[capacity]\"], input[name*=\"[lang]\"], select[name*=\"[meeting_point_id]\"], input[name*=\"[price_adult]\"], input[name*=\"[price_child]\"]', function() {
-                window.FPEsperienzeAdmin.updateSummaryTable();
+                self.dispatchAdminEvent('fp:updateSummaryTable');
             });
             
             // Validate time slots before form submission
@@ -70,7 +83,7 @@
             
             // Auto-save functionality for better UX
             $(document).on('change', '#fp-time-slots-container input, #fp-time-slots-container select', function() {
-                window.FPEsperienzeAdmin.markAsChanged();
+                self.dispatchAdminEvent('fp:markAsChanged');
             });
         },
 
@@ -123,7 +136,7 @@
             this.populateMeetingPointsDropdown($newRow.find('.fp-meeting-point-select'));
             
             // Update summary table
-            window.FPEsperienzeAdmin.updateSummaryTable();
+            this.dispatchAdminEvent('fp:updateSummaryTable');
         },
 
         /**
@@ -236,9 +249,10 @@
                 }
                 
                 // Show user feedback
-                if (window.FPEsperienzeAdmin && window.FPEsperienzeAdmin.showUserFeedback) {
-                    window.FPEsperienzeAdmin.showUserFeedback('Override added successfully!', 'success');
-                }
+                this.dispatchAdminEvent('fp:showUserFeedback', {
+                    message: 'Override added successfully!',
+                    type: 'success'
+                });
                 
                 // Debug logging removed for production
                 
@@ -340,9 +354,10 @@
                 $container.append($newCard);
                 
                 // Show user feedback
-                if (window.FPEsperienzeAdmin && window.FPEsperienzeAdmin.showUserFeedback) {
-                    window.FPEsperienzeAdmin.showUserFeedback('Time slot added successfully!', 'success');
-                }
+                this.dispatchAdminEvent('fp:showUserFeedback', {
+                    message: 'Time slot added successfully!',
+                    type: 'success'
+                });
                 
                 // Debug logging removed for production
                 
