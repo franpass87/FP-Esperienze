@@ -2,6 +2,11 @@
  * FP Esperienze Admin Bookings Calendar
  */
 
+if (typeof jQuery === 'undefined') {
+    console.error('FP Esperienze: jQuery is required for the admin bookings script.');
+    return;
+}
+
 (function($) {
     'use strict';
 

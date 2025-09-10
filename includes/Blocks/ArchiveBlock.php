@@ -124,7 +124,7 @@ class ArchiveBlock {
         wp_enqueue_script(
             'fp-esperienze-archive-block',
             FP_ESPERIENZE_PLUGIN_URL . 'assets/js/archive-block.js',
-            ['wp-blocks', 'wp-element', 'wp-editor', 'wp-components', 'wp-i18n'],
+            ['jquery', 'wp-blocks', 'wp-element', 'wp-editor', 'wp-components', 'wp-i18n'],
             FP_ESPERIENZE_VERSION,
             true
         );

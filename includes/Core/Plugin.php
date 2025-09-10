@@ -522,7 +522,7 @@ class Plugin {
         wp_enqueue_script(
             'fp-esperienze-archive-block',
             $archive_block_url,
-            ['wp-blocks', 'wp-element', 'wp-editor', 'wp-components', 'wp-i18n'],
+            ['jquery', 'wp-blocks', 'wp-element', 'wp-editor', 'wp-components', 'wp-i18n'],
             FP_ESPERIENZE_VERSION,
             true
         );

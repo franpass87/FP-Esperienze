@@ -4,6 +4,11 @@
  * @package FP\Esperienze\Assets\JS
  */
 
+if (typeof jQuery === 'undefined') {
+    console.error('FP Esperienze: jQuery is required for the reports script.');
+    return;
+}
+
 (function($) {
     'use strict';
 
