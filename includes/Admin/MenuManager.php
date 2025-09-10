@@ -61,6 +61,7 @@ class MenuManager {
         add_action('wp_ajax_fp_test_webhook', [$this, 'ajaxTestWebhook']);
         add_action('wp_ajax_fp_cleanup_expired_holds', [$this, 'ajaxCleanupExpiredHolds']);
         add_action('wp_ajax_fp_test_meta_capi', [$this, 'ajaxTestMetaCAPI']);
+        add_action('wp_ajax_fp_search_experience_products', [$this, 'ajaxSearchExperienceProducts']);
     }
 
     /**
@@ -207,6 +208,27 @@ class MenuManager {
         wp_enqueue_script('jquery');
         wp_enqueue_script('thickbox');
         wp_enqueue_style('thickbox');
+
+        wp_enqueue_script(
+            'select2',
+            'https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js',
+            ['jquery'],
+            '4.1.0',
+            true
+        );
+        wp_enqueue_style(
+            'select2',
+            'https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css',
+            [],
+            '4.1.0'
+        );
+        wp_enqueue_script(
+            'fp-admin-product-search',
+            FP_ESPERIENZE_PLUGIN_URL . 'assets/js/product-search.js',
+            ['jquery', 'select2'],
+            FP_ESPERIENZE_VERSION,
+            true
+        );
         
         // Enqueue bookings calendar script for bookings page
         if (strpos($hook, 'fp-esperienze-bookings') !== false) {
@@ -438,12 +460,13 @@ class MenuManager {
         
         // Remove empty filters
         $filters = array_filter($filters);
-        
+
         // Get bookings
         $bookings = BookingManager::getBookings($filters);
-        
+
+        $selected_product_id = absint(wp_unslash($_GET['product_id'] ?? 0));
         // Get experience products for filter dropdown
-        $experience_products = $this->getExperienceProducts();
+        $experience_products = $this->getExperienceProducts($selected_product_id);
         
         ?>
         <div class="wrap">
@@ -462,10 +485,10 @@ class MenuManager {
                             <option value="refunded" <?php selected($_GET['status'] ?? '', 'refunded'); ?>><?php _e('Refunded', 'fp-esperienze'); ?></option>
                         </select>
                         
-                        <select name="product_id">
+                        <select name="product_id" class="fp-product-search" data-placeholder="<?php esc_attr_e('All Products', 'fp-esperienze'); ?>">
                             <option value=""><?php _e('All Products', 'fp-esperienze'); ?></option>
                             <?php foreach ($experience_products as $product) : ?>
-                                <option value="<?php echo esc_attr($product->ID); ?>" <?php selected($_GET['product_id'] ?? '', $product->ID); ?>>
+                                <option value="<?php echo esc_attr($product->ID); ?>" <?php selected($selected_product_id, $product->ID); ?>>
                                     <?php echo esc_html($product->post_title); ?>
                                 </option>
                             <?php endforeach; ?>
@@ -1539,7 +1562,7 @@ class MenuManager {
         $total_pages = ceil($total_items / $per_page);
         
         // Get experience products for filter
-        $experience_products = $this->getExperienceProducts();
+        $experience_products = $this->getExperienceProducts($product_filter);
         
         ?>
         <div class="wrap">
@@ -1558,7 +1581,7 @@ class MenuManager {
                         <option value="void" <?php selected($status_filter, 'void'); ?>><?php _e('Void', 'fp-esperienze'); ?></option>
                     </select>
                     
-                    <select name="product_id">
+                    <select name="product_id" class="fp-product-search" data-placeholder="<?php esc_attr_e('All Products', 'fp-esperienze'); ?>">
                         <option value=""><?php _e('All Products', 'fp-esperienze'); ?></option>
                         <?php foreach ($experience_products as $product): ?>
                             <option value="<?php echo esc_attr($product->ID); ?>" <?php selected($product_filter, $product->ID); ?>>
@@ -4209,8 +4232,8 @@ class MenuManager {
     /**
      * Get experience products for filter dropdown
      */
-    private function getExperienceProducts(): array {
-        $query = new \WP_Query([
+    private function getExperienceProducts(int $include_id = 0): array {
+        $args = [
             'post_type' => 'product',
             'meta_query' => [
                 [
@@ -4219,14 +4242,38 @@ class MenuManager {
                     'compare' => '='
                 ]
             ],
-            'posts_per_page' => -1,
+            'posts_per_page' => 50,
+            'orderby' => 'title',
+            'order' => 'ASC',
             'post_status' => 'publish',
             'no_found_rows' => true,
             'update_post_meta_cache' => false,
             'update_post_term_cache' => false
-        ]);
-        
-        return $query->posts;
+        ];
+
+        $query = new \WP_Query($args);
+        $posts = $query->posts;
+
+        if ($include_id) {
+            $found = false;
+            foreach ($posts as $p) {
+                if ((int) $p->ID === $include_id) {
+                    $found = true;
+                    break;
+                }
+            }
+            if (!$found) {
+                $included = get_post($include_id);
+                if ($included && get_post_meta($included->ID, '_fp_experience_enabled', true) === 'yes') {
+                    $posts[] = $included;
+                    usort($posts, function($a, $b) {
+                        return strcmp($a->post_title, $b->post_title);
+                    });
+                }
+            }
+        }
+
+        return $posts;
     }
     
     /**
@@ -4266,13 +4313,63 @@ class MenuManager {
         }
 
         // Get filter options
-        $experience_products = $this->getExperienceProducts();
+        $selected_product_id = absint(wp_unslash($_GET['product_id'] ?? 0));
+        $experience_products = $this->getExperienceProducts($selected_product_id);
         $meeting_points = MeetingPointManager::getAllMeetingPoints();
 
         // Include the reports template
         include FP_ESPERIENZE_PLUGIN_DIR . 'templates/admin/reports.php';
     }
-    
+
+    /**
+     * AJAX search for experience products
+     */
+    public function ajaxSearchExperienceProducts(): void {
+        if (!CapabilityManager::canManageFPEsperienze()) {
+            wp_send_json_error(['message' => __('Insufficient permissions.', 'fp-esperienze')]);
+        }
+
+        if (!check_ajax_referer('fp_esperienze_admin', 'nonce', false)) {
+            wp_send_json_error(['message' => __('Security check failed.', 'fp-esperienze')]);
+        }
+
+        $term = sanitize_text_field(wp_unslash($_GET['q'] ?? ''));
+        $page = max(1, absint(wp_unslash($_GET['page'] ?? 1)));
+
+        $query = new \WP_Query([
+            'post_type' => 'product',
+            'meta_query' => [
+                [
+                    'key' => '_fp_experience_enabled',
+                    'value' => 'yes',
+                    'compare' => '='
+                ]
+            ],
+            's' => $term,
+            'posts_per_page' => 50,
+            'paged' => $page,
+            'orderby' => 'title',
+            'order' => 'ASC',
+            'post_status' => 'publish',
+            'no_found_rows' => false,
+            'update_post_meta_cache' => false,
+            'update_post_term_cache' => false,
+        ]);
+
+        $results = [];
+        foreach ($query->posts as $post) {
+            $results[] = [
+                'id' => $post->ID,
+                'text' => $post->post_title,
+            ];
+        }
+
+        wp_send_json([
+            'results' => $results,
+            'pagination' => ['more' => $query->max_num_pages > $page],
+        ]);
+    }
+
     /**
      * AJAX handler: Get available slots for a date
      */
