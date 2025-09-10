@@ -182,10 +182,12 @@ Console should show tracking events in this order:
 ### Steps:
 1. Enable Meta Conversions API with valid credentials
 2. Place a test order with experience products
-3. Check WordPress error logs or debug logs
-4. Verify in Meta Events Manager (if access available)
+3. Confirm the checkout completes without waiting for the Meta HTTP request
+4. Check WordPress error logs or debug logs
+5. Verify in Meta Events Manager (if access available)
 
 ### Expected Results:
+- Checkout flow is not delayed by the Meta API call
 - Server-side purchase event should be sent to Meta
 - Log should show "Meta CAPI Success" message
 - Event should include hashed customer data
