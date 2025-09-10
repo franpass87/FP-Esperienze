@@ -66,9 +66,14 @@ class Cart_Hooks {
         $lang = sanitize_text_field(wp_unslash($_POST['fp_lang'] ?? ''));
         $qty_adult = absint(wp_unslash($_POST['fp_qty_adult'] ?? 0));
         $qty_child = absint(wp_unslash($_POST['fp_qty_child'] ?? 0));
-        $extras_data = json_decode(wp_unslash($_POST['fp_extras'] ?? ''), true);
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            wp_send_json_error(['message' => __('Invalid extras payload', 'fp-esperienze')]);
+        $extras_data = [];
+        $extras_json = wp_unslash($_POST['fp_extras'] ?? '');
+        if (!empty($extras_json)) {
+            $extras_data = json_decode($extras_json, true);
+            if (json_last_error() !== JSON_ERROR_NONE || !is_array($extras_data)) {
+                error_log('Invalid extras payload: ' . $extras_json);
+                $extras_data = [];
+            }
         }
 
         // Get gift data from POST
@@ -81,7 +86,7 @@ class Cart_Hooks {
 
         if ($slot_start) {
             $extras = [];
-            if (is_array($extras_data)) {
+            if (!empty($extras_data)) {
                 foreach ($extras_data as $extra_id => $quantity) {
                     $extras[absint($extra_id)] = absint($quantity);
                 }
