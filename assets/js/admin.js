@@ -17,10 +17,6 @@
         console.warn( 'wp.i18n not found; translations will not be available.' );
     }
 
-    if (typeof fp_esperienze_admin !== 'undefined' && typeof fp_esperienze_admin.banner_offset !== 'undefined') {
-        document.documentElement.style.setProperty('--fp-banner-offset', fp_esperienze_admin.banner_offset + 'px');
-    }
-
     // Prevent multiple script execution
     if (window.FPEsperienzeAdmin && window.FPEsperienzeAdmin.initialized) {
         return;
@@ -53,11 +49,59 @@
                 // Debug logging removed for production
             }
         },
+
+        /**
+         * Retrieve and validate localization data.
+         *
+         * @param {Array} required List of required top-level fields.
+         * @return {Object|null} Localization object or null if missing.
+         */
+        ensureAdminData: function(required = []) {
+            const data = window.fp_esperienze_admin;
+            if (!data) {
+                console.error('fp_esperienze_admin localization object not found.');
+                this.showUserFeedback(__('Required localization data is missing.', 'fp-esperienze'), 'error', 8000);
+                return null;
+            }
+
+            for (let i = 0; i < required.length; i++) {
+                if (typeof data[required[i]] === 'undefined' || data[required[i]] === '') {
+                    console.error('fp_esperienze_admin missing required field: ' + required[i]);
+                    this.showUserFeedback(__('Required localization data is missing.', 'fp-esperienze'), 'error', 8000);
+                    return null;
+                }
+            }
+
+            return data;
+        },
+
+        /**
+         * Safely retrieve a localized string.
+         *
+         * @param {string} key      String key in fp_esperienze_admin.strings.
+         * @param {string} fallback Fallback string if key is missing.
+         * @return {string} Localized string.
+         */
+        getAdminString: function(key, fallback) {
+            const data = this.ensureAdminData(['strings']);
+            if (data && data.strings && data.strings[key]) {
+                return data.strings[key];
+            }
+
+            console.error('Localization string "' + key + '" is missing.');
+            this.showUserFeedback(__('Required localization data is missing.', 'fp-esperienze'), 'error', 8000);
+            return fallback;
+        },
         
         /**
          * Initialize
          */
         init: function() {
+            const data = this.ensureAdminData(['banner_offset']);
+            if (data && typeof data.banner_offset !== 'undefined') {
+                document.documentElement.style.setProperty('--fp-banner-offset', data.banner_offset + 'px');
+            }
+
             this.handleProductTypeChange();
             this.bindEvents();
             this.initBookingsPage();
@@ -176,12 +220,16 @@
          */
         initBookingsCalendar: function() {
             var self = this;
-            
+            var adminData = this.ensureAdminData(['rest_url']);
+            if (!adminData) {
+                return;
+            }
+
             // Load FullCalendar from CDN
             if (typeof FullCalendar === 'undefined') {
                 this.loadFullCalendar()
                     .then(function() {
-                        self.renderCalendar();
+                        self.renderCalendar(adminData);
                     })
                     .catch(function(error) {
                         console.error('FullCalendar failed to load', error);
@@ -194,7 +242,7 @@
                         if (typeof self.loadLocalFullCalendar === 'function') {
                             self.loadLocalFullCalendar()
                                 .then(function() {
-                                    self.renderCalendar();
+                                    self.renderCalendar(adminData);
                                 })
                                 .catch(function(localError) {
                                     console.error('Local FullCalendar failed to load', localError);
@@ -213,7 +261,7 @@
                         }
                     });
             } else {
-                this.renderCalendar();
+                this.renderCalendar(adminData);
             }
         },
         
@@ -241,14 +289,14 @@
          * Load local FullCalendar library as fallback
          */
         loadLocalFullCalendar: function() {
+            const data = this.ensureAdminData(['plugin_url']);
+            if (!data) {
+                return Promise.reject(new Error('Plugin URL not available'));
+            }
+
+            const base = data.plugin_url;
+
             return new Promise(function(resolve, reject) {
-                if (!fp_esperienze_admin || !fp_esperienze_admin.plugin_url) {
-                    reject(new Error('Plugin URL not available'));
-                    return;
-                }
-
-                var base = fp_esperienze_admin.plugin_url;
-
                 // Load CSS
                 var css = document.createElement('link');
                 css.rel = 'stylesheet';
@@ -267,10 +315,16 @@
         /**
          * Render FullCalendar
          */
-        renderCalendar: function() {
+        renderCalendar: function(adminData) {
             var calendarEl = document.getElementById('fp-calendar');
             if (!calendarEl) return;
-            
+
+            if (!adminData || !adminData.rest_url) {
+                console.error('REST URL missing; cannot render calendar.');
+                this.showUserFeedback(__('Required localization data is missing.', 'fp-esperienze'), 'error', 8000);
+                return;
+            }
+
             var calendar = new FullCalendar.Calendar(calendarEl, {
                 initialView: 'dayGridMonth',
                 headerToolbar: {
@@ -280,7 +334,7 @@
                 },
                 height: 600,
                 events: {
-                    url: window.fp_esperienze_admin.rest_url + 'fp-exp/v1/bookings/calendar',
+                    url: adminData.rest_url + 'fp-exp/v1/bookings/calendar',
                     method: 'GET',
                     extraParams: function() {
                         return {
@@ -1002,7 +1056,11 @@
             
             // Confirm removal if there's a date value
             if (dateValue) {
-                if (!confirm(fp_esperienze_admin.strings.confirm_remove_override || __('Are you sure you want to remove this date override?', 'fp-esperienze'))) {
+                var msg = this.getAdminString(
+                    'confirm_remove_override',
+                    __('Are you sure you want to remove this date override?', 'fp-esperienze')
+                );
+                if (!confirm(msg)) {
                     return;
                 }
             }
@@ -1226,7 +1284,11 @@
                 
                 // Confirm removal if there's a date value
                 if (dateValue) {
-                    if (!confirm(fp_esperienze_admin.strings.confirm_remove_override || __('Are you sure you want to remove this date override?', 'fp-esperienze'))) {
+                    var msg = self.getAdminString(
+                        'confirm_remove_override',
+                        __('Are you sure you want to remove this date override?', 'fp-esperienze')
+                    );
+                    if (!confirm(msg)) {
                         return;
                     }
                 }
@@ -1324,8 +1386,11 @@
             // Check for very distant dates
             if (selectedDate > fiveYearsFromNow) {
                 if (!$warning.length) {
-                    $dateInput.after('<div class="fp-date-warning"><span class="dashicons dashicons-warning"></span> ' + 
-                        (fp_esperienze_admin.strings.distant_date_warning || 'This date is very far in the future. Please verify it\'s correct.') + '</div>');
+                    $dateInput.after('<div class="fp-date-warning"><span class="dashicons dashicons-warning"></span> ' +
+                        this.getAdminString(
+                            'distant_date_warning',
+                            'This date is very far in the future. Please verify it\'s correct.'
+                        ) + '</div>');
                 } else {
                     $warning.addClass('show');
                 }
