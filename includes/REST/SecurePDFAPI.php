@@ -170,15 +170,8 @@ class SecurePDFAPI {
             );
         }
 
-        header('Content-Type: application/pdf');
-        header('Content-Disposition: attachment; filename="' . $filename . '"');
-        header('Content-Length: ' . filesize($real_pdf_path));
-        header('Cache-Control: no-cache, must-revalidate');
-        header('Pragma: no-cache');
-        header('Expires: 0');
-
-        $handle = fopen($real_pdf_path, 'rb');
-        if ($handle === false) {
+        $contents = file_get_contents($real_pdf_path);
+        if ($contents === false) {
             return new WP_Error(
                 'pdf_read_error',
                 __('Unable to read PDF file.', 'fp-esperienze'),
@@ -186,8 +179,16 @@ class SecurePDFAPI {
             );
         }
 
-        fpassthru($handle);
-        fclose($handle);
-        exit;
+        $response = new WP_REST_Response($contents);
+        $response->set_headers([
+            'Content-Type'        => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Content-Length'      => strlen($contents),
+            'Cache-Control'       => 'no-cache, must-revalidate',
+            'Pragma'              => 'no-cache',
+            'Expires'             => '0',
+        ]);
+
+        return $response;
     }
 }
