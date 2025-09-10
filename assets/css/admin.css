@@ -3122,7 +3122,7 @@ body.fp-reduced-animations .fp-loading::after {
     border-color: #2271b1;
 }
 
-.fp-day-pill-clean input[type="checkbox"]:focus + label {
+.fp-day-pill-clean input[type="checkbox"]:focus-visible + label {
     outline: 2px solid #2271b1;
     outline-offset: 2px;
 }
