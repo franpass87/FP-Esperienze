@@ -30,10 +30,10 @@ defined('ABSPATH') || exit;
                     <tr>
                         <th scope="row"><?php esc_html_e('Experience', 'fp-esperienze'); ?></th>
                         <td>
-                            <select name="product_id" id="fp-product-filter">
+                            <select name="product_id" id="fp-product-filter" class="fp-product-search" data-placeholder="<?php esc_attr_e('All Experiences', 'fp-esperienze'); ?>">
                                 <option value=""><?php esc_html_e('All Experiences', 'fp-esperienze'); ?></option>
                                 <?php foreach ($experience_products as $product) : ?>
-                                    <option value="<?php echo esc_attr($product->ID); ?>">
+                                    <option value="<?php echo esc_attr($product->ID); ?>" <?php selected($selected_product_id ?? 0, $product->ID); ?>>
                                         <?php echo esc_html($product->post_title); ?>
                                     </option>
                                 <?php endforeach; ?>
