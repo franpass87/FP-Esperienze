@@ -147,14 +147,27 @@ class AssetOptimizer {
      */
     private static function minifyCSS(array $files, string $output_path) {
         $combined_css = '';
-        
+
+        global $wp_filesystem;
+        require_once ABSPATH . 'wp-admin/includes/file.php';
+        if (!WP_Filesystem()) {
+            $msg = 'FP Assets: WP_Filesystem initialization failed.';
+            error_log($msg);
+            return new \WP_Error('fp_fs_init_failed', $msg);
+        }
+
         foreach ($files as $file) {
-            if (!file_exists($file)) {
+            if (!$wp_filesystem->exists($file)) {
                 continue;
             }
-            
-            $css = file_get_contents($file);
-            $combined_css .= "/* " . basename($file) . " */\n";
+
+            $css = $wp_filesystem->get_contents($file);
+            if (false === $css) {
+                error_log("FP Assets: Failed to read file: {$file}");
+                continue;
+            }
+
+            $combined_css .= '/* ' . basename($file) . " */\n";
             $combined_css .= $css . "\n\n";
         }
         
@@ -183,14 +196,27 @@ class AssetOptimizer {
      */
     private static function minifyJS(array $files, string $output_path) {
         $combined_js = '';
-        
+
+        global $wp_filesystem;
+        require_once ABSPATH . 'wp-admin/includes/file.php';
+        if (!WP_Filesystem()) {
+            $msg = 'FP Assets: WP_Filesystem initialization failed.';
+            error_log($msg);
+            return new \WP_Error('fp_fs_init_failed', $msg);
+        }
+
         foreach ($files as $file) {
-            if (!file_exists($file)) {
+            if (!$wp_filesystem->exists($file)) {
                 continue;
             }
-            
-            $js = file_get_contents($file);
-            $combined_js .= "/* " . basename($file) . " */\n";
+
+            $js = $wp_filesystem->get_contents($file);
+            if (false === $js) {
+                error_log("FP Assets: Failed to read file: {$file}");
+                continue;
+            }
+
+            $combined_js .= '/* ' . basename($file) . " */\n";
             $combined_js .= $js . "\n\n";
         }
         
