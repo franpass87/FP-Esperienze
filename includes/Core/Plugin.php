@@ -377,16 +377,24 @@ class Plugin {
             FP_ESPERIENZE_VERSION
         );
 
-        // Enqueue modular JS system
+        // Enqueue admin controller based on modular flag
         $use_modular = apply_filters('fp_esperienze_use_modular_admin', true);
-        
-        if ($use_modular && !AssetOptimizer::getMinifiedAssetUrl('js', 'admin')) {
+
+        if ($use_modular) {
+            // Ensure the monolithic controller is not loaded
+            wp_deregister_script('fp-esperienze-admin');
+
             // Load modular system: first load modules, then main controller
             $this->enqueueAdminModules();
-            
+
+            $admin_js_url = AssetOptimizer::getMinifiedAssetUrl('js', 'admin-modular');
+            if (!$admin_js_url) {
+                $admin_js_url = FP_ESPERIENZE_PLUGIN_URL . 'assets/js/admin-modular.js';
+            }
+
             wp_enqueue_script(
                 'fp-esperienze-admin-modular',
-                FP_ESPERIENZE_PLUGIN_URL . 'assets/js/admin-modular.js',
+                $admin_js_url,
                 ['jquery', 'fp-esperienze-modules'],
                 FP_ESPERIENZE_VERSION,
                 true
@@ -397,7 +405,7 @@ class Plugin {
                 'fp-esperienze',
                 FP_ESPERIENZE_PLUGIN_DIR . 'languages'
             );
-            
+
             // Localize the modular script
             wp_localize_script('fp-esperienze-admin-modular', 'fp_esperienze_admin', [
                 'ajax_url' => admin_url('admin-ajax.php'),
@@ -406,12 +414,14 @@ class Plugin {
                 'banner_offset' => apply_filters('fp_esperienze_banner_offset', 20),
             ]);
         } else {
-            // Fallback to monolithic or minified version
+            // Ensure the modular controller is not loaded
+            wp_deregister_script('fp-esperienze-admin-modular');
+
             $admin_js_url = AssetOptimizer::getMinifiedAssetUrl('js', 'admin');
             if (!$admin_js_url) {
                 $admin_js_url = FP_ESPERIENZE_PLUGIN_URL . 'assets/js/admin.js';
             }
-            
+
             wp_enqueue_script(
                 'fp-esperienze-admin',
                 $admin_js_url,
@@ -425,7 +435,7 @@ class Plugin {
                 'fp-esperienze',
                 FP_ESPERIENZE_PLUGIN_DIR . 'languages'
             );
-            
+
             // Localize script with admin data
             wp_localize_script('fp-esperienze-admin', 'fp_esperienze_admin', [
                 'ajax_url' => admin_url('admin-ajax.php'),
