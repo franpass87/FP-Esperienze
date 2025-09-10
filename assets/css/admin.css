@@ -3098,9 +3098,9 @@ body.fp-reduced-animations .fp-loading::after {
     font-size: 0.75rem;
     font-weight: 600;
     cursor: pointer;
-    transition: background 0.15s ease,
-                transform 0.15s ease,
-                box-shadow 0.15s ease;
+    transition: background 0.2s ease,
+                transform 0.2s ease,
+                box-shadow 0.2s ease;
     margin: 0;
     text-transform: uppercase;
     letter-spacing: 0.5px;
