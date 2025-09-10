@@ -48,11 +48,16 @@ class RateLimiter {
      *
      * Uses WordPress' {@see wp_get_ip_address()} when available and falls back
      * to processing common proxy headers when behind a trusted proxy.
+     * Falls back to `127.0.0.1` when the remote address is missing or
+     * contains an invalid IP to ensure a stable transient key.
      *
      * @return string Client IP address
      */
     public static function getClientIP(): string {
-        $remote_addr     = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+        $remote_addr = $_SERVER['REMOTE_ADDR'] ?? '';
+
+        // Validate the remote address and use a safe fallback if invalid.
+        $remote_addr     = filter_var( $remote_addr, FILTER_VALIDATE_IP ) ?: '127.0.0.1';
         $trusted_proxies = apply_filters( 'fp_trusted_proxies', [] );
 
         if ( ! empty( $trusted_proxies ) && in_array( $remote_addr, $trusted_proxies, true ) ) {
