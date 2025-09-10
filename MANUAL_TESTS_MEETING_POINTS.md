@@ -78,7 +78,7 @@
 ### Expected Results:
 - Dropdown populates correctly
 - Selection is saved properly
-- Metadata `_fp_exp_meeting_point_id` is stored
+ - Meeting point association is stored with each schedule
 
 ## Test 6: Frontend Display - Single Experience Template
 

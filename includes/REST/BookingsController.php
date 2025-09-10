@@ -10,6 +10,7 @@ namespace FP\Esperienze\REST;
 use FP\Esperienze\Data\BookingManager;
 use FP\Esperienze\Core\CapabilityManager;
 use FP\Esperienze\Core\Log;
+use FP\Esperienze\Data\ScheduleManager;
 
 defined('ABSPATH') || exit;
 
@@ -161,8 +162,15 @@ class BookingsController {
      * @return string End time in ISO format
      */
     private function calculateEndTime(string $date, string $time, \WC_Product $product): string {
-        $duration = get_post_meta($product->get_id(), '_fp_exp_duration', true) ?: 
-                   get_post_meta($product->get_id(), '_experience_duration', true) ?: 60;
+        $day_of_week = (int) date('w', strtotime($date));
+        $duration = 60;
+        $schedules = ScheduleManager::getSchedulesForDay($product->get_id(), $day_of_week);
+        foreach ($schedules as $schedule) {
+            if (substr($schedule->start_time, 0, 5) === substr($time, 0, 5)) {
+                $duration = (int) ($schedule->duration_min ?: 60);
+                break;
+            }
+        }
         
         $start_datetime = \DateTime::createFromFormat('Y-m-d H:i:s', $date . ' ' . $time);
         $end_datetime = clone $start_datetime;

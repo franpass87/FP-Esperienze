@@ -2387,26 +2387,6 @@ msgstr "Use WordPress default"
 msgid "Timezone for booking schedules and availability."
 msgstr "Timezone for booking schedules and availability."
 
-#: includes/Admin/SetupWizard.php:441 includes/ProductType/Experience.php:144
-msgid "Default Duration (minutes)"
-msgstr "Default Duration (minutes)"
-
-#: includes/Admin/SetupWizard.php:445
-msgid "Default duration for new experiences."
-msgstr "Default duration for new experiences."
-
-#: includes/Admin/SetupWizard.php:450
-msgid "Default Capacity"
-msgstr "Default Capacity"
-
-#: includes/Admin/SetupWizard.php:454
-msgid "Default maximum participants for new experiences."
-msgstr "Default maximum participants for new experiences."
-
-#: includes/Admin/SetupWizard.php:459 includes/ProductType/Experience.php:172
-msgid "Default Language"
-msgstr "Default Language"
-
 #: includes/Admin/SetupWizard.php:463
 msgid "English"
 msgstr "English"
@@ -3619,77 +3599,6 @@ msgid ""
 "QR code during checkout."
 msgstr ""
 "Visit %s to book your experience and use the voucher code above or scan the "
-"QR code during checkout."
-
-#: includes/ProductType/Experience.php:147
-msgid "Default experience duration in minutes (used as fallback for schedules)"
-msgstr ""
-"Default experience duration in minutes (used as fallback for schedules)"
-
-#: includes/ProductType/Experience.php:158
-msgid "Default Max Capacity"
-msgstr "Default Max Capacity"
-
-#: includes/ProductType/Experience.php:161
-msgid "Default maximum number of participants (used as fallback for schedules)"
-msgstr ""
-"Default maximum number of participants (used as fallback for schedules)"
-
-#: includes/ProductType/Experience.php:175
-msgid "Default language code for this experience (e.g., en, it, es)"
-msgstr "Default language code for this experience (e.g., en, it, es)"
-
-#: includes/ProductType/Experience.php:184
-msgid "Default Child Price"
-msgstr "Default Child Price"
-
-#: includes/ProductType/Experience.php:187
-msgid "Default price per child participant (used as fallback for schedules)"
-msgstr "Default price per child participant (used as fallback for schedules)"
-
-#: includes/ProductType/Experience.php:201
-msgid "Price per adult participant"
-msgstr "Price per adult participant"
-
-#: includes/ProductType/Experience.php:215
-msgid "Price per child participant"
-msgstr "Price per child participant"
-
-#: includes/ProductType/Experience.php:227
-msgid "Adult Tax Class"
-msgstr "Adult Tax Class"
-
-#: includes/ProductType/Experience.php:230
-msgid "Tax class for adult price"
-msgstr "Tax class for adult price"
-
-#: includes/ProductType/Experience.php:236
-msgid "Child Tax Class"
-msgstr "Child Tax Class"
-
-#: includes/ProductType/Experience.php:239
-msgid "Tax class for child price"
-msgstr "Tax class for child price"
-
-#: includes/ProductType/Experience.php:245 templates/single-experience.php:156
-msgid "Languages"
-msgstr "Languages"
-
-#: includes/ProductType/Experience.php:246
-msgid "Italian, English, Spanish"
-msgstr "Italian, English, Spanish"
-
-#: includes/ProductType/Experience.php:248
-msgid "Available languages for this experience"
-msgstr "Available languages for this experience"
-
-#: includes/ProductType/Experience.php:256
-msgid "Default Meeting Point"
-msgstr "Default Meeting Point"
-
-#: includes/ProductType/Experience.php:259
-msgid "Default meeting point for this experience"
-msgstr "Default meeting point for this experience"
 
 #: includes/ProductType/Experience.php:265
 msgid "Booking Cutoff (minutes)"
@@ -3931,10 +3840,6 @@ msgstr "Language code (ISO format preferred)"
 #: includes/ProductType/Experience.php:528
 msgid "Where participants should meet for this experience"
 msgstr "Where participants should meet for this experience"
-
-#: includes/ProductType/Experience.php:542
-msgid "Price per adult participant (leave empty to use default product price)"
-msgstr "Price per adult participant (leave empty to use default product price)"
 
 #: includes/ProductType/Experience.php:551
 msgid "Adult price (optional override)"

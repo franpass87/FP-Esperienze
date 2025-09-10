@@ -346,8 +346,9 @@ class DynamicPricingManager {
      * @return array Price breakdown
      */
     public static function previewPricing(int $product_id, array $test_data): array {
-        $base_adult_price = floatval(get_post_meta($product_id, '_experience_adult_price', true) ?: 0);
-        $base_child_price = floatval(get_post_meta($product_id, '_experience_child_price', true) ?: 0);
+        $schedules = ScheduleManager::getSchedules($product_id);
+        $base_adult_price = isset($schedules[0]) ? (float) $schedules[0]->price_adult : 0.0;
+        $base_child_price = isset($schedules[0]) ? (float) $schedules[0]->price_child : 0.0;
         
         $context = [
             'booking_date' => $test_data['booking_date'] ?? date('Y-m-d'),

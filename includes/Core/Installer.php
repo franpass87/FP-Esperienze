@@ -466,55 +466,7 @@ class Installer {
             ", $table_name));
             
             foreach ($products_with_schedules as $product) {
-                $product_id = $product->product_id;
-                
-                // Get product defaults
-                $default_duration = get_post_meta($product_id, '_fp_exp_duration', true);
-                $default_capacity = get_post_meta($product_id, '_fp_exp_capacity', true);
-                $default_lang = get_post_meta($product_id, '_fp_exp_language', true);
-                $default_price_adult = get_post_meta($product_id, '_regular_price', true);
-                $default_price_child = get_post_meta($product_id, '_fp_exp_price_child', true);
-                
-                // Set fields to NULL where they match defaults
-                if ($default_duration) {
-                    $wpdb->query($wpdb->prepare("
-                        UPDATE %i 
-                        SET duration_min = NULL 
-                        WHERE product_id = %d AND duration_min = %d
-                    ", $table_name, $product_id, $default_duration));
-                }
-                
-                if ($default_capacity) {
-                    $wpdb->query($wpdb->prepare("
-                        UPDATE %i 
-                        SET capacity = NULL 
-                        WHERE product_id = %d AND capacity = %d
-                    ", $table_name, $product_id, $default_capacity));
-                }
-                
-                if ($default_lang) {
-                    $wpdb->query($wpdb->prepare("
-                        UPDATE %i 
-                        SET lang = NULL 
-                        WHERE product_id = %d AND lang = %s
-                    ", $table_name, $product_id, $default_lang));
-                }
-                
-                if ($default_price_adult) {
-                    $wpdb->query($wpdb->prepare("
-                        UPDATE %i 
-                        SET price_adult = NULL 
-                        WHERE product_id = %d AND ABS(price_adult - %f) < 0.01
-                    ", $table_name, $product_id, $default_price_adult));
-                }
-                
-                if ($default_price_child) {
-                    $wpdb->query($wpdb->prepare("
-                        UPDATE %i 
-                        SET price_child = NULL 
-                        WHERE product_id = %d AND ABS(price_child - %f) < 0.01
-                    ", $table_name, $product_id, $default_price_child));
-                }
+                # Product defaults removed; no migration needed.
             }
             
             // Mark migration as applied

@@ -206,17 +206,6 @@ class MeetingPointManager {
             return false; // Cannot delete if in use
         }
         
-        // Check if meeting point is set as default in products
-        $used_in_products = $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM {$wpdb->postmeta} 
-             WHERE meta_key = '_fp_exp_meeting_point_id' AND meta_value = %d",
-            $id
-        ));
-        
-        if ($used_in_products > 0) {
-            return false; // Cannot delete if set as default
-        }
-        
         $table_name = $wpdb->prefix . 'fp_meeting_points';
         $result = $wpdb->delete($table_name, ['id' => $id], ['%d']);
         

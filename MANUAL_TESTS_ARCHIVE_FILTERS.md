@@ -36,12 +36,12 @@
 #### Meeting Point Filter
 - **Action**: Select a meeting point and submit
 - **Expected**: Only experiences with that meeting point ID shown
-- **Verify**: URL updates with `?fp_mp=123`, results filtered by `_fp_exp_meeting_point_id`
+- **Verify**: URL updates with `?fp_mp=123`, results filtered using schedule data
 
 #### Duration Filter
 - **Action**: Select "Up to 1.5 hours" (<=90)
 - **Expected**: Only experiences with duration ≤ 90 minutes shown
-- **Verify**: URL updates with `?fp_duration=<=90`, meta query filters correctly
+- **Verify**: URL updates with `?fp_duration=<=90`, schedule query filters correctly
 
 #### Date Availability Filter
 - **Action**: Select tomorrow's date

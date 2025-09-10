@@ -9,6 +9,7 @@ namespace FP\Esperienze\Frontend;
 
 use FP\Esperienze\Admin\SEOSettings;
 use FP\Esperienze\Data\MeetingPointManager;
+use FP\Esperienze\Data\ScheduleManager;
 
 defined('ABSPATH') || exit;
 
@@ -116,8 +117,9 @@ class SEOManager {
         $url = get_permalink($product_id);
         $site_name = get_bloginfo('name');
         
-        // Price information
-        $adult_price = get_post_meta($product_id, '_fp_exp_adult_price', true);
+        // Price information from schedule
+        $schedules = ScheduleManager::getSchedules($product_id);
+        $adult_price = $schedules[0]->price_adult ?? null;
         $currency = get_woocommerce_currency();
         
         echo "\n<!-- Open Graph Meta Tags -->\n";
@@ -216,9 +218,10 @@ class SEOManager {
      * Determine schema type based on metadata
      */
     private function determineSchemaType(int $product_id): string {
-        // Check duration to determine if it's scheduled/guided
-        $duration = get_post_meta($product_id, '_fp_exp_duration', true);
-        
+        // Determine duration from schedule data
+        $schedules = ScheduleManager::getSchedules($product_id);
+        $duration = $schedules[0]->duration_min ?? null;
+
         // Check if there are schedules defined (indicating regular scheduled times)
         global $wpdb;
         $schedules_count = $wpdb->get_var($wpdb->prepare(
@@ -248,11 +251,12 @@ class SEOManager {
      * Get location data from meeting point
      */
     private function getLocationData(int $product_id): ?array {
-        $meeting_point_id = get_post_meta($product_id, '_fp_exp_meeting_point_id', true);
+        $schedules = ScheduleManager::getSchedules($product_id);
+        $meeting_point_id = $schedules[0]->meeting_point_id ?? null;
         if (!$meeting_point_id) {
             return null;
         }
-        
+
         $meeting_point = MeetingPointManager::getMeetingPoint((int) $meeting_point_id);
         if (!$meeting_point) {
             return null;
@@ -285,12 +289,13 @@ class SEOManager {
      * Get offers data with pricing
      */
     private function getOffersData(int $product_id): array {
-        $adult_price = get_post_meta($product_id, '_fp_exp_adult_price', true);
-        $child_price = get_post_meta($product_id, '_fp_exp_child_price', true);
+        $schedules = ScheduleManager::getSchedules($product_id);
+        $adult_price = $schedules[0]->price_adult ?? null;
+        $child_price = $schedules[0]->price_child ?? null;
         $currency = get_woocommerce_currency();
-        
+
         $offers = [];
-        
+
         if ($adult_price) {
             $offers[] = [
                 '@type' => 'Offer',
@@ -301,7 +306,7 @@ class SEOManager {
                 'validFrom' => current_time('c'),
             ];
         }
-        
+
         if ($child_price) {
             $offers[] = [
                 '@type' => 'Offer',
@@ -346,7 +351,8 @@ class SEOManager {
         $data['startDate'] = $start_date;
         
         // Add duration if available
-        $duration = get_post_meta($product_id, '_fp_exp_duration', true);
+        $schedules = ScheduleManager::getSchedules($product_id);
+        $duration = $schedules[0]->duration_min ?? null;
         if ($duration) {
             $data['duration'] = 'PT' . $duration . 'M'; // ISO 8601 duration format
         }
@@ -367,7 +373,8 @@ class SEOManager {
         $data = [];
         
         // Add duration if available
-        $duration = get_post_meta($product_id, '_fp_exp_duration', true);
+        $schedules = ScheduleManager::getSchedules($product_id);
+        $duration = $schedules[0]->duration_min ?? null;
         if ($duration) {
             $data['duration'] = 'PT' . $duration . 'M';
         }

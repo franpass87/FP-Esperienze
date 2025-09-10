@@ -2347,28 +2347,6 @@ msgstr ""
 msgid "Timezone for booking schedules and availability."
 msgstr ""
 
-#: includes/Admin/SetupWizard.php:441
-#: includes/ProductType/Experience.php:144
-msgid "Default Duration (minutes)"
-msgstr ""
-
-#: includes/Admin/SetupWizard.php:445
-msgid "Default duration for new experiences."
-msgstr ""
-
-#: includes/Admin/SetupWizard.php:450
-msgid "Default Capacity"
-msgstr ""
-
-#: includes/Admin/SetupWizard.php:454
-msgid "Default maximum participants for new experiences."
-msgstr ""
-
-#: includes/Admin/SetupWizard.php:459
-#: includes/ProductType/Experience.php:172
-msgid "Default Language"
-msgstr ""
-
 #: includes/Admin/SetupWizard.php:463
 msgid "English"
 msgstr ""
@@ -3587,74 +3565,6 @@ msgid "Visit %s to book your experience and use the voucher code above or scan t
 msgstr ""
 
 #: includes/ProductType/Experience.php:147
-msgid "Default experience duration in minutes (used as fallback for schedules)"
-msgstr ""
-
-#: includes/ProductType/Experience.php:158
-msgid "Default Max Capacity"
-msgstr ""
-
-#: includes/ProductType/Experience.php:161
-msgid "Default maximum number of participants (used as fallback for schedules)"
-msgstr ""
-
-#: includes/ProductType/Experience.php:175
-msgid "Default language code for this experience (e.g., en, it, es)"
-msgstr ""
-
-#: includes/ProductType/Experience.php:184
-msgid "Default Child Price"
-msgstr ""
-
-#: includes/ProductType/Experience.php:187
-msgid "Default price per child participant (used as fallback for schedules)"
-msgstr ""
-
-#: includes/ProductType/Experience.php:201
-msgid "Price per adult participant"
-msgstr ""
-
-#: includes/ProductType/Experience.php:215
-msgid "Price per child participant"
-msgstr ""
-
-#: includes/ProductType/Experience.php:227
-msgid "Adult Tax Class"
-msgstr ""
-
-#: includes/ProductType/Experience.php:230
-msgid "Tax class for adult price"
-msgstr ""
-
-#: includes/ProductType/Experience.php:236
-msgid "Child Tax Class"
-msgstr ""
-
-#: includes/ProductType/Experience.php:239
-msgid "Tax class for child price"
-msgstr ""
-
-#: includes/ProductType/Experience.php:245
-#: templates/single-experience.php:156
-msgid "Languages"
-msgstr ""
-
-#: includes/ProductType/Experience.php:246
-msgid "Italian, English, Spanish"
-msgstr ""
-
-#: includes/ProductType/Experience.php:248
-msgid "Available languages for this experience"
-msgstr ""
-
-#: includes/ProductType/Experience.php:256
-msgid "Default Meeting Point"
-msgstr ""
-
-#: includes/ProductType/Experience.php:259
-msgid "Default meeting point for this experience"
-msgstr ""
-
 #: includes/ProductType/Experience.php:265
 msgid "Booking Cutoff (minutes)"
 msgstr ""

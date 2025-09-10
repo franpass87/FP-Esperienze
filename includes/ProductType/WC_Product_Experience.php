@@ -7,6 +7,8 @@
 
 defined('ABSPATH') || exit;
 
+use FP\Esperienze\Data\ScheduleManager;
+
 /**
  * Experience product class
  */
@@ -70,7 +72,8 @@ class WC_Product_Experience extends WC_Product {
      * @return int Duration in minutes
      */
     public function get_duration() {
-        return (int) get_post_meta($this->get_id(), '_experience_duration', true);
+        $schedules = ScheduleManager::getSchedules($this->get_id());
+        return isset($schedules[0]) ? (int) $schedules[0]->duration_min : 0;
     }
 
     /**
@@ -79,7 +82,8 @@ class WC_Product_Experience extends WC_Product {
      * @return int Maximum capacity
      */
     public function get_capacity() {
-        return (int) get_post_meta($this->get_id(), '_experience_capacity', true);
+        $schedules = ScheduleManager::getSchedules($this->get_id());
+        return isset($schedules[0]) ? (int) $schedules[0]->capacity : 0;
     }
 
     /**
@@ -88,7 +92,8 @@ class WC_Product_Experience extends WC_Product {
      * @return float Adult price
      */
     public function get_adult_price() {
-        return (float) get_post_meta($this->get_id(), '_experience_adult_price', true);
+        $schedules = ScheduleManager::getSchedules($this->get_id());
+        return isset($schedules[0]) ? (float) $schedules[0]->price_adult : 0.0;
     }
 
     /**
@@ -97,7 +102,8 @@ class WC_Product_Experience extends WC_Product {
      * @return float Child price
      */
     public function get_child_price() {
-        return (float) get_post_meta($this->get_id(), '_experience_child_price', true);
+        $schedules = ScheduleManager::getSchedules($this->get_id());
+        return isset($schedules[0]) ? (float) $schedules[0]->price_child : 0.0;
     }
 
     /**
@@ -106,7 +112,7 @@ class WC_Product_Experience extends WC_Product {
      * @return string Adult tax class
      */
     public function get_adult_tax_class() {
-        return get_post_meta($this->get_id(), '_experience_adult_tax_class', true) ?: '';
+        return '';
     }
 
     /**
@@ -115,7 +121,7 @@ class WC_Product_Experience extends WC_Product {
      * @return string Child tax class
      */
     public function get_child_tax_class() {
-        return get_post_meta($this->get_id(), '_experience_child_tax_class', true) ?: '';
+        return '';
     }
 
     /**
@@ -124,7 +130,11 @@ class WC_Product_Experience extends WC_Product {
      * @return string Available languages
      */
     public function get_languages() {
-        return get_post_meta($this->get_id(), '_experience_languages', true);
+        $schedules = ScheduleManager::getSchedules($this->get_id());
+        $langs = array_unique(array_filter(array_map(static function ($s) {
+            return $s->lang;
+        }, $schedules)));
+        return implode(', ', $langs);
     }
 
     /**
@@ -133,7 +143,8 @@ class WC_Product_Experience extends WC_Product {
      * @return int Meeting point ID
      */
     public function get_default_meeting_point() {
-        return (int) get_post_meta($this->get_id(), '_fp_exp_meeting_point_id', true);
+        $schedules = ScheduleManager::getSchedules($this->get_id());
+        return isset($schedules[0]) ? (int) $schedules[0]->meeting_point_id : 0;
     }
 
     /**

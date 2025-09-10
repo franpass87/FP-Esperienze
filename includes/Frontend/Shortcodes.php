@@ -11,6 +11,7 @@ use FP\Esperienze\Admin\Settings\AutoTranslateSettings;
 use FP\Esperienze\Data\Availability;
 use FP\Esperienze\Data\MeetingPointManager;
 use FP\Esperienze\Core\I18nManager;
+use FP\Esperienze\Data\ScheduleManager;
 
 defined('ABSPATH') || exit;
 
@@ -126,8 +127,8 @@ class Shortcodes {
                 $meta_key = '_fp_exp_adult_price';
                 break;
             case 'duration':
-                $orderby = 'meta_value_num';
-                $meta_key = '_fp_exp_duration';
+                // Duration sorting is not available without product meta; fallback to title
+                $orderby = 'title';
                 break;
         }
 
@@ -180,44 +181,55 @@ class Shortcodes {
             ];
         }
 
-        // Meeting point filter
+        global $wpdb;
+
+        // Meeting point filter using schedules table
         if (in_array('mp', $enabled_filters) && !empty($_GET['fp_mp'])) {
             $meeting_point_id = absint(wp_unslash($_GET['fp_mp']));
-            $args['meta_query'][] = [
-                'key'     => '_fp_exp_meeting_point_id',
-                'value'   => $meeting_point_id,
-                'compare' => '='
-            ];
+            $product_ids = $wpdb->get_col($wpdb->prepare(
+                "SELECT DISTINCT product_id FROM {$wpdb->prefix}fp_schedules WHERE meeting_point_id = %d",
+                $meeting_point_id
+            ));
+            if (!empty($product_ids)) {
+                $args['post__in'] = !empty($args['post__in']) ? array_intersect($args['post__in'], $product_ids) : $product_ids;
+            } else {
+                $args['post__in'] = [0];
+            }
         }
 
-        // Duration filter
+        // Duration filter using schedules table
         if (in_array('duration', $enabled_filters) && !empty($_GET['fp_duration'])) {
             $duration_range = sanitize_text_field(wp_unslash($_GET['fp_duration']));
+            $query = '';
             switch ($duration_range) {
                 case '<=90':
-                    $args['meta_query'][] = [
-                        'key'     => '_fp_exp_duration',
-                        'value'   => 90,
-                        'type'    => 'NUMERIC',
-                        'compare' => '<='
-                    ];
+                    $query = $wpdb->prepare(
+                        "SELECT DISTINCT product_id FROM {$wpdb->prefix}fp_schedules WHERE duration_min <= %d",
+                        90
+                    );
                     break;
                 case '91-180':
-                    $args['meta_query'][] = [
-                        'key'     => '_fp_exp_duration',
-                        'value'   => [91, 180],
-                        'type'    => 'NUMERIC',
-                        'compare' => 'BETWEEN'
-                    ];
+                    $query = $wpdb->prepare(
+                        "SELECT DISTINCT product_id FROM {$wpdb->prefix}fp_schedules WHERE duration_min BETWEEN %d AND %d",
+        91,
+        180
+                    );
                     break;
                 case '>180':
-                    $args['meta_query'][] = [
-                        'key'     => '_fp_exp_duration',
-                        'value'   => 180,
-                        'type'    => 'NUMERIC',
-                        'compare' => '>'
-                    ];
+                    $query = $wpdb->prepare(
+                        "SELECT DISTINCT product_id FROM {$wpdb->prefix}fp_schedules WHERE duration_min > %d",
+                        180
+                    );
                     break;
+            }
+
+            if ($query) {
+                $product_ids = $wpdb->get_col($query);
+                if (!empty($product_ids)) {
+                    $args['post__in'] = !empty($args['post__in']) ? array_intersect($args['post__in'], $product_ids) : $product_ids;
+                } else {
+                    $args['post__in'] = [0];
+                }
             }
         }
 
@@ -529,9 +541,19 @@ class Shortcodes {
 
         $image_id = $product->get_image_id();
         $image_url = $image_id ? wp_get_attachment_image_url($image_id, 'medium') : wc_placeholder_img_src();
-        $duration = get_post_meta($product_id, '_fp_exp_duration', true) ?: get_post_meta($product_id, '_experience_duration', true);
-        $adult_price = get_post_meta($product_id, '_fp_exp_adult_price', true) ?: get_post_meta($product_id, '_experience_adult_price', true);
-        $languages = get_post_meta($product_id, '_fp_exp_langs', true) ?: get_post_meta($product_id, '_experience_languages', true);
+
+        // Derive data from schedules
+        $schedules = ScheduleManager::getSchedules($product_id);
+        $first_schedule = $schedules[0] ?? null;
+        $duration = $first_schedule->duration_min ?? null;
+        $adult_price = $first_schedule->price_adult ?? null;
+        $languages = '';
+        if ($schedules) {
+            $lang_list = array_unique(array_filter(array_map(static function ($s) {
+                return $s->lang;
+            }, $schedules)));
+            $languages = implode(', ', $lang_list);
+        }
 
         ?>
         <div class="fp-experience-card" data-product-id="<?php echo esc_attr($product_id); ?>">
