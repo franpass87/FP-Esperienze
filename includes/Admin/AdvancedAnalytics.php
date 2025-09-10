@@ -11,6 +11,8 @@
 namespace FP\Esperienze\Admin;
 
 use FP\Esperienze\Core\CapabilityManager;
+use WP_Error;
+use WP_REST_Response;
 
 defined('ABSPATH') || exit;
 
@@ -112,7 +114,18 @@ class AdvancedAnalytics {
         $date_from  = isset($_POST['date_from']) ? sanitize_text_field(wp_unslash($_POST['date_from'])) : date('Y-m-d', strtotime('-30 days'));
         $date_to    = isset($_POST['date_to']) ? sanitize_text_field(wp_unslash($_POST['date_to'])) : date('Y-m-d');
 
-        $this->exportData($export_type, $format, $date_from, $date_to);
+        $response = $this->exportData($export_type, $format, $date_from, $date_to);
+
+        if (is_wp_error($response)) {
+            wp_send_json_error(['message' => $response->get_error_message()], 500);
+        }
+
+        foreach ($response->get_headers() as $name => $value) {
+            header("$name: $value");
+        }
+
+        echo $response->get_data();
+        wp_die();
     }
 
     /**
@@ -470,7 +483,7 @@ class AdvancedAnalytics {
      * @param string $date_from Start date
      * @param string $date_to End date
      */
-    private function exportData(string $export_type, string $format, string $date_from, string $date_to): void {
+    private function exportData(string $export_type, string $format, string $date_from, string $date_to): WP_REST_Response|WP_Error {
         $data = [];
         $filename = '';
 
@@ -490,10 +503,10 @@ class AdvancedAnalytics {
         }
 
         if ($format === 'csv') {
-            $this->exportToCsv($data, $filename);
-        } else {
-            $this->exportToExcel($data, $filename);
+            return $this->exportToCsv($data, $filename);
         }
+
+        return $this->exportToExcel($data, $filename);
     }
 
     /**
@@ -502,11 +515,11 @@ class AdvancedAnalytics {
      * @param array $data Data to export
      * @param string $filename Filename
      */
-    private function exportToCsv(array $data, string $filename): void {
-        header('Content-Type: text/csv');
-        header('Content-Disposition: attachment; filename="' . $filename . '.csv"');
-
-        $output = fopen('php://output', 'w');
+    private function exportToCsv(array $data, string $filename): WP_REST_Response|WP_Error {
+        $output = fopen('php://temp', 'r+');
+        if ($output === false) {
+            return new WP_Error('csv_open_failed', __('Unable to create temporary file.', 'fp-esperienze'));
+        }
 
         // Export based on data structure
         if (isset($data['funnel_steps'])) {
@@ -544,8 +557,19 @@ class AdvancedAnalytics {
             }
         }
 
+        rewind($output);
+        $csv = stream_get_contents($output);
         fclose($output);
-        exit;
+
+        if ($csv === false) {
+            return new WP_Error('csv_read_failed', __('Unable to read CSV data.', 'fp-esperienze'));
+        }
+
+        $response = new WP_REST_Response($csv);
+        $response->header('Content-Type', 'text/csv');
+        $response->header('Content-Disposition', 'attachment; filename="' . $filename . '.csv"');
+
+        return $response;
     }
 
     /**
@@ -554,13 +578,18 @@ class AdvancedAnalytics {
      * @param array $data Data to export
      * @param string $filename Filename
      */
-    private function exportToExcel(array $data, string $filename): void {
+    private function exportToExcel(array $data, string $filename): WP_REST_Response|WP_Error {
         // For now, use CSV format with Excel extension
         // In a real implementation, you would use PhpSpreadsheet
-        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        header('Content-Disposition: attachment; filename="' . $filename . '.xlsx"');
-        
-        $this->exportToCsv($data, $filename);
+        $response = $this->exportToCsv($data, $filename);
+        if (is_wp_error($response)) {
+            return $response;
+        }
+
+        $response->header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        $response->header('Content-Disposition', 'attachment; filename="' . $filename . '.xlsx"');
+
+        return $response;
     }
 
     /**
