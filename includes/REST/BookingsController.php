@@ -85,32 +85,63 @@ class BookingsController {
 
             // Get bookings for the date range
             $bookings = BookingManager::getBookingsByDateRange($start_date, $end_date);
-            
-            $events = [];
-            
+
+            // Gather unique product and order IDs
+            $product_ids = [];
+            $order_ids = [];
             foreach ($bookings as $booking) {
-                $product = wc_get_product($booking->product_id);
+                $product_ids[] = (int) $booking->product_id;
+                $order_ids[]   = (int) $booking->order_id;
+            }
+            $product_ids = array_unique($product_ids);
+            $order_ids   = array_unique($order_ids);
+
+            // Prefetch products and orders
+            $products_map = [];
+            if (!empty($product_ids)) {
+                foreach (wc_get_products([
+                    'include' => $product_ids,
+                    'limit'   => -1,
+                ]) as $product) {
+                    $products_map[$product->get_id()] = $product;
+                }
+            }
+
+            $orders_map = [];
+            if (!empty($order_ids)) {
+                foreach (wc_get_orders([
+                    'include' => $order_ids,
+                    'limit'   => -1,
+                ]) as $order) {
+                    $orders_map[$order->get_id()] = $order;
+                }
+            }
+
+            $events = [];
+
+            foreach ($bookings as $booking) {
+                $product = $products_map[$booking->product_id] ?? null;
                 if (!$product) {
                     continue;
                 }
-                
+
                 // Get order to retrieve customer info and total amount
-                $order = wc_get_order($booking->order_id);
+                $order = $orders_map[$booking->order_id] ?? null;
                 $customer_name = '';
                 $customer_email = '';
                 $total_amount = 0;
-                
+
                 if ($order) {
                     $customer_name = $order->get_billing_first_name() . ' ' . $order->get_billing_last_name();
                     $customer_email = $order->get_billing_email();
-                    
+
                     // Get order item to calculate total amount for this booking
                     $order_item = $order->get_item($booking->order_item_id);
                     if ($order_item) {
                         $total_amount = $order_item->get_total();
                     }
                 }
-                
+
                 $events[] = [
                     'id' => $booking->id,
                     'title' => $product->get_name(),
