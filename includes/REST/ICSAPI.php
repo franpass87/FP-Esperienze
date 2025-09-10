@@ -335,7 +335,33 @@ class ICSAPI {
             }
         }
 
-        $content = file_get_contents($file_path);
+        if (!is_readable($file_path)) {
+            return new \WP_Error(
+                'ics_file_not_readable',
+                __('Unable to read ICS file.', 'fp-esperienze'),
+                ['status' => 500]
+            );
+        }
+
+        global $wp_filesystem;
+        require_once ABSPATH . 'wp-admin/includes/file.php';
+        if (!WP_Filesystem()) {
+            $msg = 'ICSAPI: WP_Filesystem initialization failed.';
+            error_log($msg);
+            return new \WP_Error('fp_fs_init_failed', $msg, ['status' => 500]);
+        }
+
+        $content = $wp_filesystem->get_contents($file_path);
+        if ($content === false) {
+            $msg = 'ICSAPI: Failed to read file: ' . $file_path;
+            error_log($msg);
+            return new \WP_Error(
+                'ics_file_read_error',
+                __('Unable to read ICS file.', 'fp-esperienze'),
+                ['status' => 500]
+            );
+        }
+
         $response = new \WP_REST_Response($content);
         $response->set_headers([
             'Content-Type' => 'text/calendar; charset=utf-8',
