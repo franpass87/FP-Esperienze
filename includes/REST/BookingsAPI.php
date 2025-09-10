@@ -55,6 +55,18 @@ class BookingsAPI {
                     'description' => 'Filter by product ID',
                     'sanitize_callback' => 'absint',
                 ],
+                'page' => [
+                    'type' => 'integer',
+                    'description' => 'Page number',
+                    'sanitize_callback' => 'absint',
+                    'default' => 1,
+                ],
+                'per_page' => [
+                    'type' => 'integer',
+                    'description' => 'Items per page',
+                    'sanitize_callback' => 'absint',
+                    'default' => 20,
+                ],
             ],
         ]);
         
@@ -74,6 +86,18 @@ class BookingsAPI {
                     'required' => true,
                     'description' => 'End date (YYYY-MM-DD)',
                     'sanitize_callback' => 'sanitize_text_field',
+                ],
+                'page' => [
+                    'type' => 'integer',
+                    'description' => 'Page number',
+                    'sanitize_callback' => 'absint',
+                    'default' => 1,
+                ],
+                'per_page' => [
+                    'type' => 'integer',
+                    'description' => 'Items per page',
+                    'sanitize_callback' => 'absint',
+                    'default' => 20,
                 ],
             ],
         ]);
@@ -127,9 +151,27 @@ class BookingsAPI {
             $filters['product_id'] = $request->get_param('product_id');
         }
         
-        $bookings = BookingManager::getBookings($filters);
+        $per_page = (int) $request->get_param('per_page') ?: 20;
+        $page = (int) $request->get_param('page') ?: 1;
+        if ($per_page < 1) {
+            $per_page = 20;
+        }
+        if ($page < 1) {
+            $page = 1;
+        }
+        $offset = ($page - 1) * $per_page;
 
-        $response = new \WP_REST_Response($bookings, 200);
+        $bookings = BookingManager::getBookings($filters, $per_page, $offset);
+        $total = BookingManager::countBookings($filters);
+
+        $response_data = [
+            'bookings' => $bookings,
+            'total' => $total,
+            'page' => $page,
+            'per_page' => $per_page,
+        ];
+
+        $response = new \WP_REST_Response($response_data, 200);
 
         foreach (RateLimiter::getRateLimitHeaders('bookings', 30, 60) as $header => $value) {
             $response->header($header, $value);
@@ -165,7 +207,18 @@ class BookingsAPI {
             'date_to' => $end_date,
         ];
         
-        $bookings = BookingManager::getBookings($filters);
+        $per_page = (int) $request->get_param('per_page') ?: 20;
+        $page = (int) $request->get_param('page') ?: 1;
+        if ($per_page < 1) {
+            $per_page = 20;
+        }
+        if ($page < 1) {
+            $page = 1;
+        }
+        $offset = ($page - 1) * $per_page;
+
+        $bookings = BookingManager::getBookings($filters, $per_page, $offset);
+        $total = BookingManager::countBookings($filters);
         $events = [];
         
         foreach ($bookings as $booking) {
@@ -204,7 +257,14 @@ class BookingsAPI {
             ];
         }
         
-        $response = new \WP_REST_Response($events, 200);
+        $response_data = [
+            'events' => $events,
+            'total' => $total,
+            'page' => $page,
+            'per_page' => $per_page,
+        ];
+
+        $response = new \WP_REST_Response($response_data, 200);
 
         foreach (RateLimiter::getRateLimitHeaders('bookings_calendar', 30, 60) as $header => $value) {
             $response->header($header, $value);
