@@ -24,6 +24,8 @@ use FP\Esperienze\Core\Log;
 use FP\Esperienze\Admin\DependencyChecker;
 use FP\Esperienze\Admin\Settings\AutoTranslateSettings;
 use FP\Esperienze\Admin\Settings\TranslationHelp;
+use WP_Error;
+use WP_REST_Response;
 
 defined('ABSPATH') || exit;
 
@@ -410,7 +412,16 @@ class MenuManager {
         
         // Handle CSV export
         if (isset($_GET['action']) && sanitize_text_field($_GET['action']) === 'export_csv') {
-            $this->exportBookingsCSV();
+            $response = $this->exportBookingsCSV();
+            if (is_wp_error($response)) {
+                wp_die($response->get_error_message(), '', ['response' => 500]);
+            }
+
+            foreach ($response->get_headers() as $name => $value) {
+                header("$name: $value");
+            }
+
+            echo $response->get_data();
             return;
         }
         
@@ -4108,9 +4119,9 @@ class MenuManager {
     /**
      * Export bookings to CSV
      */
-    private function exportBookingsCSV(): void {
+    private function exportBookingsCSV(): WP_REST_Response|WP_Error {
         if (!CapabilityManager::canManageFPEsperienze()) {
-            wp_die(__('Insufficient permissions.', 'fp-esperienze'));
+            return new WP_Error('rest_forbidden', __('Insufficient permissions.', 'fp-esperienze'), ['status' => 403]);
         }
 
         check_admin_referer('fp_export_bookings');
@@ -4122,23 +4133,18 @@ class MenuManager {
             'date_from' => sanitize_text_field(wp_unslash($_GET['date_from'] ?? '')),
             'date_to' => sanitize_text_field(wp_unslash($_GET['date_to'] ?? '')),
         ];
-        
+
         // Remove empty filters
         $filters = array_filter($filters);
-        
+
         // Get bookings
         $bookings = BookingManager::getBookings($filters);
-        
-        // Set headers for CSV download
-        $filename = 'bookings-' . date('Y-m-d-H-i-s') . '.csv';
-        header('Content-Type: text/csv');
-        header('Content-Disposition: attachment; filename="' . $filename . '"');
-        header('Pragma: no-cache');
-        header('Expires: 0');
-        
-        // Output CSV
-        $output = fopen('php://output', 'w');
-        
+
+        $output = fopen('php://temp', 'r+');
+        if ($output === false) {
+            return new WP_Error('csv_open_failed', __('Unable to create temporary file.', 'fp-esperienze'));
+        }
+
         // CSV headers
         fputcsv($output, [
             __('Booking ID', 'fp-esperienze'),
@@ -4155,18 +4161,18 @@ class MenuManager {
             __('Admin Notes', 'fp-esperienze'),
             __('Created', 'fp-esperienze'),
         ]);
-        
+
         // CSV data
         foreach ($bookings as $booking) {
             $product = wc_get_product($booking->product_id);
             $product_name = $product ? $product->get_name() : __('Product not found', 'fp-esperienze');
-            
+
             $meeting_point_name = '';
             if ($booking->meeting_point_id) {
                 $mp = MeetingPointManager::getMeetingPoint($booking->meeting_point_id);
                 $meeting_point_name = $mp ? $mp->name : __('Not found', 'fp-esperienze');
             }
-            
+
             fputcsv($output, [
                 $booking->id,
                 $booking->order_id,
@@ -4183,9 +4189,21 @@ class MenuManager {
                 $booking->created_at,
             ]);
         }
-        
+
+        rewind($output);
+        $csv = stream_get_contents($output);
         fclose($output);
-        exit;
+
+        if ($csv === false) {
+            return new WP_Error('csv_read_failed', __('Unable to read CSV data.', 'fp-esperienze'));
+        }
+
+        $filename = 'bookings-' . date('Y-m-d-H-i-s') . '.csv';
+        $response = new WP_REST_Response($csv);
+        $response->header('Content-Type', 'text/csv');
+        $response->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
+
+        return $response;
     }
     
     /**
