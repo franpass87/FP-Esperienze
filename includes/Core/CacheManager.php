@@ -160,62 +160,69 @@ class CacheManager {
             return; // Pre-building disabled
         }
         
-        // Get all experience products using WP_Query for better performance
-        $query = new \WP_Query([
-            'post_type' => 'product',
-            'meta_query' => [
-                [
-                    'key' => '_product_type',
-                    'value' => 'experience'
-                ]
-            ],
-            'posts_per_page' => -1,
-            'fields' => 'ids',
-            'no_found_rows' => true,
-            'update_post_meta_cache' => false,
-            'update_post_term_cache' => false,
-        ]);
-        
-        $experience_products = $query->posts;
-        
-        if (empty($experience_products)) {
-            return;
-        }
-        
-        $today = new \DateTime('now', wp_timezone());
+        $today         = new \DateTime('now', wp_timezone());
         $prebuilt_count = 0;
-        
-        for ($i = 0; $i < $days; $i++) {
-            $check_date = clone $today;
-            $check_date->modify("+{$i} days");
-            $date_str = $check_date->format('Y-m-d');
-            
-            foreach ($experience_products as $product_id) {
-                // Check if already cached
-                if (self::getAvailabilityCache($product_id, $date_str) !== false) {
-                    continue;
-                }
-                
-                // Pre-build the cache
-                $slots = Availability::forDay($product_id, $date_str);
-                
-                $response_data = [
-                    'product_id' => $product_id,
-                    'date' => $date_str,
-                    'slots' => $slots,
-                    'total_slots' => count($slots),
-                    '_prebuilt' => true,
-                ];
-                
-                // Use longer TTL for pre-built cache
-                self::setAvailabilityCache($product_id, $date_str, $response_data, self::CACHE_TTL);
-                $prebuilt_count++;
-                
-                // Avoid overwhelming the server
-                if ($prebuilt_count % 10 === 0) {
-                    usleep(100000); // 0.1 second pause every 10 products
+        $page          = 1;
+        $per_page      = 50;
+
+        while (true) {
+            // Get experience products in paginated batches
+            $query = new \WP_Query([
+                'post_type'              => 'product',
+                'meta_query'             => [
+                    [
+                        'key'   => '_product_type',
+                        'value' => 'experience',
+                    ],
+                ],
+                'posts_per_page'        => $per_page,
+                'paged'                 => $page,
+                'fields'                => 'ids',
+                'no_found_rows'         => true,
+                'update_post_meta_cache' => false,
+                'update_post_term_cache' => false,
+            ]);
+
+            $experience_products = $query->posts;
+
+            if (empty($experience_products)) {
+                break;
+            }
+
+            for ($i = 0; $i < $days; $i++) {
+                $check_date = clone $today;
+                $check_date->modify("+{$i} days");
+                $date_str = $check_date->format('Y-m-d');
+
+                foreach ($experience_products as $product_id) {
+                    // Check if already cached
+                    if (self::getAvailabilityCache($product_id, $date_str) !== false) {
+                        continue;
+                    }
+
+                    // Pre-build the cache
+                    $slots = Availability::forDay($product_id, $date_str);
+
+                    $response_data = [
+                        'product_id'  => $product_id,
+                        'date'        => $date_str,
+                        'slots'       => $slots,
+                        'total_slots' => count($slots),
+                        '_prebuilt'   => true,
+                    ];
+
+                    // Use longer TTL for pre-built cache
+                    self::setAvailabilityCache($product_id, $date_str, $response_data, self::CACHE_TTL);
+                    $prebuilt_count++;
+
+                    // Avoid overwhelming the server
+                    if ($prebuilt_count % 10 === 0) {
+                        usleep(100000); // 0.1 second pause every 10 products
+                    }
                 }
             }
+
+            $page++;
         }
         
         if ($prebuilt_count > 0 && defined('WP_DEBUG') && WP_DEBUG) {
