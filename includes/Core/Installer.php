@@ -26,6 +26,7 @@ class Installer {
     public static function activate() {
         self::createTables();
         self::createDefaultOptions();
+        // Capability setup runs only on activation to avoid redundant role checks
         self::addCapabilities();
         
         // Execute schedule migration if feature flag is enabled
