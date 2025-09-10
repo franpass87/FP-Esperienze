@@ -2,6 +2,11 @@
  * FP Esperienze Admin JavaScript
  */
 
+if (typeof jQuery === 'undefined') {
+    console.error('FP Esperienze: jQuery is required for the admin script.');
+    return;
+}
+
 (function($) {
     'use strict';
 

@@ -3,6 +3,11 @@
  * Handles accessibility features, ARIA support, and screen reader compatibility
  */
 
+if (typeof jQuery === 'undefined') {
+    console.error('FP Esperienze: jQuery is required for the accessibility module.');
+    return;
+}
+
 (function($) {
     'use strict';
 

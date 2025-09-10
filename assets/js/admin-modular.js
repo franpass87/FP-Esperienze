@@ -3,6 +3,11 @@
  * Main entry point that loads and coordinates all modules
  */
 
+if (typeof jQuery === 'undefined') {
+    console.error('FP Esperienze: jQuery is required for the modular admin script.');
+    return;
+}
+
 (function($) {
     'use strict';
 

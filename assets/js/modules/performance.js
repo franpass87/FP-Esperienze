@@ -3,6 +3,11 @@
  * Handles performance metrics, monitoring, and optimization
  */
 
+if (typeof jQuery === 'undefined') {
+    console.error('FP Esperienze: jQuery is required for the performance module.');
+    return;
+}
+
 (function($) {
     'use strict';
 

@@ -3,6 +3,11 @@
  * Handles time slot management and schedule building functionality
  */
 
+if (typeof jQuery === 'undefined') {
+    console.error('FP Esperienze: jQuery is required for the schedule builder module.');
+    return;
+}
+
 (function($) {
     'use strict';
 

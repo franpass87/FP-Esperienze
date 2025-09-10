@@ -2,6 +2,11 @@
  * FP Esperienze Archive Block
  */
 
+if (typeof jQuery === 'undefined') {
+    console.error('FP Esperienze: jQuery is required for the archive block.');
+    return;
+}
+
 (function() {
     'use strict';
 
