@@ -615,46 +615,66 @@ class Plugin {
      * Cleanup expired push notification tokens
      */
     public function cleanupExpiredPushTokens(): void {
-        $users = get_users([
-            'meta_key' => '_push_notification_tokens',
-            'fields'   => 'ID',
-        ]);
+        $start = microtime(true);
 
-        $now = time();
+        $paged = 1;
+        do {
+            $user_query = new \WP_User_Query([
+                'meta_key' => '_push_notification_tokens',
+                'fields'   => 'ID',
+                'number'   => 200,
+                'paged'    => $paged,
+            ]);
 
-        foreach ($users as $user_id) {
-            $tokens   = get_user_meta($user_id, '_push_notification_tokens', true);
-            $expiries = get_user_meta($user_id, '_push_token_expires_at', true);
+            $users = $user_query->get_results();
 
-            if (!is_array($tokens) || empty($tokens)) {
-                continue;
-            }
+            $now = time();
 
-            if (!is_array($expiries)) {
-                $expiries = [];
-            }
+            foreach ($users as $user_id) {
+                $tokens   = get_user_meta($user_id, '_push_notification_tokens', true);
+                $expiries = get_user_meta($user_id, '_push_token_expires_at', true);
 
-            $valid_tokens   = [];
-            $valid_expiries = [];
+                if (!is_array($tokens) || empty($tokens)) {
+                    continue;
+                }
 
-            foreach ($tokens as $token) {
-                $expiry = isset($expiries[$token]) ? (int) $expiries[$token] : 0;
+                if (!is_array($expiries)) {
+                    $expiries = [];
+                }
 
-                if ($expiry > $now) {
-                    $valid_tokens[]           = $token;
-                    $valid_expiries[$token] = $expiry;
+                $valid_tokens   = [];
+                $valid_expiries = [];
+
+                foreach ($tokens as $token) {
+                    $expiry = isset($expiries[$token]) ? (int) $expiries[$token] : 0;
+
+                    if ($expiry > $now) {
+                        $valid_tokens[]           = $token;
+                        $valid_expiries[$token] = $expiry;
+                    }
+                }
+
+                if ($valid_tokens !== $tokens) {
+                    if (!empty($valid_tokens)) {
+                        update_user_meta($user_id, '_push_notification_tokens', $valid_tokens);
+                        update_user_meta($user_id, '_push_token_expires_at', $valid_expiries);
+                    } else {
+                        delete_user_meta($user_id, '_push_notification_tokens');
+                        delete_user_meta($user_id, '_push_token_expires_at');
+                    }
                 }
             }
 
-            if ($valid_tokens !== $tokens) {
-                if (!empty($valid_tokens)) {
-                    update_user_meta($user_id, '_push_notification_tokens', $valid_tokens);
-                    update_user_meta($user_id, '_push_token_expires_at', $valid_expiries);
-                } else {
-                    delete_user_meta($user_id, '_push_notification_tokens');
-                    delete_user_meta($user_id, '_push_token_expires_at');
-                }
-            }
+            $paged++;
+        } while (!empty($users));
+
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log(
+                sprintf(
+                    'FP Esperienze: Push token cleanup executed in %.4f seconds',
+                    microtime(true) - $start
+                )
+            );
         }
     }
     
