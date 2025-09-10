@@ -3091,7 +3091,9 @@ body.fp-reduced-animations .fp-loading::after {
 
 .fp-day-pill-clean label {
     display: inline-block;
-    padding: 8px 14px;
+    width: 40px;
+    padding: 8px 0;
+    text-align: center;
     background-color: #f7f7f7;
     border: 1px solid #ccd0d4;
     border-radius: 3px;
@@ -3113,6 +3115,8 @@ body.fp-reduced-animations .fp-loading::after {
 }
 
 .fp-day-pill-clean input[type="checkbox"]:checked + label {
+    width: 40px;
+    text-align: center;
     background-color: #2271b1;
     color: #fff;
     border-color: #2271b1;
