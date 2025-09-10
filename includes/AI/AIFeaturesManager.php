@@ -1028,28 +1028,35 @@ class AIFeaturesManager {
             return;
         }
 
+        $ids = array_column($recommendations, 'id');
+        // Preload recommended products to leverage object caching and avoid repeated lookups.
+        $products_index = [];
+        foreach (wc_get_products(['include' => $ids, 'limit' => -1]) as $product) {
+            $products_index[$product->get_id()] = $product;
+        }
+
         echo '<div class="fp-ai-recommendations">';
         echo '<h3>' . __('You might also like', 'fp-esperienze') . '</h3>';
         echo '<div class="recommendations-grid">';
 
         foreach ($recommendations as $rec) {
-            $product = wc_get_product($rec['id']);
+            $product = $products_index[$rec['id']] ?? null;
             if (!$product) continue;
 
             echo '<div class="recommendation-item">';
             echo '<a href="' . esc_url($product->get_permalink()) . '">';
-            
+
             if ($product->get_image_id()) {
                 echo wp_get_attachment_image($product->get_image_id(), 'medium');
             }
-            
+
             echo '<h4>' . esc_html($product->get_name()) . '</h4>';
             echo '<span class="price">' . $product->get_price_html() . '</span>';
-            
+
             if (isset($rec['reason'])) {
                 echo '<span class="reason">' . esc_html($rec['reason']) . '</span>';
             }
-            
+
             echo '</a>';
             echo '</div>';
         }
