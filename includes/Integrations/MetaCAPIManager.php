@@ -156,11 +156,15 @@ class MetaCAPIManager {
         
         // Add client user agent and IP if available
         if (!empty($_SERVER['HTTP_USER_AGENT'])) {
-            $event_data['user_data']['client_user_agent'] = $_SERVER['HTTP_USER_AGENT'];
+            $event_data['user_data']['client_user_agent'] = sanitize_text_field($_SERVER['HTTP_USER_AGENT']); // Sanitize user agent string
         }
-        
+
         if (!empty($_SERVER['REMOTE_ADDR'])) {
-            $event_data['user_data']['client_ip_address'] = $_SERVER['REMOTE_ADDR'];
+            $client_ip = filter_var($_SERVER['REMOTE_ADDR'], FILTER_VALIDATE_IP);
+
+            if ($client_ip) {
+                $event_data['user_data']['client_ip_address'] = $client_ip; // Only send valid IP addresses
+            }
         }
         
         $payload = [
