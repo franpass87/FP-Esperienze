@@ -32,7 +32,8 @@ class AIFeaturesManager {
         $this->settings = get_option('fp_esperienze_ai_settings', []);
 
         // Hooks for AI features
-        add_action('woocommerce_product_set_price', [$this, 'applyDynamicPricing'], 10, 2);
+        add_filter('woocommerce_product_get_price', [$this, 'applyDynamicPricing'], 10, 2);
+        add_filter('woocommerce_product_get_sale_price', [$this, 'applyDynamicPricing'], 10, 2);
         add_action('woocommerce_single_product_summary', [$this, 'displayRecommendations'], 25);
         add_action('comment_post', [$this, 'analyzeSentiment'], 10, 2);
         add_action('fp_daily_ai_analysis', [$this, 'runPredictiveAnalysis']);
@@ -52,26 +53,34 @@ class AIFeaturesManager {
     /**
      * Apply dynamic pricing based on demand and other factors
      *
+     * @param float       $price   Original price
      * @param \WC_Product $product Product object
-     * @param float $price Original price
+     * @return float Calculated price
      */
-    public function applyDynamicPricing(\WC_Product $product, float $price): void {
+    public function applyDynamicPricing(float $price, \WC_Product $product): float {
         if ($product->get_type() !== 'experience') {
-            return;
+            return $price;
         }
 
         if (!$this->isFeatureEnabled('dynamic_pricing')) {
-            return;
+            return $price;
         }
 
         $dynamic_price = $this->calculateDynamicPrice($product, $price);
-        
+
         if ($dynamic_price !== $price) {
-            $product->set_price($dynamic_price);
             update_post_meta($product->get_id(), '_dynamic_price_applied', true);
             update_post_meta($product->get_id(), '_original_price', $price);
-            update_post_meta($product->get_id(), '_price_adjustment', ($dynamic_price - $price) / $price * 100);
+            update_post_meta(
+                $product->get_id(),
+                '_price_adjustment',
+                ($dynamic_price - $price) / $price * 100
+            );
+
+            return $dynamic_price;
         }
+
+        return $price;
     }
 
     /**
