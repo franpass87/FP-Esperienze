@@ -29,9 +29,10 @@ class MetaCAPIManager {
      */
     public function __construct() {
         $this->settings = get_option('fp_esperienze_integrations', []);
-        
+
         // Hook into WooCommerce events for server-side tracking
         add_action('woocommerce_checkout_order_processed', [$this, 'trackPurchaseEvent'], 20, 1);
+        add_action('fp_send_meta_event', [$this, 'processQueuedEvent'], 10, 1);
     }
     
     /**
@@ -87,8 +88,29 @@ class MetaCAPIManager {
         // Retrieve event ID for deduplication with frontend tracking
         $event_id = $order->get_meta('_meta_event_id');
 
-        // Send to Meta Conversions API
-        $this->sendEvent('Purchase', $event_data, $order, $event_id);
+        // Queue event for asynchronous processing
+        $payload = [
+            'event_name'  => 'Purchase',
+            'custom_data' => $event_data,
+            'order_id'    => $order_id,
+            'event_id'    => $event_id,
+        ];
+
+        wp_schedule_single_event(time(), 'fp_send_meta_event', [$payload]);
+    }
+
+    /**
+     * Process queued Meta event
+     */
+    public function processQueuedEvent(array $payload): void {
+        $order = isset($payload['order_id']) ? wc_get_order((int) $payload['order_id']) : null;
+
+        $this->sendEvent(
+            $payload['event_name'] ?? '',
+            $payload['custom_data'] ?? [],
+            $order,
+            $payload['event_id'] ?? null
+        );
     }
     
     /**
