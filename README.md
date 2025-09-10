@@ -1050,11 +1050,9 @@ Use the manual test suite in `MANUAL_TESTS_VOUCHER_REDEMPTION.md` to verify:
 
 The template supports the following meta fields:
 
-- `_fp_exp_duration` or `_experience_duration`: Duration in minutes
-- `_fp_exp_langs` or `_experience_languages`: Comma-separated languages
-- `_fp_exp_adult_price` or `_experience_adult_price`: Adult pricing
-- `_fp_exp_child_price` or `_experience_child_price`: Child pricing
-- `_fp_exp_meeting_point_id`: Meeting point ID
+- `_fp_exp_langs`: Comma-separated languages
+- `_fp_exp_adult_price`: Adult pricing
+- `_fp_exp_child_price`: Child pricing
 - `_fp_exp_faq`: JSON array of FAQ items `[{"question": "...", "answer": "..."}]`
 - `_fp_exp_included`: What's included (newline-separated)
 - `_fp_exp_excluded`: What's not included (newline-separated)

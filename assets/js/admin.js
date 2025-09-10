@@ -703,15 +703,8 @@ if (typeof jQuery === 'undefined') {
          * Populate meeting points dropdown
          */
         populateMeetingPointsDropdown: function(selectElement) {
-            // Copy options from the main meeting point select
-            var mainSelect = $('#_fp_exp_meeting_point_id');
-            if (mainSelect.length) {
-                mainSelect.find('option').each(function() {
-                    if ($(this).val()) { // Skip empty option
-                        selectElement.append('<option value="' + $(this).val() + '">' + $(this).text() + '</option>');
-                    }
-                });
-            }
+            // Meeting point options are rendered directly in the schedule templates.
+            return;
         },
         
         /**

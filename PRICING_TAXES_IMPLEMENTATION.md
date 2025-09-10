@@ -25,8 +25,6 @@ This document outlines the pricing and tax system implementation for FP Esperien
 
 ### Database Changes
 New meta fields added for experience products:
-- `_experience_adult_tax_class`: Tax class for adult pricing
-- `_experience_child_tax_class`: Tax class for child pricing
 
 ### Class Updates
 

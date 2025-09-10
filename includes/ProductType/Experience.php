@@ -138,151 +138,10 @@ class Experience {
 		<div id="experience_product_data" class="panel woocommerce_options_panel">
 			<?php
 
-			// Duration
-			woocommerce_wp_text_input(
-				array(
-					'id'                => '_fp_exp_duration',
-					'label'             => __( 'Default Duration (minutes)', 'fp-esperienze' ),
-					'placeholder'       => '60',
-					'desc_tip'          => true,
-					'description'       => __( 'Default experience duration in minutes (used as fallback for schedules)', 'fp-esperienze' ),
-					'type'              => 'number',
-					'custom_attributes' => array(
-						'step' => '1',
-						'min'  => '1',
-					),
-				)
-			);
-
-			// Capacity
-			woocommerce_wp_text_input(
-				array(
-					'id'                => '_fp_exp_capacity',
-					'label'             => __( 'Default Max Capacity', 'fp-esperienze' ),
-					'placeholder'       => '10',
-					'desc_tip'          => true,
-					'description'       => __( 'Default maximum number of participants (used as fallback for schedules)', 'fp-esperienze' ),
-					'type'              => 'number',
-					'custom_attributes' => array(
-						'step' => '1',
-						'min'  => '1',
-					),
-				)
-			);
-
-			// Default Language
-			woocommerce_wp_text_input(
-				array(
-					'id'                => '_fp_exp_language',
-					'label'             => __( 'Default Language', 'fp-esperienze' ),
-					'placeholder'       => 'en',
-					'desc_tip'          => true,
-					'description'       => __( 'Default language code for this experience (e.g., en, it, es)', 'fp-esperienze' ),
-					'custom_attributes' => array(
-						'maxlength' => '10',
-					),
-				)
-			);
-
-			// Child Price
-			woocommerce_wp_text_input(
-				array(
-					'id'                => '_fp_exp_price_child',
-					'label'             => __( 'Default Child Price', 'fp-esperienze' ) . ' (' . get_woocommerce_currency_symbol() . ')',
-					'placeholder'       => '0.00',
-					'desc_tip'          => true,
-					'description'       => __( 'Default price per child participant (used as fallback for schedules)', 'fp-esperienze' ),
-					'type'              => 'number',
-					'custom_attributes' => array(
-						'step' => '0.01',
-						'min'  => '0',
-					),
-				)
-			);
-
-			// Adult price
-			woocommerce_wp_text_input(
-				array(
-					'id'                => '_experience_adult_price',
-					'label'             => __( 'Adult Price', 'fp-esperienze' ) . ' (' . get_woocommerce_currency_symbol() . ')',
-					'placeholder'       => '0.00',
-					'desc_tip'          => true,
-					'description'       => __( 'Price per adult participant', 'fp-esperienze' ),
-					'type'              => 'number',
-					'custom_attributes' => array(
-						'step' => '0.01',
-						'min'  => '0',
-					),
-				)
-			);
-
-			// Child price
-			woocommerce_wp_text_input(
-				array(
-					'id'                => '_experience_child_price',
-					'label'             => __( 'Child Price', 'fp-esperienze' ) . ' (' . get_woocommerce_currency_symbol() . ')',
-					'placeholder'       => '0.00',
-					'desc_tip'          => true,
-					'description'       => __( 'Price per child participant', 'fp-esperienze' ),
-					'type'              => 'number',
-					'custom_attributes' => array(
-						'step' => '0.01',
-						'min'  => '0',
-					),
-				)
-			);
-
-			// Tax class for adult price
-			$tax_classes = ExtraManager::getTaxClasses();
-			woocommerce_wp_select(
-				array(
-					'id'          => '_experience_adult_tax_class',
-					'label'       => __( 'Adult Tax Class', 'fp-esperienze' ),
-					'options'     => $tax_classes,
-					'desc_tip'    => true,
-					'description' => __( 'Tax class for adult price', 'fp-esperienze' ),
-				)
-			);
-
-			// Tax class for child price
-			woocommerce_wp_select(
-				array(
-					'id'          => '_experience_child_tax_class',
-					'label'       => __( 'Child Tax Class', 'fp-esperienze' ),
-					'options'     => $tax_classes,
-					'desc_tip'    => true,
-					'description' => __( 'Tax class for child price', 'fp-esperienze' ),
-				)
-			);
-
-			// Languages
-			woocommerce_wp_textarea_input(
-				array(
-					'id'          => '_experience_languages',
-					'label'       => __( 'Languages', 'fp-esperienze' ),
-					'placeholder' => __( 'Italian, English, Spanish', 'fp-esperienze' ),
-					'desc_tip'    => true,
-					'description' => __( 'Available languages for this experience', 'fp-esperienze' ),
-					'rows'        => 3,
-				)
-			);
-
-			// Default meeting point
-			$meeting_points = $this->getMeetingPoints();
-			woocommerce_wp_select(
-				array(
-					'id'          => '_fp_exp_meeting_point_id',
-					'label'       => __( 'Default Meeting Point', 'fp-esperienze' ),
-					'options'     => $meeting_points,
-					'desc_tip'    => true,
-					'description' => __( 'Default meeting point for this experience', 'fp-esperienze' ),
-				)
-			);
-
-			// Cutoff minutes
-			woocommerce_wp_text_input(
-				array(
-					'id'                => '_fp_exp_cutoff_minutes',
+                        // Cutoff minutes
+                        woocommerce_wp_text_input(
+                                array(
+                                        'id'                => '_fp_exp_cutoff_minutes',
 					'label'             => __( 'Booking Cutoff (minutes)', 'fp-esperienze' ),
 					'placeholder'       => '120',
 					'desc_tip'          => true,
@@ -616,13 +475,13 @@ class Experience {
 		$schedules      = ScheduleManager::getSchedules( $product_id );
 		$meeting_points = $this->getMeetingPoints();
 
-		// Get product defaults for placeholders
-		$default_duration      = get_post_meta( $product_id, '_fp_exp_duration', true ) ?: '60';
-		$default_capacity      = get_post_meta( $product_id, '_fp_exp_capacity', true ) ?: '10';
-		$default_language      = get_post_meta( $product_id, '_fp_exp_language', true ) ?: 'en';
-		$default_meeting_point = get_post_meta( $product_id, '_fp_exp_meeting_point_id', true );
-		$default_price_adult   = get_post_meta( $product_id, '_regular_price', true ) ?: '0.00';
-		$default_price_child   = get_post_meta( $product_id, '_fp_exp_price_child', true ) ?: '0.00';
+                // Default placeholders when slot values are missing
+                $default_duration      = '60';
+                $default_capacity      = '10';
+                $default_language      = 'en';
+                $default_meeting_point = '';
+                $default_price_adult   = '0.00';
+                $default_price_child   = '0.00';
 
 		// Aggregate existing schedules for builder view
 		$aggregated = ScheduleHelper::aggregateSchedulesForBuilder( $schedules, $product_id );
@@ -1536,38 +1395,22 @@ class Experience {
 		// Also set it on the global $_POST to ensure WooCommerce core picks it up
 		$_POST['product-type'] = 'experience';
 
-		// Save basic experience fields
-		$fields = array(
-			'_fp_exp_duration',
-			'_fp_exp_capacity',
-			'_fp_exp_language',
-			'_fp_exp_price_child',
-			'_experience_adult_price',
-			'_experience_child_price',
-			'_experience_adult_tax_class',
-			'_experience_child_tax_class',
-			'_experience_languages',
-			'_fp_exp_meeting_point_id',
-			'_fp_exp_cutoff_minutes',
-			'_fp_exp_free_cancel_until_minutes',
-			'_fp_exp_cancel_fee_percent',
-			'_fp_exp_no_show_policy',
-		);
+                // Save basic experience fields
+                $fields = array(
+                        '_fp_exp_cutoff_minutes',
+                        '_fp_exp_free_cancel_until_minutes',
+                        '_fp_exp_cancel_fee_percent',
+                        '_fp_exp_no_show_policy',
+                );
 
-		$int_fields = array(
-			'_fp_exp_duration',
-			'_fp_exp_capacity',
-			'_fp_exp_meeting_point_id',
-			'_fp_exp_cutoff_minutes',
-			'_fp_exp_free_cancel_until_minutes',
-		);
+                $int_fields = array(
+                        '_fp_exp_cutoff_minutes',
+                        '_fp_exp_free_cancel_until_minutes',
+                );
 
-		$float_fields = array(
-			'_fp_exp_price_child',
-			'_experience_adult_price',
-			'_experience_child_price',
-			'_fp_exp_cancel_fee_percent',
-		);
+                $float_fields = array(
+                        '_fp_exp_cancel_fee_percent',
+                );
 
 		foreach ( $fields as $field ) {
 			if ( ! isset( $_POST[ $field ] ) ) {
@@ -1576,15 +1419,9 @@ class Experience {
 
 			$raw_value = wp_unslash( $_POST[ $field ] );
 
-			// Special handling for capacity to avoid saving zero as an override
-			if ( '_fp_exp_capacity' === $field && '' === trim( (string) $raw_value ) ) {
-				delete_post_meta( $post_id, '_fp_exp_capacity' );
-				continue;
-			}
-
-			if ( in_array( $field, $int_fields, true ) ) {
-				$value = absint( $raw_value );
-			} elseif ( in_array( $field, $float_fields, true ) ) {
+                        if ( in_array( $field, $int_fields, true ) ) {
+                                $value = absint( $raw_value );
+                        } elseif ( in_array( $field, $float_fields, true ) ) {
 				$value = floatval( $raw_value );
 			} else {
 				$value = sanitize_text_field( $raw_value );
@@ -1692,32 +1529,7 @@ class Experience {
 		$processed_ids      = array();
 		$validation_errors  = array();
 
-		// Attempt migration of legacy schedules missing explicit values
-		$defaults = array(
-			'duration_min'     => (int) get_post_meta( $product_id, '_fp_exp_duration', true ),
-			'capacity'         => (int) get_post_meta( $product_id, '_fp_exp_capacity', true ),
-			'lang'             => get_post_meta( $product_id, '_fp_exp_language', true ),
-			'meeting_point_id' => (int) get_post_meta( $product_id, '_fp_exp_meeting_point_id', true ),
-			'price_adult'      => (float) get_post_meta( $product_id, '_regular_price', true ),
-			'price_child'      => (float) get_post_meta( $product_id, '_fp_exp_price_child', true ),
-		);
-
-		foreach ( $existing_schedules as $schedule ) {
-			$update = array();
-			foreach ( $defaults as $field => $default ) {
-				if ( $schedule->$field === null || $schedule->$field === '' ) {
-					if ( $default !== '' && $default !== null ) {
-						$schedule->$field = $default;
-						$update[ $field ] = $default;
-					}
-				}
-			}
-			if ( ! empty( $update ) ) {
-				ScheduleManager::updateSchedule( $schedule->id, $update );
-			}
-		}
-
-		// Validate existing schedules to ensure explicit values
+                // Validate existing schedules to ensure explicit values
 		$required_fields = array( 'duration_min', 'capacity', 'lang', 'meeting_point_id', 'price_adult', 'price_child' );
 		foreach ( $existing_schedules as $schedule ) {
 			foreach ( $required_fields as $field ) {

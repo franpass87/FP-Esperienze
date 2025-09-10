@@ -11,6 +11,7 @@ use Exception;
 use FP\Esperienze\Data\MeetingPointManager;
 use FP\Esperienze\Data\ExtraManager;
 use FP\Esperienze\Integrations\GooglePlacesManager;
+use FP\Esperienze\Data\ScheduleManager;
 
 get_header();
 
@@ -29,20 +30,27 @@ $image_id = $product->get_image_id();
 $image_url = $image_id ? wp_get_attachment_image_url($image_id, 'large') : wc_placeholder_img_src();
 $gallery_ids = $product->get_gallery_image_ids();
 
-// Meta data - use consistent _fp_exp_ prefix where available
-$duration = get_post_meta($product_id, '_fp_exp_duration', true) ?: get_post_meta($product_id, '_experience_duration', true);
-$capacity = get_post_meta($product_id, '_fp_exp_capacity', true) ?: get_post_meta($product_id, '_experience_capacity', true);
-$languages = get_post_meta($product_id, '_fp_exp_langs', true) ?: get_post_meta($product_id, '_experience_languages', true);
-$adult_price = get_post_meta($product_id, '_fp_exp_adult_price', true) ?: get_post_meta($product_id, '_experience_adult_price', true);
-$child_price = get_post_meta($product_id, '_fp_exp_child_price', true) ?: get_post_meta($product_id, '_experience_child_price', true);
+// Meta data derived from schedules
+$schedules = ScheduleManager::getSchedules($product_id);
+$first_schedule = $schedules[0] ?? null;
+$duration = $first_schedule->duration_min ?? null;
+$capacity = $first_schedule->capacity ?? null;
+$adult_price = $first_schedule->price_adult ?? null;
+$child_price = $first_schedule->price_child ?? null;
 $faq_data = get_post_meta($product_id, '_fp_exp_faq', true);
 
-// Get meeting point information
-$meeting_point_id = get_post_meta($product_id, '_fp_exp_meeting_point_id', true);
-$meeting_point = null;
-if ($meeting_point_id) {
-    $meeting_point = MeetingPointManager::getMeetingPoint((int) $meeting_point_id);
+// Gather languages from schedules
+$languages = '';
+if ( $schedules ) {
+    $langs = array_unique(array_filter(array_map(static function ($s) {
+        return $s->lang;
+    }, $schedules)));
+    $languages = implode(', ', $langs);
 }
+
+// Get meeting point information from first schedule
+$meeting_point_id = $first_schedule->meeting_point_id ?? null;
+$meeting_point = $meeting_point_id ? MeetingPointManager::getMeetingPoint((int) $meeting_point_id) : null;
 
 // Get what's included/excluded data
 $included = get_post_meta($product_id, '_fp_exp_included', true);

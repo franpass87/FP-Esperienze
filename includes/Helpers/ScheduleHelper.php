@@ -27,47 +27,32 @@ class ScheduleHelper {
 		$time_slots = array();
 		$groups     = array();
 
-		// Defaults used for one-time migration of legacy schedules.
-		$defaults = array(
-			'duration_min'     => (int) get_post_meta( $product_id, '_fp_exp_duration', true ),
-			'capacity'         => (int) get_post_meta( $product_id, '_fp_exp_capacity', true ),
-			'lang'             => get_post_meta( $product_id, '_fp_exp_language', true ),
-			'meeting_point_id' => (int) get_post_meta( $product_id, '_fp_exp_meeting_point_id', true ),
-			'price_adult'      => (float) get_post_meta( $product_id, '_regular_price', true ),
-			'price_child'      => (float) get_post_meta( $product_id, '_fp_exp_price_child', true ),
-		);
+                foreach ( $schedules as $schedule ) {
+                        // Skip schedules missing required data
+                        if ( $schedule->duration_min === null || $schedule->duration_min === '' ) {
+                                continue;
+                        }
+                        if ( $schedule->capacity === null || $schedule->capacity === '' ) {
+                                continue;
+                        }
+                        if ( $schedule->lang === null || $schedule->lang === '' ) {
+                                continue;
+                        }
+                        if ( $schedule->price_adult === null || $schedule->price_child === null ) {
+                                continue;
+                        }
 
-		foreach ( $schedules as $schedule ) {
-			$update_data = array();
-
-			// Migrate legacy schedules by filling missing values with defaults.
-			foreach ( $defaults as $field => $default ) {
-				if ( $schedule->$field === null || $schedule->$field === '' ) {
-					if ( $default !== '' && $default !== null ) {
-						$schedule->$field      = $default;
-						$update_data[ $field ] = $default;
-					} else {
-						// If we cannot determine a value, skip this schedule.
-						continue 2;
-					}
-				}
-			}
-
-			if ( ! empty( $update_data ) ) {
-				ScheduleManager::updateSchedule( $schedule->id, $update_data );
-			}
-
-			$start_time = substr( $schedule->start_time, 0, 5 );
-			$key        = sprintf(
-				'%s_%d_%d_%s_%s_%.2f_%.2f',
-				$start_time,
-				(int) $schedule->duration_min,
-				(int) $schedule->capacity,
-				$schedule->lang,
-				$schedule->meeting_point_id ?: 'null',
-				(float) $schedule->price_adult,
-				(float) $schedule->price_child
-			);
+                        $start_time = substr( $schedule->start_time, 0, 5 );
+                        $key        = sprintf(
+                                '%s_%d_%d_%s_%s_%.2f_%.2f',
+                                $start_time,
+                                (int) $schedule->duration_min,
+                                (int) $schedule->capacity,
+                                $schedule->lang,
+                                $schedule->meeting_point_id ?: 'null',
+                                (float) $schedule->price_adult,
+                                (float) $schedule->price_child
+                        );
 
 			if ( ! isset( $groups[ $key ] ) ) {
 				$groups[ $key ] = array(
