@@ -997,12 +997,6 @@ html {
                 border-color 0.2s ease;
 }
 
-.fp-day-pill-clean label {
-    transition: background 0.15s ease,
-                transform 0.15s ease,
-                box-shadow 0.15s ease;
-}
-
 /* Loading states with optimized animations */
 .fp-loading {
     position: relative;
@@ -3104,7 +3098,9 @@ body.fp-reduced-animations .fp-loading::after {
     font-size: 0.75rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: background 0.15s ease,
+                transform 0.15s ease,
+                box-shadow 0.15s ease;
     margin: 0;
     text-transform: uppercase;
     letter-spacing: 0.5px;
