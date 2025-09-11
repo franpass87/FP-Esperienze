@@ -172,7 +172,13 @@
             // Add meeting points from global variable if available
             if (typeof fp_meeting_points !== 'undefined') {
                 $.each(fp_meeting_points, function(id, name) {
-                    $select.append('<option value="' + id + '">' + name + '</option>');
+                    var idInt = parseInt(id, 10);
+                    var nameStr = String(name);
+
+                    if (!isNaN(idInt) && nameStr) {
+                        const option = $('<option>').val(idInt).text(nameStr);
+                        $select.append(option);
+                    }
                 });
             }
         },
