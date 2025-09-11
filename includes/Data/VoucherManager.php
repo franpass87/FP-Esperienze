@@ -140,7 +140,9 @@ class VoucherManager {
             } else {
                 // Schedule email for future date
                 $send_timestamp = strtotime($send_date . ' 09:00:00');
-                wp_schedule_single_event($send_timestamp, 'fp_esperienze_send_gift_voucher', [$voucher_id]);
+                if (!wp_next_scheduled('fp_esperienze_send_gift_voucher', [$voucher_id])) {
+                    wp_schedule_single_event($send_timestamp, 'fp_esperienze_send_gift_voucher', [$voucher_id]);
+                }
             }
             
         } catch (Exception $e) {
