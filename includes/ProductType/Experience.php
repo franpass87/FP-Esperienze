@@ -135,11 +135,12 @@ class Experience {
 		global $post;
 
 		?>
-		<div id="experience_product_data" class="panel woocommerce_options_panel">
-			<?php
+			<div id="experience_product_data" class="panel woocommerce_options_panel">
+				<?php
+				wp_nonce_field( 'fp_esperienze_save', 'fp_esperienze_nonce' );
 
-                        // Cutoff minutes
-                        woocommerce_wp_text_input(
+				// Cutoff minutes
+				woocommerce_wp_text_input(
                                 array(
                                         'id'                => '_fp_exp_cutoff_minutes',
 					'label'             => __( 'Booking Cutoff (minutes)', 'fp-esperienze' ),
@@ -1375,10 +1376,10 @@ class Experience {
 	 * @param int $post_id Post ID
 	 */
 	public function saveProductData( int $post_id ): void {
-		// Check nonce
-		if ( ! isset( $_POST['woocommerce_meta_nonce'] ) || ! wp_verify_nonce( wp_unslash( $_POST['woocommerce_meta_nonce'] ), 'woocommerce_save_data' ) ) {
-			return;
-		}
+               // Check nonce
+               if ( ! isset( $_POST['fp_esperienze_nonce'] ) || ! wp_verify_nonce( wp_unslash( $_POST['fp_esperienze_nonce'] ), 'fp_esperienze_save' ) ) {
+                       return;
+               }
 
 		// Only proceed if this is an experience product
 		$product_type = sanitize_text_field( isset( $_POST['product-type'] ) ? wp_unslash( $_POST['product-type'] ) : '' );
