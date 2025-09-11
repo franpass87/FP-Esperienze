@@ -165,11 +165,14 @@ class WebhookManager {
         // Exponential backoff: 2^attempt minutes
         $delay = pow(2, $attempt) * 60; // 2, 4, 8, 16, 32 minutes
 
-        wp_schedule_single_event(
-            time() + $delay,
-            'fp_esperienze_retry_webhook',
-            [$url, $payload, $event_id, $attempt + 1]
-        );
+        // Prevent scheduling duplicate retries for the same event
+        if (false === wp_next_scheduled('fp_esperienze_retry_webhook', [$url, $payload, $event_id, $attempt + 1])) {
+            wp_schedule_single_event(
+                time() + $delay,
+                'fp_esperienze_retry_webhook',
+                [$url, $payload, $event_id, $attempt + 1]
+            );
+        }
     }
 
     /**
