@@ -931,119 +931,6 @@ if (typeof jQuery === 'undefined') {
             return;
         },
 
-        /**
-         * Add a new override card - MODERNIZED
-         */
-        addOverrideCard: function() {
-            var container = $('#fp-overrides-container');
-            if (!container.length) {
-                console.warn('FP Esperienze: Override container not found');
-                return;
-            }
-            
-            // Hide empty state
-            var $emptyState = container.find('.fp-overrides-empty');
-            if ($emptyState.length) {
-                $emptyState.hide();
-            }
-            
-            var index = container.find('.fp-override-card').length;
-            
-            var cardHtml = this.createOverrideCardHTML(index);
-            container.append(cardHtml);
-            
-            // Focus on the date input
-            var $newCard = container.find('.fp-override-card').last();
-            $newCard.find('input[type="date"]').focus();
-            
-            // Add entrance animation
-            $newCard.css('opacity', '0').animate({opacity: 1}, 300);
-        },
-
-        /**
-         * Create override card HTML - MODERN DESIGN
-         */
-        createOverrideCardHTML: function(index) {
-            return '<div class="fp-override-card" data-index="' + index + '">' +
-                '<input type="hidden" name="overrides[' + index + '][id]" value="">' +
-                
-                '<div class="fp-override-header">' +
-                    '<div class="fp-override-date-field">' +
-                        '<span class="dashicons dashicons-calendar-alt"></span>' +
-                        '<input type="date" ' +
-                               'name="overrides[' + index + '][date]" ' +
-                               'class="fp-override-input fp-override-date" ' +
-                               'required ' +
-                               'aria-label="Override date" ' +
-                               'data-original-value="">' +
-                    '</div>' +
-                    '<div class="fp-override-actions">' +
-                        '<div class="fp-override-checkbox">' +
-                            '<input type="checkbox" ' +
-                                   'name="overrides[' + index + '][is_closed]" ' +
-                                   'value="1" ' +
-                                   'id="override-closed-' + index + '" ' +
-                                   'data-original-checked="0">' +
-                            '<label for="override-closed-' + index + '">Closed</label>' +
-                        '</div>' +
-                        '<button type="button" class="fp-override-remove" aria-label="Remove this override">' +
-                            '<span class="dashicons dashicons-trash"></span>' +
-                            'Remove' +
-                        '</button>' +
-                    '</div>' +
-                '</div>' +
-                
-                '<div class="fp-override-fields">' +
-                    '<div class="fp-override-field">' +
-                        '<label>Capacity Override</label>' +
-                        '<input type="number" ' +
-                               'name="overrides[' + index + '][capacity_override]" ' +
-                               'class="fp-override-input" ' +
-                               'placeholder="Leave empty = use default" ' +
-                               'min="0" ' +
-                               'step="1" ' +
-                               'aria-label="Capacity override" ' +
-                               'data-original-value="">' +
-                    '</div>' +
-                    
-                    '<div class="fp-override-field">' +
-                        '<label>Adult Price (€)</label>' +
-                        '<input type="number" ' +
-                               'name="overrides[' + index + '][price_adult]" ' +
-                               'class="fp-override-input" ' +
-                               'placeholder="Leave empty = use default" ' +
-                               'min="0" ' +
-                               'step="0.01" ' +
-                               'aria-label="Adult price override" ' +
-                               'data-original-value="">' +
-                    '</div>' +
-                    
-                    '<div class="fp-override-field">' +
-                        '<label>Child Price (€)</label>' +
-                        '<input type="number" ' +
-                               'name="overrides[' + index + '][price_child]" ' +
-                               'class="fp-override-input" ' +
-                               'placeholder="Leave empty = use default" ' +
-                               'min="0" ' +
-                               'step="0.01" ' +
-                               'aria-label="Child price override" ' +
-                               'data-original-value="">' +
-                    '</div>' +
-                    
-                    '<div class="fp-override-field">' +
-                        '<label>Reason (Optional)</label>' +
-                        '<input type="text" ' +
-                               'name="overrides[' + index + '][reason]" ' +
-                               'class="fp-override-input" ' +
-                               'placeholder="Holiday, Maintenance, etc." ' +
-                               'aria-label="Reason for this override" ' +
-                               'data-original-value="">' +
-                    '</div>' +
-                '</div>' +
-                
-                '<div class="fp-override-status"></div>' +
-            '</div>';
-        },
 
         /**
          * Remove override card - IMPROVED
@@ -1512,12 +1399,12 @@ if (typeof jQuery === 'undefined') {
          */
         /**
          * Legacy addOverrideRow function - DEPRECATED
-         * Use addOverrideCard() instead for new modern design
+         * Use addOverrideCardClean() instead for new modern design
          */
         addOverrideRow: function() {
             // Redirect to modern implementation
-            console.warn('FP Esperienze: addOverrideRow is deprecated, using modern addOverrideCard instead');
-            this.addOverrideCard();
+            console.warn('FP Esperienze: addOverrideRow is deprecated, using modern addOverrideCardClean instead');
+            this.addOverrideCardClean();
         },
         
         // ========================================
