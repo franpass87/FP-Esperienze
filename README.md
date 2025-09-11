@@ -700,10 +700,10 @@ Standard WooCommerce funnel events with experience-specific data including slot 
 When Meta Pixel integration is enabled, the following events are tracked:
 
 - **AddToCart**: When experience is added to cart
-- **InitiateCheckout**: When checkout process begins  
+- **InitiateCheckout**: When checkout process begins
 - **Purchase**: When order is completed
 
-All Meta Pixel events include `event_id` for deduplication with Conversions API (when implemented).
+All Meta Pixel events include a UUID v4 `event_id` for deduplication with Conversions API (when implemented).
 
 ### Event Parameters
 
