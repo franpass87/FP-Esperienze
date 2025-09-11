@@ -758,13 +758,13 @@ class Plugin {
         $primary_font = $branding_settings['primary_font'] ?? 'inherit';
         $heading_font = $branding_settings['heading_font'] ?? 'inherit';
         $primary_color = $branding_settings['primary_color'] ?? '#ff6b35';
-        $secondary_color = $branding_settings['secondary_color'] ?? '#b24a25';
+        $secondary_color = $branding_settings['secondary_color'] ?? '#2c3e50';
         
         // Skip if all values are defaults
         if ($primary_font === 'inherit' && 
             $heading_font === 'inherit' && 
             $primary_color === '#ff6b35' && 
-            $secondary_color === '#b24a25') {
+            $secondary_color === '#2c3e50') {
             return;
         }
         
@@ -774,10 +774,10 @@ class Plugin {
         // Update CSS custom properties
         echo ":root {\n";
         if ($primary_color !== '#ff6b35') {
-            echo "    --fp-brand-orange: " . esc_attr($primary_color) . ";\n";
+            echo "    --fp-brand-primary: " . esc_attr($primary_color) . ";\n";
         }
-        if ($secondary_color !== '#b24a25') {
-            echo "    --fp-brand-orange-text: " . esc_attr($secondary_color) . ";\n";
+        if ($secondary_color !== '#2c3e50') {
+            echo "    --fp-brand-secondary: " . esc_attr($secondary_color) . ";\n";
         }
         echo "}\n";
         

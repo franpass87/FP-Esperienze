@@ -5,6 +5,17 @@ html {
 /* FP Esperienze Admin Styles with Modern Design System */
 
 /* ========================================
+   CSS CUSTOM PROPERTIES FOR BRANDING
+   ======================================== */
+
+:root {
+    --fp-brand-primary: #ff6b35; /* Brand primary color - updated via branding settings */
+    --fp-brand-secondary: #2c3e50; /* Brand secondary color - updated via branding settings */
+    --fp-text-gray: #555;
+    --fp-text-light-gray: #666;
+}
+
+/* ========================================
    FP ESPERIENZE ADMIN STYLES - OPTIMIZED
    Modern Design System with Performance Focus
    ======================================== */

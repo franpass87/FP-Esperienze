@@ -2674,7 +2674,7 @@ class MenuManager {
         $primary_font = $branding_settings['primary_font'] ?? 'inherit';
         $heading_font = $branding_settings['heading_font'] ?? 'inherit';
         $primary_color = $branding_settings['primary_color'] ?? '#ff6b35';
-        $secondary_color = $branding_settings['secondary_color'] ?? '#b24a25';
+        $secondary_color = $branding_settings['secondary_color'] ?? '#2c3e50';
         
         ?>
         <div class="wrap">
@@ -2852,8 +2852,11 @@ class MenuManager {
                                        id="secondary_color_text" 
                                        value="<?php echo esc_attr($secondary_color); ?>" 
                                        class="regular-text" 
-                                       placeholder="#b24a25" />
-                                <p class="description"><?php _e('Secondary color used for text elements and darker accents.', 'fp-esperienze'); ?></p>
+                                       placeholder="#2c3e50" />
+                                <p class="description">
+                                    <?php _e('Secondary color used for text elements and darker accents. Should contrast well with the primary color.', 'fp-esperienze'); ?>
+                                    <br><small><?php _e('Suggested combinations: Blue (#3498db) + Dark Blue (#2c3e50), Green (#27ae60) + Dark Green (#1e7e34), Purple (#9b59b6) + Dark Purple (#6f42c1)', 'fp-esperienze'); ?></small>
+                                </p>
                             </td>
                         </tr>
                     </table>
@@ -3924,7 +3927,7 @@ class MenuManager {
                 'primary_font' => sanitize_text_field(wp_unslash($_POST['primary_font'] ?? 'inherit')),
                 'heading_font' => sanitize_text_field(wp_unslash($_POST['heading_font'] ?? 'inherit')),
                 'primary_color' => sanitize_hex_color(wp_unslash($_POST['primary_color'] ?? '#ff6b35')),
-                'secondary_color' => sanitize_hex_color(wp_unslash($_POST['secondary_color'] ?? '#b24a25')),
+                'secondary_color' => sanitize_hex_color(wp_unslash($_POST['secondary_color'] ?? '#2c3e50')),
             ];
             
             // Validate font values - only allow specific safe fonts
