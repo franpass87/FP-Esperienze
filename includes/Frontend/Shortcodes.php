@@ -266,44 +266,40 @@ class Shortcodes {
             return $cached_result;
         }
 
-        // Get all experience products with optimized query
-        $query = new \WP_Query([
-            'post_type'      => 'product',
-            'post_status'    => 'publish',
-            'posts_per_page' => -1,
-            'fields'         => 'ids',
-            'meta_query'     => [
-                [
-                    'key'     => '_product_type',
-                    'value'   => 'experience',
-                    'compare' => '='
-                ]
-            ],
-            'no_found_rows' => true,
-            'update_post_meta_cache' => false,
-            'update_post_term_cache' => false
-        ]);
-        
-        $all_products = $query->posts;
-
-        if (empty($all_products)) {
-            set_transient($cache_key, [], 5 * MINUTE_IN_SECONDS);
-            return [];
-        }
-
         $available_products = [];
-        
-        // Batch process availability checks for better performance
-        $batch_size = 10; // Process 10 products at a time
-        $total_products = count($all_products);
-        
-        for ($i = 0; $i < $total_products; $i += $batch_size) {
-            $batch = array_slice($all_products, $i, $batch_size);
-            
-            foreach ($batch as $product_id) {
+        $posts_per_page    = 50;
+        $paged             = 1;
+        $batch_count       = 0;
+
+        while (true) {
+            $query = new \WP_Query([
+                'post_type'      => 'product',
+                'post_status'    => 'publish',
+                'posts_per_page' => $posts_per_page,
+                'paged'          => $paged,
+                'fields'         => 'ids',
+                'meta_query'     => [
+                    [
+                        'key'     => '_product_type',
+                        'value'   => 'experience',
+                        'compare' => '='
+                    ]
+                ],
+                'no_found_rows'           => true,
+                'update_post_meta_cache'  => false,
+                'update_post_term_cache'  => false,
+            ]);
+
+            $products = $query->posts;
+
+            if (empty($products)) {
+                break;
+            }
+
+            foreach ($products as $product_id) {
                 // Use the cached availability check from Availability::forDay
                 $slots = Availability::forDay($product_id, $date);
-                
+
                 if (!empty($slots)) {
                     // Check if any slot has availability
                     foreach ($slots as $slot) {
@@ -314,16 +310,23 @@ class Shortcodes {
                     }
                 }
             }
-            
-            // Small delay between batches to prevent server overload
-            if ($i + $batch_size < $total_products) {
-                usleep(1000); // 1ms pause
+
+            $batch_count++;
+
+            if (count($products) < $posts_per_page) {
+                break;
             }
+
+            $paged++;
         }
 
-        // Cache for 10 minutes (same as availability cache TTL)
-        set_transient($cache_key, $available_products, 10 * MINUTE_IN_SECONDS);
-        
+        $ttl = $batch_count === 0 ? 5 * MINUTE_IN_SECONDS : 10 * MINUTE_IN_SECONDS;
+        set_transient($cache_key, $available_products, $ttl);
+
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log(sprintf('[FP_Esperienze] Processed %d batch(es) for %s', $batch_count, $date));
+        }
+
         return $available_products;
     }
 
