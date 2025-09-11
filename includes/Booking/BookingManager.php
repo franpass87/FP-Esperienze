@@ -41,17 +41,26 @@ class BookingManager {
         if (!$order) {
             return;
         }
-        
+
+        global $wpdb;
+        $table_name       = $wpdb->prefix . 'fp_bookings';
+        $existing_item_ids = $wpdb->get_col(
+            $wpdb->prepare(
+                "SELECT order_item_id FROM {$table_name} WHERE order_id = %d",
+                $order_id
+            )
+        );
+
         foreach ($order->get_items() as $item_id => $item) {
             /** @var \WC_Order_Item_Product $item */
             $product = $item->get_product();
-            
+
             if (!$product || $product->get_type() !== 'experience') {
                 continue;
             }
             
             // Check if booking already exists for this order item
-            if ($this->bookingExistsForOrderItem($order_id, $item_id)) {
+            if (in_array($item_id, $existing_item_ids, true)) {
                 continue;
             }
             
@@ -102,29 +111,6 @@ class BookingManager {
             ['%s', '%s'],
             ['%d']
         );
-    }
-    
-    /**
-     * Check if booking exists for order item
-     *
-     * @param int $order_id Order ID
-     * @param int $item_id Order item ID
-     * @return bool
-     */
-    private function bookingExistsForOrderItem(int $order_id, int $item_id): bool {
-        global $wpdb;
-        
-        $table_name = $wpdb->prefix . 'fp_bookings';
-        
-        $count = $wpdb->get_var(
-            $wpdb->prepare(
-                "SELECT COUNT(*) FROM {$table_name} WHERE order_id = %d AND order_item_id = %d",
-                $order_id,
-                $item_id
-            )
-        );
-        
-        return $count > 0;
     }
     
     /**
