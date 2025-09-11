@@ -199,12 +199,20 @@ class MetaCAPIManager {
         
         if ($status_code === 200) {
             $result = json_decode($body, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                error_log(
+                    'FP Esperienze Meta CAPI JSON decode error: ' .
+                    json_last_error_msg() .
+                    '. Raw response: ' . $body
+                );
+                return false;
+            }
             if (isset($result['events_received']) && $result['events_received'] > 0) {
                 error_log('FP Esperienze Meta CAPI Success: ' . $event_name . ' event sent for order ' . ($order ? $order->get_id() : 'unknown'));
                 return true;
             }
         }
-        
+
         error_log('FP Esperienze Meta CAPI Failed: Status ' . $status_code . ', Response: ' . $body);
         return false;
     }
