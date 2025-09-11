@@ -172,44 +172,57 @@ class OverrideManager {
     public static function createGlobalClosure(string $date, string $reason = ''): bool {
         global $wpdb;
         
-        // Get all experience products
-        $query = new \WP_Query([
-            'post_type' => 'product',
-            'post_status' => 'publish',
-            'meta_query' => [
-                [
-                    'key' => '_product_type',
-                    'value' => 'experience'
-                ]
-            ],
-            'posts_per_page' => -1,
-            'fields' => 'ids',
-            'no_found_rows' => true,
-            'update_post_meta_cache' => false,
-            'update_post_term_cache' => false
-        ]);
-        
-        $experience_products = $query->posts;
-        
-        if (empty($experience_products)) {
+        $batch_size = 50;
+        $offset     = 0;
+        $success    = true;
+        $found_any  = false;
+
+        while (true) {
+            $query = new \WP_Query([
+                'post_type'              => 'product',
+                'post_status'            => 'publish',
+                'meta_query'             => [
+                    [
+                        'key'   => '_product_type',
+                        'value' => 'experience',
+                    ],
+                ],
+                'posts_per_page'         => $batch_size,
+                'offset'                 => $offset,
+                'fields'                 => 'ids',
+                'no_found_rows'          => true,
+                'update_post_meta_cache' => false,
+                'update_post_term_cache' => false,
+            ]);
+
+            $experience_products = $query->posts;
+
+            if (empty($experience_products)) {
+                break;
+            }
+
+            $found_any = true;
+
+            foreach ($experience_products as $product_id) {
+                $result = self::saveOverride([
+                    'product_id' => $product_id,
+                    'date'       => $date,
+                    'is_closed'  => 1,
+                    'reason'     => $reason,
+                ]);
+
+                if (!$result) {
+                    $success = false;
+                }
+            }
+
+            $offset += $batch_size;
+        }
+
+        if (!$found_any) {
             return false;
         }
-        
-        $success = true;
-        
-        foreach ($experience_products as $product_id) {
-            $result = self::saveOverride([
-                'product_id' => $product_id,
-                'date' => $date,
-                'is_closed' => 1,
-                'reason' => $reason
-            ]);
-            
-            if (!$result) {
-                $success = false;
-            }
-        }
-        
+
         return $success;
     }
     
