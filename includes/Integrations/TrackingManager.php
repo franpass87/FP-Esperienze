@@ -222,11 +222,7 @@ class TrackingManager {
      * Generate event ID for deduplication
      */
     public function generateEventId(string $event_type, int $order_id = 0): string {
-        $base = $event_type . '_' . time();
-        if ($order_id > 0) {
-            $base .= '_' . $order_id;
-        }
-        return md5($base);
+        return wp_generate_uuid4();
     }
     
     /**
