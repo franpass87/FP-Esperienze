@@ -79,84 +79,83 @@ class Plugin {
      * Initialize plugin
      */
     private function init(): void {
-        // Initialize the Experience product type EARLY to ensure it's registered before WooCommerce loads product types
-        add_action('init', [$this, 'initExperienceProductType'], 5);
+        // Initialize components safely with error handling
+        try {
+            // Initialize the Experience product type EARLY to ensure it's registered before WooCommerce loads product types
+            add_action('init', [$this, 'initExperienceProductType'], 5);
 
-        // Initialize translation queue
-        TranslationQueue::init();
-        
-        // Initialize security enhancements
-        SecurityEnhancer::init();
-        
-        // Initialize performance optimizations
-        PerformanceOptimizer::init();
-        
-        // Initialize UX enhancements
-        UXEnhancer::init();
-        
-        // Temporary debug feature to test enhancements (can be removed later)
-        if (defined('WP_DEBUG') && WP_DEBUG && is_admin()) {
-            add_action('admin_notices', function() {
-                if (isset($_GET['fp_test_features']) && current_user_can('manage_options')) {
-                    if (class_exists('FP\Esperienze\Core\FeatureTester')) {
-                        FeatureTester::displayTestResults();
+            // Initialize core components with proper error handling
+            add_action('init', [$this, 'initCoreComponents'], 1);
+            
+            // Temporary debug feature to test enhancements (can be removed later)
+            if (defined('WP_DEBUG') && WP_DEBUG && is_admin()) {
+                add_action('admin_notices', function() {
+                    if (isset($_GET['fp_test_features']) && current_user_can('manage_options')) {
+                        if (class_exists('FP\Esperienze\Core\FeatureTester')) {
+                            FeatureTester::displayTestResults();
+                        }
                     }
+                });
+            }
+            
+            // Initialize other components later
+            add_action('init', [$this, 'initComponents'], 20);
+            
+            // Initialize admin
+            if (is_admin()) {
+                add_action('init', [$this, 'initAdmin']);
+            }
+            
+            // Initialize frontend
+            if (!is_admin()) {
+                add_action('init', [$this, 'initFrontend']);
+            }
+            
+        } catch (Throwable $e) {
+            // Log initialization errors but don't fail completely
+            error_log('FP Esperienze: Plugin initialization error: ' . $e->getMessage());
+            
+            // Add admin notice for initialization issues
+            add_action('admin_notices', function() use ($e) {
+                if (current_user_can('manage_options')) {
+                    echo '<div class="notice notice-warning"><p>' . 
+                         sprintf(
+                             esc_html__('FP Esperienze: Some features may not work properly. Error: %s', 'fp-esperienze'),
+                             esc_html($e->getMessage())
+                         ) . 
+                         '</p></div>';
                 }
             });
         }
-        
-        // Initialize other components later
-        add_action('init', [$this, 'initComponents'], 20);
-        
-        // Initialize admin
-        if (is_admin()) {
-            add_action('init', [$this, 'initAdmin']);
+    }
+    
+    /**
+     * Initialize core components safely
+     */
+    public function initCoreComponents(): void {
+        try {
+            // Initialize translation queue
+            if (class_exists('FP\Esperienze\Core\TranslationQueue')) {
+                TranslationQueue::init();
+            }
+            
+            // Initialize security enhancements
+            if (class_exists('FP\Esperienze\Core\SecurityEnhancer')) {
+                SecurityEnhancer::init();
+            }
+            
+            // Initialize performance optimizations
+            if (class_exists('FP\Esperienze\Core\PerformanceOptimizer')) {
+                PerformanceOptimizer::init();
+            }
+            
+            // Initialize UX enhancements
+            if (class_exists('FP\Esperienze\Core\UXEnhancer')) {
+                UXEnhancer::init();
+            }
+        } catch (Throwable $e) {
+            error_log('FP Esperienze: Core components initialization error: ' . $e->getMessage());
         }
-        
-        // Initialize frontend
-        if (!is_admin()) {
-            add_action('init', [$this, 'initFrontend']);
-        }
-        
-        // Initialize REST API
-        add_action('rest_api_init', [$this, 'initREST']);
-        
-        // Enqueue scripts and styles
-        add_action('wp_enqueue_scripts', [$this, 'enqueueScripts']);
-        add_action('admin_enqueue_scripts', [$this, 'enqueueAdminScripts']);
-        
-        // Output custom branding CSS
-        add_action('wp_head', [$this, 'outputBrandingCSS']);
-        add_action('admin_head', [$this, 'outputBrandingCSS']);
-        
-        // Add filter to defer non-critical scripts
-        add_filter('script_loader_tag', [$this, 'deferNonCriticalScripts'], 10, 3);
-        
-        // Add lazy loading for images (when not in admin)
-        if (!is_admin()) {
-            add_filter('wp_get_attachment_image_attributes', [$this, 'addLazyLoadingToImages'], 10, 2);
-            add_filter('the_content', [$this, 'addLazyLoadingToContentImages'], 20);
-        }
-        
-        // Initialize blocks
-        add_action('init', [$this, 'initBlocks']);
-        add_action('enqueue_block_editor_assets', [$this, 'enqueueBlockAssets']);
-        
-        // Initialize holds cleanup cron
-        add_action('init', [$this, 'initHoldsCron']);
-        add_action('fp_esperienze_cleanup_holds', [$this, 'cleanupExpiredHolds']);
-
-        // Initialize push token cleanup cron
-        add_action('init', [$this, 'initPushTokenCron']);
-        add_action('fp_cleanup_push_tokens', [$this, 'cleanupExpiredPushTokens']);
-        
-        // Initialize performance monitoring
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            QueryMonitor::init();
-        }
-        
-        // Initialize performance indexes on admin_init (only once)
-        add_action('admin_init', [$this, 'maybeAddPerformanceIndexes'], 5);
     }
 
     /**
