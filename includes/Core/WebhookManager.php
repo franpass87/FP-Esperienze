@@ -131,7 +131,7 @@ class WebhookManager {
             'timeout' => 10,
             'redirection' => 0,
             'httpversion' => '1.1',
-            'blocking' => false // Send asynchronously
+            'blocking' => true // Ensure synchronous request to evaluate response
         ]);
 
         // If webhook fails, schedule retry
