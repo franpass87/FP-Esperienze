@@ -89,10 +89,12 @@ class GooglePlacesManager {
         }
         
         $data = json_decode($response_body, true);
-        
-        if (!$data) {
-            $this->logError('Places API invalid response format', ['place_id' => $place_id]);
-            return null;
+        if (json_last_error() !== JSON_ERROR_NONE || !is_array($data)) {
+            $this->logError('Places API invalid response format', [
+                'place_id' => $place_id,
+                'error' => json_last_error_msg(),
+            ]);
+            $data = [];
         }
         
         // Process and sanitize the response

@@ -290,7 +290,10 @@ class AdvancedAnalytics {
 
         foreach ($attribution_results as $result) {
             $attribution = json_decode($result->attribution_data, true);
-            if (!$attribution) continue;
+            if (json_last_error() !== JSON_ERROR_NONE || !is_array($attribution)) {
+                error_log('FP Esperienze: Failed to decode attribution data: ' . json_last_error_msg());
+                $attribution = [];
+            }
 
             $source = $attribution['utm_source'] ?? 'direct';
             $medium = $attribution['utm_medium'] ?? 'none';
@@ -446,7 +449,11 @@ class AdvancedAnalytics {
                 $attribution = $order->get_meta('_fp_attribution_data');
                 if ($attribution) {
                     $attribution_data = json_decode($attribution, true);
-                    
+                    if (json_last_error() !== JSON_ERROR_NONE || !is_array($attribution_data)) {
+                        error_log('FP Esperienze: Failed to decode attribution data for order ' . $order_id . ': ' . json_last_error_msg());
+                        $attribution_data = [];
+                    }
+
                     $journey_events[] = [
                         'timestamp' => $order->get_date_created()->format('Y-m-d H:i:s'),
                         'event' => 'First Visit',
