@@ -51,13 +51,22 @@ class Experience {
 	}
 
 	/**
-	 * Load the WC_Product_Experience class
+	 * Load the WC_Product_Experience class with enhanced validation
 	 */
 	private function loadProductClass(): void {
-		// The class is now autoloaded via namespace, no manual require needed
-		// Just check if WooCommerce is available
+		// Check if WooCommerce is available
 		if ( ! class_exists( 'WC_Product' ) ) {
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				error_log( 'FP Esperienze: WC_Product class not found. WooCommerce may not be active.' );
+			}
 			return;
+		}
+		
+		// Verify our product class is autoloaded correctly
+		if ( ! class_exists( '\FP\Esperienze\ProductType\WC_Product_Experience' ) ) {
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				error_log( 'FP Esperienze: WC_Product_Experience class not found. Check autoloader configuration.' );
+			}
 		}
 	}
 
@@ -100,8 +109,19 @@ class Experience {
 	 */
 	public function getProductClass( string $classname, string $product_type ): string {
 		if ( $product_type === 'experience' ) {
-			// Return the fully qualified class name for namespaced class
-			return '\FP\Esperienze\ProductType\WC_Product_Experience';
+			$experience_class = '\FP\Esperienze\ProductType\WC_Product_Experience';
+			
+			// Verify the class exists before returning it
+			if ( class_exists( $experience_class ) ) {
+				return $experience_class;
+			} else {
+				// Log the error and fall back to default
+				if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+					error_log( 'FP Esperienze: Experience product class not found: ' . $experience_class );
+				}
+				// Return the default WC_Product class as fallback
+				return 'WC_Product';
+			}
 		}
 		return $classname;
 	}

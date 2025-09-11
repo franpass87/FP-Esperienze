@@ -135,12 +135,32 @@ class Plugin {
     }
 
     /**
-     * Initialize experience product type early
+     * Initialize experience product type early with error handling
      */
     public function initExperienceProductType(): void {
-        // Initialize experience product type FIRST with high priority
-        // This ensures the filter is registered before WooCommerce loads product types
-        new Experience();
+        try {
+            // Initialize experience product type FIRST with high priority
+            // This ensures the filter is registered before WooCommerce loads product types
+            if (class_exists('FP\Esperienze\ProductType\Experience')) {
+                new Experience();
+            } else {
+                throw new \Exception('Experience product type class not found');
+            }
+        } catch (\Throwable $e) {
+            error_log('FP Esperienze: Failed to initialize Experience product type: ' . $e->getMessage());
+            
+            // Add admin notice for critical product type initialization failure
+            add_action('admin_notices', function() use ($e) {
+                if (current_user_can('manage_options')) {
+                    echo '<div class="notice notice-error"><p>' . 
+                         sprintf(
+                             esc_html__('FP Esperienze: Experience product type initialization failed. Error: %s', 'fp-esperienze'),
+                             esc_html($e->getMessage())
+                         ) . 
+                         '</p></div>';
+                }
+            });
+        }
     }
 
     /**
