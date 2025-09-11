@@ -187,34 +187,43 @@ class I18nManager {
                 
             case 'polylang':
                 if (function_exists('pll_get_posts_ids')) {
-                    // Get all experience posts in current language
-                    $query = new \WP_Query([
-                        'post_type' => 'product',
-                        'post_status' => 'publish',
-                        'meta_query' => [
-                            [
-                                'key' => '_product_type',
-                                'value' => 'experience'
-                            ]
-                        ],
-                        'posts_per_page' => -1,
-                        'fields' => 'ids',
-                        'no_found_rows' => true,
-                        'update_post_meta_cache' => false,
-                        'update_post_term_cache' => false
-                    ]);
-                    
-                    $experience_posts = $query->posts;
-                    
                     $translated_ids = [];
-                    foreach ($experience_posts as $post_id) {
-                        if (pll_get_post_language($post_id) === $current_language) {
-                            $translated_ids[] = $post_id;
+                    $paged          = 1;
+
+                    do {
+                        $query = new \WP_Query([
+                            'post_type'              => 'product',
+                            'post_status'            => 'publish',
+                            'meta_query'             => [
+                                [
+                                    'key'   => '_product_type',
+                                    'value' => 'experience'
+                                ]
+                            ],
+                            'posts_per_page'         => 50,
+                            'paged'                  => $paged,
+                            'fields'                 => 'ids',
+                            'no_found_rows'          => true,
+                            'update_post_meta_cache' => false,
+                            'update_post_term_cache' => false,
+                        ]);
+
+                        if (empty($query->posts)) {
+                            break;
                         }
-                    }
-                    
+
+                        foreach ($query->posts as $post_id) {
+                            if (pll_get_post_language($post_id) === $current_language) {
+                                $translated_ids[] = $post_id;
+                            }
+                        }
+
+                        $paged++;
+                    } while (true);
+
                     if (!empty($translated_ids)) {
-                        $args['post__in'] = isset($args['post__in']) 
+                        $translated_ids   = array_unique($translated_ids);
+                        $args['post__in'] = isset($args['post__in'])
                             ? array_intersect($args['post__in'], $translated_ids)
                             : $translated_ids;
                     } else {
