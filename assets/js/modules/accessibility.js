@@ -84,7 +84,7 @@ if (typeof jQuery === 'undefined') {
             });
             
             // Add add button labels
-            $('#fp-add-time-slot, #fp-add-time-slot-empty').attr({
+            $('#fp-add-time-slot').attr({
                 'aria-label': 'Add new time slot',
                 'aria-expanded': 'false'
             });
@@ -103,7 +103,7 @@ if (typeof jQuery === 'undefined') {
                 // Alt + T: Add time slot
                 if (e.altKey && e.key === 't') {
                     e.preventDefault();
-                    $('#fp-add-time-slot, #fp-add-time-slot-empty').first().click();
+                    $('#fp-add-time-slot').first().click();
                 }
                 
                 // Alt + O: Add override
@@ -184,7 +184,7 @@ if (typeof jQuery === 'undefined') {
          */
         enhanceFocusManagement: function() {
             // Store focus when adding new elements
-            $(document).on('click', '#fp-add-time-slot, #fp-add-time-slot-empty, #fp-add-override', function() {
+            $(document).on('click', '#fp-add-time-slot, #fp-add-override', function() {
                 $(this).data('lastFocused', document.activeElement);
             });
             

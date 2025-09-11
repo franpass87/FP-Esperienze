@@ -248,25 +248,27 @@ class Experience {
 						<?php $this->renderScheduleBuilder( $post->ID ); ?>
 					</div>
 					
-					<div id="fp-schedule-raw-container" style="display: none;">
-						<h5><?php _e( 'Advanced Mode (Raw Schedules)', 'fp-esperienze' ); ?></h5>
-						<div id="fp-schedules-container">
-							<?php $this->renderSchedulesSection( $post->ID ); ?>
-						</div>
-						<button type="button" class="button" id="fp-add-schedule">
-							<?php _e( 'Add Schedule', 'fp-esperienze' ); ?>
-						</button>
-					</div>
-					
-					<p>
-						<label>
-							<input type="checkbox" id="fp-toggle-raw-mode"> 
-							<?php _e( 'Show Advanced Mode', 'fp-esperienze' ); ?>
-						</label>
-						<span class="description"><?php _e( 'Enable to view/edit individual schedule rows directly', 'fp-esperienze' ); ?></span>
-					</p>
-				</div>
-			</fieldset>
+                                        <?php if ( apply_filters( 'fp_esperienze_enable_raw_schedules', false ) ) : ?>
+                                                <div id="fp-schedule-raw-container" style="display: none;">
+                                                        <h5><?php _e( 'Advanced Mode (Raw Schedules)', 'fp-esperienze' ); ?></h5>
+                                                        <div id="fp-schedules-container">
+                                                                <?php $this->renderSchedulesSection( $post->ID ); ?>
+                                                        </div>
+                                                        <button type="button" class="button" id="fp-add-schedule">
+                                                                <?php _e( 'Add Schedule', 'fp-esperienze' ); ?>
+                                                        </button>
+                                                </div>
+
+                                                <p>
+                                                        <label>
+                                                                <input type="checkbox" id="fp-toggle-raw-mode">
+                                                                <?php _e( 'Show Advanced Mode', 'fp-esperienze' ); ?>
+                                                        </label>
+                                                        <span class="description"><?php _e( 'Enable to view/edit individual schedule rows directly', 'fp-esperienze' ); ?></span>
+                                                </p>
+                                        <?php endif; ?>
+                                </div>
+                        </fieldset>
 			
 			<fieldset class="options_group fp-overrides-section-wrapper fp-section-fieldset">
 				<legend class="fp-section-legend"><?php _e( 'Date-Specific Overrides', 'fp-esperienze' ); ?></legend>
@@ -815,18 +817,14 @@ class Experience {
 						<div class="fp-empty-state-description">
 							<?php _e( 'Create recurring weekly time slots to make your experience bookable. Each slot can have different settings and run on multiple days.', 'fp-esperienze' ); ?>
 						</div>
-						<div class="fp-empty-state-examples">
-							<h5><?php _e( 'Examples:', 'fp-esperienze' ); ?></h5>
-							<ul>
-								<li><?php _e( 'Morning tour: 09:00 on Mon, Wed, Fri', 'fp-esperienze' ); ?></li>
-								<li><?php _e( 'Afternoon tour: 14:30 on Tue, Thu, Sat', 'fp-esperienze' ); ?></li>
-								<li><?php _e( 'Weekend special: 10:00 on Sat, Sun with different pricing', 'fp-esperienze' ); ?></li>
-							</ul>
-						</div>
-						<button type="button" class="fp-primary-button" id="fp-add-time-slot-empty">
-							<span class="dashicons dashicons-plus-alt"></span>
-							<?php _e( 'Add Your First Time Slot', 'fp-esperienze' ); ?>
-						</button>
+                                                <div class="fp-empty-state-examples">
+                                                        <h5><?php _e( 'Examples:', 'fp-esperienze' ); ?></h5>
+                                                        <ul>
+                                                                <li><?php _e( 'Morning tour: 09:00 on Mon, Wed, Fri', 'fp-esperienze' ); ?></li>
+                                                                <li><?php _e( 'Afternoon tour: 14:30 on Tue, Thu, Sat', 'fp-esperienze' ); ?></li>
+                                                                <li><?php _e( 'Weekend special: 10:00 on Sat, Sun with different pricing', 'fp-esperienze' ); ?></li>
+                                                        </ul>
+                                                </div>
 					</div>
 				<?php else : ?>
 					<table class="fp-summary-table">

@@ -47,7 +47,7 @@ if (typeof jQuery === 'undefined') {
                 e.preventDefault();
                 self.addTimeSlot();
             });
-            
+
             // Remove time slot button
             $(document).on('click', '.fp-remove-time-slot', function(e) {
                 e.preventDefault();
@@ -60,11 +60,13 @@ if (typeof jQuery === 'undefined') {
                 self.dispatchAdminEvent('fp:updateSummaryTable');
             });
             
-            // Toggle raw mode
-            $(document).on('click', '#fp-toggle-raw-mode', function() {
-                var showRaw = $(this).is(':checked');
-                self.dispatchAdminEvent('fp:toggleRawMode', { showRaw: showRaw });
-            });
+            // Toggle raw mode when available
+            if ($('#fp-toggle-raw-mode').length) {
+                $(document).on('click', '#fp-toggle-raw-mode', function() {
+                    var showRaw = $(this).is(':checked');
+                    self.dispatchAdminEvent('fp:toggleRawMode', { showRaw: showRaw });
+                });
+            }
         },
 
         /**
@@ -225,7 +227,7 @@ if (typeof jQuery === 'undefined') {
         bindModernTimeSlotEvents: function() {
             var self = this;
             
-            $(document).on('click', '#fp-add-time-slot, #fp-add-time-slot-empty', function(e) {
+            $(document).on('click', '#fp-add-time-slot', function(e) {
                 e.preventDefault();
                 self.addTimeSlotCardClean();
             });

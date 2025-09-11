@@ -410,10 +410,12 @@ if (typeof jQuery === 'undefined') {
                 $(this).closest('.fp-schedule-row').remove();
             });
             
-            // Toggle raw mode
-            $(document).on('change', '#fp-toggle-raw-mode', function() {
-                self.toggleRawMode($(this).is(':checked'));
-            });
+            // Toggle raw mode when advanced schedules are enabled
+            if ($('#fp-toggle-raw-mode').length) {
+                $(document).on('change', '#fp-toggle-raw-mode', function() {
+                    self.toggleRawMode($(this).is(':checked'));
+                });
+            }
             
             // Form submission handling for schedule builder
             $('form#post').on('submit', function() {
@@ -774,14 +776,14 @@ if (typeof jQuery === 'undefined') {
             this.validateContainers();
             
             // Unbind any existing handlers to prevent conflicts
-            $(document).off('click.fp-clean', '#fp-add-time-slot, #fp-add-time-slot-empty');
+            $(document).off('click.fp-clean', '#fp-add-time-slot');
             $(document).off('click.fp-clean', '.fp-remove-time-slot-clean');
             $(document).off('click.fp-clean', '#fp-add-override');
             $(document).off('click.fp-clean', '.fp-override-remove-clean');
             $(document).off('change.fp-clean', '.fp-override-checkbox-clean input[type="checkbox"]');
             
             // Time slot management - clean version with namespace and enhanced error handling
-            $(document).on('click.fp-clean', '#fp-add-time-slot, #fp-add-time-slot-empty', function(e) {
+            $(document).on('click.fp-clean', '#fp-add-time-slot', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
                 self.debug('Add time slot clicked');
@@ -1140,23 +1142,16 @@ if (typeof jQuery === 'undefined') {
             var self = this;
             
             // Unbind existing events to prevent double binding
-            $(document).off('click.fp-override', '#fp-add-override, #fp-add-time-slot-empty');
+            $(document).off('click.fp-override', '#fp-add-override');
             $(document).off('click.fp-override', '.fp-remove-override, .fp-override-remove');
             $(document).off('change.fp-override', '.fp-override-input');
             $(document).off('input.fp-override', '.fp-override-input');
             
             // Add override (both main button and empty state button)
-            $(document).on('click.fp-override', '#fp-add-override, #fp-add-time-slot-empty', function(e) {
+            $(document).on('click.fp-override', '#fp-add-override', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
-                
-                if ($(this).attr('id') === 'fp-add-time-slot-empty') {
-                    // This is the empty state button for time slots
-                    self.addTimeSlot();
-                } else {
-                    // This is the add override button
-                    self.addOverrideRow();
-                }
+                self.addOverrideRow();
             });
             
             // Remove override (both table and row format)
