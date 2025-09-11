@@ -335,7 +335,9 @@ class EmailMarketingManager {
         $send_time = strtotime($booking_date . ' -1 day');
         
         if ($send_time > time()) {
-            wp_schedule_single_event($send_time, 'fp_send_pre_experience_email', [$booking_id, $booking_data]);
+            if (!wp_next_scheduled('fp_send_pre_experience_email', [$booking_id, $booking_data])) {
+                wp_schedule_single_event($send_time, 'fp_send_pre_experience_email', [$booking_id, $booking_data]);
+            }
         }
     }
 
@@ -348,7 +350,9 @@ class EmailMarketingManager {
     private function scheduleReviewRequestEmail(int $booking_id, array $booking_data): void {
         $send_time = time() + (2 * DAY_IN_SECONDS); // 2 days after completion
         
-        wp_schedule_single_event($send_time, 'fp_send_review_request', [$booking_id, $booking_data]);
+        if (!wp_next_scheduled('fp_send_review_request', [$booking_id, $booking_data])) {
+            wp_schedule_single_event($send_time, 'fp_send_review_request', [$booking_id, $booking_data]);
+        }
     }
 
     /**
@@ -360,7 +364,9 @@ class EmailMarketingManager {
     private function scheduleUpsellingEmail(int $booking_id, array $booking_data): void {
         $send_time = time() + (7 * DAY_IN_SECONDS); // 7 days after completion
         
-        wp_schedule_single_event($send_time, 'fp_send_upselling_email', [$booking_id, $booking_data]);
+        if (!wp_next_scheduled('fp_send_upselling_email', [$booking_id, $booking_data])) {
+            wp_schedule_single_event($send_time, 'fp_send_upselling_email', [$booking_id, $booking_data]);
+        }
     }
 
     /**
