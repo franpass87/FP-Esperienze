@@ -221,7 +221,7 @@ if (typeof jQuery === 'undefined') {
         bindModernTimeSlotEvents: function() {
             var self = this;
             
-            $(document).on('click', '#fp-add-time-slot-clean', function(e) {
+            $(document).on('click', '#fp-add-time-slot, #fp-add-time-slot-empty', function(e) {
                 e.preventDefault();
                 self.addTimeSlotCardClean();
             });
