@@ -36,6 +36,9 @@ use FP\Esperienze\Core\CacheManager;
 use FP\Esperienze\Core\AssetOptimizer;
 use FP\Esperienze\Core\QueryMonitor;
 use FP\Esperienze\Core\TranslationQueue;
+use FP\Esperienze\Core\SecurityEnhancer;
+use FP\Esperienze\Core\PerformanceOptimizer;
+use FP\Esperienze\Core\UXEnhancer;
 
 defined('ABSPATH') || exit;
 
@@ -79,6 +82,15 @@ class Plugin {
 
         // Initialize translation queue
         TranslationQueue::init();
+        
+        // Initialize security enhancements
+        SecurityEnhancer::init();
+        
+        // Initialize performance optimizations
+        PerformanceOptimizer::init();
+        
+        // Initialize UX enhancements
+        UXEnhancer::init();
         
         // Initialize other components later
         add_action('init', [$this, 'initComponents'], 20);
