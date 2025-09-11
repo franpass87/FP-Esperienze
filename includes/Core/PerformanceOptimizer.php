@@ -82,7 +82,7 @@ class PerformanceOptimizer {
     /**
      * Add optimized database indexes
      */
-    private static function addOptimizedIndexes(): void {
+    public static function addOptimizedIndexes(): void {
         global $wpdb;
         
         $optimized_indexes = [

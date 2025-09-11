@@ -9,6 +9,7 @@ namespace FP\Esperienze\Core;
 
 use FP\Esperienze\ProductType\Experience;
 use FP\Esperienze\Admin\MenuManager;
+use FP\Esperienze\Admin\FeatureDemoPage;
 use FP\Esperienze\Frontend\Shortcodes;
 use FP\Esperienze\Frontend\Templates;
 use FP\Esperienze\Frontend\SEOManager;
@@ -39,6 +40,7 @@ use FP\Esperienze\Core\TranslationQueue;
 use FP\Esperienze\Core\SecurityEnhancer;
 use FP\Esperienze\Core\PerformanceOptimizer;
 use FP\Esperienze\Core\UXEnhancer;
+use FP\Esperienze\Core\FeatureTester;
 
 defined('ABSPATH') || exit;
 
@@ -91,6 +93,17 @@ class Plugin {
         
         // Initialize UX enhancements
         UXEnhancer::init();
+        
+        // Temporary debug feature to test enhancements (can be removed later)
+        if (defined('WP_DEBUG') && WP_DEBUG && is_admin()) {
+            add_action('admin_notices', function() {
+                if (isset($_GET['fp_test_features']) && current_user_can('manage_options')) {
+                    if (class_exists('FP\Esperienze\Core\FeatureTester')) {
+                        FeatureTester::displayTestResults();
+                    }
+                }
+            });
+        }
         
         // Initialize other components later
         add_action('init', [$this, 'initComponents'], 20);
@@ -239,6 +252,11 @@ class Plugin {
      */
     public function initAdmin(): void {
         new MenuManager();
+        
+        // Initialize feature demo page (temporary for testing new features)
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            FeatureDemoPage::init();
+        }
         
         // Initialize advanced analytics
         new \FP\Esperienze\Admin\AdvancedAnalytics();

@@ -451,10 +451,12 @@ class UXEnhancer {
      * Initialize enhanced notification system
      */
     public static function initNotificationSystem(): void {
-        // Add session-based notifications
-        if (!session_id()) {
-            session_start();
-        }
+        // Add session-based notifications with better session handling
+        add_action('init', function() {
+            if (!session_id() && !headers_sent()) {
+                session_start();
+            }
+        }, 1);
         
         add_action('wp_footer', [__CLASS__, 'displaySessionNotifications']);
         add_action('admin_footer', [__CLASS__, 'displaySessionNotifications']);
@@ -494,8 +496,20 @@ class UXEnhancer {
      * @param bool $dismissible Whether notification is dismissible
      */
     public static function addNotification(string $message, string $type = 'info', bool $dismissible = true): void {
-        if (!session_id()) {
+        if (!session_id() && !headers_sent()) {
             session_start();
+        }
+        
+        if (!session_id()) {
+            // Fallback to storing in WordPress options for this request
+            $notifications = get_option('fp_temp_notifications', []);
+            $notifications[] = [
+                'message' => $message,
+                'type' => $type,
+                'dismissible' => $dismissible
+            ];
+            update_option('fp_temp_notifications', $notifications);
+            return;
         }
         
         if (!isset($_SESSION['fp_notifications'])) {
@@ -532,6 +546,11 @@ class UXEnhancer {
         
         // Load on cart and checkout pages
         if (is_cart() || is_checkout()) {
+            return true;
+        }
+        
+        // Load on shop pages and archives for better user experience
+        if (is_shop() || is_product_category() || is_product_tag()) {
             return true;
         }
         
