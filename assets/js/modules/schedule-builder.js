@@ -30,10 +30,16 @@
          * Initialize schedule builder
          */
         init: function() {
-            this.bindScheduleEvents();
             this.bindScheduleBuilderEvents();
             this.initModernScheduleBuilder();
-            this.initTimeSlotManager();
+
+            if ($('#fp-time-slot-template').length) {
+                $(document).off('click.fp-modern-add-time-slot');
+                this.bindScheduleEvents();
+            } else {
+                $(document).off('click.fp-legacy-add-time-slot');
+                this.initTimeSlotManager();
+            }
         },
 
         /**
@@ -43,7 +49,8 @@
             var self = this;
             
             // Add time slot button
-            $(document).on('click', '#fp-add-time-slot', function(e) {
+            $(document).off('click.fp-legacy-add-time-slot', '#fp-add-time-slot');
+            $(document).on('click.fp-legacy-add-time-slot', '#fp-add-time-slot', function(e) {
                 e.preventDefault();
                 self.addTimeSlot();
             });
@@ -227,7 +234,8 @@
         bindModernTimeSlotEvents: function() {
             var self = this;
             
-            $(document).on('click', '#fp-add-time-slot', function(e) {
+            $(document).off('click.fp-modern-add-time-slot', '#fp-add-time-slot');
+            $(document).on('click.fp-modern-add-time-slot', '#fp-add-time-slot', function(e) {
                 e.preventDefault();
                 self.addTimeSlotCardClean();
             });
