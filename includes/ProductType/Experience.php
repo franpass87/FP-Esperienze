@@ -2314,24 +2314,30 @@ class Experience {
 			true
 		);
 
-		wp_localize_script(
-			'fp-esperienze-product-admin',
-			'fp_esperienze_admin',
-			array(
-				'ajaxurl'  => admin_url( 'admin-ajax.php' ),
-				'nonce'    => wp_create_nonce( 'fp_esperienze_admin' ),
-				'rest_url' => rest_url( 'fp-exp/v1/' ),
-				'strings'  => array(
-					'experience_type'         => __( 'Experience', 'fp-esperienze' ),
-					'select_date'             => __( 'Select Date', 'fp-esperienze' ),
-					'loading'                 => __( 'Loading...', 'fp-esperienze' ),
-					'confirm_remove_override' => __( 'Are you sure you want to remove this date override?', 'fp-esperienze' ),
-					'distant_date_warning'    => __( 'This date is very far in the future. Please verify it\'s correct.', 'fp-esperienze' ),
-					'unsaved_changes'         => __( 'You have unsaved changes. Are you sure you want to leave?', 'fp-esperienze' ),
-					'validation_error'        => __( 'Please fix the validation errors before saving.', 'fp-esperienze' ),
-				),
-			)
-		);
+                wp_localize_script(
+                        'fp-esperienze-product-admin',
+                        'fp_esperienze_admin',
+                        array(
+                                'ajaxurl'  => admin_url( 'admin-ajax.php' ),
+                                'nonce'    => wp_create_nonce( 'fp_esperienze_admin' ),
+                                'rest_url' => rest_url( 'fp-exp/v1/' ),
+                                'strings'  => array(
+                                        'experience_type'         => __( 'Experience', 'fp-esperienze' ),
+                                        'select_date'             => __( 'Select Date', 'fp-esperienze' ),
+                                        'loading'                 => __( 'Loading...', 'fp-esperienze' ),
+                                        'confirm_remove_override' => __( 'Are you sure you want to remove this date override?', 'fp-esperienze' ),
+                                        'distant_date_warning'    => __( 'This date is very far in the future. Please verify it\'s correct.', 'fp-esperienze' ),
+                                        'unsaved_changes'         => __( 'You have unsaved changes. Are you sure you want to leave?', 'fp-esperienze' ),
+                                        'validation_error'        => __( 'Please fix the validation errors before saving.', 'fp-esperienze' ),
+                                ),
+                        )
+                );
+
+               wp_localize_script(
+                       'fp-esperienze-product-admin',
+                       'fp_meeting_points',
+                       MeetingPointManager::getMeetingPointsForSelect()
+               );
 
 		// Add custom CSS for experience product type
 		wp_add_inline_style(

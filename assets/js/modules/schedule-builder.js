@@ -165,22 +165,26 @@
          */
         populateMeetingPointsDropdown: function(selectElement) {
             var $select = $(selectElement);
-            
+
             // Clear existing options except the first
             $select.find('option:not(:first)').remove();
-            
-            // Add meeting points from global variable if available
-            if (typeof fp_meeting_points !== 'undefined') {
-                $.each(fp_meeting_points, function(id, name) {
-                    var idInt = parseInt(id, 10);
-                    var nameStr = String(name);
 
-                    if (!isNaN(idInt) && nameStr) {
-                        const option = $('<option>').val(idInt).text(nameStr);
-                        $select.append(option);
-                    }
-                });
+            // Add meeting points from global variable if available
+            if (typeof fp_meeting_points === 'undefined' || $.isEmptyObject(fp_meeting_points)) {
+                console.error('FP Esperienze: no meeting points available');
+                $select.append($('<option>').val('').text('No meeting points available').prop('disabled', true));
+                return;
             }
+
+            $.each(fp_meeting_points, function(id, name) {
+                var idInt = parseInt(id, 10);
+                var nameStr = String(name);
+
+                if (!isNaN(idInt) && nameStr) {
+                    const option = $('<option>').val(idInt).text(nameStr);
+                    $select.append(option);
+                }
+            });
         },
 
         /**

@@ -238,13 +238,13 @@ class MeetingPointManager {
      * @return array
      */
     public static function getMeetingPointsForSelect(): array {
-        $options = ['' => __('Select a meeting point', 'fp-esperienze')];
+        $options = [];
         $meeting_points = self::getAllMeetingPoints();
-        
+
         foreach ($meeting_points as $meeting_point) {
             $options[$meeting_point->id] = $meeting_point->name;
         }
-        
+
         return $options;
     }
 
