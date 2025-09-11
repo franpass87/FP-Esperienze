@@ -212,7 +212,7 @@ html {
 .fp-admin-notice {
     margin: 15px 0;
     padding: 12px;
-    border-left: 4px solid #0073aa;
+    border-left: 4px solid var(--fp-brand-primary);
     background: #f7f7f7;
 }
 
@@ -269,7 +269,7 @@ html {
 
 .fp-section-description {
     background: #f0f6fc;
-    border-left: 4px solid #0073aa;
+    border-left: 4px solid var(--fp-brand-primary);
     padding: 12px 16px;
     margin-bottom: 20px;
     font-size: 0.8125rem;
@@ -336,7 +336,7 @@ html {
 }
 
 .fp-primary-button {
-    background: #2271b1;
+    background: var(--fp-brand-primary);
     color: #fff;
     border: none;
     padding: 12px 24px;
@@ -413,7 +413,7 @@ html {
 }
 
 .fp-time-badge {
-    background: #2271b1;
+    background: var(--fp-brand-primary);
     color: #fff;
     padding: 4px 8px;
     border-radius: 3px;
@@ -425,7 +425,7 @@ html {
 .fp-day-badge {
     background: #f0f6fc;
     border: 1px solid #c3c4c7;
-    color: #2271b1;
+    color: var(--fp-brand-primary);
     padding: 2px 6px;
     border-radius: 3px;
     font-size: 0.6875rem;
@@ -551,9 +551,9 @@ html {
 }
 
 .fp-override-input:focus {
-    border-color: #2271b1;
+    border-color: var(--fp-brand-primary);
     outline: none;
-    box-shadow: 0 0 0 1px #2271b1;
+    box-shadow: 0 0 0 1px var(--fp-brand-primary);
 }
 
 .fp-override-input::placeholder {
@@ -684,7 +684,7 @@ html {
 
 .fp-section-description {
     background: #f6f7f7;
-    border-left: 4px solid #0073aa;
+    border-left: 4px solid var(--fp-brand-primary);
     padding: 12px 16px;
     margin-bottom: 20px;
     font-size: 0.8125rem;
@@ -788,8 +788,8 @@ html {
 }
 
 .fp-override-input:focus {
-    border-color: #2271b1;
-    box-shadow: 0 0 0 1px #2271b1;
+    border-color: var(--fp-brand-primary);
+    box-shadow: 0 0 0 1px var(--fp-brand-primary);
     outline: none;
 }
 
@@ -886,7 +886,7 @@ html {
 
 /* Add override button */
 .fp-add-override {
-    background: #2271b1;
+    background: var(--fp-brand-primary);
     color: #fff;
     border: none;
     padding: 10px 16px;
@@ -960,7 +960,7 @@ html {
 .fp-override-input:focus-visible,
 .fp-primary-button:focus-visible,
 .fp-override-remove:focus-visible {
-    outline: 2px solid #2271b1;
+    outline: 2px solid var(--fp-brand-primary);
     outline-offset: 2px;
 }
 
@@ -1315,7 +1315,7 @@ html {
 .fp-schedules-section .fp-section-description {
     margin: 0 20px 20px;
     background: #f0f6fc;
-    border-left: 4px solid #0073aa;
+    border-left: 4px solid var(--fp-brand-primary);
     padding: 15px 20px;
     border-radius: 0 4px 4px 0;
     font-size: 0.8125rem;
@@ -1356,7 +1356,7 @@ html {
 }
 
 .fp-time-slot-card.has-overrides {
-    border-left: 4px solid #0073aa;
+    border-left: 4px solid var(--fp-brand-primary);
 }
 
 /* Time slot header */
@@ -1402,8 +1402,8 @@ html {
 }
 
 .fp-time-field input[type="time"]:focus {
-    border-color: #2271b1;
-    box-shadow: 0 0 0 1px #2271b1;
+    border-color: var(--fp-brand-primary);
+    box-shadow: 0 0 0 1px var(--fp-brand-primary);
     outline: none;
 }
 
@@ -1468,8 +1468,8 @@ html {
 }
 
 .fp-day-pill input[type="checkbox"]:checked + label {
-    background: #2271b1;
-    border-color: #2271b1;
+    background: var(--fp-brand-primary);
+    border-color: var(--fp-brand-primary);
     color: #fff;
     transform: translateY(-2px);
     box-shadow: 0 2px 4px rgba(34, 113, 177, 0.3);
@@ -1589,8 +1589,8 @@ html {
 
 .fp-overrides-grid input:focus,
 .fp-overrides-grid select:focus {
-    border-color: #2271b1;
-    box-shadow: 0 0 0 1px #2271b1;
+    border-color: var(--fp-brand-primary);
+    box-shadow: 0 0 0 1px var(--fp-brand-primary);
     outline: none;
 }
 
@@ -1601,7 +1601,7 @@ html {
 
 /* Add time slot button */
 .fp-add-time-slot {
-    background: #2271b1;
+    background: var(--fp-brand-primary);
     color: #fff;
     border: none;
     padding: 12px 20px;
@@ -2173,7 +2173,7 @@ html {
 
 /* Better focus indicators for accessibility */
 .fp-day-pill-clean input:focus + label {
-    outline: 2px solid #2271b1;
+    outline: 2px solid var(--fp-brand-primary);
     outline-offset: 2px;
     z-index: 10;
     position: relative;
@@ -2238,7 +2238,7 @@ body.fp-reduced-animations .fp-loading::after {
 /* Time slot button with premium styling */
 #fp-add-time-slot,
 .fp-add-time-slot {
-    background: linear-gradient(135deg, #2271b1 0%, #135e96 100%);
+    background: linear-gradient(135deg, var(--fp-brand-primary) 0%, #135e96 100%);
     color: #fff;
     border: none;
     padding: 16px 24px;
@@ -2633,8 +2633,8 @@ body.fp-reduced-animations .fp-loading::after {
 }
 
 .fp-modal-content .button-primary {
-    background: #2271b1;
-    border-color: #2271b1;
+    background: var(--fp-brand-primary);
+    border-color: var(--fp-brand-primary);
 }
 
 .fp-modal-content .button-primary:hover {
@@ -2799,8 +2799,8 @@ body.fp-reduced-animations .fp-loading::after {
 }
 
 .fp-button-primary {
-    background: #2271b1;
-    border-color: #2271b1;
+    background: var(--fp-brand-primary);
+    border-color: var(--fp-brand-primary);
     color: white;
 }
 
@@ -3128,13 +3128,13 @@ body.fp-reduced-animations .fp-loading::after {
 .fp-day-pill-clean input[type="checkbox"]:checked + label {
     width: 40px;
     text-align: center;
-    background-color: #2271b1;
+    background-color: var(--fp-brand-primary);
     color: #fff;
-    border-color: #2271b1;
+    border-color: var(--fp-brand-primary);
 }
 
 .fp-day-pill-clean input[type="checkbox"]:focus-visible + label {
-    outline: 2px solid #2271b1;
+    outline: 2px solid var(--fp-brand-primary);
     outline-offset: 2px;
 }
 
