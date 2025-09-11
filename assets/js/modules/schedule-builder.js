@@ -169,14 +169,18 @@
             // Clear existing options except the first
             $select.find('option:not(:first)').remove();
 
-            // Add meeting points from global variable if available
-            if (typeof fp_meeting_points === 'undefined' || $.isEmptyObject(fp_meeting_points)) {
+            // Add meeting points from localized data if available
+            var meetingPoints = (window.fp_esperienze_admin && fp_esperienze_admin.fp_meeting_points)
+                ? fp_esperienze_admin.fp_meeting_points
+                : {};
+
+            if ($.isEmptyObject(meetingPoints)) {
                 console.error('FP Esperienze: no meeting points available');
                 $select.append($('<option>').val('').text('No meeting points available').prop('disabled', true));
                 return;
             }
 
-            $.each(fp_meeting_points, function(id, name) {
+            $.each(meetingPoints, function(id, name) {
                 var idInt = parseInt(id, 10);
                 var nameStr = String(name);
 

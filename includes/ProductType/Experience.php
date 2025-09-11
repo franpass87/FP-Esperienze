@@ -2321,6 +2321,8 @@ class Experience {
                                 'ajaxurl'  => admin_url( 'admin-ajax.php' ),
                                 'nonce'    => wp_create_nonce( 'fp_esperienze_admin' ),
                                 'rest_url' => rest_url( 'fp-exp/v1/' ),
+                                // Meeting point IDs mapped to names, no placeholder option.
+                                'fp_meeting_points' => MeetingPointManager::getMeetingPointsForSelect(),
                                 'strings'  => array(
                                         'experience_type'         => __( 'Experience', 'fp-esperienze' ),
                                         'select_date'             => __( 'Select Date', 'fp-esperienze' ),
@@ -2332,13 +2334,6 @@ class Experience {
                                 ),
                         )
                 );
-
-               wp_localize_script(
-                       'fp-esperienze-product-admin',
-                       'fp_meeting_points',
-                       MeetingPointManager::getMeetingPointsForSelect()
-               );
-
 		// Add custom CSS for experience product type
 		wp_add_inline_style(
 			'woocommerce_admin_styles',
