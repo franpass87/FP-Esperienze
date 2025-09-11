@@ -61,3 +61,10 @@ ORDER BY day_of_week, start_time
 
 ## Impact
 This is a minimal, surgical fix that resolves the user-reported issue without affecting any other functionality. The change is backward-compatible and only improves data retrieval.
+
+---
+
+## Booking Order Item Uniqueness
+
+- Added `UNIQUE KEY order_item_unique (order_id, order_item_id)` to the bookings table to prevent duplicate order item entries.
+- Installer now ensures existing installations receive this unique index during upgrades.
