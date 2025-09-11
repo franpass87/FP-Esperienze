@@ -160,7 +160,12 @@ class Voucher_Pdf {
      */
     private static function buildHtmlContent($voucher_data, $qr_code_path): string {
         $logo_url = get_option('fp_esperienze_gift_pdf_logo', '');
-        $brand_color = get_option('fp_esperienze_gift_pdf_brand_color', '#ff6b35');
+        
+        // Get brand color from main branding settings, fallback to PDF-specific setting
+        $branding_settings = get_option('fp_esperienze_branding', []);
+        $primary_color = $branding_settings['primary_color'] ?? '#ff6b35';
+        $brand_color = get_option('fp_esperienze_gift_pdf_brand_color', $primary_color);
+        
         $terms = get_option('fp_esperienze_gift_terms', '');
         $site_name = get_bloginfo('name');
         

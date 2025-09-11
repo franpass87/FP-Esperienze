@@ -496,7 +496,7 @@ class Installer {
             // Gift voucher settings
             'fp_esperienze_gift_default_exp_months' => 12,
             'fp_esperienze_gift_pdf_logo' => '',
-            'fp_esperienze_gift_pdf_brand_color' => '#ff6b35',
+            'fp_esperienze_gift_pdf_brand_color' => '#3498db', // Default to a more neutral blue color
             'fp_esperienze_gift_email_sender_name' => get_bloginfo('name'),
             'fp_esperienze_gift_email_sender_email' => get_option('admin_email'),
             'fp_esperienze_gift_secret_hmac' => bin2hex(random_bytes(32)), // 256-bit cryptographically secure key

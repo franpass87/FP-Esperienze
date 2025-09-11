@@ -241,7 +241,7 @@ class SetupWizard {
     private function processBrandSettings(): void {
         $settings = [
             'fp_esperienze_gift_pdf_logo' => esc_url_raw(isset($_POST['pdf_logo']) ? wp_unslash($_POST['pdf_logo']) : ''),
-            'fp_esperienze_gift_pdf_brand_color' => sanitize_hex_color(isset($_POST['brand_color']) ? wp_unslash($_POST['brand_color']) : '#ff6b35'),
+            'fp_esperienze_gift_pdf_brand_color' => sanitize_hex_color(isset($_POST['brand_color']) ? wp_unslash($_POST['brand_color']) : '#3498db'),
             'fp_esperienze_gift_terms' => sanitize_textarea_field(isset($_POST['voucher_terms']) ? wp_unslash($_POST['voucher_terms']) : ''),
         ];
 
@@ -672,7 +672,7 @@ class SetupWizard {
      */
     private function renderBrandSettingsStep(): void {
         $logo = get_option('fp_esperienze_gift_pdf_logo', '');
-        $color = get_option('fp_esperienze_gift_pdf_brand_color', '#ff6b35');
+        $color = get_option('fp_esperienze_gift_pdf_brand_color', '#3498db');
         $terms = get_option('fp_esperienze_gift_terms', __('This voucher is valid for one experience booking. Please present the QR code when redeeming.', 'fp-esperienze'));
 
         ?>
