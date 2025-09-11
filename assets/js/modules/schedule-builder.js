@@ -137,13 +137,20 @@
          */
         addTimeSlot: function() {
             var $container = $('#fp-time-slots-container');
-            var rowCount = $container.find('.fp-time-slot-row').length;
-            var newIndex = rowCount;
+            var existingIndexes = $container
+                .find('.fp-time-slot-row')
+                .map(function() {
+                    return parseInt($(this).attr('data-index'), 10);
+                })
+                .get();
+            var newIndex = existingIndexes.length
+                ? Math.max.apply(null, existingIndexes) + 1
+                : 0;
             
             var template = $('#fp-time-slot-template').html();
             template = template.replace(/\{index\}/g, newIndex);
             
-            var $newRow = $(template);
+            var $newRow = $(template).attr('data-index', newIndex);
             $container.append($newRow);
             
             // Populate meeting points dropdown
@@ -254,9 +261,17 @@
                     return;
                 }
 
-                var index = $container.find('.fp-time-slot-card-clean').length;
+                var existingIndexes = $container
+                    .find('.fp-time-slot-card-clean')
+                    .map(function() {
+                        return parseInt($(this).attr('data-index'), 10);
+                    })
+                    .get();
+                var index = existingIndexes.length
+                    ? Math.max.apply(null, existingIndexes) + 1
+                    : 0;
                 var cardHTML = this.createTimeSlotCardHTMLClean(index);
-                var $newCard = $(cardHTML);
+                var $newCard = $(cardHTML).attr('data-index', index);
 
                 $container.append($newCard);
                 
