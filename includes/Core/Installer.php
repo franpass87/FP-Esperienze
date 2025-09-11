@@ -25,29 +25,44 @@ class Installer {
      * @return bool|\WP_Error True on success or WP_Error on failure
      */
     public static function activate() {
-        self::createTables();
-        self::createDefaultOptions();
-        // Capability setup runs only on activation to avoid redundant role checks
-        self::addCapabilities();
-        
-        // Execute schedule migration if feature flag is enabled
-        if (defined('FP_ESPERIENZE_ENABLE_SCHEDULE_NULL_MIGRATION') && FP_ESPERIENZE_ENABLE_SCHEDULE_NULL_MIGRATION) {
-            self::migrateScheduleNullFields();
-        }
-        
-        // Flush rewrite rules
-        flush_rewrite_rules();
-        
-        // Update version option
-        update_option('fp_esperienze_version', FP_ESPERIENZE_VERSION);
+        try {
+            $result = self::createTables();
+            if (is_wp_error($result)) {
+                return $result;
+            }
+            
+            $result = self::createDefaultOptions();
+            if (is_wp_error($result)) {
+                return $result;
+            }
+            
+            // Capability setup runs only on activation to avoid redundant role checks
+            $result = self::addCapabilities();
+            if (is_wp_error($result)) {
+                return $result;
+            }
+            
+            // Execute schedule migration if feature flag is enabled
+            if (defined('FP_ESPERIENZE_ENABLE_SCHEDULE_NULL_MIGRATION') && FP_ESPERIENZE_ENABLE_SCHEDULE_NULL_MIGRATION) {
+                $result = self::migrateScheduleNullFields();
+                if (is_wp_error($result)) {
+                    return $result;
+                }
+            }
+            
+            // Flush rewrite rules
+            flush_rewrite_rules();
+            
+            // Update version option
+            update_option('fp_esperienze_version', FP_ESPERIENZE_VERSION);
 
-        // Schedule translation queue processing
-        if (!wp_next_scheduled(TranslationQueue::CRON_HOOK)) {
-            wp_schedule_event(time() + MINUTE_IN_SECONDS, 'hourly', TranslationQueue::CRON_HOOK);
-        }
-        
-        // Initialize performance optimizations on activation
-        if (class_exists('FP\Esperienze\Core\PerformanceOptimizer')) {
+            // Schedule translation queue processing
+            if (!wp_next_scheduled(TranslationQueue::CRON_HOOK)) {
+                wp_schedule_event(time() + MINUTE_IN_SECONDS, 'hourly', TranslationQueue::CRON_HOOK);
+            }
+            
+            // Initialize performance optimizations on activation
+            if (class_exists('FP\Esperienze\Core\PerformanceOptimizer')) {
             PerformanceOptimizer::maybeAddOptimizedIndexes();
         }
         
@@ -88,6 +103,11 @@ class Installer {
         }
 
         return true;
+        
+        } catch (Throwable $e) {
+            error_log('FP Esperienze: Activation error: ' . $e->getMessage());
+            return new \WP_Error('fp_activation_failed', 'Plugin activation failed: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -203,11 +223,22 @@ class Installer {
 
     /**
      * Create database tables
+     * 
+     * @return bool|\WP_Error True on success or WP_Error on failure
      */
-    private static function createTables(): void {
+    private static function createTables() {
         global $wpdb;
 
         $charset_collate = $wpdb->get_charset_collate();
+
+        // Check if dbDelta is available
+        if (!function_exists('dbDelta')) {
+            require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+        }
+        
+        if (!function_exists('dbDelta')) {
+            return new \WP_Error('fp_dbdelta_missing', 'WordPress dbDelta function not available');
+        }
 
         // Meeting Points table
         $table_meeting_points = $wpdb->prefix . 'fp_meeting_points';
@@ -415,16 +446,40 @@ class Installer {
 
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         
-        dbDelta($sql_meeting_points);
-        dbDelta($sql_extras);
-        dbDelta($sql_product_extras);
-        dbDelta($sql_schedules);
-        dbDelta($sql_overrides);
-        dbDelta($sql_bookings);
-        dbDelta($sql_exp_vouchers);
-        dbDelta($sql_vouchers);
-        dbDelta($sql_dynamic_pricing);
-        dbDelta($sql_holds);
+        // Execute table creation with error checking
+        $tables_sql = [
+            'meeting_points' => $sql_meeting_points,
+            'extras' => $sql_extras,
+            'product_extras' => $sql_product_extras,
+            'schedules' => $sql_schedules,
+            'overrides' => $sql_overrides,
+            'bookings' => $sql_bookings,
+            'exp_vouchers' => $sql_exp_vouchers,
+            'vouchers' => $sql_vouchers,
+            'dynamic_pricing' => $sql_dynamic_pricing,
+            'holds' => $sql_holds
+        ];
+
+        foreach ($tables_sql as $table_name => $sql) {
+            $result = dbDelta($sql);
+            
+            // Check if table was created successfully
+            $expected_table = $wpdb->prefix . 'fp_' . $table_name;
+            if ($table_name === 'dynamic_pricing') {
+                $expected_table = $wpdb->prefix . 'fp_dynamic_pricing_rules';
+            } elseif ($table_name === 'holds') {
+                $expected_table = $wpdb->prefix . 'fp_exp_holds';
+            }
+            
+            // Verify table exists
+            $table_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $expected_table));
+            if (!$table_exists) {
+                error_log("FP Esperienze: Failed to create table $expected_table");
+                return new \WP_Error('fp_table_creation_failed', "Failed to create table: $expected_table");
+            }
+        }
+        
+        return true;
     }
 
     /**

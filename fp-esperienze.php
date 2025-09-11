@@ -73,11 +73,13 @@ if (file_exists($autoloader_path)) {
 }
 
 if (!$autoloader_loaded) {
-    // Lightweight PSR-4 autoloader for plugin classes with enhanced error handling.
+    // Enhanced PSR-4 autoloader for plugin classes with better error handling
     spl_autoload_register(function ($class) {
         $prefix   = 'FP\\Esperienze\\';
         $base_dir = FP_ESPERIENZE_PLUGIN_DIR . 'includes/';
         $len      = strlen($prefix);
+        
+        // Check if class uses our namespace
         if (strncmp($prefix, $class, $len) !== 0) {
             return;
         }
@@ -85,15 +87,43 @@ if (!$autoloader_loaded) {
         $relative_class = substr($class, $len);
         $file = $base_dir . str_replace('\\', '/', $relative_class) . '.php';
 
+        // Enhanced file loading with error handling
         if (file_exists($file)) {
             try {
-                require $file;
+                // Check file is readable
+                if (!is_readable($file)) {
+                    error_log("FP Esperienze: Class file not readable: $file");
+                    return;
+                }
+                
+                // Include with error capture
+                $include_result = include_once $file;
+                
+                // Verify class was actually loaded
+                if ($include_result === false) {
+                    error_log("FP Esperienze: Failed to include class file: $file");
+                    return;
+                }
+                
+                // Verify class exists after include
+                if (!class_exists($class, false) && !interface_exists($class, false) && !trait_exists($class, false)) {
+                    error_log("FP Esperienze: Class $class not found in file $file after inclusion");
+                }
+                
+            } catch (ParseError $e) {
+                error_log("FP Esperienze: Parse error in class file $file: " . $e->getMessage());
+                throw $e;
             } catch (Throwable $e) {
-                error_log('FP Esperienze: Failed to load class ' . $class . ': ' . $e->getMessage());
+                error_log("FP Esperienze: Error loading class $class from $file: " . $e->getMessage());
                 throw $e;
             }
+        } else {
+            // Only log missing files for classes we should have
+            if (strpos($class, 'FP\\Esperienze\\') === 0) {
+                error_log("FP Esperienze: Class file not found: $file for class $class");
+            }
         }
-    });
+    }, true, true); // Prepend and throw exceptions
 
     // Show admin notice for missing dependencies only once per user session.
     add_action('admin_notices', function () {
@@ -182,8 +212,28 @@ function fp_esperienze_init() {
         }
         
     } catch (Throwable $e) {
-        // Log critical initialization errors
-        error_log('FP Esperienze: Critical initialization error: ' . $e->getMessage());
+        // Enhanced error logging with more details
+        $error_details = [
+            'message' => $e->getMessage(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+            'trace' => $e->getTraceAsString(),
+            'wp_version' => get_bloginfo('version'),
+            'php_version' => PHP_VERSION,
+            'wc_version' => defined('WC_VERSION') ? WC_VERSION : 'Not Available',
+            'memory_limit' => ini_get('memory_limit'),
+            'max_execution_time' => ini_get('max_execution_time')
+        ];
+        
+        error_log('FP Esperienze: Critical initialization error: ' . wp_json_encode($error_details));
+        
+        // Try to write to a dedicated error log file
+        if (defined('WP_CONTENT_DIR')) {
+            $error_log_file = WP_CONTENT_DIR . '/fp-esperienze-errors.log';
+            $timestamp = current_time('mysql');
+            $log_entry = "[$timestamp] INITIALIZATION ERROR: " . wp_json_encode($error_details) . PHP_EOL;
+            file_put_contents($error_log_file, $log_entry, FILE_APPEND | LOCK_EX);
+        }
         
         // Show admin notice for critical errors
         add_action('admin_notices', function() use ($e) {
@@ -193,7 +243,9 @@ function fp_esperienze_init() {
                          esc_html__('FP Esperienze: Plugin initialization failed. Error: %s', 'fp-esperienze'),
                          esc_html($e->getMessage())
                      ) . 
-                     '</p></div>';
+                     '</p><p><small>' .
+                     esc_html__('Check wp-content/fp-esperienze-errors.log for detailed error information.', 'fp-esperienze') .
+                     '</small></p></div>';
             }
         });
         
@@ -313,13 +365,62 @@ register_activation_hook(__FILE__, function() {
         update_option('fp_esperienze_just_activated', true);
         
     } catch (Throwable $e) {
-        // Log the activation error
-        error_log('FP Esperienze activation error: ' . $e->getMessage());
+        // Enhanced activation error logging
+        $error_details = [
+            'message' => $e->getMessage(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+            'trace' => $e->getTraceAsString(),
+            'wp_version' => get_bloginfo('version'),
+            'php_version' => PHP_VERSION,
+            'wc_version' => defined('WC_VERSION') ? WC_VERSION : 'Not Available',
+            'memory_limit' => ini_get('memory_limit'),
+            'plugins_loaded' => did_action('plugins_loaded'),
+            'woocommerce_loaded' => class_exists('WooCommerce'),
+            'composer_autoloader' => file_exists(FP_ESPERIENZE_PLUGIN_DIR . 'vendor/autoload.php') ? 'Available' : 'Missing'
+        ];
+        
+        // Log the activation error with full context
+        error_log('FP Esperienze activation error: ' . wp_json_encode($error_details));
+        
+        // Try to write to dedicated error log
+        if (defined('WP_CONTENT_DIR')) {
+            $error_log_file = WP_CONTENT_DIR . '/fp-esperienze-activation-errors.log';
+            $timestamp = current_time('mysql');
+            $log_entry = "[$timestamp] ACTIVATION ERROR: " . wp_json_encode($error_details) . PHP_EOL;
+            file_put_contents($error_log_file, $log_entry, FILE_APPEND | LOCK_EX);
+        }
+        
+        // Create a recovery info file
+        $recovery_info = [
+            'error' => $e->getMessage(),
+            'timestamp' => current_time('mysql'),
+            'diagnostic_url' => admin_url('admin.php?page=fp-esperienze-diagnostic'),
+            'steps' => [
+                '1. Check server error logs',
+                '2. Verify file permissions on wp-content/',
+                '3. Ensure WooCommerce is active and up to date',
+                '4. Run diagnostic: ' . plugin_dir_url(__FILE__) . 'tools/activation-diagnostic.php',
+                '5. Consider running composer install --no-dev'
+            ]
+        ];
+        
+        if (defined('WP_CONTENT_DIR')) {
+            $recovery_file = WP_CONTENT_DIR . '/fp-esperienze-recovery-info.json';
+            file_put_contents($recovery_file, wp_json_encode($recovery_info, JSON_PRETTY_PRINT));
+        }
         
         wp_die(
             sprintf(
                 esc_html__('FP Esperienze activation failed: %s', 'fp-esperienze'),
                 esc_html($e->getMessage())
+            ) . '<br><br>' .
+            '<strong>' . esc_html__('Troubleshooting Information:', 'fp-esperienze') . '</strong><br>' .
+            '• ' . esc_html__('Error details logged to wp-content/fp-esperienze-activation-errors.log', 'fp-esperienze') . '<br>' .
+            '• ' . esc_html__('Recovery info saved to wp-content/fp-esperienze-recovery-info.json', 'fp-esperienze') . '<br>' .
+            '• ' . sprintf(
+                esc_html__('Run diagnostic tool: %s', 'fp-esperienze'),
+                '<a href="' . esc_url(plugin_dir_url(__FILE__) . 'tools/activation-diagnostic.php') . '" target="_blank">Diagnostic Tool</a>'
             ),
             esc_html__('Plugin Activation Error', 'fp-esperienze'),
             array('response' => 200, 'back_link' => true)
