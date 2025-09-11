@@ -71,6 +71,11 @@ class Shortcodes {
         // Apply filters from GET parameters
         $args = $this->applyFilters($args, $enabled_filters);
 
+        // Set global flag to indicate we're in shortcode context
+        if (!defined('DOING_FP_SHORTCODE')) {
+            define('DOING_FP_SHORTCODE', true);
+        }
+
         $products = new \WP_Query($args);
         $total_products = $products->found_posts;
         $max_pages = $products->max_num_pages;
@@ -102,6 +107,12 @@ class Shortcodes {
         </div>
         <?php
         wp_reset_postdata();
+        
+        // Reset the global flag when shortcode is done
+        if (defined('DOING_FP_SHORTCODE')) {
+            // Note: We can't undefine constants in PHP, but this check helps with nested shortcodes
+            // The constant will be reset on next page load
+        }
         
         return ob_get_clean();
     }

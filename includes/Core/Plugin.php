@@ -249,18 +249,37 @@ class Plugin {
         // Only affect shop/catalog queries, not custom queries or shortcodes
         // Check if this is a standard WooCommerce shop query
         if ((is_shop() || is_product_category() || is_product_tag() || is_product_taxonomy()) &&
-            !wc_get_loop_prop('is_shortcode')) {
+            !wc_get_loop_prop('is_shortcode') &&
+            !$this->isOurShortcodeQuery($query)) {
             
             $meta_query = $query->get('meta_query') ?: [];
             
-            // Add condition to exclude Experience products
-            $meta_query[] = [
-                'key' => '_product_type',
-                'value' => 'experience',
-                'compare' => '!='
-            ];
+            // Check if we already have an experience filter to avoid duplicates
+            $has_experience_filter = false;
+            foreach ($meta_query as $clause) {
+                if (is_array($clause) && 
+                    isset($clause['key']) && $clause['key'] === '_product_type' &&
+                    isset($clause['value']) && $clause['value'] === 'experience') {
+                    $has_experience_filter = true;
+                    break;
+                }
+            }
             
-            $query->set('meta_query', $meta_query);
+            // Only add filter if not already present
+            if (!$has_experience_filter) {
+                $meta_query[] = [
+                    'key' => '_product_type',
+                    'value' => 'experience',
+                    'compare' => '!='
+                ];
+                
+                $query->set('meta_query', $meta_query);
+                
+                // Debug logging
+                if (defined('WP_DEBUG') && WP_DEBUG && apply_filters('fp_esperienze_debug_shop_filtering', false)) {
+                    error_log('FP Esperienze: Excluded experience products from shop query on ' . $_SERVER['REQUEST_URI'] ?? 'unknown');
+                }
+            }
         }
     }
 
@@ -283,14 +302,32 @@ class Plugin {
             
             $meta_query = $query->get('meta_query') ?: [];
             
-            // Add condition to exclude Experience products
-            $meta_query[] = [
-                'key' => '_product_type',
-                'value' => 'experience',
-                'compare' => '!='
-            ];
+            // Check if we already have an experience filter to avoid duplicates
+            $has_experience_filter = false;
+            foreach ($meta_query as $clause) {
+                if (is_array($clause) && 
+                    isset($clause['key']) && $clause['key'] === '_product_type' &&
+                    isset($clause['value']) && $clause['value'] === 'experience') {
+                    $has_experience_filter = true;
+                    break;
+                }
+            }
             
-            $query->set('meta_query', $meta_query);
+            // Only add filter if not already present
+            if (!$has_experience_filter) {
+                $meta_query[] = [
+                    'key' => '_product_type',
+                    'value' => 'experience',
+                    'compare' => '!='
+                ];
+                
+                $query->set('meta_query', $meta_query);
+                
+                // Debug logging
+                if (defined('WP_DEBUG') && WP_DEBUG && apply_filters('fp_esperienze_debug_shop_filtering', false)) {
+                    error_log('FP Esperienze: Excluded experience products from general query on ' . $_SERVER['REQUEST_URI'] ?? 'unknown');
+                }
+            }
         }
     }
 
@@ -305,11 +342,22 @@ class Plugin {
         // Our shortcode specifically looks for experience products
         $meta_query = $query->get('meta_query') ?: [];
         
+        // Also check if we're in a shortcode context via global flag
+        if (defined('DOING_FP_SHORTCODE') && DOING_FP_SHORTCODE) {
+            return true;
+        }
+        
         foreach ($meta_query as $meta_clause) {
             if (is_array($meta_clause) &&
                 isset($meta_clause['key']) && $meta_clause['key'] === '_product_type' &&
                 isset($meta_clause['value']) && $meta_clause['value'] === 'experience' &&
                 isset($meta_clause['compare']) && $meta_clause['compare'] === '=') {
+                
+                // Debug logging
+                if (defined('WP_DEBUG') && WP_DEBUG && apply_filters('fp_esperienze_debug_shop_filtering', false)) {
+                    error_log('FP Esperienze: Detected experience shortcode query on ' . $_SERVER['REQUEST_URI'] ?? 'unknown');
+                }
+                
                 return true;
             }
         }
