@@ -313,7 +313,8 @@ class Installer {
             KEY order_id (order_id),
             KEY product_id (product_id),
             KEY booking_date (booking_date),
-            KEY status (status)
+            KEY status (status),
+            UNIQUE KEY order_item_unique (order_id, order_item_id)
         ) $charset_collate;";
 
         // Gift Vouchers table (new structure for gift experience feature)
@@ -534,6 +535,7 @@ class Installer {
                 'date_status' => 'ADD INDEX idx_date_status (booking_date, status)',
                 'product_status' => 'ADD INDEX idx_product_status (product_id, status)',
                 'status_active' => 'ADD INDEX idx_status_active (status)',
+                'order_item_unique' => 'ADD UNIQUE KEY order_item_unique (order_id, order_item_id)',
             ],
             
             // Schedules table performance indexes  
@@ -557,19 +559,21 @@ class Installer {
 
         foreach ($indexes as $table => $table_indexes) {
             foreach ($table_indexes as $index_name => $index_sql) {
+                $key_name = ($index_name === 'order_item_unique') ? 'order_item_unique' : 'idx_' . $index_name;
+
                 // Check if index already exists
                 $existing_index = $wpdb->get_var($wpdb->prepare(
                     "SHOW INDEX FROM %i WHERE Key_name = %s",
                     $table,
-                    'idx_' . $index_name
+                    $key_name
                 ));
-                
+
                 if (!$existing_index) {
                     $full_sql = $wpdb->prepare("ALTER TABLE %i {$index_sql}", $table);
                     $wpdb->query($full_sql);
-                    
+
                     if (defined('WP_DEBUG') && WP_DEBUG) {
-                        error_log("FP Performance: Added index {$index_name} to table {$table}");
+                        error_log("FP Performance: Added index {$key_name} to table {$table}");
                     }
                 }
             }
