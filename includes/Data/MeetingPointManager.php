@@ -17,6 +17,13 @@ defined('ABSPATH') || exit;
 class MeetingPointManager {
 
     /**
+     * Simple in-memory cache for meeting points.
+     *
+     * @var array<int, object>
+     */
+    private static array $cache = [];
+
+    /**
      * Get all meeting points
      *
      * @param bool $translate Whether to return translated versions
@@ -53,23 +60,35 @@ class MeetingPointManager {
      * @return object|null
      */
     public static function getMeetingPoint(int $id, bool $translate = true): ?object {
+        if (isset(self::$cache[$id])) {
+            $result = self::$cache[$id];
+
+            if ($translate && I18nManager::isMultilingualActive()) {
+                return I18nManager::getTranslatedMeetingPoint($result);
+            }
+
+            return $result;
+        }
+
         global $wpdb;
-        
+
         $table_name = $wpdb->prefix . 'fp_meeting_points';
-        $result = $wpdb->get_row($wpdb->prepare(
+        $result     = $wpdb->get_row($wpdb->prepare(
             "SELECT * FROM $table_name WHERE id = %d",
             $id
         ));
-        
+
         if (!$result) {
             return null;
         }
-        
+
+        self::$cache[$id] = $result;
+
         // Apply translation if requested and multilingual plugin is active
         if ($translate && I18nManager::isMultilingualActive()) {
             $result = I18nManager::getTranslatedMeetingPoint($result);
         }
-        
+
         return $result;
     }
 
