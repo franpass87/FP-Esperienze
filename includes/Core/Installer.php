@@ -10,6 +10,7 @@ namespace FP\Esperienze\Core;
 use Exception;
 use FP\Esperienze\Core\CapabilityManager;
 use FP\Esperienze\Core\TranslationQueue;
+use FP\Esperienze\Core\PerformanceOptimizer;
 
 defined('ABSPATH') || exit;
 
@@ -43,6 +44,11 @@ class Installer {
         // Schedule translation queue processing
         if (!wp_next_scheduled(TranslationQueue::CRON_HOOK)) {
             wp_schedule_event(time() + MINUTE_IN_SECONDS, 'hourly', TranslationQueue::CRON_HOOK);
+        }
+        
+        // Initialize performance optimizations on activation
+        if (class_exists('FP\Esperienze\Core\PerformanceOptimizer')) {
+            PerformanceOptimizer::maybeAddOptimizedIndexes();
         }
         
         // Set activation redirect transient (only if not already complete)

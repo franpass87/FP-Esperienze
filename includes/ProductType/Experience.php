@@ -51,12 +51,22 @@ class Experience {
 	}
 
 	/**
-	 * Load the WC_Product_Experience class
+	 * Load the WC_Product_Experience class with enhanced validation
 	 */
 	private function loadProductClass(): void {
-		// Only load if not already loaded and WooCommerce is available
-		if ( ! class_exists( 'WC_Product_Experience' ) && class_exists( 'WC_Product' ) ) {
-			require_once FP_ESPERIENZE_PLUGIN_DIR . 'includes/ProductType/WC_Product_Experience.php';
+		// Check if WooCommerce is available
+		if ( ! class_exists( 'WC_Product' ) ) {
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				error_log( 'FP Esperienze: WC_Product class not found. WooCommerce may not be active.' );
+			}
+			return;
+		}
+		
+		// Verify our product class is autoloaded correctly
+		if ( ! class_exists( '\FP\Esperienze\ProductType\WC_Product_Experience' ) ) {
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				error_log( 'FP Esperienze: WC_Product_Experience class not found. Check autoloader configuration.' );
+			}
 		}
 	}
 
@@ -64,8 +74,8 @@ class Experience {
 	 * Initialize
 	 */
 	public function init(): void {
-		// Class is already loaded in constructor, but keep this for any future initialization needs
-		$this->loadProductClass();
+		// No manual class loading needed - autoloading handles this
+		// This method can be used for any other initialization in the future
 	}
 
 	/**
@@ -99,11 +109,19 @@ class Experience {
 	 */
 	public function getProductClass( string $classname, string $product_type ): string {
 		if ( $product_type === 'experience' ) {
-			// Ensure the WC_Product_Experience class is loaded when needed
-			if ( ! class_exists( 'WC_Product_Experience' ) ) {
-				$this->loadProductClass();
+			$experience_class = '\FP\Esperienze\ProductType\WC_Product_Experience';
+			
+			// Verify the class exists before returning it
+			if ( class_exists( $experience_class ) ) {
+				return $experience_class;
+			} else {
+				// Log the error and fall back to default
+				if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+					error_log( 'FP Esperienze: Experience product class not found: ' . $experience_class );
+				}
+				// Return the default WC_Product class as fallback
+				return 'WC_Product';
 			}
-			return 'WC_Product_Experience';
 		}
 		return $classname;
 	}

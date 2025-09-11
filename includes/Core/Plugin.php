@@ -9,6 +9,7 @@ namespace FP\Esperienze\Core;
 
 use FP\Esperienze\ProductType\Experience;
 use FP\Esperienze\Admin\MenuManager;
+use FP\Esperienze\Admin\FeatureDemoPage;
 use FP\Esperienze\Frontend\Shortcodes;
 use FP\Esperienze\Frontend\Templates;
 use FP\Esperienze\Frontend\SEOManager;
@@ -36,6 +37,10 @@ use FP\Esperienze\Core\CacheManager;
 use FP\Esperienze\Core\AssetOptimizer;
 use FP\Esperienze\Core\QueryMonitor;
 use FP\Esperienze\Core\TranslationQueue;
+use FP\Esperienze\Core\SecurityEnhancer;
+use FP\Esperienze\Core\PerformanceOptimizer;
+use FP\Esperienze\Core\UXEnhancer;
+use FP\Esperienze\Core\FeatureTester;
 
 defined('ABSPATH') || exit;
 
@@ -79,6 +84,26 @@ class Plugin {
 
         // Initialize translation queue
         TranslationQueue::init();
+        
+        // Initialize security enhancements
+        SecurityEnhancer::init();
+        
+        // Initialize performance optimizations
+        PerformanceOptimizer::init();
+        
+        // Initialize UX enhancements
+        UXEnhancer::init();
+        
+        // Temporary debug feature to test enhancements (can be removed later)
+        if (defined('WP_DEBUG') && WP_DEBUG && is_admin()) {
+            add_action('admin_notices', function() {
+                if (isset($_GET['fp_test_features']) && current_user_can('manage_options')) {
+                    if (class_exists('FP\Esperienze\Core\FeatureTester')) {
+                        FeatureTester::displayTestResults();
+                    }
+                }
+            });
+        }
         
         // Initialize other components later
         add_action('init', [$this, 'initComponents'], 20);
@@ -135,12 +160,32 @@ class Plugin {
     }
 
     /**
-     * Initialize experience product type early
+     * Initialize experience product type early with error handling
      */
     public function initExperienceProductType(): void {
-        // Initialize experience product type FIRST with high priority
-        // This ensures the filter is registered before WooCommerce loads product types
-        new Experience();
+        try {
+            // Initialize experience product type FIRST with high priority
+            // This ensures the filter is registered before WooCommerce loads product types
+            if (class_exists('FP\Esperienze\ProductType\Experience')) {
+                new Experience();
+            } else {
+                throw new \Exception('Experience product type class not found');
+            }
+        } catch (\Throwable $e) {
+            error_log('FP Esperienze: Failed to initialize Experience product type: ' . $e->getMessage());
+            
+            // Add admin notice for critical product type initialization failure
+            add_action('admin_notices', function() use ($e) {
+                if (current_user_can('manage_options')) {
+                    echo '<div class="notice notice-error"><p>' . 
+                         sprintf(
+                             esc_html__('FP Esperienze: Experience product type initialization failed. Error: %s', 'fp-esperienze'),
+                             esc_html($e->getMessage())
+                         ) . 
+                         '</p></div>';
+                }
+            });
+        }
     }
 
     /**
@@ -208,6 +253,11 @@ class Plugin {
     public function initAdmin(): void {
         new MenuManager();
         
+        // Initialize feature demo page (temporary for testing new features)
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            FeatureDemoPage::init();
+        }
+        
         // Initialize advanced analytics
         new \FP\Esperienze\Admin\AdvancedAnalytics();
     }
@@ -219,6 +269,150 @@ class Plugin {
         new Shortcodes();
         new Templates();
         new SEOManager();
+        
+        // Hide Experience products from normal WooCommerce shop/catalog
+        $this->initShopFiltering();
+    }
+
+    /**
+     * Initialize shop filtering to hide Experience products from normal WooCommerce shop
+     */
+    private function initShopFiltering(): void {
+        // Hide Experience products from shop, category, and tag pages
+        add_action('woocommerce_product_query', [$this, 'hideExperienceProductsFromShop']);
+        
+        // Also hide from general WordPress queries on shop-related pages
+        add_action('pre_get_posts', [$this, 'hideExperienceProductsFromQueries']);
+    }
+
+    /**
+     * Hide Experience products from WooCommerce shop queries
+     *
+     * @param \WP_Query $query WooCommerce product query
+     */
+    public function hideExperienceProductsFromShop(\WP_Query $query): void {
+        // Only affect main queries on frontend
+        if (is_admin() || !$query->is_main_query()) {
+            return;
+        }
+
+        // Only affect shop/catalog queries, not custom queries or shortcodes
+        // Check if this is a standard WooCommerce shop query
+        if ((is_shop() || is_product_category() || is_product_tag() || is_product_taxonomy()) &&
+            !wc_get_loop_prop('is_shortcode') &&
+            !$this->isOurShortcodeQuery($query)) {
+            
+            $meta_query = $query->get('meta_query') ?: [];
+            
+            // Check if we already have an experience filter to avoid duplicates
+            $has_experience_filter = false;
+            foreach ($meta_query as $clause) {
+                if (is_array($clause) && 
+                    isset($clause['key']) && $clause['key'] === '_product_type' &&
+                    isset($clause['value']) && $clause['value'] === 'experience') {
+                    $has_experience_filter = true;
+                    break;
+                }
+            }
+            
+            // Only add filter if not already present
+            if (!$has_experience_filter) {
+                $meta_query[] = [
+                    'key' => '_product_type',
+                    'value' => 'experience',
+                    'compare' => '!='
+                ];
+                
+                $query->set('meta_query', $meta_query);
+                
+                // Debug logging
+                if (defined('WP_DEBUG') && WP_DEBUG && apply_filters('fp_esperienze_debug_shop_filtering', false)) {
+                    error_log('FP Esperienze: Excluded experience products from shop query on ' . $_SERVER['REQUEST_URI'] ?? 'unknown');
+                }
+            }
+        }
+    }
+
+    /**
+     * Hide Experience products from general WordPress queries on shop pages
+     *
+     * @param \WP_Query $query WordPress query
+     */
+    public function hideExperienceProductsFromQueries(\WP_Query $query): void {
+        // Only affect main queries on frontend
+        if (is_admin() || !$query->is_main_query()) {
+            return;
+        }
+
+        // Only affect product queries on shop-related pages
+        // Make sure we don't interfere with our own shortcode queries
+        if ($query->get('post_type') === 'product' && 
+            (is_shop() || is_product_category() || is_product_tag() || is_product_taxonomy()) &&
+            !$this->isOurShortcodeQuery($query)) {
+            
+            $meta_query = $query->get('meta_query') ?: [];
+            
+            // Check if we already have an experience filter to avoid duplicates
+            $has_experience_filter = false;
+            foreach ($meta_query as $clause) {
+                if (is_array($clause) && 
+                    isset($clause['key']) && $clause['key'] === '_product_type' &&
+                    isset($clause['value']) && $clause['value'] === 'experience') {
+                    $has_experience_filter = true;
+                    break;
+                }
+            }
+            
+            // Only add filter if not already present
+            if (!$has_experience_filter) {
+                $meta_query[] = [
+                    'key' => '_product_type',
+                    'value' => 'experience',
+                    'compare' => '!='
+                ];
+                
+                $query->set('meta_query', $meta_query);
+                
+                // Debug logging
+                if (defined('WP_DEBUG') && WP_DEBUG && apply_filters('fp_esperienze_debug_shop_filtering', false)) {
+                    error_log('FP Esperienze: Excluded experience products from general query on ' . $_SERVER['REQUEST_URI'] ?? 'unknown');
+                }
+            }
+        }
+    }
+
+    /**
+     * Check if this is our experience archive shortcode query
+     *
+     * @param \WP_Query $query WordPress query
+     * @return bool
+     */
+    private function isOurShortcodeQuery(\WP_Query $query): bool {
+        // Check if this query was initiated by our shortcode
+        // Our shortcode specifically looks for experience products
+        $meta_query = $query->get('meta_query') ?: [];
+        
+        // Also check if we're in a shortcode context via global flag
+        if (defined('DOING_FP_SHORTCODE') && DOING_FP_SHORTCODE) {
+            return true;
+        }
+        
+        foreach ($meta_query as $meta_clause) {
+            if (is_array($meta_clause) &&
+                isset($meta_clause['key']) && $meta_clause['key'] === '_product_type' &&
+                isset($meta_clause['value']) && $meta_clause['value'] === 'experience' &&
+                isset($meta_clause['compare']) && $meta_clause['compare'] === '=') {
+                
+                // Debug logging
+                if (defined('WP_DEBUG') && WP_DEBUG && apply_filters('fp_esperienze_debug_shop_filtering', false)) {
+                    error_log('FP Esperienze: Detected experience shortcode query on ' . $_SERVER['REQUEST_URI'] ?? 'unknown');
+                }
+                
+                return true;
+            }
+        }
+        
+        return false;
     }
 
     /**
