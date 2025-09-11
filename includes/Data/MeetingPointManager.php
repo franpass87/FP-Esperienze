@@ -26,9 +26,10 @@ class MeetingPointManager {
         global $wpdb;
         
         $table_name = $wpdb->prefix . 'fp_meeting_points';
-        $results = $wpdb->get_results($wpdb->prepare(
-            "SELECT * FROM `{$table_name}` ORDER BY name ASC"
-        ));
+        $results = $wpdb->get_results(
+            // No external variables in this query.
+            "SELECT * FROM {$table_name} ORDER BY name ASC"
+        );
         
         if (!$results) {
             return [];
