@@ -1090,12 +1090,17 @@ class MobileAPIManager {
 
         $payload_json = wp_json_encode($payload);
         $signature    = hash_hmac('sha256', $payload_json, wp_salt('auth'));
-
-        return base64_encode($payload_json . '|' . $signature);
+        return rtrim(strtr(base64_encode($payload_json . '|' . $signature), '+/', '-_'), '=');
     }
 
     private function validateMobileToken(string $token): ?int {
-        $decoded = base64_decode($token);
+        $token   = strtr($token, '-_', '+/');
+        $decoded = base64_decode($token, true);
+
+        if ($decoded === false) {
+            return null;
+        }
+
         $parts = explode('|', $decoded);
         
         if (count($parts) !== 2) {
@@ -1115,6 +1120,11 @@ class MobileAPIManager {
         }
 
         $data = json_decode($payload, true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            error_log('Failed to decode mobile token payload: ' . json_last_error_msg());
+            return null;
+        }
 
         if (!$data || $data['exp'] < time()) {
             return null;
