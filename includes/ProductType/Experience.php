@@ -54,9 +54,10 @@ class Experience {
 	 * Load the WC_Product_Experience class
 	 */
 	private function loadProductClass(): void {
-		// Only load if not already loaded and WooCommerce is available
-		if ( ! class_exists( 'WC_Product_Experience' ) && class_exists( 'WC_Product' ) ) {
-			require_once FP_ESPERIENZE_PLUGIN_DIR . 'includes/ProductType/WC_Product_Experience.php';
+		// The class is now autoloaded via namespace, no manual require needed
+		// Just check if WooCommerce is available
+		if ( ! class_exists( 'WC_Product' ) ) {
+			return;
 		}
 	}
 
@@ -64,8 +65,8 @@ class Experience {
 	 * Initialize
 	 */
 	public function init(): void {
-		// Class is already loaded in constructor, but keep this for any future initialization needs
-		$this->loadProductClass();
+		// No manual class loading needed - autoloading handles this
+		// This method can be used for any other initialization in the future
 	}
 
 	/**
@@ -99,11 +100,8 @@ class Experience {
 	 */
 	public function getProductClass( string $classname, string $product_type ): string {
 		if ( $product_type === 'experience' ) {
-			// Ensure the WC_Product_Experience class is loaded when needed
-			if ( ! class_exists( 'WC_Product_Experience' ) ) {
-				$this->loadProductClass();
-			}
-			return 'WC_Product_Experience';
+			// Return the fully qualified class name for namespaced class
+			return '\FP\Esperienze\ProductType\WC_Product_Experience';
 		}
 		return $classname;
 	}

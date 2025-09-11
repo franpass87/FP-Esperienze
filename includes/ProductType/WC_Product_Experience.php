@@ -5,6 +5,8 @@
  * @package FP\Esperienze\ProductType
  */
 
+namespace FP\Esperienze\ProductType;
+
 defined('ABSPATH') || exit;
 
 use FP\Esperienze\Data\ScheduleManager;
