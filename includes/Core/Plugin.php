@@ -219,6 +219,102 @@ class Plugin {
         new Shortcodes();
         new Templates();
         new SEOManager();
+        
+        // Hide Experience products from normal WooCommerce shop/catalog
+        $this->initShopFiltering();
+    }
+
+    /**
+     * Initialize shop filtering to hide Experience products from normal WooCommerce shop
+     */
+    private function initShopFiltering(): void {
+        // Hide Experience products from shop, category, and tag pages
+        add_action('woocommerce_product_query', [$this, 'hideExperienceProductsFromShop']);
+        
+        // Also hide from general WordPress queries on shop-related pages
+        add_action('pre_get_posts', [$this, 'hideExperienceProductsFromQueries']);
+    }
+
+    /**
+     * Hide Experience products from WooCommerce shop queries
+     *
+     * @param \WP_Query $query WooCommerce product query
+     */
+    public function hideExperienceProductsFromShop(\WP_Query $query): void {
+        // Only affect main queries on frontend
+        if (is_admin() || !$query->is_main_query()) {
+            return;
+        }
+
+        // Only affect shop/catalog queries, not custom queries or shortcodes
+        // Check if this is a standard WooCommerce shop query
+        if ((is_shop() || is_product_category() || is_product_tag() || is_product_taxonomy()) &&
+            !wc_get_loop_prop('is_shortcode')) {
+            
+            $meta_query = $query->get('meta_query') ?: [];
+            
+            // Add condition to exclude Experience products
+            $meta_query[] = [
+                'key' => '_product_type',
+                'value' => 'experience',
+                'compare' => '!='
+            ];
+            
+            $query->set('meta_query', $meta_query);
+        }
+    }
+
+    /**
+     * Hide Experience products from general WordPress queries on shop pages
+     *
+     * @param \WP_Query $query WordPress query
+     */
+    public function hideExperienceProductsFromQueries(\WP_Query $query): void {
+        // Only affect main queries on frontend
+        if (is_admin() || !$query->is_main_query()) {
+            return;
+        }
+
+        // Only affect product queries on shop-related pages
+        // Make sure we don't interfere with our own shortcode queries
+        if ($query->get('post_type') === 'product' && 
+            (is_shop() || is_product_category() || is_product_tag() || is_product_taxonomy()) &&
+            !$this->isOurShortcodeQuery($query)) {
+            
+            $meta_query = $query->get('meta_query') ?: [];
+            
+            // Add condition to exclude Experience products
+            $meta_query[] = [
+                'key' => '_product_type',
+                'value' => 'experience',
+                'compare' => '!='
+            ];
+            
+            $query->set('meta_query', $meta_query);
+        }
+    }
+
+    /**
+     * Check if this is our experience archive shortcode query
+     *
+     * @param \WP_Query $query WordPress query
+     * @return bool
+     */
+    private function isOurShortcodeQuery(\WP_Query $query): bool {
+        // Check if this query was initiated by our shortcode
+        // Our shortcode specifically looks for experience products
+        $meta_query = $query->get('meta_query') ?: [];
+        
+        foreach ($meta_query as $meta_clause) {
+            if (is_array($meta_clause) &&
+                isset($meta_clause['key']) && $meta_clause['key'] === '_product_type' &&
+                isset($meta_clause['value']) && $meta_clause['value'] === 'experience' &&
+                isset($meta_clause['compare']) && $meta_clause['compare'] === '=') {
+                return true;
+            }
+        }
+        
+        return false;
     }
 
     /**
