@@ -24,7 +24,8 @@ class AutoTranslator {
      * @return string Translated text or original text on failure
      */
     public static function translate(string $text, string $target, string $source = 'auto'): string {
-        $cache_key = 'fp_tr_' . md5($text . '|' . $target);
+        // Include source language to avoid cache collisions between different originals
+        $cache_key = 'fp_tr_' . md5($text . '|' . $source . '|' . $target);
         $cached    = get_transient($cache_key);
         if (false !== $cached) {
             return (string) $cached;
