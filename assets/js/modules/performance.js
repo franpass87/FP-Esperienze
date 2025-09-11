@@ -3,13 +3,13 @@
  * Handles performance metrics, monitoring, and optimization
  */
 
-if (typeof jQuery === 'undefined') {
-    console.error('FP Esperienze: jQuery is required for the performance module.');
-    return;
-}
-
-(function($) {
-    'use strict';
+(function() {
+    if (typeof jQuery === 'undefined') {
+        console.error('FP Esperienze: jQuery is required for the performance module.');
+        return;
+    }
+    (function($) {
+        'use strict';
 
     window.FPEsperienzePerformance = {
         
@@ -517,4 +517,5 @@ if (typeof jQuery === 'undefined') {
         measure: window.FPEsperienzePerformance.measure.bind(window.FPEsperienzePerformance)
     };
 
-})(jQuery);
+    })(jQuery);
+})();
