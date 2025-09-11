@@ -27,7 +27,7 @@ class MeetingPointManager {
         
         $table_name = $wpdb->prefix . 'fp_meeting_points';
         $results = $wpdb->get_results(
-            // No external variables in this query.
+            // Query contains no external variables, so prepare() is unnecessary.
             "SELECT * FROM {$table_name} ORDER BY name ASC"
         );
         
