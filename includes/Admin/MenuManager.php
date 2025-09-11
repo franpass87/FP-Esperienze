@@ -4346,6 +4346,7 @@ class MenuManager {
                 ]
             ],
             's' => $term,
+            'search_columns' => ['post_title'],
             'posts_per_page' => 50,
             'paged' => $page,
             'orderby' => 'title',
