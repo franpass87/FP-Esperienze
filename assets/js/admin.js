@@ -2,13 +2,13 @@
  * FP Esperienze Admin JavaScript
  */
 
-if (typeof jQuery === 'undefined') {
-    console.error('FP Esperienze: jQuery is required for the admin script.');
-    return;
-}
-
-(function($) {
-    'use strict';
+(function() {
+    if (typeof jQuery === 'undefined') {
+        console.error('FP Esperienze: jQuery is required for the admin script.');
+        return;
+    }
+    (function($) {
+        'use strict';
 
     let __ = ( text ) => text;
     let sprintf = ( template, ...args ) => {
@@ -2604,4 +2604,5 @@ if (typeof jQuery === 'undefined') {
         }
     };
 
-})(jQuery);
+    })(jQuery);
+})();
