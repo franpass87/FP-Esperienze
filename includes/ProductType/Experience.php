@@ -29,7 +29,7 @@ class Experience {
 		$this->loadProductClass();
 
 		add_action( 'init', array( $this, 'init' ) );
-		add_filter( 'product_type_selector', array( $this, 'addProductType' ) );
+		add_filter( 'woocommerce_product_type_selector', array( $this, 'addProductType' ) );
 		add_filter( 'woocommerce_product_class', array( $this, 'getProductClass' ), 10, 2 );
 		add_filter( 'woocommerce_product_data_tabs', array( $this, 'addProductDataTabs' ) );
 		add_action( 'woocommerce_product_data_panels', array( $this, 'addProductDataPanels' ) );
