@@ -182,4 +182,22 @@ class WC_Product_Experience extends \WC_Product {
             'tax_class' => $tax_class
         ]);
     }
+
+    /**
+     * Check if this is an event (fixed date) vs experience (recurring)
+     *
+     * @return bool True if event, false if experience
+     */
+    public function is_event(): bool {
+        return get_post_meta($this->get_id(), '_fp_experience_type', true) === 'event';
+    }
+
+    /**
+     * Get experience type
+     *
+     * @return string 'event' or 'experience'
+     */
+    public function get_experience_type(): string {
+        return get_post_meta($this->get_id(), '_fp_experience_type', true) ?: 'experience';
+    }
 }

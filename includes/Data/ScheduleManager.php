@@ -18,22 +18,36 @@ class ScheduleManager {
      * Get schedules for a product
      *
      * @param int $product_id Product ID
+     * @param string $schedule_type Optional filter by schedule type ('recurring', 'fixed', or null for all)
      * @return array
      */
-    public static function getSchedules(int $product_id): array {
+    public static function getSchedules(int $product_id, ?string $schedule_type = null): array {
         global $wpdb;
         
         $table_name = $wpdb->prefix . 'fp_schedules';
-        $results = $wpdb->get_results($wpdb->prepare(
-            "SELECT * FROM $table_name WHERE product_id = %d AND is_active = 1 ORDER BY day_of_week, start_time",
-            $product_id
-        ));
+        
+        $where_clause = "WHERE product_id = %d AND is_active = 1";
+        $params = [$product_id];
+        
+        if ($schedule_type !== null) {
+            $where_clause .= " AND schedule_type = %s";
+            $params[] = $schedule_type;
+        }
+        
+        // Order by appropriate field based on type
+        $order_clause = "ORDER BY 
+            CASE WHEN schedule_type = 'fixed' THEN event_date ELSE NULL END,
+            CASE WHEN schedule_type = 'recurring' THEN day_of_week ELSE NULL END,
+            start_time";
+        
+        $sql = "SELECT * FROM $table_name $where_clause $order_clause";
+        $results = $wpdb->get_results($wpdb->prepare($sql, ...$params));
         
         return $results ?: [];
     }
     
     /**
-     * Get schedules for a specific day
+     * Get schedules for a specific day (supports both recurring and event schedules)
      *
      * @param int $product_id Product ID
      * @param int $day_of_week Day of week (0=Sunday, 1=Monday, etc.)
@@ -44,12 +58,61 @@ class ScheduleManager {
         
         $table_name = $wpdb->prefix . 'fp_schedules';
         $results = $wpdb->get_results($wpdb->prepare(
-            "SELECT * FROM $table_name WHERE product_id = %d AND day_of_week = %d AND is_active = 1 ORDER BY start_time",
+            "SELECT * FROM $table_name 
+             WHERE product_id = %d 
+             AND ((schedule_type = 'recurring' AND day_of_week = %d) OR schedule_type = 'fixed')
+             AND is_active = 1 
+             ORDER BY start_time",
             $product_id,
             $day_of_week
         ));
         
         return $results ?: [];
+    }
+    
+    /**
+     * Get event schedules for a specific date
+     *
+     * @param int $product_id Product ID
+     * @param string $date Date in Y-m-d format
+     * @return array
+     */
+    public static function getEventSchedulesForDate(int $product_id, string $date): array {
+        global $wpdb;
+        
+        $table_name = $wpdb->prefix . 'fp_schedules';
+        $results = $wpdb->get_results($wpdb->prepare(
+            "SELECT * FROM $table_name 
+             WHERE product_id = %d 
+             AND schedule_type = 'fixed' 
+             AND event_date = %s 
+             AND is_active = 1 
+             ORDER BY start_time",
+            $product_id,
+            $date
+        ));
+        
+        return $results ?: [];
+    }
+    
+    /**
+     * Get all recurring schedules for a product
+     *
+     * @param int $product_id Product ID
+     * @return array
+     */
+    public static function getRecurringSchedules(int $product_id): array {
+        return self::getSchedules($product_id, 'recurring');
+    }
+    
+    /**
+     * Get all event schedules for a product
+     *
+     * @param int $product_id Product ID
+     * @return array
+     */
+    public static function getEventSchedules(int $product_id): array {
+        return self::getSchedules($product_id, 'fixed');
     }
     
     /**
@@ -65,20 +128,41 @@ class ScheduleManager {
         
         // Only set required defaults - allow override fields to be NULL for inheritance
         $required_defaults = [
+            'schedule_type' => 'recurring',
             'is_active' => 1
         ];
         
         $data = wp_parse_args($data, $required_defaults);
         
-        // Prepare insert data with proper NULL handling for override fields
+        // Validate schedule type and required fields
+        if (!in_array($data['schedule_type'], ['recurring', 'fixed'])) {
+            return false;
+        }
+        
+        // Prepare base insert data
         $insert_data = [
             'product_id' => (int) $data['product_id'],
-            'day_of_week' => (int) $data['day_of_week'],
+            'schedule_type' => sanitize_text_field($data['schedule_type']),
             'start_time' => sanitize_text_field($data['start_time']),
             'is_active' => (int) $data['is_active']
         ];
         
-        $formats = ['%d', '%d', '%s', '%d'];
+        $formats = ['%d', '%s', '%s', '%d'];
+        
+        // Handle schedule type specific fields
+        if ($data['schedule_type'] === 'recurring') {
+            if (empty($data['day_of_week']) && $data['day_of_week'] !== 0 && $data['day_of_week'] !== '0') {
+                return false; // day_of_week is required for recurring schedules
+            }
+            $insert_data['day_of_week'] = (int) $data['day_of_week'];
+            $formats[] = '%d';
+        } elseif ($data['schedule_type'] === 'fixed') {
+            if (empty($data['event_date'])) {
+                return false; // event_date is required for fixed schedules
+            }
+            $insert_data['event_date'] = sanitize_text_field($data['event_date']);
+            $formats[] = '%s';
+        }
         
         // Handle override fields - allow NULL for inheritance
         if (isset($data['duration_min']) && $data['duration_min'] !== '' && $data['duration_min'] !== null) {
