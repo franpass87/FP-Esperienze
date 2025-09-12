@@ -2725,4 +2725,28 @@ class Experience {
 	 * @param int $product_id Product ID
 	 * @return bool True if there are actual overrides that differ from defaults
 	 */
+	private function hasActualOverrides( array $overrides, int $index, int $product_id ): bool {
+		// Get product defaults for comparison
+		$defaults = [
+			'capacity' => get_post_meta( $product_id, '_fp_exp_capacity', true ),
+			'price_adult' => get_post_meta( $product_id, '_fp_exp_adult_price', true ),
+			'price_child' => get_post_meta( $product_id, '_fp_exp_child_price', true ),
+		];
+		
+		// Check each override field against defaults
+		foreach ( $overrides as $key => $value ) {
+			if ( isset( $defaults[ $key ] ) ) {
+				// Convert to comparable types
+				$default_value = (string) $defaults[ $key ];
+				$override_value = (string) $value;
+				
+				// If they differ, this is a real override
+				if ( $default_value !== $override_value ) {
+					return true;
+				}
+			}
+		}
+		
+		return false;
+	}
 }
