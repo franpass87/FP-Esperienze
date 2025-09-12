@@ -244,6 +244,9 @@ class Plugin {
 
         // Initialize WPML hooks for automatic translation jobs
         new WPMLHooks();
+        
+        // Initialize REST API
+        add_action('rest_api_init', [$this, 'initREST']);
     }
 
     /**
@@ -268,6 +271,7 @@ class Plugin {
         new Shortcodes();
         new Templates();
         new SEOManager();
+        new \FP\Esperienze\Frontend\WidgetCheckoutHandler();
         
         // Hide Experience products from normal WooCommerce shop/catalog
         $this->initShopFiltering();
@@ -423,6 +427,7 @@ class Plugin {
         new BookingsController();
         new ICSAPI();
         new SecurePDFAPI();
+        new \FP\Esperienze\REST\WidgetAPI();
         
         // Initialize mobile API manager
         new \FP\Esperienze\REST\MobileAPIManager();

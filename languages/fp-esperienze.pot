@@ -4439,7 +4439,41 @@ msgid "Category does not exist"
 msgstr ""
 
 #: includes/REST/MobileAPIManager.php:442
+#: includes/REST/WidgetAPI.php:98
 msgid "Experience not found"
+msgstr ""
+
+#: includes/Frontend/WidgetCheckoutHandler.php:52
+msgid "Invalid booking data received from widget."
+msgstr ""
+
+#: includes/Frontend/WidgetCheckoutHandler.php:58
+msgid "Experience not found."
+msgstr ""
+
+#: includes/Frontend/WidgetCheckoutHandler.php:94
+msgid "Failed to add experience to cart."
+msgstr ""
+
+#: includes/Frontend/WidgetCheckoutHandler.php:99
+#, php-format
+msgid "\"%s\" has been added to your cart."
+msgstr ""
+
+#: includes/REST/WidgetAPI.php:242
+msgid "No schedules available"
+msgstr ""
+
+#: includes/REST/WidgetAPI.php:341
+msgid "Book This Experience"
+msgstr ""
+
+#: includes/REST/WidgetAPI.php:345
+msgid "Please select at least one participant"
+msgstr ""
+
+#: includes/REST/WidgetAPI.php:346
+msgid "Book Now"
 msgstr ""
 
 #: includes/REST/MobileAPIManager.php:587
