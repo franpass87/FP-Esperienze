@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FP Esperienze Widget Demo</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .demo-section {
+            background: white;
+            padding: 30px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .demo-title {
+            color: #333;
+            border-bottom: 2px solid #007cba;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .widget-container {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            background: white;
+        }
+        
+        .widget-iframe {
+            width: 100%;
+            height: 600px;
+            border: none;
+            display: block;
+        }
+        
+        .code-example {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            overflow-x: auto;
+        }
+        
+        .notice {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 15px 0;
+        }
+        
+        .success {
+            background: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        
+        .info {
+            background: #d1ecf1;
+            border-color: #bee5eb;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <h1>FP Esperienze - Iframe Widget Demo</h1>
+    
+    <div class="demo-section">
+        <h2 class="demo-title">🎯 Widget Preview</h2>
+        <p>This is how the FP Esperienze booking widget appears when embedded in external websites:</p>
+        
+        <div class="notice info">
+            <strong>Note:</strong> Replace <code>YOUR_SITE_URL</code> and <code>PRODUCT_ID</code> with your actual WordPress site URL and experience product ID.
+        </div>
+        
+        <div class="widget-container">
+            <iframe 
+                id="fp-widget-iframe"
+                class="widget-iframe"
+                src="YOUR_SITE_URL/wp-json/fp-exp/v1/widget/iframe/PRODUCT_ID?theme=light&return_url=https://example.com/thank-you"
+                title="Experience Booking Widget">
+            </iframe>
+        </div>
+    </div>
+    
+    <div class="demo-section">
+        <h2 class="demo-title">📋 Integration Guide</h2>
+        
+        <h3>Basic Iframe Embedding</h3>
+        <p>Add this HTML code to any website to embed the booking widget:</p>
+        
+        <div class="code-example">&lt;iframe 
+    src="https://yoursite.com/wp-json/fp-exp/v1/widget/iframe/123"
+    width="100%" 
+    height="600" 
+    frameborder="0"
+    title="Experience Booking"&gt;
+&lt;/iframe&gt;</div>
+        
+        <h3>Advanced Options</h3>
+        <p>Customize the widget with these URL parameters:</p>
+        
+        <div class="code-example">https://yoursite.com/wp-json/fp-exp/v1/widget/iframe/123?
+    theme=light              # Theme: 'light' or 'dark'
+    &amp;width=100%              # Widget width (default: 100%)
+    &amp;height=600px            # Widget height (default: 600px)
+    &amp;return_url=https://...  # URL to redirect after booking</div>
+        
+        <h3>JavaScript Integration</h3>
+        <p>For dynamic integration and event handling:</p>
+        
+        <div class="code-example">&lt;script&gt;
+// Listen for widget events
+window.addEventListener('message', function(event) {
+    if (event.data.type === 'fp_widget_ready') {
+        console.log('Widget loaded successfully');
+        // Optionally resize iframe based on content
+        document.getElementById('widget').height = event.data.height;
+    }
+    
+    if (event.data.type === 'fp_widget_checkout') {
+        // Handle checkout - open in popup or redirect
+        window.open(event.data.url, 'checkout', 'width=800,height=600');
+    }
+    
+    if (event.data.type === 'fp_widget_booking_success') {
+        // Handle successful booking
+        alert('Booking successful! Order ID: ' + event.data.order_id);
+    }
+});
+
+// Dynamic widget loading
+function loadWidget(productId, container) {
+    const iframe = document.createElement('iframe');
+    iframe.src = `https://yoursite.com/wp-json/fp-exp/v1/widget/iframe/${productId}`;
+    iframe.style.width = '100%';
+    iframe.style.height = '600px';
+    iframe.style.border = 'none';
+    container.appendChild(iframe);
+}
+&lt;/script&gt;</div>
+    </div>
+    
+    <div class="demo-section">
+        <h2 class="demo-title">⚙️ Configuration</h2>
+        
+        <h3>WordPress Setup</h3>
+        <ol>
+            <li>Ensure FP Esperienze plugin is installed and activated</li>
+            <li>Create experience products with schedules and pricing</li>
+            <li>Configure meeting points and extras (optional)</li>
+            <li>Test the widget URL in your browser first</li>
+        </ol>
+        
+        <h3>Security & CORS</h3>
+        <div class="notice">
+            <strong>Important:</strong> The widget is designed to work across domains. The checkout process redirects to your main site for security and PCI compliance.
+        </div>
+        
+        <h3>Responsive Design</h3>
+        <p>The widget automatically adapts to different screen sizes. For mobile optimization:</p>
+        
+        <div class="code-example">&lt;style&gt;
+.widget-container {
+    width: 100%;
+    max-width: 400px; /* Limit width on desktop */
+    margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+    .widget-container iframe {
+        height: 500px; /* Reduce height on mobile */
+    }
+}
+&lt;/style&gt;</div>
+    </div>
+    
+    <div class="demo-section">
+        <h2 class="demo-title">🔗 API Endpoints</h2>
+        
+        <h3>Widget Iframe</h3>
+        <div class="code-example">GET /wp-json/fp-exp/v1/widget/iframe/{product_id}
+Returns: Complete HTML for iframe embedding</div>
+        
+        <h3>Widget Data (JSON)</h3>
+        <div class="code-example">GET /wp-json/fp-exp/v1/widget/data/{product_id}
+Returns: JSON data for custom widget implementations</div>
+        
+        <div class="notice success">
+            <strong>Ready to use!</strong> Your FP Esperienze iframe widget is now available for embedding on any website.
+        </div>
+    </div>
+
+    <script>
+        // Demo functionality
+        window.addEventListener('message', function(event) {
+            if (event.origin !== window.location.origin) {
+                // Handle messages from widget iframe
+                console.log('Widget message:', event.data);
+                
+                if (event.data.type === 'fp_widget_ready') {
+                    console.log('Widget is ready, height:', event.data.height);
+                }
+                
+                if (event.data.type === 'fp_widget_checkout') {
+                    console.log('Checkout requested:', event.data.url);
+                    // In real implementation, this would open checkout
+                    alert('Checkout would open: ' + event.data.url);
+                }
+            }
+        });
+        
+        // Update iframe src with current domain (for demo purposes)
+        document.addEventListener('DOMContentLoaded', function() {
+            const iframe = document.getElementById('fp-widget-iframe');
+            const currentDomain = window.location.protocol + '//' + window.location.host;
+            
+            // This is just for demo - in real usage, you'd use your WordPress site URL
+            iframe.src = iframe.src.replace('YOUR_SITE_URL', currentDomain).replace('PRODUCT_ID', '1');
+        });
+    </script>
+</body>
+</html>
