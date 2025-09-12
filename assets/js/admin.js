@@ -108,6 +108,7 @@
             }
 
             this.handleProductTypeChange();
+            this.handleExperienceTypeChange(); // Add experience type handling
             this.bindEvents();
             this.initBookingsPage();
             
@@ -201,11 +202,65 @@
         },
 
         /**
+         * Handle experience type change (experience vs event)
+         */
+        handleExperienceTypeChange: function() {
+            var $experienceTypeField = $('#_fp_experience_type');
+            
+            if ($experienceTypeField.length) {
+                // Initialize visibility based on current value
+                this.toggleExperienceTypeFields($experienceTypeField.val());
+                
+                // Listen for experience type changes
+                $experienceTypeField.on('change', function() {
+                    FPEsperienzeAdmin.toggleExperienceTypeFields($(this).val());
+                });
+            }
+        },
+
+        /**
+         * Toggle fields based on experience type (experience vs event)
+         */
+        toggleExperienceTypeFields: function(experienceType) {
+            var $recurringSchedules = $('#fp-recurring-schedules');
+            var $eventSchedules = $('#fp-event-schedules');
+            var $overridesSection = $('#fp-overrides-section');
+            
+            if (experienceType === 'event') {
+                // Show event sections, hide experience sections
+                $recurringSchedules.hide();
+                $eventSchedules.show();
+                
+                // Hide overrides for events (events have fixed dates, no need for overrides)
+                $overridesSection.hide();
+                
+                // Update section descriptions
+                $eventSchedules.find('.fp-section-legend').text(fp_esperienze_admin.strings.event_schedules || 'Event Dates & Times');
+                
+            } else {
+                // Show experience sections, hide event sections
+                $recurringSchedules.show();
+                $eventSchedules.hide();
+                $overridesSection.show();
+                
+                // Restore section descriptions
+                $recurringSchedules.find('.fp-section-legend').text(fp_esperienze_admin.strings.recurring_schedules || 'Recurring Time Slots');
+            }
+            
+            // Add body class for CSS targeting
+            $('body').removeClass('fp-experience-type-experience fp-experience-type-event')
+                     .addClass('fp-experience-type-' + (experienceType || 'experience'));
+        },
+
+        /**
          * Bind events
          */
         bindEvents: function() {
             // Schedule management
             this.bindScheduleEvents();
+            
+            // Event schedule management
+            this.bindEventScheduleEvents();
             
             // Modern schedule and override management - REFACTORED
             this.initModernScheduleBuilder();
@@ -442,6 +497,182 @@
             });
         },
         
+        /**
+         * Bind event schedule events
+         */
+        bindEventScheduleEvents: function() {
+            var self = this;
+            
+            // Add new event date
+            $(document).on('click', '#fp-add-event-schedule', function(e) {
+                e.preventDefault();
+                self.addEventDateRow();
+            });
+            
+            // Remove event date
+            $(document).on('click', '.fp-remove-event-date', function(e) {
+                e.preventDefault();
+                if (confirm(fp_esperienze_admin.strings.confirm_remove_event_date || 'Are you sure you want to remove this event date and all its time slots?')) {
+                    $(this).closest('.fp-event-date-card').remove();
+                    self.markUnsavedChanges();
+                }
+            });
+            
+            // Add time slot to existing event date
+            $(document).on('click', '.fp-add-event-timeslot', function(e) {
+                e.preventDefault();
+                var eventDate = $(this).data('date');
+                self.addEventTimeslotRow(eventDate, $(this).closest('.fp-event-date-card'));
+            });
+            
+            // Remove event time slot
+            $(document).on('click', '.fp-remove-event-timeslot', function(e) {
+                e.preventDefault();
+                var $timeslotCard = $(this).closest('.fp-event-timeslot-card');
+                var $dateCard = $timeslotCard.closest('.fp-event-date-card');
+                
+                $timeslotCard.remove();
+                
+                // If no more timeslots, remove the entire date
+                if ($dateCard.find('.fp-event-timeslot-card').length === 0) {
+                    $dateCard.remove();
+                }
+                
+                self.markUnsavedChanges();
+            });
+            
+            // Mark unsaved changes on event schedule field changes
+            $(document).on('change', 'input[name*="event_schedules"], select[name*="event_schedules"]', function() {
+                self.markUnsavedChanges();
+            });
+        },
+        
+        /**
+         * Add new event date row
+         */
+        addEventDateRow: function() {
+            var today = new Date();
+            var tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
+            var dateStr = tomorrow.toISOString().split('T')[0];
+            
+            // Check if date already exists
+            if ($('.fp-event-date-card[data-date="' + dateStr + '"]').length > 0) {
+                alert(fp_esperienze_admin.strings.event_date_exists || 'This event date already exists.');
+                return;
+            }
+            
+            var $container = $('#fp-event-schedule-container');
+            var $emptyMessage = $container.find('.fp-empty-events-message');
+            
+            if ($emptyMessage.length) {
+                $emptyMessage.remove();
+            }
+            
+            var eventCardHtml = this.generateEventDateCardHtml(dateStr);
+            $container.append(eventCardHtml);
+            
+            this.markUnsavedChanges();
+        },
+        
+        /**
+         * Add timeslot to existing event date
+         */
+        addEventTimeslotRow: function(eventDate, $dateCard) {
+            var $timeslotsContainer = $dateCard.find('.fp-event-timeslots');
+            var timeslotIndex = $timeslotsContainer.find('.fp-event-timeslot-card').length;
+            
+            var timeslotHtml = this.generateEventTimeslotHtml(eventDate, timeslotIndex);
+            $timeslotsContainer.append(timeslotHtml);
+            
+            this.markUnsavedChanges();
+        },
+        
+        /**
+         * Generate HTML for new event date card
+         */
+        generateEventDateCardHtml: function(dateStr) {
+            var dateObj = new Date(dateStr);
+            var formattedDate = dateObj.toLocaleDateString();
+            
+            return '<div class="fp-event-date-card" data-date="' + dateStr + '">' +
+                '<div class="fp-event-date-header">' +
+                    '<div class="fp-event-date-info">' +
+                        '<span class="dashicons dashicons-calendar-alt"></span>' +
+                        '<strong>' + formattedDate + '</strong>' +
+                        '<span class="fp-event-date-meta">0 time slots</span>' +
+                    '</div>' +
+                    '<div class="fp-event-date-actions">' +
+                        '<button type="button" class="button fp-add-event-timeslot" data-date="' + dateStr + '">' +
+                            '<span class="dashicons dashicons-clock"></span>' +
+                            (fp_esperienze_admin.strings.add_time_slot || 'Add Time Slot') +
+                        '</button>' +
+                        '<button type="button" class="button fp-remove-event-date" data-date="' + dateStr + '">' +
+                            '<span class="dashicons dashicons-trash"></span>' +
+                            (fp_esperienze_admin.strings.remove_date || 'Remove Date') +
+                        '</button>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="fp-event-timeslots">' +
+                    this.generateEventTimeslotHtml(dateStr, 0) +
+                '</div>' +
+            '</div>';
+        },
+        
+        /**
+         * Generate HTML for new event timeslot
+         */
+        generateEventTimeslotHtml: function(eventDate, index) {
+            var meetingPoints = fp_esperienze_admin.fp_meeting_points || {};
+            var meetingPointOptions = '';
+            
+            for (var id in meetingPoints) {
+                meetingPointOptions += '<option value="' + id + '">' + meetingPoints[id] + '</option>';
+            }
+            
+            return '<div class="fp-event-timeslot-card">' +
+                '<div class="fp-event-timeslot-content">' +
+                    '<input type="hidden" name="event_schedules[' + eventDate + '][' + index + '][event_date]" value="' + eventDate + '">' +
+                    '<input type="hidden" name="event_schedules[' + eventDate + '][' + index + '][schedule_type]" value="fixed">' +
+                    '<div class="fp-event-timeslot-grid">' +
+                        '<div class="fp-timeslot-field">' +
+                            '<label><span class="dashicons dashicons-clock"></span> ' + (fp_esperienze_admin.strings.start_time || 'Start Time') + ' <span class="required">*</span></label>' +
+                            '<input type="time" name="event_schedules[' + eventDate + '][' + index + '][start_time]" required>' +
+                        '</div>' +
+                        '<div class="fp-timeslot-field">' +
+                            '<label>' + (fp_esperienze_admin.strings.duration || 'Duration (min)') + '</label>' +
+                            '<input type="number" name="event_schedules[' + eventDate + '][' + index + '][duration_min]" value="60" min="1" required>' +
+                        '</div>' +
+                        '<div class="fp-timeslot-field">' +
+                            '<label>' + (fp_esperienze_admin.strings.capacity || 'Capacity') + '</label>' +
+                            '<input type="number" name="event_schedules[' + eventDate + '][' + index + '][capacity]" value="10" min="1" required>' +
+                        '</div>' +
+                        '<div class="fp-timeslot-field">' +
+                            '<label>' + (fp_esperienze_admin.strings.language || 'Language') + '</label>' +
+                            '<input type="text" name="event_schedules[' + eventDate + '][' + index + '][lang]" value="en" maxlength="10" required>' +
+                        '</div>' +
+                        '<div class="fp-timeslot-field">' +
+                            '<label>' + (fp_esperienze_admin.strings.meeting_point || 'Meeting Point') + '</label>' +
+                            '<select name="event_schedules[' + eventDate + '][' + index + '][meeting_point_id]" required>' + meetingPointOptions + '</select>' +
+                        '</div>' +
+                        '<div class="fp-timeslot-field">' +
+                            '<label>' + (fp_esperienze_admin.strings.adult_price || 'Adult Price') + '</label>' +
+                            '<input type="number" name="event_schedules[' + eventDate + '][' + index + '][price_adult]" value="0" min="0" step="0.01" required>' +
+                        '</div>' +
+                        '<div class="fp-timeslot-field">' +
+                            '<label>' + (fp_esperienze_admin.strings.child_price || 'Child Price') + '</label>' +
+                            '<input type="number" name="event_schedules[' + eventDate + '][' + index + '][price_child]" value="0" min="0" step="0.01" required>' +
+                        '</div>' +
+                        '<div class="fp-timeslot-actions">' +
+                            '<button type="button" class="button fp-remove-event-timeslot">' +
+                                '<span class="dashicons dashicons-trash"></span>' +
+                                (fp_esperienze_admin.strings.remove || 'Remove') +
+                            '</button>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+            '</div>';
+        },
+
         /**
          * Bind Schedule Builder specific events
          */

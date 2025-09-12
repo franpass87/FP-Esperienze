@@ -157,6 +157,21 @@ class Experience {
 				<?php
 				wp_nonce_field( 'fp_esperienze_save', 'fp_esperienze_nonce' );
 
+				// Experience Type selector
+				woocommerce_wp_select(
+					array(
+						'id'          => '_fp_experience_type',
+						'label'       => __( 'Type', 'fp-esperienze' ),
+						'options'     => array(
+							'experience' => __( 'Experience (Recurring Schedule)', 'fp-esperienze' ),
+							'event'      => __( 'Event (Fixed Date)', 'fp-esperienze' ),
+						),
+						'desc_tip'    => true,
+						'description' => __( 'Choose whether this is a recurring experience or a fixed-date event', 'fp-esperienze' ),
+						'value'       => get_post_meta( $post->ID, '_fp_experience_type', true ) ?: 'experience',
+					)
+				);
+
 				// Cutoff minutes
 				woocommerce_wp_text_input(
                                 array(
@@ -255,7 +270,7 @@ class Experience {
 				?>
 			</div>
 			
-			<fieldset class="options_group fp-schedules-section fp-section-fieldset">
+			<fieldset class="options_group fp-schedules-section fp-section-fieldset" id="fp-recurring-schedules">
 				<legend class="fp-section-legend"><?php _e( 'Recurring Time Slots', 'fp-esperienze' ); ?></legend>
 				
 				<div class="fp-section-content">
@@ -289,7 +304,26 @@ class Experience {
                                 </div>
                         </fieldset>
 			
-			<fieldset class="options_group fp-overrides-section-wrapper fp-section-fieldset">
+			<fieldset class="options_group fp-event-schedules-section fp-section-fieldset" id="fp-event-schedules" style="display: none;">
+				<legend class="fp-section-legend"><?php _e( 'Event Dates & Times', 'fp-esperienze' ); ?></legend>
+				
+				<div class="fp-section-content">
+					<div class="fp-section-description">
+						<?php _e( 'Configure specific dates and times for your event. Each event date can have multiple time slots with different settings.', 'fp-esperienze' ); ?>
+					</div>
+					
+					<div id="fp-event-schedule-container">
+						<?php $this->renderEventScheduleBuilder( $post->ID ); ?>
+					</div>
+					
+					<button type="button" class="button fp-primary-button" id="fp-add-event-schedule">
+						<span class="dashicons dashicons-plus-alt"></span>
+						<?php _e( 'Add Event Date', 'fp-esperienze' ); ?>
+					</button>
+				</div>
+			</fieldset>
+			
+			<fieldset class="options_group fp-overrides-section-wrapper fp-section-fieldset" id="fp-overrides-section">
 				<legend class="fp-section-legend"><?php _e( 'Date-Specific Overrides', 'fp-esperienze' ); ?></legend>
 				
 				<div class="fp-section-content">
@@ -897,6 +931,175 @@ class Experience {
 	}
 
 	/**
+	 * Render event schedule builder for fixed-date events
+	 *
+	 * @param int $product_id Product ID
+	 */
+	private function renderEventScheduleBuilder( int $product_id ): void {
+		$event_schedules = ScheduleManager::getEventSchedules( $product_id );
+		$meeting_points  = $this->getMeetingPoints();
+		
+		// Group events by date
+		$events_by_date = array();
+		foreach ( $event_schedules as $schedule ) {
+			$date = $schedule->event_date;
+			if ( ! isset( $events_by_date[ $date ] ) ) {
+				$events_by_date[ $date ] = array();
+			}
+			$events_by_date[ $date ][] = $schedule;
+		}
+		
+		// Sort dates
+		ksort( $events_by_date );
+		
+		?>
+		<div id="fp-event-schedule-builder" class="fp-event-schedule-builder">
+			<?php if ( empty( $events_by_date ) ) : ?>
+				<div class="fp-empty-events-message">
+					<p><?php _e( 'No event dates configured yet. Add your first event date below.', 'fp-esperienze' ); ?></p>
+				</div>
+			<?php else : ?>
+				<?php foreach ( $events_by_date as $date => $schedules ) : ?>
+					<div class="fp-event-date-card" data-date="<?php echo esc_attr( $date ); ?>">
+						<?php $this->renderEventDateCard( $date, $schedules, $meeting_points, $product_id ); ?>
+					</div>
+				<?php endforeach; ?>
+			<?php endif; ?>
+		</div>
+		
+		<!-- Hidden container for generated event schedule inputs -->
+		<div id="fp-generated-event-schedules" style="display: none;"></div>
+		<?php
+	}
+
+	/**
+	 * Render event date card with time slots
+	 *
+	 * @param string $date Event date
+	 * @param array  $schedules Schedules for this date
+	 * @param array  $meeting_points Meeting points
+	 * @param int    $product_id Product ID
+	 */
+	private function renderEventDateCard( string $date, array $schedules, array $meeting_points, int $product_id ): void {
+		?>
+		<div class="fp-event-date-header">
+			<div class="fp-event-date-info">
+				<span class="dashicons dashicons-calendar-alt"></span>
+				<strong><?php echo esc_html( date_i18n( get_option( 'date_format' ), strtotime( $date ) ) ); ?></strong>
+				<span class="fp-event-date-meta"><?php printf( _n( '%d time slot', '%d time slots', count( $schedules ), 'fp-esperienze' ), count( $schedules ) ); ?></span>
+			</div>
+			<div class="fp-event-date-actions">
+				<button type="button" class="button fp-add-event-timeslot" data-date="<?php echo esc_attr( $date ); ?>">
+					<span class="dashicons dashicons-clock"></span>
+					<?php _e( 'Add Time Slot', 'fp-esperienze' ); ?>
+				</button>
+				<button type="button" class="button fp-remove-event-date" data-date="<?php echo esc_attr( $date ); ?>">
+					<span class="dashicons dashicons-trash"></span>
+					<?php _e( 'Remove Date', 'fp-esperienze' ); ?>
+				</button>
+			</div>
+		</div>
+		
+		<div class="fp-event-timeslots">
+			<?php foreach ( $schedules as $index => $schedule ) : ?>
+				<div class="fp-event-timeslot-card" data-schedule-id="<?php echo esc_attr( $schedule->id ); ?>">
+					<?php $this->renderEventTimeslotCard( $schedule, $index, $meeting_points, $date ); ?>
+				</div>
+			<?php endforeach; ?>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Render individual event timeslot card
+	 *
+	 * @param object $schedule Schedule object
+	 * @param int    $index Index
+	 * @param array  $meeting_points Meeting points
+	 * @param string $date Event date
+	 */
+	private function renderEventTimeslotCard( $schedule, int $index, array $meeting_points, string $date ): void {
+		?>
+		<div class="fp-event-timeslot-content">
+			<input type="hidden" name="event_schedules[<?php echo esc_attr( $date ); ?>][<?php echo esc_attr( $index ); ?>][id]" value="<?php echo esc_attr( $schedule->id ?? '' ); ?>">
+			<input type="hidden" name="event_schedules[<?php echo esc_attr( $date ); ?>][<?php echo esc_attr( $index ); ?>][event_date]" value="<?php echo esc_attr( $date ); ?>">
+			<input type="hidden" name="event_schedules[<?php echo esc_attr( $date ); ?>][<?php echo esc_attr( $index ); ?>][schedule_type]" value="fixed">
+			
+			<div class="fp-event-timeslot-grid">
+				<div class="fp-timeslot-field">
+					<label>
+						<span class="dashicons dashicons-clock"></span>
+						<?php _e( 'Start Time', 'fp-esperienze' ); ?> <span class="required">*</span>
+					</label>
+					<input type="time" 
+							name="event_schedules[<?php echo esc_attr( $date ); ?>][<?php echo esc_attr( $index ); ?>][start_time]"
+							value="<?php echo esc_attr( $schedule->start_time ?? '' ); ?>"
+							required>
+				</div>
+				
+				<div class="fp-timeslot-field">
+					<label><?php _e( 'Duration (min)', 'fp-esperienze' ); ?></label>
+					<input type="number" 
+							name="event_schedules[<?php echo esc_attr( $date ); ?>][<?php echo esc_attr( $index ); ?>][duration_min]"
+							value="<?php echo esc_attr( $schedule->duration_min ?? 60 ); ?>"
+							min="1" required>
+				</div>
+				
+				<div class="fp-timeslot-field">
+					<label><?php _e( 'Capacity', 'fp-esperienze' ); ?></label>
+					<input type="number" 
+							name="event_schedules[<?php echo esc_attr( $date ); ?>][<?php echo esc_attr( $index ); ?>][capacity]"
+							value="<?php echo esc_attr( $schedule->capacity ?? 10 ); ?>"
+							min="1" required>
+				</div>
+				
+				<div class="fp-timeslot-field">
+					<label><?php _e( 'Language', 'fp-esperienze' ); ?></label>
+					<input type="text" 
+							name="event_schedules[<?php echo esc_attr( $date ); ?>][<?php echo esc_attr( $index ); ?>][lang]"
+							value="<?php echo esc_attr( $schedule->lang ?? 'en' ); ?>"
+							maxlength="10" required>
+				</div>
+				
+				<div class="fp-timeslot-field">
+					<label><?php _e( 'Meeting Point', 'fp-esperienze' ); ?></label>
+					<select name="event_schedules[<?php echo esc_attr( $date ); ?>][<?php echo esc_attr( $index ); ?>][meeting_point_id]" required>
+						<?php foreach ( $meeting_points as $mp_id => $mp_name ) : ?>
+							<option value="<?php echo esc_attr( $mp_id ); ?>" <?php selected( $schedule->meeting_point_id ?? '', $mp_id ); ?>>
+								<?php echo esc_html( $mp_name ); ?>
+							</option>
+						<?php endforeach; ?>
+					</select>
+				</div>
+				
+				<div class="fp-timeslot-field">
+					<label><?php _e( 'Adult Price', 'fp-esperienze' ); ?> (<?php echo get_woocommerce_currency_symbol(); ?>)</label>
+					<input type="number" 
+							name="event_schedules[<?php echo esc_attr( $date ); ?>][<?php echo esc_attr( $index ); ?>][price_adult]"
+							value="<?php echo esc_attr( $schedule->price_adult ?? 0 ); ?>"
+							min="0" step="0.01" required>
+				</div>
+				
+				<div class="fp-timeslot-field">
+					<label><?php _e( 'Child Price', 'fp-esperienze' ); ?> (<?php echo get_woocommerce_currency_symbol(); ?>)</label>
+					<input type="number" 
+							name="event_schedules[<?php echo esc_attr( $date ); ?>][<?php echo esc_attr( $index ); ?>][price_child]"
+							value="<?php echo esc_attr( $schedule->price_child ?? 0 ); ?>"
+							min="0" step="0.01" required>
+				</div>
+				
+				<div class="fp-timeslot-actions">
+					<button type="button" class="button fp-remove-event-timeslot">
+						<span class="dashicons dashicons-trash"></span>
+						<?php _e( 'Remove', 'fp-esperienze' ); ?>
+					</button>
+				</div>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
 	 * Render overrides section - MODERN DESIGN
 	 *
 	 * @param int $product_id Product ID
@@ -1459,6 +1662,14 @@ class Experience {
 			}
 		}
 
+		// Save experience type
+		if ( isset( $_POST['_fp_experience_type'] ) ) {
+			$experience_type = sanitize_text_field( wp_unslash( $_POST['_fp_experience_type'] ) );
+			if ( in_array( $experience_type, array( 'experience', 'event' ) ) ) {
+				update_post_meta( $post_id, '_fp_experience_type', $experience_type );
+			}
+		}
+
 		// Save schedules
 		$this->saveSchedules( $post_id );
 
@@ -1582,6 +1793,12 @@ class Experience {
 		// Add debug logging for potential conflicts
 		if ( $has_builder_slots && isset( $_POST['schedules'] ) && ! empty( $_POST['schedules'] ) ) {
 			error_log( "FP Esperienze: WARNING - Both builder_slots and schedules data present for product {$product_id}, ignoring schedules to prevent conflicts" );
+		}
+
+		// Process event schedules
+		if ( isset( $_POST['event_schedules'] ) && is_array( $_POST['event_schedules'] ) ) {
+			error_log( "FP Esperienze: Processing event schedules for product {$product_id}" );
+			$processed_ids = array_merge( $processed_ids, $this->processEventSchedules( $product_id, $_POST['event_schedules'], $validation_errors ) );
 		}
 
 		// Delete schedules that were removed
@@ -1810,6 +2027,113 @@ class Experience {
 
 		if ( $discarded_count > 0 ) {
 			set_transient( "fp_schedule_discarded_{$product_id}", $discarded_count, 60 );
+		}
+
+		return $processed_ids;
+	}
+
+	/**
+	 * Process event schedules for fixed-date events
+	 *
+	 * @param int   $product_id Product ID
+	 * @param array $event_schedules Event schedule data grouped by date
+	 * @param array &$validation_errors Reference to validation errors array
+	 * @return array Array of processed schedule IDs
+	 */
+	private function processEventSchedules( int $product_id, array $event_schedules, array &$validation_errors ): array {
+		$processed_ids = array();
+
+		foreach ( $event_schedules as $date => $timeslots ) {
+			// Validate date format
+			if ( ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date ) ) {
+				$validation_errors[] = sprintf( __( 'Invalid date format: %s', 'fp-esperienze' ), esc_html( $date ) );
+				continue;
+			}
+
+			// Validate date is not in the past
+			if ( strtotime( $date ) < strtotime( 'today' ) ) {
+				$validation_errors[] = sprintf( __( 'Event date cannot be in the past: %s', 'fp-esperienze' ), esc_html( $date ) );
+				continue;
+			}
+
+			foreach ( $timeslots as $slot_index => $slot_data ) {
+				// Skip empty slots
+				if ( empty( $slot_data['start_time'] ) ) {
+					continue;
+				}
+
+				// Validate required fields
+				$required_fields = array(
+					'start_time'       => __( 'start time', 'fp-esperienze' ),
+					'duration_min'     => __( 'duration', 'fp-esperienze' ),
+					'capacity'         => __( 'capacity', 'fp-esperienze' ),
+					'lang'             => __( 'language', 'fp-esperienze' ),
+					'meeting_point_id' => __( 'meeting point', 'fp-esperienze' ),
+					'price_adult'      => __( 'adult price', 'fp-esperienze' ),
+					'price_child'      => __( 'child price', 'fp-esperienze' ),
+				);
+
+				$missing = array();
+				foreach ( $required_fields as $field_key => $label ) {
+					if ( ! isset( $slot_data[ $field_key ] ) || $slot_data[ $field_key ] === '' ) {
+						$missing[] = $label;
+					}
+				}
+
+				if ( ! empty( $missing ) ) {
+					$validation_errors[] = sprintf(
+						__( 'Event %1$s, slot %2$d: Missing %3$s.', 'fp-esperienze' ),
+						esc_html( $date ),
+						$slot_index + 1,
+						implode( ', ', $missing )
+					);
+					continue;
+				}
+
+				// Validate time format
+				$start_time = trim( $slot_data['start_time'] );
+				if ( ! preg_match( '/^(\d{1,2}):(\d{2})(?::\d{2})?$/', $start_time, $m ) ) {
+					$validation_errors[] = sprintf(
+						__( 'Event %1$s, slot %2$d: Invalid time format "%3$s". Use HH:MM format.', 'fp-esperienze' ),
+						esc_html( $date ),
+						$slot_index + 1,
+						esc_html( $start_time )
+					);
+					continue;
+				}
+
+				// Normalize time format
+				$start_time = sprintf( '%02d:%02d', $m[1], $m[2] );
+
+				// Prepare schedule data
+				$schedule_data = array(
+					'product_id'       => $product_id,
+					'schedule_type'    => 'fixed',
+					'event_date'       => $date,
+					'start_time'       => $start_time,
+					'duration_min'     => max( 1, (int) $slot_data['duration_min'] ),
+					'capacity'         => max( 1, (int) $slot_data['capacity'] ),
+					'lang'             => sanitize_text_field( $slot_data['lang'] ),
+					'meeting_point_id' => (int) $slot_data['meeting_point_id'],
+					'price_adult'      => max( 0, (float) $slot_data['price_adult'] ),
+					'price_child'      => max( 0, (float) $slot_data['price_child'] ),
+					'is_active'        => 1,
+				);
+
+				$schedule_id = ! empty( $slot_data['id'] ) ? (int) $slot_data['id'] : 0;
+
+				if ( $schedule_id > 0 ) {
+					// Update existing schedule
+					ScheduleManager::updateSchedule( $schedule_id, $schedule_data );
+					$processed_ids[] = $schedule_id;
+				} else {
+					// Create new schedule
+					$new_id = ScheduleManager::createSchedule( $schedule_data );
+					if ( $new_id ) {
+						$processed_ids[] = $new_id;
+					}
+				}
+			}
 		}
 
 		return $processed_ids;

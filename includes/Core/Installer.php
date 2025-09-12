@@ -50,6 +50,12 @@ class Installer {
                 }
             }
             
+            // Execute event support migration
+            $result = self::migrateForEventSupport();
+            if (is_wp_error($result)) {
+                return $result;
+            }
+            
             // Flush rewrite rules
             flush_rewrite_rules();
             
@@ -294,7 +300,9 @@ class Installer {
         $sql_schedules = "CREATE TABLE $table_schedules (
             id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
             product_id bigint(20) unsigned NOT NULL,
-            day_of_week tinyint(1) NOT NULL COMMENT '0=Sunday, 1=Monday, etc.',
+            schedule_type enum('recurring', 'fixed') NOT NULL DEFAULT 'recurring' COMMENT 'Type of schedule: recurring weekly or fixed date',
+            day_of_week tinyint(1) DEFAULT NULL COMMENT '0=Sunday, 1=Monday, etc. Used for recurring schedules',
+            event_date date DEFAULT NULL COMMENT 'Specific date for fixed-date events',
             start_time time NOT NULL,
             duration_min int(11) NOT NULL DEFAULT 60,
             capacity int(11) NOT NULL DEFAULT 1,
@@ -308,6 +316,8 @@ class Installer {
             PRIMARY KEY (id),
             KEY product_id (product_id),
             KEY day_of_week (day_of_week),
+            KEY event_date (event_date),
+            KEY schedule_type (schedule_type),
             KEY meeting_point_id (meeting_point_id)
         ) $charset_collate;";
 
@@ -580,6 +590,78 @@ class Installer {
     private static function addCapabilities(): void {
         $capability_manager = new CapabilityManager();
         $capability_manager->addCapabilitiesToRoles();
+    }
+
+    /**
+     * Migrate database for event support
+     * Adds new fields to support fixed-date events alongside recurring experiences
+     * 
+     * @return bool|\WP_Error True on success or WP_Error on failure
+     */
+    private static function migrateForEventSupport() {
+        global $wpdb;
+        
+        $table_name = $wpdb->prefix . 'fp_schedules';
+        
+        // Check if migration has already been applied
+        $migration_applied = get_option('fp_esperienze_event_support_migration_applied', false);
+        if ($migration_applied) {
+            return true;
+        }
+        
+        try {
+            // Check if the new columns already exist
+            $columns = $wpdb->get_results($wpdb->prepare("SHOW COLUMNS FROM %i", $table_name));
+            $existing_columns = wp_list_pluck($columns, 'Field');
+            
+            $alterations = [];
+            
+            // Add schedule_type column if it doesn't exist
+            if (!in_array('schedule_type', $existing_columns)) {
+                $alterations[] = "ADD COLUMN `schedule_type` enum('recurring', 'fixed') NOT NULL DEFAULT 'recurring' COMMENT 'Type of schedule: recurring weekly or fixed date'";
+            }
+            
+            // Add event_date column if it doesn't exist  
+            if (!in_array('event_date', $existing_columns)) {
+                $alterations[] = "ADD COLUMN `event_date` date DEFAULT NULL COMMENT 'Specific date for fixed-date events'";
+            }
+            
+            // Make day_of_week nullable for events (only required for recurring)
+            $day_of_week_column = $wpdb->get_row($wpdb->prepare(
+                "SHOW COLUMNS FROM %i LIKE 'day_of_week'", 
+                $table_name
+            ));
+            if ($day_of_week_column && strpos($day_of_week_column->Null, 'NO') !== false) {
+                $alterations[] = "MODIFY COLUMN `day_of_week` tinyint(1) DEFAULT NULL COMMENT '0=Sunday, 1=Monday, etc. Used for recurring schedules'";
+            }
+            
+            if (!empty($alterations)) {
+                $alter_sql = "ALTER TABLE `{$table_name}` " . implode(', ', $alterations);
+                $result = $wpdb->query($alter_sql);
+                
+                if ($result === false) {
+                    return new \WP_Error('fp_event_migration_failed', 'Failed to alter schedules table for event support: ' . $wpdb->last_error);
+                }
+                
+                // Add indexes for new columns
+                $index_sql = "ALTER TABLE `{$table_name}` 
+                             ADD INDEX idx_event_date (event_date),
+                             ADD INDEX idx_schedule_type (schedule_type)";
+                $wpdb->query($index_sql);
+            }
+            
+            // Mark migration as applied
+            update_option('fp_esperienze_event_support_migration_applied', true);
+            
+            // Log successful migration
+            error_log('FP Esperienze: Event support migration completed successfully.');
+            
+            return true;
+            
+        } catch (Exception $e) {
+            error_log('FP Esperienze: Event support migration failed: ' . $e->getMessage());
+            return new \WP_Error('fp_event_migration_error', 'Event support migration failed: ' . $e->getMessage());
+        }
     }
 
     /**
