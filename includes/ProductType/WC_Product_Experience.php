@@ -14,7 +14,7 @@ use FP\Esperienze\Data\ScheduleManager;
 /**
  * Experience product class
  */
-class WC_Product_Experience extends WC_Product {
+class WC_Product_Experience extends \WC_Product {
 
     /**
      * Product type
