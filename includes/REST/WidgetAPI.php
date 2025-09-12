@@ -535,12 +535,64 @@ class WidgetAPI {
             // Initial update
             updateTotal();
             
+            // Function to calculate and send height to parent
+            function notifyHeightChange() {
+                if (window.parent && window.parent !== window) {
+                    const height = Math.max(
+                        document.body.scrollHeight,
+                        document.documentElement.scrollHeight,
+                        document.body.offsetHeight,
+                        document.documentElement.offsetHeight
+                    );
+                    
+                    window.parent.postMessage({
+                        type: 'fp_widget_height_change',
+                        height: height,
+                        productId: widgetData.product.id
+                    }, '*');
+                }
+            }
+            
             // Notify parent window that widget is ready
             if (window.parent && window.parent !== window) {
-                window.parent.postMessage({
-                    type: 'fp_widget_ready',
-                    height: document.body.scrollHeight
-                }, '*');
+                setTimeout(() => {
+                    window.parent.postMessage({
+                        type: 'fp_widget_ready',
+                        height: Math.max(
+                            document.body.scrollHeight,
+                            document.documentElement.scrollHeight,
+                            document.body.offsetHeight,
+                            document.documentElement.offsetHeight
+                        ),
+                        productId: widgetData.product.id
+                    }, '*');
+                }, 100);
+                
+                // Watch for content changes and notify parent
+                if (window.ResizeObserver) {
+                    const resizeObserver = new ResizeObserver(() => {
+                        notifyHeightChange();
+                    });
+                    resizeObserver.observe(document.body);
+                }
+                
+                // Also listen for window resize
+                window.addEventListener('resize', notifyHeightChange);
+                
+                // Watch for content changes (fallback for older browsers)
+                let lastHeight = 0;
+                setInterval(() => {
+                    const currentHeight = Math.max(
+                        document.body.scrollHeight,
+                        document.documentElement.scrollHeight,
+                        document.body.offsetHeight,
+                        document.documentElement.offsetHeight
+                    );
+                    if (currentHeight !== lastHeight) {
+                        lastHeight = currentHeight;
+                        notifyHeightChange();
+                    }
+                }, 500);
             }
         })();
     </script>

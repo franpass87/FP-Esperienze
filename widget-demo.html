@@ -124,12 +124,24 @@
         <p>For dynamic integration and event handling:</p>
         
         <div class="code-example">&lt;script&gt;
-// Listen for widget events
+// Listen for widget events and auto-resize iframe
 window.addEventListener('message', function(event) {
     if (event.data.type === 'fp_widget_ready') {
         console.log('Widget loaded successfully');
-        // Optionally resize iframe based on content
-        document.getElementById('widget').height = event.data.height;
+        // Auto-resize iframe based on content height
+        const iframe = document.getElementById('widget');
+        if (iframe && event.data.height) {
+            iframe.style.height = event.data.height + 'px';
+        }
+    }
+    
+    if (event.data.type === 'fp_widget_height_change') {
+        console.log('Widget height changed to:', event.data.height);
+        // Auto-resize iframe when content height changes
+        const iframe = document.getElementById('widget');
+        if (iframe && event.data.height) {
+            iframe.style.height = event.data.height + 'px';
+        }
     }
     
     if (event.data.type === 'fp_widget_checkout') {
@@ -143,13 +155,14 @@ window.addEventListener('message', function(event) {
     }
 });
 
-// Dynamic widget loading
+// Dynamic widget loading with auto-height
 function loadWidget(productId, container) {
     const iframe = document.createElement('iframe');
     iframe.src = `https://yoursite.com/wp-json/fp-exp/v1/widget/iframe/${productId}`;
     iframe.style.width = '100%';
-    iframe.style.height = '600px';
+    iframe.style.height = '600px'; // Initial height
     iframe.style.border = 'none';
+    iframe.id = 'widget-' + productId; // Add ID for height updates
     container.appendChild(iframe);
 }
 &lt;/script&gt;</div>
@@ -206,7 +219,7 @@ Returns: JSON data for custom widget implementations</div>
     </div>
 
     <script>
-        // Demo functionality
+        // Demo functionality with auto-height adjustment
         window.addEventListener('message', function(event) {
             if (event.origin !== window.location.origin) {
                 // Handle messages from widget iframe
@@ -214,6 +227,20 @@ Returns: JSON data for custom widget implementations</div>
                 
                 if (event.data.type === 'fp_widget_ready') {
                     console.log('Widget is ready, height:', event.data.height);
+                    // Auto-adjust iframe height
+                    const iframe = document.getElementById('fp-widget-iframe');
+                    if (iframe && event.data.height) {
+                        iframe.style.height = event.data.height + 'px';
+                    }
+                }
+                
+                if (event.data.type === 'fp_widget_height_change') {
+                    console.log('Widget height changed to:', event.data.height);
+                    // Auto-adjust iframe height when content changes
+                    const iframe = document.getElementById('fp-widget-iframe');
+                    if (iframe && event.data.height) {
+                        iframe.style.height = event.data.height + 'px';
+                    }
                 }
                 
                 if (event.data.type === 'fp_widget_checkout') {

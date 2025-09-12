@@ -45,11 +45,27 @@ Add these parameters to the iframe URL:
         width="400" height="600" frameborder="0"></iframe>
 ```
 
-### JavaScript Integration
+### JavaScript Integration with Auto-Height
 ```html
 <script>
-// Listen for widget events
+// Listen for widget events and auto-resize iframe
 window.addEventListener('message', function(event) {
+    if (event.data.type === 'fp_widget_ready') {
+        // Widget is loaded - auto-adjust height
+        const iframe = document.getElementById('experience-widget');
+        if (iframe && event.data.height) {
+            iframe.style.height = event.data.height + 'px';
+        }
+    }
+    
+    if (event.data.type === 'fp_widget_height_change') {
+        // Content height changed - auto-resize iframe
+        const iframe = document.getElementById('experience-widget');
+        if (iframe && event.data.height) {
+            iframe.style.height = event.data.height + 'px';
+        }
+    }
+    
     if (event.data.type === 'fp_widget_checkout') {
         // Open checkout in popup
         window.open(event.data.url, 'checkout', 'width=800,height=600');
@@ -61,9 +77,24 @@ window.addEventListener('message', function(event) {
 });
 </script>
 
-<iframe src="https://mysite.com/wp-json/fp-exp/v1/widget/iframe/123" 
+<iframe id="experience-widget"
+        src="https://mysite.com/wp-json/fp-exp/v1/widget/iframe/123" 
         width="100%" height="600" frameborder="0"></iframe>
 ```
+
+### Auto-Height Adaptation
+
+The widget automatically sends height information to the parent page, allowing for dynamic iframe resizing:
+
+- **Initial Load**: Widget sends `fp_widget_ready` event with content height
+- **Dynamic Changes**: Widget monitors content changes and sends `fp_widget_height_change` events
+- **Responsive**: Height adjusts automatically when content changes (mobile/desktop)
+
+**Events sent to parent window:**
+- `fp_widget_ready` - Widget loaded with initial height
+- `fp_widget_height_change` - Content height changed
+- `fp_widget_checkout` - User clicked book now
+- `fp_widget_booking_success` - Booking completed successfully
 
 ## Testing
 
