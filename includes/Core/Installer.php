@@ -158,6 +158,27 @@ class Installer {
         if (defined('FP_ESPERIENZE_PRESERVE_DATA') && FP_ESPERIENZE_PRESERVE_DATA) {
             return true;
         }
+        // Clear all scheduled events used by the plugin before removing data
+        $hooks = [
+            'fp_esperienze_cleanup_holds',
+            'fp_check_abandoned_carts',
+            'fp_send_upselling_emails',
+            'fp_daily_ai_analysis',
+            'fp_esperienze_prebuild_availability',
+            'fp_esperienze_retry_webhook',
+            TranslationQueue::CRON_HOOK,
+            'fp_cleanup_push_tokens',
+            'fp_esperienze_db_optimization',
+        ];
+
+        foreach ($hooks as $hook) {
+            wp_clear_scheduled_hook($hook);
+
+            // Verify that no events remain scheduled for this hook
+            while ($timestamp = wp_next_scheduled($hook)) {
+                wp_unschedule_event($timestamp, $hook);
+            }
+        }
 
         global $wpdb;
 
