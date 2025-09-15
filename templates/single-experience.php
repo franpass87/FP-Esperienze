@@ -290,7 +290,7 @@ jQuery(document).ready(function($) {
                             
                             <?php if ($meeting_point->lat && $meeting_point->lng) : ?>
                                 <div class="fp-meeting-point-actions">
-                                    <a href="https://www.google.com/maps?q=<?php echo esc_attr($meeting_point->lat . ',' . $meeting_point->lng); ?>" 
+                                    <a href="https://www.google.com/maps?q=<?php echo esc_url($meeting_point->lat . ',' . $meeting_point->lng); ?>"
                                        target="_blank" 
                                        rel="noopener"
                                        class="fp-maps-link"
@@ -306,7 +306,7 @@ jQuery(document).ready(function($) {
                                 <!-- Interactive Google Maps embed using basic iframe (no API key required) -->
                                 <div class="fp-map-container" aria-label="<?php _e('Map showing meeting point location', 'fp-esperienze'); ?>">
                                     <iframe 
-                                        src="https://maps.google.com/maps?q=<?php echo esc_attr($meeting_point->lat . ',' . $meeting_point->lng); ?>&amp;z=15&amp;output=embed"
+                                        src="https://maps.google.com/maps?q=<?php echo esc_url($meeting_point->lat . ',' . $meeting_point->lng); ?>&amp;z=15&amp;output=embed"
                                         width="100%" 
                                         height="200" 
                                         style="border:0;" 
