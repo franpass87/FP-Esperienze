@@ -71,11 +71,13 @@ class AIFeaturesManager {
         if ($dynamic_price !== $price) {
             update_post_meta($product->get_id(), '_dynamic_price_applied', true);
             update_post_meta($product->get_id(), '_original_price', $price);
-            update_post_meta(
-                $product->get_id(),
-                '_price_adjustment',
-                ($dynamic_price - $price) / $price * 100
-            );
+
+            $adjustment = 0;
+            if ($price > 0) {
+                $adjustment = ($dynamic_price - $price) / $price * 100;
+            }
+
+            update_post_meta($product->get_id(), '_price_adjustment', $adjustment);
 
             return $dynamic_price;
         }

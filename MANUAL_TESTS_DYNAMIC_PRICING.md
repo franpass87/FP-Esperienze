@@ -209,6 +209,20 @@
 - [ ] No conflicts between pricing systems
 - [ ] Final amount is correct
 
+## Test Case 12: Free Product Handling
+
+**Objective**: Ensure no PHP errors occur with free Experience products.
+
+**Steps**:
+1. Create an Experience product with regular price set to `0`.
+2. View the product page on the frontend.
+3. Add the product to the cart.
+
+**Expected Results**:
+- [ ] No PHP warnings or errors are logged.
+- [ ] Product price remains `0` during all steps.
+- [ ] `_price_adjustment` meta is recorded as `0%`.
+
 ## Validation Checklist
 
 After completing all tests:
