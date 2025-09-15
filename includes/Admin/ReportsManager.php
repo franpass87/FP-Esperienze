@@ -182,6 +182,24 @@ class ReportsManager {
     }
 
     /**
+     * Sanitize CSV row values to prevent formula injection.
+     *
+     * @param array $row Row data.
+     * @return array Sanitized row.
+     */
+    private function sanitizeCsvRow(array $row): array {
+        return array_map(
+            static function ($field) {
+                if (is_string($field) && preg_match('/^[=+\-@]/', $field)) {
+                    return "'" . $field;
+                }
+                return $field;
+            },
+            $row
+        );
+    }
+
+    /**
      * Get chart data for various time periods
      *
      * @param string $period 'day', 'week', or 'month'
@@ -419,38 +437,38 @@ class ReportsManager {
             $output = fopen('php://output', 'w');
             
             // Summary section
-            fputcsv($output, ['FP Esperienze Report Summary']);
-            fputcsv($output, ['Generated', $export_data['generated_at']]);
-            fputcsv($output, ['Date Range', $export_data['date_range']['from'] . ' to ' . $export_data['date_range']['to']]);
-            fputcsv($output, ['Total Revenue', $export_data['kpi_summary']['total_revenue']]);
-            fputcsv($output, ['Total Seats', $export_data['kpi_summary']['total_seats']]);
-            fputcsv($output, ['Total Bookings', $export_data['kpi_summary']['total_bookings']]);
+            fputcsv($output, $this->sanitizeCsvRow(['FP Esperienze Report Summary']));
+            fputcsv($output, $this->sanitizeCsvRow(['Generated', $export_data['generated_at']]));
+            fputcsv($output, $this->sanitizeCsvRow(['Date Range', $export_data['date_range']['from'] . ' to ' . $export_data['date_range']['to']]));
+            fputcsv($output, $this->sanitizeCsvRow(['Total Revenue', $export_data['kpi_summary']['total_revenue']]));
+            fputcsv($output, $this->sanitizeCsvRow(['Total Seats', $export_data['kpi_summary']['total_seats']]));
+            fputcsv($output, $this->sanitizeCsvRow(['Total Bookings', $export_data['kpi_summary']['total_bookings']]));
             fputcsv($output, []);
             
             // Top experiences
-            fputcsv($output, ['Top Experiences']);
-            fputcsv($output, ['Product ID', 'Product Name', 'Bookings', 'Seats Sold', 'Revenue']);
+            fputcsv($output, $this->sanitizeCsvRow(['Top Experiences']));
+            fputcsv($output, $this->sanitizeCsvRow(['Product ID', 'Product Name', 'Bookings', 'Seats Sold', 'Revenue']));
             foreach ($export_data['top_experiences'] as $exp) {
-                fputcsv($output, [
+                fputcsv($output, $this->sanitizeCsvRow([
                     $exp->product_id,
                     $exp->product_name,
                     $exp->total_bookings,
                     $exp->total_seats,
                     $exp->total_revenue
-                ]);
+                ]));
             }
             fputcsv($output, []);
             
             // UTM conversions
-            fputcsv($output, ['UTM Source Conversions']);
-            fputcsv($output, ['Source', 'Orders', 'Revenue', 'Avg Order Value']);
+            fputcsv($output, $this->sanitizeCsvRow(['UTM Source Conversions']));
+            fputcsv($output, $this->sanitizeCsvRow(['Source', 'Orders', 'Revenue', 'Avg Order Value']));
             foreach ($export_data['utm_conversions'] as $utm) {
-                fputcsv($output, [
+                fputcsv($output, $this->sanitizeCsvRow([
                     $utm['source'],
                     $utm['orders'],
                     $utm['revenue'],
                     $utm['avg_order_value']
-                ]);
+                ]));
             }
             
             fclose($output);
