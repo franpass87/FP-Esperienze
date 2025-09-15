@@ -429,7 +429,9 @@ register_activation_hook(__FILE__, function() {
 });
 
 /**
- * Deactivation hook with error handling
+ * Deactivation hook with error handling.
+ * Performs targeted cleanup of plugin transients and temporary options
+ * without flushing the global cache.
  */
 register_deactivation_hook(__FILE__, function() {
     try {
@@ -437,9 +439,14 @@ register_deactivation_hook(__FILE__, function() {
             FP\Esperienze\Core\Installer::deactivate();
         }
         
-        // Clean up transients and temporary data
+        // Clean up only plugin-specific transients and temporary options
+        // to avoid flushing unrelated cache data.
         delete_option('fp_esperienze_just_activated');
-        wp_cache_flush();
+        delete_transient('fp_esperienze_activation_redirect');
+
+        if (class_exists('FP\\Esperienze\\Core\\CacheManager')) {
+            FP\\Esperienze\\Core\\CacheManager::clearAllCaches();
+        }
         
     } catch (Throwable $e) {
         error_log('FP Esperienze deactivation error: ' . $e->getMessage());
