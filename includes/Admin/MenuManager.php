@@ -4141,7 +4141,25 @@ class MenuManager {
                 break;
         }
     }
-    
+
+    /**
+     * Sanitize CSV row values to prevent formula injection.
+     *
+     * @param array $row Row data.
+     * @return array Sanitized row.
+     */
+    private function sanitizeCsvRow(array $row): array {
+        return array_map(
+            static function ($field) {
+                if (is_string($field) && preg_match('/^[=+\-@]/', $field)) {
+                    return "'" . $field;
+                }
+                return $field;
+            },
+            $row
+        );
+    }
+
     /**
      * Export bookings to CSV
      */
@@ -4172,7 +4190,7 @@ class MenuManager {
         }
 
         // CSV headers
-        fputcsv($output, [
+        fputcsv($output, $this->sanitizeCsvRow([
             __('Booking ID', 'fp-esperienze'),
             __('Order ID', 'fp-esperienze'),
             __('Product', 'fp-esperienze'),
@@ -4186,7 +4204,7 @@ class MenuManager {
             __('Customer Notes', 'fp-esperienze'),
             __('Admin Notes', 'fp-esperienze'),
             __('Created', 'fp-esperienze'),
-        ]);
+        ]));
 
         // CSV data
         foreach ($bookings as $booking) {
@@ -4199,7 +4217,7 @@ class MenuManager {
                 $meeting_point_name = $mp ? $mp->name : __('Not found', 'fp-esperienze');
             }
 
-            fputcsv($output, [
+            fputcsv($output, $this->sanitizeCsvRow([
                 $booking->id,
                 $booking->order_id,
                 $product_name,
@@ -4213,7 +4231,7 @@ class MenuManager {
                 $booking->customer_notes,
                 $booking->admin_notes,
                 $booking->created_at,
-            ]);
+            ]));
         }
 
         rewind($output);
