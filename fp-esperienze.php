@@ -35,6 +35,61 @@ define('FP_ESPERIENZE_ICS_DIR', WP_CONTENT_DIR . '/fp-private/fp-esperienze-ics'
 // Set to true to enable NULL migration for schedule override fields
 define('FP_ESPERIENZE_ENABLE_SCHEDULE_NULL_MIGRATION', false);
 
+/**
+ * Safely write content to a file using WP_Filesystem.
+ * Falls back to error_log if the filesystem is unavailable.
+ *
+ * @param string $file_path Absolute path to the file.
+ * @param string $content   Content to write.
+ * @param bool   $append    Whether to append to existing content.
+ * @return bool             True on success, false on failure.
+ */
+function fp_esperienze_write_file( $file_path, $content, $append = true ) {
+    global $wp_filesystem;
+
+    if ( ! function_exists( 'WP_Filesystem' ) ) {
+        require_once ABSPATH . 'wp-admin/includes/file.php';
+    }
+
+    if ( ! WP_Filesystem() ) {
+        error_log( 'FP Esperienze: WP_Filesystem could not be initialized.' );
+        error_log( $content );
+        return false;
+    }
+
+    $dir = dirname( $file_path );
+
+    if ( ! $wp_filesystem->exists( $dir ) ) {
+        if ( ! $wp_filesystem->mkdir( $dir ) ) {
+            error_log( 'FP Esperienze: Unable to create directory ' . $dir );
+            error_log( $content );
+            return false;
+        }
+    }
+
+    if ( ! $wp_filesystem->is_writable( $dir ) ) {
+        error_log( 'FP Esperienze: Directory not writable: ' . $dir );
+        error_log( $content );
+        return false;
+    }
+
+    if ( $append && $wp_filesystem->exists( $file_path ) ) {
+        $existing = $wp_filesystem->get_contents( $file_path );
+        if ( false === $existing ) {
+            $existing = '';
+        }
+        $content = $existing . $content;
+    }
+
+    if ( ! $wp_filesystem->put_contents( $file_path, $content, FS_CHMOD_FILE ) ) {
+        error_log( 'FP Esperienze: Failed to write to file: ' . $file_path );
+        error_log( $content );
+        return false;
+    }
+
+    return true;
+}
+
 // Check WordPress version
 if (version_compare(get_bloginfo('version'), '6.5', '<')) {
     add_action('admin_notices', function() {
@@ -232,7 +287,7 @@ function fp_esperienze_init() {
             $error_log_file = WP_CONTENT_DIR . '/fp-esperienze-errors.log';
             $timestamp = current_time('mysql');
             $log_entry = "[$timestamp] INITIALIZATION ERROR: " . wp_json_encode($error_details) . PHP_EOL;
-            file_put_contents($error_log_file, $log_entry, FILE_APPEND | LOCK_EX);
+            fp_esperienze_write_file( $error_log_file, $log_entry );
         }
         
         // Show admin notice for critical errors
@@ -388,7 +443,7 @@ register_activation_hook(__FILE__, function() {
             $error_log_file = WP_CONTENT_DIR . '/fp-esperienze-activation-errors.log';
             $timestamp = current_time('mysql');
             $log_entry = "[$timestamp] ACTIVATION ERROR: " . wp_json_encode($error_details) . PHP_EOL;
-            file_put_contents($error_log_file, $log_entry, FILE_APPEND | LOCK_EX);
+            fp_esperienze_write_file( $error_log_file, $log_entry );
         }
         
         // Create a recovery info file
@@ -407,7 +462,7 @@ register_activation_hook(__FILE__, function() {
         
         if (defined('WP_CONTENT_DIR')) {
             $recovery_file = WP_CONTENT_DIR . '/fp-esperienze-recovery-info.json';
-            file_put_contents($recovery_file, wp_json_encode($recovery_info, JSON_PRETTY_PRINT));
+            fp_esperienze_write_file( $recovery_file, wp_json_encode( $recovery_info, JSON_PRETTY_PRINT ), false );
         }
         
         wp_die(
