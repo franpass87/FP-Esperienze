@@ -244,7 +244,10 @@ class Plugin {
 
         // Initialize WPML hooks for automatic translation jobs
         new WPMLHooks();
-        
+
+        // Initialize holds cleanup cron
+        $this->initHoldsCron();
+
         // Initialize REST API
         add_action('rest_api_init', [$this, 'initREST']);
     }
@@ -768,6 +771,9 @@ class Plugin {
     public function initHoldsCron(): void {
         // Add custom cron interval first
         add_filter('cron_schedules', [$this, 'addHoldsCronInterval']);
+
+        // Register cleanup action
+        add_action('fp_esperienze_cleanup_holds', [$this, 'cleanupExpiredHolds']);
 
         // Schedule the event only after the interval is available
         if (!wp_next_scheduled('fp_esperienze_cleanup_holds')) {
