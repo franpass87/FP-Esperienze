@@ -57,6 +57,20 @@ class Plugin {
     private static $instance = null;
 
     /**
+     * Initialization error message for admin notices
+     *
+     * @var string|null
+     */
+    private static $init_error = null;
+
+    /**
+     * Product type initialization error message for admin notices
+     *
+     * @var string|null
+     */
+    private static $product_type_error = null;
+
+    /**
      * Get plugin instance
      *
      * @return Plugin
@@ -115,17 +129,9 @@ class Plugin {
             // Log initialization errors but don't fail completely
             error_log('FP Esperienze: Plugin initialization error: ' . $e->getMessage());
             
-            // Add admin notice for initialization issues
-            add_action('admin_notices', function() use ($e) {
-                if (current_user_can('manage_options')) {
-                    echo '<div class="notice notice-warning"><p>' . 
-                         sprintf(
-                             esc_html__('FP Esperienze: Some features may not work properly. Error: %s', 'fp-esperienze'),
-                             esc_html($e->getMessage())
-                         ) . 
-                         '</p></div>';
-                }
-            });
+            // Store error message for admin notice
+            self::$init_error = $e->getMessage();
+            add_action('admin_notices', [__CLASS__, 'showInitializationError']);
         }
     }
     
@@ -173,17 +179,9 @@ class Plugin {
         } catch (\Throwable $e) {
             error_log('FP Esperienze: Failed to initialize Experience product type: ' . $e->getMessage());
             
-            // Add admin notice for critical product type initialization failure
-            add_action('admin_notices', function() use ($e) {
-                if (current_user_can('manage_options')) {
-                    echo '<div class="notice notice-error"><p>' . 
-                         sprintf(
-                             esc_html__('FP Esperienze: Experience product type initialization failed. Error: %s', 'fp-esperienze'),
-                             esc_html($e->getMessage())
-                         ) . 
-                         '</p></div>';
-                }
-            });
+            // Store error message for admin notice
+            self::$product_type_error = $e->getMessage();
+            add_action('admin_notices', [__CLASS__, 'showProductTypeError']);
         }
     }
 
@@ -1037,5 +1035,33 @@ class Plugin {
         }
         
         echo "<!-- End FP Esperienze Custom Branding CSS -->\n\n";
+    }
+
+    /**
+     * Show initialization error admin notice
+     */
+    public static function showInitializationError(): void {
+        if (current_user_can('manage_options') && self::$init_error) {
+            echo '<div class="notice notice-warning"><p>' . 
+                 sprintf(
+                     esc_html__('FP Esperienze: Some features may not work properly. Error: %s', 'fp-esperienze'),
+                     esc_html(self::$init_error)
+                 ) . 
+                 '</p></div>';
+        }
+    }
+
+    /**
+     * Show product type initialization error admin notice
+     */
+    public static function showProductTypeError(): void {
+        if (current_user_can('manage_options') && self::$product_type_error) {
+            echo '<div class="notice notice-error"><p>' . 
+                 sprintf(
+                     esc_html__('FP Esperienze: Experience product type initialization failed. Error: %s', 'fp-esperienze'),
+                     esc_html(self::$product_type_error)
+                 ) . 
+                 '</p></div>';
+        }
     }
 }
