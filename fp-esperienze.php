@@ -499,8 +499,8 @@ register_deactivation_hook(__FILE__, function() {
         delete_option('fp_esperienze_just_activated');
         delete_transient('fp_esperienze_activation_redirect');
 
-        if (class_exists('FP\\Esperienze\\Core\\CacheManager')) {
-            FP\\Esperienze\\Core\\CacheManager::clearAllCaches();
+        if (class_exists('FP\Esperienze\Core\CacheManager')) {
+            \FP\Esperienze\Core\CacheManager::clearAllCaches();
         }
         
     } catch (Throwable $e) {
