@@ -103,13 +103,7 @@ class Plugin {
             
             // Temporary debug feature to test enhancements (can be removed later)
             if (defined('WP_DEBUG') && WP_DEBUG && is_admin()) {
-                add_action('admin_notices', function() {
-                    if (isset($_GET['fp_test_features']) && current_user_can('manage_options')) {
-                        if (class_exists('FP\Esperienze\Core\FeatureTester')) {
-                            FeatureTester::displayTestResults();
-                        }
-                    }
-                });
+                add_action('admin_notices', [__CLASS__, 'showDebugFeatures']);
             }
             
             // Initialize other components later
@@ -1062,6 +1056,17 @@ class Plugin {
                      esc_html(self::$product_type_error)
                  ) . 
                  '</p></div>';
+        }
+    }
+
+    /**
+     * Show debug features for testing (temporary)
+     */
+    public static function showDebugFeatures(): void {
+        if (isset($_GET['fp_test_features']) && current_user_can('manage_options')) {
+            if (class_exists('FP\Esperienze\Core\FeatureTester')) {
+                FeatureTester::displayTestResults();
+            }
         }
     }
 }
