@@ -262,13 +262,18 @@
             var self = this;
             var productId = $('#fp-product-id').val();
             
+            // Show loading state
             $('#fp-loading').show();
             $('#fp-time-slots').html('<p class="fp-slots-placeholder">' + __('Loading available times...', 'fp-esperienze') + '</p>');
             $('#fp-error-messages').empty();
             
-            var restUrl = (typeof fp_esperienze_params !== 'undefined' && fp_esperienze_params.rest_url) 
-                ? fp_esperienze_params.rest_url + 'fp-exp/v1/availability'
-                : '/wp-json/fp-exp/v1/availability';
+            // Construct REST URL - try from localized data first, then fallback
+            var restUrl = '/wp-json/fp-exp/v1/availability';
+            if (typeof fp_booking_widget_i18n !== 'undefined' && fp_booking_widget_i18n.rest_url) {
+                restUrl = fp_booking_widget_i18n.rest_url + 'availability';
+            } else if (typeof fp_esperienze_params !== 'undefined' && fp_esperienze_params.rest_url) {
+                restUrl = fp_esperienze_params.rest_url + 'fp-exp/v1/availability';
+            }
             
             $.ajax({
                 url: restUrl,
@@ -277,15 +282,35 @@
                     product_id: productId,
                     date: date
                 },
+                beforeSend: function(xhr) {
+                    // Add nonce for authentication if available
+                    if (typeof fp_booking_widget_i18n !== 'undefined' && fp_booking_widget_i18n.nonce) {
+                        xhr.setRequestHeader('X-WP-Nonce', fp_booking_widget_i18n.nonce);
+                    }
+                },
                 success: function(response) {
-                    self.displayTimeSlots(response.slots);
+                    if (response && response.slots) {
+                        self.displayTimeSlots(response.slots);
+                    } else {
+                        self.showError(__('Invalid response format from server.', 'fp-esperienze'));
+                    }
                     $('#fp-loading').hide();
                 },
                 error: function(xhr, status, error) {
-                    var errorMsg = fp_booking_widget_i18n.error_failed_load_availability;
+                    var errorMsg = (typeof fp_booking_widget_i18n !== 'undefined') 
+                        ? fp_booking_widget_i18n.error_failed_load_availability
+                        : __('Failed to load availability.', 'fp-esperienze');
+                        
                     if (xhr.responseJSON && xhr.responseJSON.message) {
                         errorMsg = xhr.responseJSON.message;
                     }
+                    
+                    console.error('FP Esperienze: Availability load error:', {
+                        status: status,
+                        error: error,
+                        response: xhr.responseJSON,
+                        url: restUrl
+                    });
                     
                     self.showError(errorMsg);
                     $('#fp-loading').hide();
