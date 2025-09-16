@@ -250,21 +250,13 @@ function fp_esperienze_init() {
     try {
         // Check WooCommerce dependency first
         if (!class_exists('WooCommerce')) {
-            add_action('admin_notices', function() {
-                echo '<div class="notice notice-error"><p>' . 
-                     esc_html__('FP Esperienze requires WooCommerce to be installed and activated.', 'fp-esperienze') . 
-                     '</p></div>';
-            });
+            add_action('admin_notices', 'fp_esperienze_woocommerce_missing_notice');
             return;
         }
 
         // Check WooCommerce version
         if (defined('WC_VERSION') && version_compare(WC_VERSION, '8.0', '<')) {
-            add_action('admin_notices', function() {
-                echo '<div class="notice notice-error"><p>' . 
-                     esc_html__('FP Esperienze requires WooCommerce 8.0 or higher.', 'fp-esperienze') . 
-                     '</p></div>';
-            });
+            add_action('admin_notices', 'fp_esperienze_woocommerce_version_notice');
             return;
         }
 
@@ -322,6 +314,24 @@ function fp_esperienze_init() {
 add_action('plugins_loaded', 'fp_esperienze_init');
 
 /**
+ * Show WooCommerce missing notice
+ */
+function fp_esperienze_woocommerce_missing_notice() {
+    echo '<div class="notice notice-error"><p>' . 
+         esc_html__('FP Esperienze requires WooCommerce to be installed and activated.', 'fp-esperienze') . 
+         '</p></div>';
+}
+
+/**
+ * Show WooCommerce version notice
+ */
+function fp_esperienze_woocommerce_version_notice() {
+    echo '<div class="notice notice-error"><p>' . 
+         esc_html__('FP Esperienze requires WooCommerce 8.0 or higher.', 'fp-esperienze') . 
+         '</p></div>';
+}
+
+/**
  * Declare compatibility with WooCommerce features
  */
 add_action('before_woocommerce_init', 'fp_esperienze_declare_wc_compatibility');
@@ -339,7 +349,12 @@ function fp_esperienze_declare_wc_compatibility() {
 /**
  * Enqueue admin scripts for notice handling
  */
-add_action('admin_enqueue_scripts', function() {
+add_action('admin_enqueue_scripts', 'fp_esperienze_enqueue_admin_scripts');
+
+/**
+ * Enqueue admin scripts for notice dismissal
+ */
+function fp_esperienze_enqueue_admin_scripts() {
     wp_add_inline_script('jquery', '
         jQuery(document).ready(function($) {
             $(document).on("click", ".notice[data-dismissible] .notice-dismiss", function(e) {
@@ -355,7 +370,7 @@ add_action('admin_enqueue_scripts', function() {
             });
         });
     ');
-});
+}
 
 /**
  * Show initialization error notice
