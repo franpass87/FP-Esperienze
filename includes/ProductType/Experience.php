@@ -28,9 +28,13 @@ class Experience {
 		// Load the WC_Product_Experience class immediately to ensure it's available
 		$this->loadProductClass();
 
+		// Register product type selector immediately with high priority
+		// This ensures the Experience type is available before WooCommerce loads product types
+		add_filter( 'woocommerce_product_type_selector', array( $this, 'addProductType' ), 5 );
+		add_filter( 'woocommerce_product_class', array( $this, 'getProductClass' ), 5, 2 );
+		add_filter( 'woocommerce_data_stores', array( $this, 'registerDataStore' ), 5, 1 );
+
 		add_action( 'init', array( $this, 'init' ) );
-		add_filter( 'woocommerce_product_type_selector', array( $this, 'addProductType' ) );
-		add_filter( 'woocommerce_product_class', array( $this, 'getProductClass' ), 10, 2 );
 		add_filter( 'woocommerce_product_data_tabs', array( $this, 'addProductDataTabs' ) );
 		add_action( 'woocommerce_product_data_panels', array( $this, 'addProductDataPanels' ) );
 
@@ -43,7 +47,6 @@ class Experience {
 		add_action( 'admin_notices', array( $this, 'showScheduleValidationNotices' ) );
 
 		// Additional hooks for proper WooCommerce integration
-		add_filter( 'woocommerce_data_stores', array( $this, 'registerDataStore' ), 10, 1 );
 		add_action( 'woocommerce_product_options_general_product_data', array( $this, 'addExperienceProductFields' ) );
 
 		// Ensure admin scripts are loaded on product edit pages

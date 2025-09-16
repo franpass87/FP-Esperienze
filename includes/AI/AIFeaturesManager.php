@@ -53,11 +53,14 @@ class AIFeaturesManager {
     /**
      * Apply dynamic pricing based on demand and other factors
      *
-     * @param float       $price   Original price
+     * @param mixed       $price   Original price (can be string or float)
      * @param \WC_Product $product Product object
      * @return float Calculated price
      */
-    public function applyDynamicPricing(float $price, \WC_Product $product): float {
+    public function applyDynamicPricing($price, \WC_Product $product): float {
+        // Convert price to float safely to handle WooCommerce's string returns
+        $price = is_numeric($price) ? (float) $price : 0.0;
+        
         if ($product->get_type() !== 'experience') {
             return $price;
         }
