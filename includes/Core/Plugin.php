@@ -95,8 +95,9 @@ class Plugin {
     private function init(): void {
         // Initialize components safely with error handling
         try {
-            // Initialize the Experience product type EARLY to ensure it's registered before WooCommerce loads product types
-            add_action('init', [$this, 'initExperienceProductType'], 5);
+            // Initialize the Experience product type IMMEDIATELY, not on 'init' action
+            // This ensures it's registered before WooCommerce loads product types
+            $this->initExperienceProductType();
 
             // Initialize core components with proper error handling
             add_action('init', [$this, 'initCoreComponents'], 1);

@@ -33,11 +33,13 @@ class DynamicPricingHooks {
     /**
      * Apply dynamic pricing to base prices
      *
-     * @param float $base_price Base price
+     * @param mixed $base_price Base price (can be string or float)
      * @param int $product_id Product ID
      * @return float Modified price
      */
-    public function applyDynamicPricing(float $base_price, int $product_id): float {
+    public function applyDynamicPricing($base_price, int $product_id): float {
+        // Convert price to float safely to handle various input types
+        $base_price = is_numeric($base_price) ? (float) $base_price : 0.0;
         // Determine if this is adult or child price based on current filter
         $current_filter = current_filter();
         $type = strpos($current_filter, 'adult') !== false ? 'adult' : 'child';
