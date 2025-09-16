@@ -113,11 +113,13 @@ class Plugin {
             // Initialize admin
             if (is_admin()) {
                 add_action('init', [$this, 'initAdmin']);
+                add_action('admin_enqueue_scripts', [$this, 'enqueueAdminScripts']);
             }
             
             // Initialize frontend
             if (!is_admin()) {
                 add_action('init', [$this, 'initFrontend']);
+                add_action('wp_enqueue_scripts', [$this, 'enqueueScripts']);
             }
             
         } catch (Throwable $e) {
@@ -508,34 +510,43 @@ class Plugin {
 
         // Enqueue booking widget JS only on single experience pages
         if (is_singular('product')) {
-            $booking_widget_url = AssetOptimizer::getMinifiedAssetUrl('js', 'booking-widget');
-            if (!$booking_widget_url) {
-                $booking_widget_url = FP_ESPERIENZE_PLUGIN_URL . 'assets/js/booking-widget.js';
-            }
+            global $post;
+            $product = wc_get_product($post->ID);
             
-            wp_enqueue_script(
-                'fp-esperienze-booking-widget',
-                $booking_widget_url,
-                ['jquery', 'fp-esperienze-frontend'],
-                FP_ESPERIENZE_VERSION,
-                true
-            );
+            // Only enqueue for experience products
+            if ($product && $product->get_type() === 'experience') {
+                $booking_widget_url = AssetOptimizer::getMinifiedAssetUrl('js', 'booking-widget');
+                if (!$booking_widget_url) {
+                    $booking_widget_url = FP_ESPERIENZE_PLUGIN_URL . 'assets/js/booking-widget.js';
+                }
+                
+                wp_enqueue_script(
+                    'fp-esperienze-booking-widget',
+                    $booking_widget_url,
+                    ['jquery', 'fp-esperienze-frontend'],
+                    FP_ESPERIENZE_VERSION,
+                    true
+                );
 
-            wp_set_script_translations(
-                'fp-esperienze-booking-widget',
-                'fp-esperienze',
-                FP_ESPERIENZE_PLUGIN_DIR . 'languages'
-            );
-            
-            // Localize booking widget with translated strings
-            wp_localize_script('fp-esperienze-booking-widget', 'fp_booking_widget_i18n', [
-                'error_failed_load_availability' => __('Failed to load availability.', 'fp-esperienze'),
-                'error_booking_unavailable' => __('Booking system temporarily unavailable. Please try again.', 'fp-esperienze'),
-                'error_no_availability' => __('No availability for this date.', 'fp-esperienze'),
-                'spots_left' => __('spots left', 'fp-esperienze'),
-                'sold_out' => __('Sold out', 'fp-esperienze'),
-                'loading_availability' => __('Loading available times...', 'fp-esperienze'),
-            ]);
+                wp_set_script_translations(
+                    'fp-esperienze-booking-widget',
+                    'fp-esperienze',
+                    FP_ESPERIENZE_PLUGIN_DIR . 'languages'
+                );
+                
+                // Localize booking widget with translated strings and REST API endpoints
+                wp_localize_script('fp-esperienze-booking-widget', 'fp_booking_widget_i18n', [
+                    'error_failed_load_availability' => __('Failed to load availability.', 'fp-esperienze'),
+                    'error_booking_unavailable' => __('Booking system temporarily unavailable. Please try again.', 'fp-esperienze'),
+                    'error_no_availability' => __('No availability for this date.', 'fp-esperienze'),
+                    'spots_left' => __('spots left', 'fp-esperienze'),
+                    'sold_out' => __('Sold out', 'fp-esperienze'),
+                    'loading_availability' => __('Loading available times...', 'fp-esperienze'),
+                    'rest_url' => get_rest_url(null, 'fp-exp/v1/'),
+                    'nonce' => wp_create_nonce('wp_rest'),
+                    'product_id' => $product->get_id(),
+                ]);
+            }
         }
 
         // Localize frontend script with dynamic data
