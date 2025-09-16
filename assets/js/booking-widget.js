@@ -29,14 +29,32 @@
         init: function() {
             // Only init on experience single pages
             if (!$('#fp-booking-widget').length) {
+                console.log('FP Booking Widget: No booking widget container found');
                 return;
             }
 
-            this.bindEvents();
-            this.initStickyWidget();
-            this.initAccessibility();
-            this.initData();
-            this.updateTotal();
+            console.log('FP Booking Widget: Initializing...');
+            
+            try {
+                this.bindEvents();
+                this.initStickyWidget();
+                this.initAccessibility();
+                this.initData();
+                this.updateTotal();
+                
+                console.log('FP Booking Widget: Successfully initialized');
+                
+                // Add debug information to console
+                if (typeof fp_booking_widget_i18n !== 'undefined') {
+                    console.log('FP Booking Widget: Localization data available');
+                } else {
+                    console.warn('FP Booking Widget: Localization data missing');
+                }
+                
+            } catch (error) {
+                console.error('FP Booking Widget: Initialization failed:', error);
+                this.showError('Booking widget failed to initialize. Please refresh the page.');
+            }
         },
 
         /**

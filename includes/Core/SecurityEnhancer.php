@@ -39,16 +39,18 @@ class SecurityEnhancer {
      * Add security headers for Content Security Policy
      */
     public static function addSecurityHeaders(): void {
-        // Only add CSP if not already set
-        if (!headers_sent() && !apply_filters('fp_esperienze_skip_csp', false)) {
+        // Only add CSP if not already set and explicitly enabled
+        if (!headers_sent() && apply_filters('fp_esperienze_enable_csp', false)) {
             $csp_directives = [
                 "default-src 'self'",
-                "script-src 'self' 'unsafe-inline' 'unsafe-eval' *.google.com *.googleapis.com *.gstatic.com *.facebook.com *.meta.com",
-                "style-src 'self' 'unsafe-inline' *.google.com *.googleapis.com",
-                "img-src 'self' data: *.google.com *.googleusercontent.com *.facebook.com *.meta.com",
-                "font-src 'self' *.google.com *.gstatic.com",
+                "script-src 'self' 'unsafe-inline' 'unsafe-eval' *.google.com *.googleapis.com *.gstatic.com *.facebook.com *.meta.com https://js.chargebee.com https://assets.calendly.com",
+                "style-src 'self' 'unsafe-inline' *.google.com *.googleapis.com *.gstatic.com https://fonts.googleapis.com",
+                "img-src 'self' data: blob: *.google.com *.googleusercontent.com *.facebook.com *.meta.com",
+                "font-src 'self' data: *.google.com *.gstatic.com https://fonts.gstatic.com",
                 "connect-src 'self' *.google.com *.googleapis.com *.facebook.com *.meta.com",
-                "frame-src 'self' *.google.com *.facebook.com"
+                "frame-src 'self' *.google.com *.facebook.com *.youtube.com *.vimeo.com",
+                "worker-src 'self' blob:",
+                "manifest-src 'self'"
             ];
             
             $csp = implode('; ', apply_filters('fp_esperienze_csp_directives', $csp_directives));

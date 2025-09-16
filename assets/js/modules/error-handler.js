@@ -32,7 +32,12 @@
             this.initErrorRecovery();
             this.startHealthChecks();
             
-            // Setup cleanup on page unload
+            // Setup cleanup on page unload - use pagehide for modern browsers
+            $(window).on('pagehide', () => {
+                this.cleanup();
+            });
+            
+            // Fallback to beforeunload for older browsers
             $(window).on('beforeunload', () => {
                 this.cleanup();
             });

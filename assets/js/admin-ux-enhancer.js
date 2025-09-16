@@ -99,10 +99,19 @@
         initUnsavedChangesWarning: function() {
             var self = this;
             
+            // Use pagehide event as modern alternative to beforeunload
+            $(window).on('pagehide', function(e) {
+                if (self.unsavedChanges) {
+                    // Save unsaved changes indicator for session restoration
+                    sessionStorage.setItem('fp_unsaved_changes', 'true');
+                }
+            });
+            
+            // Fallback to beforeunload for older browsers, but with improved handling
             $(window).on('beforeunload', function(e) {
                 if (self.unsavedChanges) {
-                    var message = fpAdminUX.i18n.unsaved_changes;
-                    e.returnValue = message;
+                    // Modern browsers ignore custom messages
+                    var message = 'You have unsaved changes. Are you sure you want to leave?';
                     return message;
                 }
             });
@@ -110,7 +119,7 @@
             // Navigation link warnings
             $('a:not(.no-warning)').on('click', function(e) {
                 if (self.unsavedChanges) {
-                    if (!confirm(fpAdminUX.i18n.unsaved_changes)) {
+                    if (!confirm(fpAdminUX.i18n.unsaved_changes || 'You have unsaved changes. Are you sure you want to leave?')) {
                         e.preventDefault();
                     } else {
                         self.unsavedChanges = false;

@@ -321,7 +321,14 @@ if (typeof jQuery === 'undefined') {
         setupUnsavedChangesWarning: function() {
             var self = this;
             
-            // Warn before leaving page with unsaved changes
+            // Use pagehide event as modern alternative
+            $(window).on('pagehide', function() {
+                if (self.hasUnsavedChanges) {
+                    sessionStorage.setItem('fp_admin_unsaved_changes', 'true');
+                }
+            });
+            
+            // Fallback to beforeunload with improved handling
             $(window).on('beforeunload', function() {
                 if (self.hasUnsavedChanges) {
                     return 'You have unsaved changes. Are you sure you want to leave?';
