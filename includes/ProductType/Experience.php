@@ -2714,34 +2714,40 @@ class Experience {
 	/**
 	 * Add experience product fields to general tab for better admin integration
 	 */
-	public function addExperienceProductFields(): void {
-		global $product_object;
+       public function addExperienceProductFields(): void {
+               global $product_object;
 
-		// Only show for experience products
-		if ( ! $product_object || $product_object->get_type() !== 'experience' ) {
-			return;
-		}
+               $product_id    = 0;
+               $default_value = '';
 
-		echo '<div class="options_group show_if_experience">';
+               if ( $product_object instanceof \WC_Product ) {
+                       $product_id = $product_object->get_id();
+               }
 
-		woocommerce_wp_text_input(
-			array(
-				'id'                => '_experience_duration_general',
-				'label'             => __( 'Duration (minutes)', 'fp-esperienze' ),
-				'placeholder'       => '60',
-				'desc_tip'          => true,
-				'description'       => __( 'Experience duration in minutes', 'fp-esperienze' ),
-				'type'              => 'number',
-				'custom_attributes' => array(
-					'step' => '1',
-					'min'  => '1',
-				),
-				'value'             => get_post_meta( $product_object->get_id(), '_experience_duration', true ),
-			)
-		);
+               if ( $product_id ) {
+                       $default_value = get_post_meta( $product_id, '_experience_duration', true );
+               }
 
-		echo '</div>';
-	}
+               echo '<div class="options_group show_if_experience">';
+
+               woocommerce_wp_text_input(
+                       array(
+                               'id'                => '_experience_duration_general',
+                               'label'             => __( 'Duration (minutes)', 'fp-esperienze' ),
+                               'placeholder'       => '60',
+                               'desc_tip'          => true,
+                               'description'       => __( 'Experience duration in minutes', 'fp-esperienze' ),
+                               'type'              => 'number',
+                               'custom_attributes' => array(
+                                       'step' => '1',
+                                       'min'  => '1',
+                               ),
+                               'value'             => $default_value,
+                       )
+               );
+
+               echo '</div>';
+       }
 
 	/**
 	 * Enqueue admin scripts for product edit pages
