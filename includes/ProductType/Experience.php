@@ -376,10 +376,10 @@ class Experience {
 						<?php $this->renderEventScheduleBuilder( $post->ID ); ?>
 					</div>
 					
-					<button type="button" class="button fp-primary-button" id="fp-add-event-schedule">
-						<span class="dashicons dashicons-plus-alt"></span>
-						<?php _e( 'Add Event Date', 'fp-esperienze' ); ?>
-					</button>
+                                        <button type="button" class="button button-primary" id="fp-add-event-schedule">
+                                                <span class="dashicons dashicons-plus-alt"></span>
+                                                <?php _e( 'Add Event Date', 'fp-esperienze' ); ?>
+                                        </button>
 				</div>
 			</fieldset>
 			
@@ -394,10 +394,10 @@ class Experience {
 					<div id="fp-overrides-container">
 						<?php $this->renderOverridesSection( $post->ID ); ?>
 					</div>
-					<button type="button" class="button fp-primary-button fp-add-override" id="fp-add-override">
-						<span class="dashicons dashicons-plus-alt"></span>
-						<?php _e( 'Add Date Override', 'fp-esperienze' ); ?>
-					</button>
+                                        <button type="button" class="button button-primary fp-add-override" id="fp-add-override">
+                                                <span class="dashicons dashicons-plus-alt"></span>
+                                                <?php _e( 'Add Date Override', 'fp-esperienze' ); ?>
+                                        </button>
 				</div>
 			</fieldset>
 			
@@ -571,11 +571,11 @@ class Experience {
 				</div>
 			</div>
 			
-			<div style="text-align: right;">
-				<button type="button" class="button fp-remove-schedule" style="color: #dc3545;">
-					<span class="dashicons dashicons-trash" style="vertical-align: middle;"></span>
-					<?php _e( 'Remove Schedule', 'fp-esperienze' ); ?>
-				</button>
+                        <div style="text-align: right;">
+                                <button type="button" class="button button-link-delete fp-remove-schedule">
+                                        <span class="dashicons dashicons-trash" style="vertical-align: middle;"></span>
+                                        <?php _e( 'Remove Schedule', 'fp-esperienze' ); ?>
+                                </button>
 			</div>
 		</div>
 		<?php
@@ -631,10 +631,10 @@ class Experience {
 				<?php endif; ?>
 			</div>
 			
-			<button type="button" class="button fp-add-time-slot" id="fp-add-time-slot">
-				<span class="dashicons dashicons-plus-alt"></span>
-				<?php _e( 'Add Time Slot', 'fp-esperienze' ); ?>
-			</button>
+                        <button type="button" class="button button-primary fp-add-time-slot" id="fp-add-time-slot">
+                                <span class="dashicons dashicons-plus-alt"></span>
+                                <?php _e( 'Add Time Slot', 'fp-esperienze' ); ?>
+                        </button>
 		</div>
 		
 		<!-- Hidden container for generated schedule inputs -->
@@ -683,11 +683,11 @@ class Experience {
 					</div>
 				</div>
 				
-				<div class="fp-slot-actions-clean">
-					<button type="button" class="fp-remove-time-slot-clean button">
-						<span class="dashicons dashicons-trash"></span>
-						<?php _e( 'Remove', 'fp-esperienze' ); ?>
-					</button>
+                                <div class="fp-slot-actions-clean">
+                                        <button type="button" class="button button-link-delete fp-remove-time-slot-clean">
+                                                <span class="dashicons dashicons-trash"></span>
+                                                <?php _e( 'Remove', 'fp-esperienze' ); ?>
+                                        </button>
 				</div>
 			</div>
 			
@@ -812,11 +812,11 @@ class Experience {
 					</div>
 				</div>
 				
-				<div>
-					<button type="button" class="fp-remove-time-slot">
-						<span class="dashicons dashicons-trash"></span>
-						<?php _e( 'Remove', 'fp-esperienze' ); ?>
-					</button>
+                                <div>
+                                        <button type="button" class="button button-link-delete fp-remove-time-slot">
+                                                <span class="dashicons dashicons-trash"></span>
+                                                <?php _e( 'Remove', 'fp-esperienze' ); ?>
+                                        </button>
 				</div>
 			</div>
 			
@@ -1049,14 +1049,14 @@ class Experience {
 				<span class="fp-event-date-meta"><?php printf( _n( '%d time slot', '%d time slots', count( $schedules ), 'fp-esperienze' ), count( $schedules ) ); ?></span>
 			</div>
 			<div class="fp-event-date-actions">
-				<button type="button" class="button fp-add-event-timeslot" data-date="<?php echo esc_attr( $date ); ?>">
-					<span class="dashicons dashicons-clock"></span>
-					<?php _e( 'Add Time Slot', 'fp-esperienze' ); ?>
-				</button>
-				<button type="button" class="button fp-remove-event-date" data-date="<?php echo esc_attr( $date ); ?>">
-					<span class="dashicons dashicons-trash"></span>
-					<?php _e( 'Remove Date', 'fp-esperienze' ); ?>
-				</button>
+                                <button type="button" class="button button-primary fp-add-event-timeslot" data-date="<?php echo esc_attr( $date ); ?>">
+                                        <span class="dashicons dashicons-clock"></span>
+                                        <?php _e( 'Add Time Slot', 'fp-esperienze' ); ?>
+                                </button>
+                                <button type="button" class="button button-link-delete fp-remove-event-date" data-date="<?php echo esc_attr( $date ); ?>">
+                                        <span class="dashicons dashicons-trash"></span>
+                                        <?php _e( 'Remove Date', 'fp-esperienze' ); ?>
+                                </button>
 			</div>
 		</div>
 		
@@ -1148,11 +1148,11 @@ class Experience {
 							min="0" step="0.01" required>
 				</div>
 				
-				<div class="fp-timeslot-actions">
-					<button type="button" class="button fp-remove-event-timeslot">
-						<span class="dashicons dashicons-trash"></span>
-						<?php _e( 'Remove', 'fp-esperienze' ); ?>
-					</button>
+                                <div class="fp-timeslot-actions">
+                                        <button type="button" class="button button-link-delete fp-remove-event-timeslot">
+                                                <span class="dashicons dashicons-trash"></span>
+                                                <?php _e( 'Remove', 'fp-esperienze' ); ?>
+                                        </button>
 				</div>
 			</div>
 		</div>
@@ -1233,10 +1233,10 @@ class Experience {
 						<label for="override-closed-<?php echo esc_attr( $index ); ?>"><?php _e( 'Closed', 'fp-esperienze' ); ?></label>
 					</div>
 					
-					<button type="button" class="fp-override-remove-clean button">
-						<span class="dashicons dashicons-trash"></span>
-						<?php _e( 'Remove', 'fp-esperienze' ); ?>
-					</button>
+                                        <button type="button" class="button button-link-delete fp-override-remove-clean">
+                                                <span class="dashicons dashicons-trash"></span>
+                                                <?php _e( 'Remove', 'fp-esperienze' ); ?>
+                                        </button>
 				</div>
 			</div>
 			
@@ -1334,10 +1334,10 @@ class Experience {
 								data-original-checked="<?php echo $is_closed ? '1' : '0'; ?>">
 						<label for="override-closed-<?php echo esc_attr( $index ); ?>"><?php _e( 'Closed', 'fp-esperienze' ); ?></label>
 					</div>
-					<button type="button" class="fp-override-remove" aria-label="<?php esc_attr_e( 'Remove this override', 'fp-esperienze' ); ?>">
-						<span class="dashicons dashicons-trash"></span>
-						<?php _e( 'Remove', 'fp-esperienze' ); ?>
-					</button>
+                                        <button type="button" class="button button-link-delete fp-override-remove" aria-label="<?php esc_attr_e( 'Remove this override', 'fp-esperienze' ); ?>">
+                                                <span class="dashicons dashicons-trash"></span>
+                                                <?php _e( 'Remove', 'fp-esperienze' ); ?>
+                                        </button>
 				</div>
 			</div>
 			
@@ -1498,10 +1498,10 @@ class Experience {
 		</td>
 		
 		<td>
-			<button type="button" class="fp-override-remove" aria-label="<?php esc_attr_e( 'Remove this override', 'fp-esperienze' ); ?>">
-				<span class="dashicons dashicons-trash"></span>
-				<?php _e( 'Remove', 'fp-esperienze' ); ?>
-			</button>
+                   <button type="button" class="button button-link-delete fp-override-remove" aria-label="<?php esc_attr_e( 'Remove this override', 'fp-esperienze' ); ?>">
+                            <span class="dashicons dashicons-trash"></span>
+                            <?php _e( 'Remove', 'fp-esperienze' ); ?>
+                   </button>
 		</td>
 		<?php
 	}
@@ -1594,10 +1594,10 @@ class Experience {
 					aria-label="<?php esc_attr_e( 'Reason for this override', 'fp-esperienze' ); ?>"
 					data-original-value="<?php echo esc_attr( $override->reason ?? '' ); ?>">
 			
-			<button type="button" class="fp-override-remove" aria-label="<?php esc_attr_e( 'Remove this override', 'fp-esperienze' ); ?>">
-				<span class="dashicons dashicons-trash"></span>
-				<?php _e( 'Remove', 'fp-esperienze' ); ?>
-			</button>
+                   <button type="button" class="button button-link-delete fp-override-remove" aria-label="<?php esc_attr_e( 'Remove this override', 'fp-esperienze' ); ?>">
+                            <span class="dashicons dashicons-trash"></span>
+                            <?php _e( 'Remove', 'fp-esperienze' ); ?>
+                   </button>
 		</div>
 		<?php
 	}
