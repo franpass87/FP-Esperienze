@@ -171,7 +171,13 @@ class Cart_Hooks {
         }
 
         // Validate slot format (YYYY-MM-DD HH:MM)
-        $slot_datetime = \DateTime::createFromFormat('Y-m-d H:i', $slot_start);
+        $wp_timezone = wp_timezone();
+        $slot_datetime = \DateTime::createFromFormat('Y-m-d H:i', $slot_start, $wp_timezone);
+
+        if ($slot_datetime instanceof \DateTime) {
+            $slot_datetime->setTimezone($wp_timezone);
+        }
+
         if (!$slot_datetime || $slot_datetime->format('Y-m-d H:i') !== $slot_start) {
             wc_add_notice(__('Invalid time slot format.', 'fp-esperienze'), 'error');
             return false;
@@ -179,7 +185,7 @@ class Cart_Hooks {
 
         // Check cutoff time
         $cutoff_minutes = get_post_meta($product_id, '_fp_exp_cutoff_minutes', true) ?: 120;
-        $cutoff_time = new \DateTime();
+        $cutoff_time = new \DateTime('now', $wp_timezone);
         $cutoff_time->add(new \DateInterval('PT' . $cutoff_minutes . 'M'));
 
         if ($slot_datetime <= $cutoff_time) {
