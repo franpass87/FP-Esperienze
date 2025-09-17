@@ -595,7 +595,7 @@ class Experience {
 	 * @param int $product_id Product ID
 	 */
 	private function renderScheduleBuilder( int $product_id ): void {
-		$schedules      = ScheduleManager::getSchedules( $product_id );
+		$schedules      = ScheduleManager::getRecurringSchedules( $product_id );
 		$meeting_points = $this->getMeetingPoints();
 
                 // Default placeholders when slot values are missing
