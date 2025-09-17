@@ -26,11 +26,21 @@ class Availability {
 	 * @return array
 	 */
 	public static function forDay( int $product_id, string $date ): array {
-		// Check cache first for performance
-		$cached_data = CacheManager::getAvailabilityCache( $product_id, $date );
-		if ( $cached_data !== false && isset( $cached_data['slots'] ) ) {
-			return $cached_data['slots'];
-		}
+                $holds_enabled = HoldManager::isEnabled();
+                $session_id    = '';
+                if ( $holds_enabled && function_exists( 'WC' ) && WC()->session ) {
+                        $session_id = WC()->session->get_customer_id();
+                }
+
+                // Check cache first for performance
+                $cached_data = CacheManager::getAvailabilityCache( $product_id, $date );
+                if ( $cached_data !== false && isset( $cached_data['slots'] ) ) {
+                        if ( $holds_enabled ) {
+                                return self::applyHoldAdjustments( $cached_data['slots'], $product_id, $date, $session_id );
+                        }
+
+                        return $cached_data['slots'];
+                }
 
 		// Get WordPress timezone
 		$wp_timezone = wp_timezone();
@@ -103,30 +113,30 @@ class Availability {
 			// Get existing bookings for this slot
 			$booked_count = self::getBookedCount( $product_id, $date, $schedule->start_time );
 
-			// Get held capacity for this slot (if holds are enabled)
-			$held_count = 0;
-			if ( HoldManager::isEnabled() ) {
-				$slot_datetime_str = $date . ' ' . substr( $schedule->start_time, 0, 5 ); // Y-m-d H:i format
-				$session_id        = WC()->session ? WC()->session->get_customer_id() : '';
-				$held_count        = HoldManager::getHeldQuantity( $product_id, $slot_datetime_str, $session_id );
-			}
+                        // Get held capacity for this slot (if holds are enabled)
+                        $held_count = 0;
+                        if ( $holds_enabled ) {
+                                $slot_datetime_str = $date . ' ' . $start_time->format( 'H:i' ); // Y-m-d H:i format
+                                $held_count        = HoldManager::getHeldQuantity( $product_id, $slot_datetime_str, $session_id );
+                        }
 
-			$available_spots = max( 0, $capacity - $booked_count - $held_count );
+                        $available_spots = max( 0, $capacity - $booked_count - $held_count );
 
-			$slots[] = array(
-				'schedule_id'      => $schedule->id,
+                        $slots[] = array(
+                                'schedule_id'      => $schedule->id,
 				'start_time'       => $start_time->format( 'H:i' ),
 				'end_time'         => $end_time->format( 'H:i' ),
-				'capacity'         => $capacity,
-				'booked'           => $booked_count,
-				'available'        => $available_spots,
-				'is_available'     => $available_spots > 0,
-				'adult_price'      => $adult_price,
-				'child_price'      => $child_price,
-				'languages'        => $language,
-				'meeting_point_id' => $meeting_point_id,
-			);
-		}
+                                'capacity'         => $capacity,
+                                'booked'           => $booked_count,
+                                'available'        => $available_spots,
+                                'held_count'       => $held_count,
+                                'is_available'     => $available_spots > 0,
+                                'adult_price'      => $adult_price,
+                                'child_price'      => $child_price,
+                                'languages'        => $language,
+                                'meeting_point_id' => $meeting_point_id,
+                        );
+                }
 
 		// Cache the result before returning
 		$cache_data = array(
@@ -138,8 +148,39 @@ class Availability {
 		);
 		CacheManager::setAvailabilityCache( $product_id, $date, $cache_data );
 
-		return $slots;
-	}
+                return $slots;
+        }
+
+        /**
+         * Apply hold adjustments to cached slots when hold system is active.
+         *
+         * @param array  $slots Slots array from cache.
+         * @param int    $product_id Product ID.
+         * @param string $date Date in Y-m-d format.
+         * @param string $session_id Current session identifier.
+         * @return array
+         */
+        private static function applyHoldAdjustments( array $slots, int $product_id, string $date, string $session_id ): array {
+                foreach ( $slots as &$slot ) {
+                        if ( empty( $slot['start_time'] ) ) {
+                                continue;
+                        }
+
+                        $slot_datetime_str = $date . ' ' . $slot['start_time'];
+                        $held_count        = HoldManager::getHeldQuantity( $product_id, $slot_datetime_str, $session_id );
+                        $capacity          = isset( $slot['capacity'] ) ? (int) $slot['capacity'] : 0;
+                        $booked            = isset( $slot['booked'] ) ? (int) $slot['booked'] : 0;
+                        $available_spots   = max( 0, $capacity - $booked - $held_count );
+
+                        $slot['held_count']   = $held_count;
+                        $slot['available']    = $available_spots;
+                        $slot['is_available'] = $available_spots > 0;
+                }
+
+                unset( $slot );
+
+                return $slots;
+        }
 
 	/**
 	 * Get count of booked participants for a specific slot

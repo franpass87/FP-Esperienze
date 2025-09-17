@@ -8,6 +8,7 @@
 namespace FP\Esperienze\Core;
 
 use FP\Esperienze\Data\Availability;
+use FP\Esperienze\Data\HoldManager;
 
 defined('ABSPATH') || exit;
 
@@ -155,7 +156,12 @@ class CacheManager {
      */
     public function prebuildAvailability(): void {
         $days = get_option(self::PREBUILD_DAYS_OPTION, 7); // Default 7 days
-        
+
+        if (HoldManager::isEnabled()) {
+            // Holds require real-time availability adjustments; skip prebuilding cache.
+            return;
+        }
+
         if ($days <= 0) {
             return; // Pre-building disabled
         }
