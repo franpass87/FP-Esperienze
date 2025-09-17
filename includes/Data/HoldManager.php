@@ -7,6 +7,7 @@
 
 namespace FP\Esperienze\Data;
 
+use FP\Esperienze\Core\CacheManager;
 use FP\Esperienze\Data\Availability;
 
 defined('ABSPATH') || exit;
@@ -86,11 +87,13 @@ class HoldManager {
         
         if ($result === false) {
             return [
-                'success' => false, 
+                'success' => false,
                 'message' => __('Failed to create hold', 'fp-esperienze')
             ];
         }
-        
+
+        CacheManager::invalidateAvailabilityCache($product_id, $slot_datetime->format('Y-m-d'));
+
         return [
             'success' => true,
             'hold_id' => $wpdb->insert_id,
@@ -195,7 +198,11 @@ class HoldManager {
             ],
             ['%d', '%s', '%s']
         );
-        
+
+        if ($result !== false) {
+            CacheManager::invalidateAvailabilityCache($product_id, $slot_datetime->format('Y-m-d'));
+        }
+
         return $result !== false;
     }
     
