@@ -331,7 +331,10 @@
             $(document).on('click', '.fp-time-slot:not(.unavailable)', function() {
                 $('.fp-time-slot').removeClass('selected');
                 $(this).addClass('selected');
-                
+
+                self.adultPrice = parseFloat($(this).data('adult-price')) || 0;
+                self.childPrice = parseFloat($(this).data('child-price')) || 0;
+
                 self.selectedSlot = {
                     start_time: $(this).data('start-time'),
                     adult_price: $(this).data('adult-price'),
@@ -486,7 +489,10 @@
             
             $('#fp-time-slots').html(html);
             this.selectedSlot = null;
+            this.adultPrice = 0;
+            this.childPrice = 0;
             $('#fp-selected-slot').val('');
+            this.updateTotal();
             this.validateForm();
         },
 
