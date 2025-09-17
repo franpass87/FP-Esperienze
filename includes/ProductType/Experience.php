@@ -28,29 +28,15 @@ class Experience {
 		// Load the WC_Product_Experience class immediately to ensure it's available
 		$this->loadProductClass();
 
-		// Register product type selector immediately with high priority
-		// This ensures the Experience type is available before WooCommerce loads product types
-		add_filter( 'woocommerce_product_type_selector', array( $this, 'addProductType' ), 5 );
-		add_filter( 'woocommerce_product_class', array( $this, 'getProductClass' ), 5, 2 );
-		add_filter( 'woocommerce_data_stores', array( $this, 'registerDataStore' ), 5, 1 );
+		// Register product type on init hook with proper timing
+		// This ensures WooCommerce is ready but our types are registered before WC core types
+		add_action( 'init', array( $this, 'registerProductType' ), 5 );
+		
+		// Register other filters with proper timing
+		add_action( 'init', array( $this, 'registerProductFilters' ), 6 );
 
-		add_action( 'init', array( $this, 'init' ) );
-		add_filter( 'woocommerce_product_data_tabs', array( $this, 'addProductDataTabs' ) );
-		add_action( 'woocommerce_product_data_panels', array( $this, 'addProductDataPanels' ) );
-
-		// Hook into product type saving with higher priority and multiple hooks
-		add_action( 'woocommerce_process_product_meta', array( $this, 'saveProductData' ), 20 );
-		// Also hook into the product save process to ensure type is preserved
-		add_action( 'woocommerce_update_product', array( $this, 'ensureProductType' ), 5 );
-		add_action( 'woocommerce_new_product', array( $this, 'ensureProductType' ), 5 );
-
-		add_action( 'admin_notices', array( $this, 'showScheduleValidationNotices' ) );
-
-		// Additional hooks for proper WooCommerce integration
-		add_action( 'woocommerce_product_options_general_product_data', array( $this, 'addExperienceProductFields' ) );
-
-		// Ensure admin scripts are loaded on product edit pages
-		add_action( 'admin_enqueue_scripts', array( $this, 'enqueueAdminScripts' ) );
+		// Register admin hooks with proper timing  
+		add_action( 'init', array( $this, 'registerAdminHooks' ), 7 );
 	}
 
 	/**
@@ -79,6 +65,76 @@ class Experience {
 	public function init(): void {
 		// No manual class loading needed - autoloading handles this
 		// This method can be used for any other initialization in the future
+	}
+
+	/**
+	 * Register product type on init hook with proper timing
+	 * This ensures WooCommerce is ready but our type is registered before WC core types
+	 */
+	public function registerProductType(): void {
+		// Only register if WooCommerce is available
+		if ( ! function_exists( 'wc_get_product_types' ) ) {
+			return;
+		}
+
+		// Register the product type selector filter
+		add_filter( 'woocommerce_product_type_selector', array( $this, 'addProductType' ), 10 );
+		
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			error_log( 'FP Esperienze: Experience product type filter registered on init hook' );
+		}
+	}
+
+	/**
+	 * Register other product-related filters
+	 * Called after product type registration to ensure proper order
+	 */
+	public function registerProductFilters(): void {
+		// Only register if WooCommerce is available
+		if ( ! function_exists( 'wc_get_product_types' ) ) {
+			return;
+		}
+
+		// Register product class and data store filters
+		add_filter( 'woocommerce_product_class', array( $this, 'getProductClass' ), 10, 2 );
+		add_filter( 'woocommerce_data_stores', array( $this, 'registerDataStore' ), 10, 1 );
+		
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			error_log( 'FP Esperienze: Experience product filters registered on init hook' );
+		}
+	}
+
+	/**
+	 * Register admin-related hooks
+	 * Called after core filters to ensure proper integration
+	 */
+	public function registerAdminHooks(): void {
+		// Only register admin hooks if WooCommerce is available
+		if ( ! function_exists( 'wc_get_product_types' ) ) {
+			return;
+		}
+
+		// Register admin interface hooks
+		add_filter( 'woocommerce_product_data_tabs', array( $this, 'addProductDataTabs' ) );
+		add_action( 'woocommerce_product_data_panels', array( $this, 'addProductDataPanels' ) );
+
+		// Hook into product type saving with higher priority and multiple hooks
+		add_action( 'woocommerce_process_product_meta', array( $this, 'saveProductData' ), 20 );
+		// Also hook into the product save process to ensure type is preserved
+		add_action( 'woocommerce_update_product', array( $this, 'ensureProductType' ), 5 );
+		add_action( 'woocommerce_new_product', array( $this, 'ensureProductType' ), 5 );
+
+		add_action( 'admin_notices', array( $this, 'showScheduleValidationNotices' ) );
+
+		// Additional hooks for proper WooCommerce integration
+		add_action( 'woocommerce_product_options_general_product_data', array( $this, 'addExperienceProductFields' ) );
+
+		// Ensure admin scripts are loaded on product edit pages
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueueAdminScripts' ) );
+		
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			error_log( 'FP Esperienze: Experience admin hooks registered on init hook' );
+		}
 	}
 
 	/**
