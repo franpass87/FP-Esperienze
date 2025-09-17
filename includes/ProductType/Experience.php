@@ -2172,15 +2172,36 @@ class Experience {
 				continue;
 			}
 
-			// Validate date is not in the past
-			if ( strtotime( $date ) < strtotime( 'today' ) ) {
-				$validation_errors[] = sprintf( __( 'Event date cannot be in the past: %s', 'fp-esperienze' ), esc_html( $date ) );
-				continue;
+			$is_past_date = strtotime( $date ) < strtotime( 'today' );
+			$has_new_past_slot = false;
+
+			if ( $is_past_date ) {
+				foreach ( $timeslots as $legacy_slot ) {
+					$legacy_id    = ! empty( $legacy_slot['id'] ) ? (int) $legacy_slot['id'] : 0;
+					$legacy_start = isset( $legacy_slot['start_time'] ) ? trim( (string) $legacy_slot['start_time'] ) : '';
+
+					if ( $legacy_id > 0 ) {
+						$processed_ids[] = $legacy_id;
+					}
+
+					if ( $legacy_id <= 0 && $legacy_start !== '' ) {
+						$has_new_past_slot = true;
+					}
+				}
+
+				if ( $has_new_past_slot ) {
+					$validation_errors[] = sprintf( __( 'Event date cannot be in the past: %s', 'fp-esperienze' ), esc_html( $date ) );
+				}
 			}
 
 			foreach ( $timeslots as $slot_index => $slot_data ) {
 				// Skip empty slots
 				if ( empty( $slot_data['start_time'] ) ) {
+					continue;
+				}
+
+				if ( $is_past_date && empty( $slot_data['id'] ) ) {
+					// Prevent creating new slots for past dates but keep legacy ones
 					continue;
 				}
 
@@ -2227,11 +2248,11 @@ class Experience {
 				// Normalize time format
 				$start_time = sprintf( '%02d:%02d', $m[1], $m[2] );
 
-				// Prepare schedule data
-				$schedule_data = array(
-					'product_id'       => $product_id,
-					'schedule_type'    => 'fixed',
-					'event_date'       => $date,
+                               // Prepare schedule data
+                               $schedule_data = array(
+                                       'product_id'       => $product_id,
+                                       'schedule_type'    => 'fixed',
+                                       'event_date'       => $date,
 					'start_time'       => $start_time,
 					'duration_min'     => max( 1, (int) $slot_data['duration_min'] ),
 					'capacity'         => max( 1, (int) $slot_data['capacity'] ),
@@ -2242,24 +2263,24 @@ class Experience {
 					'is_active'        => 1,
 				);
 
-				$schedule_id = ! empty( $slot_data['id'] ) ? (int) $slot_data['id'] : 0;
+                               $schedule_id = ! empty( $slot_data['id'] ) ? (int) $slot_data['id'] : 0;
 
-				if ( $schedule_id > 0 ) {
-					// Update existing schedule
-					ScheduleManager::updateSchedule( $schedule_id, $schedule_data );
-					$processed_ids[] = $schedule_id;
-				} else {
-					// Create new schedule
-					$new_id = ScheduleManager::createSchedule( $schedule_data );
-					if ( $new_id ) {
-						$processed_ids[] = $new_id;
-					}
-				}
-			}
-		}
+                               if ( $schedule_id > 0 ) {
+                                       // Update existing schedule
+                                       ScheduleManager::updateSchedule( $schedule_id, $schedule_data );
+                                       $processed_ids[] = $schedule_id;
+                               } else {
+                                       // Create new schedule
+                                       $new_id = ScheduleManager::createSchedule( $schedule_data );
+                                       if ( $new_id ) {
+                                               $processed_ids[] = $new_id;
+                                       }
+                               }
+                       }
+               }
 
-		return $processed_ids;
-	}
+               return array_values( array_unique( $processed_ids ) );
+       }
 
 	/**
 	 * Save overrides data
