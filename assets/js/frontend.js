@@ -619,8 +619,15 @@
             var adultQty = parseInt($('#fp-qty-adult').val()) || 0;
             var childQty = parseInt($('#fp-qty-child').val()) || 0;
             var meetingPointId = $('#fp-meeting-point-id').val();
-            
-            $('#fp-add-to-cart').prop('disabled', true).text(__('Adding...', 'fp-esperienze'));
+            var $addToCartButton = $('#fp-add-to-cart');
+            var addToCartText = __('Add to Cart', 'fp-esperienze');
+            var addingText = __('Adding...', 'fp-esperienze');
+            var defaultErrorMessage = __('Failed to add to cart. Please try again.', 'fp-esperienze');
+            var cartUrl = (typeof fp_esperienze_params !== 'undefined' && fp_esperienze_params.cart_url)
+                ? fp_esperienze_params.cart_url
+                : '/cart';
+
+            $addToCartButton.prop('disabled', true).text(addingText);
             
             // Collect extras data
             var extras = {};
@@ -640,6 +647,7 @@
             // Create form data
             var formData = new FormData();
             formData.append('add-to-cart', productId);
+            formData.append('product_id', productId);
             formData.append('quantity', 1); // We handle quantity in our custom fields
             formData.append('fp_slot_start', slotStart);
             formData.append('fp_meeting_point_id', meetingPointId !== null ? meetingPointId : '');
@@ -658,24 +666,39 @@
                 formData.append('fp_gift_send_date', $('#fp-gift-send-date').val() || '');
             }
             
-            fetch(window.location.href, {
+            var ajaxUrl = (typeof wc_add_to_cart_params !== 'undefined' && wc_add_to_cart_params.wc_ajax_url)
+                ? wc_add_to_cart_params.wc_ajax_url.replace('%%endpoint%%', 'add_to_cart')
+                : null;
+
+            if (!ajaxUrl) {
+                self.showError(defaultErrorMessage);
+                $addToCartButton.prop('disabled', false).text(addToCartText);
+                return;
+            }
+
+            fetch(ajaxUrl, {
                 method: 'POST',
-                body: formData
+                body: formData,
+                credentials: 'same-origin'
             })
             .then(function(response) {
-                if (response.ok) {
-                    // Redirect to cart or show success message
-                    var cartUrl = (typeof fp_esperienze_params !== 'undefined' && fp_esperienze_params.cart_url) 
-                        ? fp_esperienze_params.cart_url 
-                        : '/cart';
-                    window.location.href = cartUrl;
-                } else {
+                if (!response.ok) {
                     throw new Error(__('Failed to add to cart', 'fp-esperienze'));
                 }
+                return response.json();
             })
-            .catch(function(error) {
-                self.showError(__('Failed to add to cart. Please try again.', 'fp-esperienze'));
-                $('#fp-add-to-cart').prop('disabled', false).text(__('Add to Cart', 'fp-esperienze'));
+            .then(function(response) {
+                if (response && response.success) {
+                    window.location.href = cartUrl;
+                    return;
+                }
+
+                self.showError(response?.data?.error || defaultErrorMessage);
+                $addToCartButton.prop('disabled', false).text(addToCartText);
+            })
+            .catch(function() {
+                self.showError(defaultErrorMessage);
+                $addToCartButton.prop('disabled', false).text(addToCartText);
             });
         },
 
