@@ -11,6 +11,7 @@
         initialized: false,
         loadingOverlay: null,
         notificationContainer: null,
+        activeOverlayRequests: 0,
         
         /**
          * Initialize UX enhancements
@@ -19,6 +20,7 @@
             if (this.initialized) return;
             
             this.setupElements();
+            this.activeOverlayRequests = 0;
             this.bindEvents();
             this.initFormValidation();
             this.initProgressiveLoading();
@@ -43,10 +45,28 @@
             var self = this;
             
             // AJAX loading indicators
-            $(document).ajaxStart(function() {
-                self.showLoading();
-            }).ajaxStop(function() {
-                self.hideLoading();
+            $(document).ajaxSend(function(event, jqXHR, settings) {
+                var overlayEligible = self.isOverlayEligibleRequest(jqXHR, settings);
+
+                jqXHR.fpOverlayEligible = overlayEligible;
+
+                if (overlayEligible) {
+                    self.activeOverlayRequests += 1;
+
+                    if (self.activeOverlayRequests === 1) {
+                        self.showLoading();
+                    }
+                }
+            }).ajaxComplete(function(event, jqXHR) {
+                if (!jqXHR.fpOverlayEligible) {
+                    return;
+                }
+
+                self.activeOverlayRequests = Math.max(0, self.activeOverlayRequests - 1);
+
+                if (self.activeOverlayRequests === 0) {
+                    self.hideLoading();
+                }
             });
             
             // Form submission enhancements
@@ -172,9 +192,38 @@
          * Hide loading overlay
          */
         hideLoading: function() {
-            if (this.loadingOverlay.length) {
+            if (this.loadingOverlay.length && this.activeOverlayRequests === 0) {
                 this.loadingOverlay.hide();
             }
+        },
+
+        /**
+         * Determine if the loading overlay should be shown for the request
+         */
+        isOverlayEligibleRequest: function(jqXHR, settings) {
+            if (jqXHR && jqXHR.fpSkipOverlay) {
+                return false;
+            }
+
+            if (settings && settings.fpSkipOverlay) {
+                return false;
+            }
+
+            var requestUrl = '';
+
+            if (settings && typeof settings.url === 'string') {
+                requestUrl = settings.url;
+            }
+
+            if (requestUrl) {
+                var normalizedUrl = requestUrl.toLowerCase();
+
+                if (normalizedUrl.indexOf('fp-exp/v1/availability') !== -1) {
+                    return false;
+                }
+            }
+
+            return true;
         },
         
         /**
