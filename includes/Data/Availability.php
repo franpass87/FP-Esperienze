@@ -53,7 +53,7 @@ class Availability {
 		}
 
 		// Get schedules for this day
-		$schedules = ScheduleManager::getSchedulesForDay( $product_id, $day_of_week );
+		$schedules = ScheduleManager::getSchedulesForDay( $product_id, $day_of_week, $date );
 
 		if ( empty( $schedules ) ) {
 			return array();
