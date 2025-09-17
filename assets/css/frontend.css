@@ -263,6 +263,8 @@ html {
     border-radius: 8px;
     overflow: hidden;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
+    background-color: #fff;
+    color: #1a1a1a;
 }
 
 .fp-experience-card:hover {
@@ -301,6 +303,7 @@ html {
 
 .fp-experience-content {
     padding: 20px;
+    background-color: #fff;
 }
 
 .fp-experience-title {
@@ -2175,7 +2178,6 @@ body.admin-bar .fp-booking-widget {
         --fp-text-light-gray: #bbb;
         /* eventuali altri colori */
     }
-    .fp-experience-card,
     .fp-archive-filters {
         background: #1e1e1e;
         border-color: #333;
