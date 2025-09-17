@@ -12,6 +12,7 @@ use FP\Esperienze\Data\VoucherManager;
 use FP\Esperienze\Data\DynamicPricingManager;
 use FP\Esperienze\Data\HoldManager;
 use FP\Esperienze\Data\Availability;
+use FP\Esperienze\Data\ScheduleManager;
 use FP\Esperienze\Core\RateLimiter;
 
 defined('ABSPATH') || exit;
@@ -468,8 +469,9 @@ class Cart_Hooks {
             $total_participants = $qty_adult + $qty_child;
 
             // Calculate base price (adults + children) with proper tax handling
-            $adult_price = $this->getExperiencePriceWithTax($product, 'adult', $qty_adult);
-            $child_price = $this->getExperiencePriceWithTax($product, 'child', $qty_child);
+            $slot_pricing = $this->getExperienceSlotPricing($product, $experience_data);
+            $adult_price = $this->getExperiencePriceWithTax($product, 'adult', $qty_adult, $experience_data, $slot_pricing);
+            $child_price = $this->getExperiencePriceWithTax($product, 'child', $qty_child, $experience_data, $slot_pricing);
             
             $base_total = $adult_price + $child_price;
 
@@ -806,31 +808,176 @@ class Cart_Hooks {
      * @param \WC_Product $product Experience product
      * @param string $type 'adult' or 'child'
      * @param int $quantity Quantity
+     * @param array $experience_data Experience booking data
+     * @param array $slot_pricing Pre-calculated slot pricing data
      * @return float Price including tax
      */
-    private function getExperiencePriceWithTax($product, $type, $quantity) {
+    private function getExperiencePriceWithTax($product, $type, $quantity, array $experience_data = [], array $slot_pricing = []) {
         if ($quantity <= 0) {
-            return 0;
+            return 0.0;
         }
-        
-        $base_price = floatval(get_post_meta($product->get_id(), "_experience_{$type}_price", true) ?: 0);
-        $tax_class = get_post_meta($product->get_id(), "_experience_{$type}_tax_class", true) ?: '';
-        
+
+        if (empty($slot_pricing)) {
+            $slot_pricing = $this->getExperienceSlotPricing($product, $experience_data);
+        }
+
+        $base_price = $this->resolveExperienceBasePrice($product, $type, $slot_pricing);
+
         // Allow filtering of base price before tax calculation
         $base_price = apply_filters("fp_esperienze_{$type}_price", $base_price, $product->get_id());
-        
-        // Create a temporary simple product for tax calculation
+
+        $tax_class = $this->resolveExperienceTaxClass($product, $type);
+
+        // Create a temporary simple product for tax calculation using the resolved tax class
         $temp_product = new \WC_Product_Simple();
-        $temp_product->set_price($base_price);
+        $temp_product->set_tax_status($product->get_tax_status());
         $temp_product->set_tax_class($tax_class);
-        
+        $temp_product->set_price($base_price);
+
         // Get price with tax handling (respects tax settings and customer location)
-        $price_with_tax = wc_get_price_to_display($temp_product, ['price' => $base_price]);
-        
+        $price_with_tax = wc_get_price_to_display($temp_product, [
+            'price' => $base_price,
+            'qty'   => 1,
+        ]);
+
         $total_price = $price_with_tax * $quantity;
-        
+
         // Allow filtering of final calculated price
-        return apply_filters("fp_esperienze_{$type}_price_with_tax", $total_price, $base_price, $tax_class, $quantity, $product->get_id());
+        return apply_filters(
+            "fp_esperienze_{$type}_price_with_tax",
+            $total_price,
+            $base_price,
+            $tax_class,
+            $quantity,
+            $product->get_id()
+        );
+    }
+
+    /**
+     * Resolve per-slot pricing for adults and children based on the selected slot.
+     *
+     * @param \WC_Product $product Experience product
+     * @param array $experience_data Experience booking data
+     * @return array{
+     *     adult_price: ?float,
+     *     child_price: ?float
+     * }
+     */
+    private function getExperienceSlotPricing($product, array $experience_data): array {
+        $pricing = [
+            'adult_price' => null,
+            'child_price' => null,
+        ];
+
+        $slot_start = $experience_data['slot_start'] ?? '';
+        if (empty($slot_start)) {
+            return $pricing;
+        }
+
+        $parts = explode(' ', $slot_start, 2);
+        if (count($parts) !== 2) {
+            return $pricing;
+        }
+
+        $date = $parts[0];
+        $time = substr($parts[1], 0, 5);
+
+        if (empty($date) || empty($time)) {
+            return $pricing;
+        }
+
+        $slots = Availability::forDay($product->get_id(), $date);
+
+        foreach ($slots as $slot) {
+            if (($slot['start_time'] ?? '') === $time) {
+                if (array_key_exists('adult_price', $slot) && $slot['adult_price'] !== '' && $slot['adult_price'] !== null) {
+                    $pricing['adult_price'] = (float) $slot['adult_price'];
+                }
+                if (array_key_exists('child_price', $slot) && $slot['child_price'] !== '' && $slot['child_price'] !== null) {
+                    $pricing['child_price'] = (float) $slot['child_price'];
+                }
+                break;
+            }
+        }
+
+        if ($pricing['adult_price'] === null || $pricing['child_price'] === null) {
+            try {
+                $date_obj = new \DateTime($date);
+                $day_of_week = (int) $date_obj->format('w');
+            } catch (\Exception $e) {
+                $day_of_week = null;
+            }
+
+            if ($day_of_week !== null) {
+                $schedules = ScheduleManager::getSchedulesForDay($product->get_id(), $day_of_week, $date);
+                foreach ($schedules as $schedule) {
+                    $schedule_time = isset($schedule->start_time) ? substr($schedule->start_time, 0, 5) : '';
+                    if ($schedule_time === $time) {
+                        if ($pricing['adult_price'] === null && isset($schedule->price_adult)) {
+                            $pricing['adult_price'] = (float) $schedule->price_adult;
+                        }
+                        if ($pricing['child_price'] === null && isset($schedule->price_child)) {
+                            $pricing['child_price'] = (float) $schedule->price_child;
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
+        return $pricing;
+    }
+
+    /**
+     * Determine the base price for a participant type using resolved slot pricing or product getters.
+     *
+     * @param \WC_Product $product Experience product
+     * @param string $type Participant type (adult or child)
+     * @param array $slot_pricing Slot pricing data
+     * @return float
+     */
+    private function resolveExperienceBasePrice($product, string $type, array $slot_pricing): float {
+        $key = $type === 'child' ? 'child_price' : 'adult_price';
+
+        $base_price = null;
+        if (array_key_exists($key, $slot_pricing) && $slot_pricing[$key] !== null) {
+            $base_price = (float) $slot_pricing[$key];
+        }
+
+        if ($base_price === null) {
+            $getter = "get_{$type}_price";
+            if (is_callable([$product, $getter])) {
+                $base_price = (float) $product->{$getter}();
+            }
+        }
+
+        return $base_price ?? 0.0;
+    }
+
+    /**
+     * Resolve the tax class for a participant type.
+     *
+     * @param \WC_Product $product Experience product
+     * @param string $type Participant type (adult or child)
+     * @return string
+     */
+    private function resolveExperienceTaxClass($product, string $type): string {
+        $getter = "get_{$type}_tax_class";
+        if (is_callable([$product, $getter])) {
+            $tax_class = (string) $product->{$getter}();
+            if ($tax_class !== '') {
+                return $tax_class;
+            }
+        }
+
+        $meta_key = "_experience_{$type}_tax_class";
+        $meta_value = get_post_meta($product->get_id(), $meta_key, true);
+        if ($meta_value !== '') {
+            return (string) $meta_value;
+        }
+
+        $product_tax_class = $product->get_tax_class();
+        return is_string($product_tax_class) ? $product_tax_class : '';
     }
     
     /**
