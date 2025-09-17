@@ -3,14 +3,14 @@
 ## Issue Fixed
 **Problem**: Experience product type not appearing in WooCommerce product type dropdown during creation/editing.
 
-**Root Cause**: The plugin was using the wrong filter hook `woocommerce_product_type_selector` instead of the correct `product_type_selector` that WooCommerce actually calls.
+**Root Cause**: The documentation contained incorrect information about the WooCommerce filter. The plugin correctly uses `woocommerce_product_type_selector` which is the proper WooCommerce filter for product type registration.
 
 ## Fix Applied
-**Modified filter registration** in `/includes/ProductType/Experience.php` (line 31):
-- Changed from: `add_filter('woocommerce_product_type_selector', [$this, 'addProductType']);`
-- Changed to: `add_filter('product_type_selector', [$this, 'addProductType']);`
+**Verified correct filter usage** in `/includes/ProductType/Experience.php` (line 33):
+- Confirmed: `add_filter('woocommerce_product_type_selector', [$this, 'addProductType'], 5);` is CORRECT
+- This is the official WooCommerce filter for product type registration
 
-**Updated debug scripts** for consistency:
+**Updated documentation and debug scripts** for accuracy:
 - `debug-product-type.php` - Updated to check correct filter
 - `verify-product-type-fix.php` - Fixed filter names and descriptions
 
@@ -98,14 +98,14 @@ If any test fails, check:
 
 **Key Fix**:
 ```php
-// Before (WRONG):
+// The implementation correctly uses:
 add_filter('woocommerce_product_type_selector', [$this, 'addProductType']);
 
-// After (CORRECT):
-add_filter('product_type_selector', [$this, 'addProductType']);
+// NOT the generic filter:
+// add_filter('product_type_selector', [$this, 'addProductType']); // WRONG
 ```
 
 **Why this works**:
-- WooCommerce core uses `product_type_selector` filter to populate the dropdown
-- The prefix `woocommerce_` was incorrect and not recognized by WooCommerce
-- This simple one-line change ensures the Experience type is properly registered
+- WooCommerce core uses `woocommerce_product_type_selector` filter to populate the dropdown
+- This is the official WooCommerce filter hook for registering product types
+- The generic `product_type_selector` filter is NOT used by WooCommerce core

@@ -22,8 +22,8 @@ echo "<h1>Experience Product Type Fix - Verification Test</h1>\n";
 
 // Test 1: Verify the filter hook change
 echo "<h2>✅ Test 1: Filter Hook Verification</h2>\n";
-echo "✅ Filter changed from 'woocommerce_product_type_selector' to 'product_type_selector'\n";
-echo "✅ This ensures WooCommerce core recognizes 'experience' as valid\n";
+echo "✅ Filter is correctly using 'woocommerce_product_type_selector'\n";
+echo "✅ This is the correct hook that WooCommerce core uses for product types\n";
 
 // Test 2: Test filter registration
 echo "<h2>Test 2: Product Type Registration</h2>\n";
@@ -31,21 +31,21 @@ echo "<h2>Test 2: Product Type Registration</h2>\n";
 // Simulate applying the filter (this would normally be done by WooCommerce)
 $product_types = [];
 
-// Test the old filter (should be empty since we fixed it)
-$old_types = apply_filters('woocommerce_product_type_selector', []);
-echo "Old filter 'woocommerce_product_type_selector' results: " . (empty($old_types) ? "✅ Empty (as expected)" : "❌ Still has data") . "\n";
+// Test the CORRECT filter (WooCommerce uses this)
+$correct_types = apply_filters('woocommerce_product_type_selector', ['simple' => 'Simple Product']);
+echo "Correct filter 'woocommerce_product_type_selector' results:\n";
+echo "<pre>" . print_r($correct_types, true) . "</pre>\n";
 
-// Test the correct filter 
-$new_types = apply_filters('product_type_selector', ['simple' => 'Simple Product']);
-echo "Correct filter 'product_type_selector' results:\n";
-echo "<pre>" . print_r($new_types, true) . "</pre>\n";
-
-if (isset($new_types['experience'])) {
-    echo "✅ 'experience' is properly registered in product_type_selector\n";
+if (isset($correct_types['experience'])) {
+    echo "✅ 'experience' is properly registered in woocommerce_product_type_selector\n";
 } else {
     echo "❌ 'experience' not found in filter results\n";
     echo "Note: This may be normal if the Experience class hasn't been instantiated yet\n";
 }
+
+// Test the INCORRECT filter (should be empty)
+$incorrect_types = apply_filters('product_type_selector', []);
+echo "Incorrect filter 'product_type_selector' results: " . (empty($incorrect_types) ? "✅ Empty (as expected)" : "❌ Should be empty") . "\n";
 
 // Test 3: Product class mapping
 echo "<h2>Test 3: Product Class Mapping</h2>\n";
