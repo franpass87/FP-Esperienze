@@ -279,9 +279,16 @@ html {
     height: auto;
 }
 
-.fp-experience-image img {
+.fp-experience-image > a {
+    display: block;
     width: 100%;
     height: 100%;
+}
+
+.fp-experience-image img {
+    width: 100% !important;
+    height: 100%;
+    display: block;
     object-fit: cover;
     transition: transform 0.3s ease;
 }
