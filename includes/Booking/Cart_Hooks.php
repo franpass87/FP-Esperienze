@@ -184,7 +184,8 @@ class Cart_Hooks {
         }
 
         // Check cutoff time
-        $cutoff_minutes = get_post_meta($product_id, '_fp_exp_cutoff_minutes', true) ?: 120;
+        $cutoff_meta = get_post_meta($product_id, '_fp_exp_cutoff_minutes', true);
+        $cutoff_minutes = ($cutoff_meta === '' ? 120 : (int) $cutoff_meta);
         $cutoff_time = new \DateTime('now', $wp_timezone);
         $cutoff_time->add(new \DateInterval('PT' . $cutoff_minutes . 'M'));
 
