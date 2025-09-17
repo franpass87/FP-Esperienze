@@ -968,8 +968,68 @@
          * Populate meeting points dropdown
          */
         populateMeetingPointsDropdown: function(selectElement) {
-            // Meeting point options are rendered directly in the schedule templates.
-            return;
+            var $select = $(selectElement);
+
+            if (!$select || !$select.length) {
+                console.warn('FP Esperienze: Meeting point select element not found.');
+                return;
+            }
+
+            var adminData = this.ensureAdminData(['fp_meeting_points']);
+            if (!adminData) {
+                return;
+            }
+
+            var meetingPoints = adminData.fp_meeting_points || {};
+            var selectedValue = $select.val();
+            var $placeholderOption = $select.find('option').first().clone();
+
+            $select.empty();
+
+            if ($placeholderOption.length) {
+                // Ensure placeholder stays as the default option
+                $placeholderOption.prop('selected', true);
+                $select.append($placeholderOption);
+            }
+
+            if ($.isEmptyObject(meetingPoints)) {
+                var noMeetingPointOption = $('<option>')
+                    .val('')
+                    .text(__('No meeting points available', 'fp-esperienze'))
+                    .prop('disabled', true);
+
+                if (!$placeholderOption.length) {
+                    noMeetingPointOption.prop('selected', true);
+                }
+
+                $select.append(noMeetingPointOption);
+                return;
+            }
+
+            $.each(meetingPoints, function(id, name) {
+                var idInt = parseInt(id, 10);
+                var nameStr = String(name || '').trim();
+
+                if (isNaN(idInt) || !nameStr) {
+                    return;
+                }
+
+                $select.append(
+                    $('<option>')
+                        .val(idInt)
+                        .text(nameStr)
+                );
+            });
+
+            if (selectedValue) {
+                var hasSelected = $select.find('option').filter(function() {
+                    return String($(this).val()) === String(selectedValue);
+                }).length > 0;
+
+                if (hasSelected) {
+                    $select.val(selectedValue);
+                }
+            }
         },
         
         /**
@@ -1708,7 +1768,10 @@
                 });
                 
                 container.append($newCard);
-                
+
+                // Populate meeting points dropdown for the new card
+                this.populateMeetingPointsDropdown($newCard.find('.fp-meeting-point-select'));
+
                 // Trigger reflow and animate in
                 requestAnimationFrame(function() {
                     $newCard.css({
