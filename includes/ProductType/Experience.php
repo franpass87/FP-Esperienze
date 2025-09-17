@@ -1934,11 +1934,113 @@ class Experience {
 			set_transient( "fp_schedule_validation_errors_{$product_id}", $validation_errors, 60 );
 		}
 
-		// Set success notice if schedules were saved
-		if ( ! empty( $processed_ids ) ) {
-			set_transient( "fp_schedule_saved_{$product_id}", count( $processed_ids ), 60 );
+                // Set success notice if schedules were saved
+                if ( ! empty( $processed_ids ) ) {
+                        set_transient( "fp_schedule_saved_{$product_id}", count( $processed_ids ), 60 );
+                }
+
+                // Sync product price meta based on current schedules
+                $this->syncProductPriceMeta( $product_id );
+        }
+
+	/**
+	 * Sync product price related meta fields from active schedules.
+	 *
+	 * @param int $product_id Product ID.
+	 */
+	private function syncProductPriceMeta( int $product_id ): void {
+		$schedules    = ScheduleManager::getSchedules( $product_id );
+		$adult_prices = array();
+		$child_prices = array();
+
+		foreach ( $schedules as $schedule ) {
+			if ( isset( $schedule->price_adult ) && is_numeric( $schedule->price_adult ) ) {
+				$adult_prices[] = (float) $schedule->price_adult;
+			}
+
+			if ( isset( $schedule->price_child ) && is_numeric( $schedule->price_child ) ) {
+				$child_prices[] = (float) $schedule->price_child;
+			}
+		}
+
+		$adult_base_price = $this->determineBaseSchedulePrice( $adult_prices );
+		$child_base_price = $this->determineBaseSchedulePrice( $child_prices );
+
+		if ( null !== $adult_base_price ) {
+			update_post_meta( $product_id, '_experience_adult_price', $adult_base_price );
+
+			$formatted_adult_price = $this->formatPriceForMeta( $adult_base_price );
+			update_post_meta( $product_id, '_price', $formatted_adult_price );
+			update_post_meta( $product_id, '_regular_price', $formatted_adult_price );
+		} else {
+			delete_post_meta( $product_id, '_experience_adult_price' );
+			delete_post_meta( $product_id, '_price' );
+			delete_post_meta( $product_id, '_regular_price' );
+		}
+
+		if ( null !== $child_base_price ) {
+			update_post_meta( $product_id, '_experience_child_price', $child_base_price );
+		} else {
+			delete_post_meta( $product_id, '_experience_child_price' );
+		}
+
+		if ( function_exists( 'wc_delete_product_transients' ) ) {
+			wc_delete_product_transients( $product_id );
 		}
 	}
+
+	/**
+	 * Determine the base price from a list of schedule prices.
+	 *
+	 * Uses the lowest positive price when available, or 0 if all values are
+	 * zero/negative. Returns null when there are no numeric prices.
+	 *
+	 * @param array $prices Collected price values.
+	 * @return float|null
+	 */
+	private function determineBaseSchedulePrice( array $prices ): ?float {
+		if ( empty( $prices ) ) {
+			return null;
+		}
+
+		$positive_prices  = array();
+		$has_non_positive = false;
+
+		foreach ( $prices as $price ) {
+			if ( $price > 0 ) {
+				$positive_prices[] = $price;
+			} else {
+				$has_non_positive = true;
+			}
+		}
+
+		if ( ! empty( $positive_prices ) ) {
+			return min( $positive_prices );
+		}
+
+		if ( $has_non_positive ) {
+			return 0.0;
+		}
+
+		return null;
+	}
+
+	/**
+	 * Format a price value for storage in WooCommerce price meta fields.
+	 *
+	 * @param float $price Price value.
+	 * @return string
+	 */
+	private function formatPriceForMeta( float $price ): string {
+		if ( function_exists( 'wc_format_decimal' ) ) {
+			$decimals = function_exists( 'wc_get_price_decimals' ) ? wc_get_price_decimals() : 2;
+
+			return wc_format_decimal( $price, $decimals );
+		}
+
+		return number_format( $price, 2, '.', '' );
+	}
+
 
 	/**
 	 * Process builder slots and create individual schedule records
