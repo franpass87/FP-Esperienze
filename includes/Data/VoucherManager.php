@@ -507,7 +507,7 @@ class VoucherManager {
         $table_name = $wpdb->prefix . 'fp_exp_vouchers';
         
         $voucher = $wpdb->get_row($wpdb->prepare(
-            "SELECT id, code, amount, recipient_name, recipient_email, message, order_id, created_at, expires_at, status FROM $table_name WHERE id = %d",
+            "SELECT id, code, product_id, amount_type, amount, recipient_name, recipient_email, sender_name, message, pdf_path, expires_on, status, order_id, order_item_id, send_date, sent_at, created_at FROM $table_name WHERE id = %d",
             $voucher_id
         ), ARRAY_A);
         
@@ -535,7 +535,7 @@ class VoucherManager {
         $table_name = $wpdb->prefix . 'fp_exp_vouchers';
         
         return $wpdb->get_row($wpdb->prepare(
-            "SELECT id, code, amount, recipient_name, recipient_email, message, order_id, created_at, expires_at, status FROM $table_name WHERE code = %s",
+            "SELECT id, code, product_id, amount_type, amount, recipient_name, recipient_email, sender_name, message, pdf_path, expires_on, status, order_id, order_item_id, send_date, sent_at, created_at FROM $table_name WHERE code = %s",
             $code
         ), ARRAY_A);
     }
@@ -552,7 +552,7 @@ class VoucherManager {
         $table_name = $wpdb->prefix . 'fp_exp_vouchers';
         
         return $wpdb->get_row($wpdb->prepare(
-            "SELECT id, code, amount, recipient_name, recipient_email, message, order_id, created_at, expires_at, status FROM $table_name WHERE id = %d",
+            "SELECT id, code, product_id, amount_type, amount, recipient_name, recipient_email, sender_name, message, pdf_path, expires_on, status, order_id, order_item_id, send_date, sent_at, created_at FROM $table_name WHERE id = %d",
             $id
         ), ARRAY_A);
     }
