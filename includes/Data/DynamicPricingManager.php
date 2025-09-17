@@ -43,8 +43,27 @@ class DynamicPricingManager {
             $where_clause .= ' AND is_active = 1';
         }
 
+        $columns = [
+            'id',
+            'product_id',
+            'rule_type',
+            'rule_name',
+            'is_active',
+            'priority',
+            'date_start',
+            'date_end',
+            'applies_to',
+            'days_before',
+            'min_participants',
+            'adjustment_type',
+            'adult_adjustment',
+            'child_adjustment',
+            'created_at',
+            'updated_at',
+        ];
+
         $results = $wpdb->get_results($wpdb->prepare(
-            "SELECT id, product_id, rule_type, priority, conditions, action_type, action_value, start_date, end_date, is_active FROM $table_name $where_clause ORDER BY priority ASC, rule_type ASC",
+            'SELECT ' . implode(', ', $columns) . " FROM $table_name $where_clause ORDER BY priority ASC, rule_type ASC",
             ...$params
         ));
 
