@@ -2724,26 +2724,51 @@ class Experience {
 			true
 		);
 
-                wp_localize_script(
-                        'fp-esperienze-product-admin',
-                        'fp_esperienze_admin',
-                        array(
-                                'ajaxurl'  => admin_url( 'admin-ajax.php' ),
-                                'nonce'    => wp_create_nonce( 'fp_esperienze_admin' ),
-                                'rest_url' => rest_url( 'fp-exp/v1/' ),
-                                // Meeting point IDs mapped to names, no placeholder option.
-                                'fp_meeting_points' => MeetingPointManager::getMeetingPointsForSelect(),
-                                'strings'  => array(
-                                        'experience_type'         => __( 'Experience', 'fp-esperienze' ),
-                                        'select_date'             => __( 'Select Date', 'fp-esperienze' ),
-                                        'loading'                 => __( 'Loading...', 'fp-esperienze' ),
-                                        'confirm_remove_override' => __( 'Are you sure you want to remove this date override?', 'fp-esperienze' ),
-                                        'distant_date_warning'    => __( 'This date is very far in the future. Please verify it\'s correct.', 'fp-esperienze' ),
-                                        'unsaved_changes'         => __( 'You have unsaved changes. Are you sure you want to leave?', 'fp-esperienze' ),
-                                        'validation_error'        => __( 'Please fix the validation errors before saving.', 'fp-esperienze' ),
-                                ),
-                        )
-                );
+		$admin_data = array(
+			'ajax_url'      => admin_url( 'admin-ajax.php' ),
+			'rest_url'      => get_rest_url(),
+			'nonce'         => wp_create_nonce( 'fp_esperienze_admin_nonce' ),
+			'banner_offset' => apply_filters( 'fp_esperienze_banner_offset', 20 ),
+			'plugin_url'    => FP_ESPERIENZE_PLUGIN_URL,
+			'strings'       => array(
+				'confirm_remove_override' => __( 'Are you sure you want to remove this date override?', 'fp-esperienze' ),
+				'distant_date_warning'    => __( 'This date is very far in the future. Please verify it\'s correct.', 'fp-esperienze' ),
+			),
+		);
+
+		$experience_strings = array(
+			'experience_type'           => __( 'Experience', 'fp-esperienze' ),
+			'select_date'               => __( 'Select Date', 'fp-esperienze' ),
+			'loading'                   => __( 'Loading...', 'fp-esperienze' ),
+			'unsaved_changes'           => __( 'You have unsaved changes. Are you sure you want to leave?', 'fp-esperienze' ),
+			'validation_error'          => __( 'Please fix the validation errors before saving.', 'fp-esperienze' ),
+			'event_schedules'           => __( 'Event Dates & Times', 'fp-esperienze' ),
+			'recurring_schedules'       => __( 'Recurring Time Slots', 'fp-esperienze' ),
+			'confirm_remove_event_date' => __( 'Are you sure you want to remove this event date and all its time slots?', 'fp-esperienze' ),
+			'event_date_exists'         => __( 'This event date already exists.', 'fp-esperienze' ),
+			'add_time_slot'             => __( 'Add Time Slot', 'fp-esperienze' ),
+			'remove_date'               => __( 'Remove Date', 'fp-esperienze' ),
+			'start_time'                => __( 'Start Time', 'fp-esperienze' ),
+			'duration'                  => __( 'Duration (min)', 'fp-esperienze' ),
+			'capacity'                  => __( 'Capacity', 'fp-esperienze' ),
+			'language'                  => __( 'Language', 'fp-esperienze' ),
+			'meeting_point'             => __( 'Meeting Point', 'fp-esperienze' ),
+			'adult_price'               => __( 'Adult Price', 'fp-esperienze' ),
+			'child_price'               => __( 'Child Price', 'fp-esperienze' ),
+			'remove'                    => __( 'Remove', 'fp-esperienze' ),
+		);
+
+		$admin_data['rest_url'] = get_rest_url( null, 'fp-exp/v1/' );
+
+		// Meeting point IDs mapped to names, no placeholder option.
+		$admin_data['fp_meeting_points'] = MeetingPointManager::getMeetingPointsForSelect();
+		$admin_data['strings']           = array_merge_recursive( $admin_data['strings'], $experience_strings );
+
+		wp_localize_script(
+			'fp-esperienze-product-admin',
+			'fp_esperienze_admin',
+			$admin_data
+		);
 		// Add custom CSS for experience product type
 		wp_add_inline_style(
 			'woocommerce_admin_styles',
