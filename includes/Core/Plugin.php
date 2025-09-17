@@ -617,6 +617,7 @@ class Plugin {
                 'rest_url' => get_rest_url(),
                 'nonce' => wp_create_nonce('fp_esperienze_admin_nonce'),
                 'banner_offset' => apply_filters('fp_esperienze_banner_offset', 20),
+                'plugin_url' => FP_ESPERIENZE_PLUGIN_URL,
                 'strings' => [
                     'confirm_remove_override' => __('Are you sure you want to remove this date override?', 'fp-esperienze'),
                     'distant_date_warning' => __('This date is very far in the future. Please verify it\'s correct.', 'fp-esperienze'),
@@ -651,6 +652,7 @@ class Plugin {
                 'rest_url' => get_rest_url(),
                 'nonce' => wp_create_nonce('fp_esperienze_admin_nonce'),
                 'banner_offset' => apply_filters('fp_esperienze_banner_offset', 20),
+                'plugin_url' => FP_ESPERIENZE_PLUGIN_URL,
                 'strings' => [
                     'confirm_remove_override' => __('Are you sure you want to remove this date override?', 'fp-esperienze'),
                     'distant_date_warning' => __('This date is very far in the future. Please verify it\'s correct.', 'fp-esperienze'),
