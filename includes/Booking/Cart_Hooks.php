@@ -370,24 +370,44 @@ class Cart_Hooks {
 
         $experience_data = $values['fp_experience'];
 
-        if (!empty($experience_data['slot_start'])) {
-            $item->add_meta_data(__('Time Slot', 'fp-esperienze'), $experience_data['slot_start']);
-        }
+        $meta_fields = [
+            'slot_start' => [
+                'machine_key' => '_fp_slot_start',
+                'label' => __('Time Slot', 'fp-esperienze'),
+            ],
+            'meeting_point_id' => [
+                'machine_key' => '_fp_meeting_point_id',
+                'label' => __('Meeting Point ID', 'fp-esperienze'),
+            ],
+            'lang' => [
+                'machine_key' => '_fp_lang',
+                'label' => __('Language', 'fp-esperienze'),
+            ],
+            'qty_adult' => [
+                'machine_key' => '_fp_qty_adult',
+                'label' => __('Adults', 'fp-esperienze'),
+            ],
+            'qty_child' => [
+                'machine_key' => '_fp_qty_child',
+                'label' => __('Children', 'fp-esperienze'),
+            ],
+        ];
 
-        if (!empty($experience_data['meeting_point_id'])) {
-            $item->add_meta_data(__('Meeting Point ID', 'fp-esperienze'), $experience_data['meeting_point_id']);
-        }
+        foreach ($meta_fields as $field => $meta) {
+            if (!array_key_exists($field, $experience_data)) {
+                continue;
+            }
 
-        if (!empty($experience_data['lang'])) {
-            $item->add_meta_data(__('Language', 'fp-esperienze'), $experience_data['lang']);
-        }
+            $value = $experience_data[$field];
+            $has_machine_value = $value !== null && ($value !== '' || is_numeric($value));
 
-        if (!empty($experience_data['qty_adult'])) {
-            $item->add_meta_data(__('Adults', 'fp-esperienze'), $experience_data['qty_adult']);
-        }
+            if ($has_machine_value) {
+                $item->add_meta_data($meta['machine_key'], $value);
+            }
 
-        if (!empty($experience_data['qty_child'])) {
-            $item->add_meta_data(__('Children', 'fp-esperienze'), $experience_data['qty_child']);
+            if (!empty($value)) {
+                $item->add_meta_data($meta['label'], $value);
+            }
         }
 
         // Save extras to order item meta

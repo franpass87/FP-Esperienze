@@ -143,9 +143,24 @@ class BrevoManager {
     private function determineOrderLanguage(\WC_Order $order): string {
         // Check order meta for language (from experience items)
         foreach ($order->get_items() as $item) {
-            $lang = $item->get_meta('Language');
-            if (!empty($lang)) {
-                return strtolower($lang) === 'italian' ? 'it' : 'en';
+            $lang = $item->get_meta('_fp_lang', true);
+
+            if ($lang === '' || $lang === null) {
+                $legacy_label = __('Language', 'fp-esperienze');
+                $lang = $item->get_meta($legacy_label, true);
+
+                if (($lang === '' || $lang === null) && $legacy_label !== 'Language') {
+                    $lang = $item->get_meta('Language', true);
+                }
+            }
+
+            if ($lang !== '' && $lang !== null) {
+                $lang_value = strtolower((string) $lang);
+                if (in_array($lang_value, ['it', 'italian'], true)) {
+                    return 'it';
+                }
+
+                return 'en';
             }
         }
         
