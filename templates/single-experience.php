@@ -165,25 +165,102 @@ jQuery(document).ready(function($) {
                             <strong><?php _e('Languages', 'fp-esperienze'); ?></strong>
                             <div class="fp-language-chips">
                                 <?php 
-                                // Simple language to flag mapping
+                                // Simple language to flag mapping using normalized keys (full names, ISO codes, common slugs)
                                 $language_flags = [
-                                    'Italian' => '🇮🇹',
-                                    'English' => '🇬🇧', 
-                                    'Spanish' => '🇪🇸',
-                                    'French' => '🇫🇷',
-                                    'German' => '🇩🇪',
-                                    'Portuguese' => '🇵🇹',
-                                    'Dutch' => '🇳🇱',
-                                    'Russian' => '🇷🇺',
-                                    'Chinese' => '🇨🇳',
-                                    'Japanese' => '🇯🇵',
-                                    'Korean' => '🇰🇷',
-                                    'Arabic' => '🇸🇦'
+                                    // Arabic
+                                    'arabic' => '🇸🇦',
+                                    'ar' => '🇸🇦',
+                                    'ar-sa' => '🇸🇦',
+
+                                    // Chinese
+                                    'chinese' => '🇨🇳',
+                                    'zh' => '🇨🇳',
+                                    'zh-cn' => '🇨🇳',
+                                    'zh-hans' => '🇨🇳',
+                                    'zh-tw' => '🇹🇼',
+                                    'zh-hant' => '🇹🇼',
+                                    'cn' => '🇨🇳',
+                                    'chinese-simplified' => '🇨🇳',
+                                    'chinese-traditional' => '🇹🇼',
+
+                                    // Dutch
+                                    'dutch' => '🇳🇱',
+                                    'nl' => '🇳🇱',
+                                    'nl-nl' => '🇳🇱',
+
+                                    // English
+                                    'english' => '🇬🇧',
+                                    'en' => '🇬🇧',
+                                    'en-gb' => '🇬🇧',
+                                    'en-uk' => '🇬🇧',
+                                    'en-us' => '🇺🇸',
+
+                                    // French
+                                    'french' => '🇫🇷',
+                                    'fr' => '🇫🇷',
+                                    'fr-fr' => '🇫🇷',
+                                    'francais' => '🇫🇷',
+
+                                    // German
+                                    'german' => '🇩🇪',
+                                    'de' => '🇩🇪',
+                                    'de-de' => '🇩🇪',
+                                    'deutsch' => '🇩🇪',
+
+                                    // Italian
+                                    'italian' => '🇮🇹',
+                                    'it' => '🇮🇹',
+                                    'it-it' => '🇮🇹',
+                                    'italiano' => '🇮🇹',
+
+                                    // Japanese
+                                    'japanese' => '🇯🇵',
+                                    'ja' => '🇯🇵',
+                                    'ja-jp' => '🇯🇵',
+                                    'jp' => '🇯🇵',
+
+                                    // Korean
+                                    'korean' => '🇰🇷',
+                                    'ko' => '🇰🇷',
+                                    'ko-kr' => '🇰🇷',
+                                    'kr' => '🇰🇷',
+
+                                    // Portuguese
+                                    'portuguese' => '🇵🇹',
+                                    'portugues' => '🇵🇹',
+                                    'pt' => '🇵🇹',
+                                    'pt-pt' => '🇵🇹',
+                                    'portuguese-brazil' => '🇧🇷',
+                                    'portuguese-brasil' => '🇧🇷',
+                                    'portugues-brasil' => '🇧🇷',
+                                    'portugues-br' => '🇧🇷',
+                                    'portuguese-br' => '🇧🇷',
+                                    'pt-br' => '🇧🇷',
+
+                                    // Spanish
+                                    'spanish' => '🇪🇸',
+                                    'es' => '🇪🇸',
+                                    'es-es' => '🇪🇸',
+                                    'espanol' => '🇪🇸',
+                                    'es-mx' => '🇲🇽',
+                                    'espanol-mx' => '🇲🇽',
+                                    'spanish-mx' => '🇲🇽',
+                                    'spanish-mexico' => '🇲🇽',
+
+                                    // Russian
+                                    'russian' => '🇷🇺',
+                                    'ru' => '🇷🇺',
+                                    'ru-ru' => '🇷🇺'
                                 ];
-                                
-                                foreach ($language_chips as $lang) : 
+
+                                foreach ($language_chips as $lang) :
                                     $trimmed_lang = trim($lang);
-                                    $flag = isset($language_flags[$trimmed_lang]) ? $language_flags[$trimmed_lang] : '🌐';
+                                    $normalized_lang = function_exists('remove_accents') ? remove_accents($trimmed_lang) : $trimmed_lang;
+                                    $normalized_key = strtolower($normalized_lang);
+                                    $normalized_key = str_replace('_', '-', $normalized_key);
+                                    $normalized_key = preg_replace('/[^a-z0-9-]+/', '-', $normalized_key);
+                                    $normalized_key = trim(preg_replace('/-+/', '-', $normalized_key), '-');
+                                    $flag = $language_flags[$normalized_key] ?? '🌐';
                                 ?>
                                     <span class="fp-language-chip">
                                         <span class="fp-language-flag"><?php echo wp_kses_post($flag); ?></span>
