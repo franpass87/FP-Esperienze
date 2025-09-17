@@ -215,12 +215,69 @@
                 requestUrl = settings.url;
             }
 
-            if (requestUrl) {
-                var normalizedUrl = requestUrl.toLowerCase();
+            var normalizedUrl = requestUrl ? requestUrl.toLowerCase() : '';
+            var inspectionTarget = normalizedUrl;
 
-                if (normalizedUrl.indexOf('fp-exp/v1/availability') !== -1) {
+            if (requestUrl) {
+                try {
+                    var parser = document.createElement('a');
+                    parser.href = requestUrl;
+
+                    var pathAndSearch = '';
+
+                    if (parser.pathname) {
+                        pathAndSearch += parser.pathname;
+                    }
+
+                    if (parser.search) {
+                        pathAndSearch += parser.search;
+                    }
+
+                    if (pathAndSearch) {
+                        inspectionTarget += ' ' + pathAndSearch.toLowerCase();
+                    }
+                } catch (e) {
+                    // Ignore URL parsing errors and continue with the original string
+                }
+            }
+
+            if (settings && settings.data) {
+                var requestData = settings.data;
+                var dataString = '';
+
+                if (typeof requestData === 'string') {
+                    dataString = requestData;
+                } else if (typeof URLSearchParams !== 'undefined' && requestData instanceof URLSearchParams) {
+                    dataString = requestData.toString();
+                } else if (typeof FormData !== 'undefined' && requestData instanceof FormData && typeof requestData.forEach === 'function') {
+                    var formEntries = [];
+
+                    requestData.forEach(function(value, key) {
+                        formEntries.push(key + '=' + value);
+                    });
+
+                    dataString = formEntries.join('&');
+                } else if ($.isPlainObject(requestData)) {
+                    dataString = $.param(requestData);
+                }
+
+                if (dataString) {
+                    inspectionTarget += ' ' + dataString.toLowerCase();
+                }
+            }
+
+            if (inspectionTarget) {
+                if (inspectionTarget.indexOf('wc-ajax') !== -1) {
                     return false;
                 }
+
+                if (/\baction=(?:wc_|woocommerce_)/.test(inspectionTarget)) {
+                    return false;
+                }
+            }
+
+            if (normalizedUrl && normalizedUrl.indexOf('fp-exp/v1/availability') !== -1) {
+                return false;
             }
 
             return true;
