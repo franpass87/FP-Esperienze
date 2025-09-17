@@ -201,21 +201,28 @@
                 self.adultPrice = parseFloat($(this).data('adult-price')) || 0;
                 self.childPrice = parseFloat($(this).data('child-price')) || 0;
 
+                var meetingPointId = $(this).attr('data-meeting-point');
+                if (typeof meetingPointId === 'undefined' || meetingPointId === null) {
+                    meetingPointId = '';
+                }
+
                 self.selectedSlot = {
                     start_time: $(this).data('start-time'),
                     adult_price: $(this).data('adult-price'),
                     child_price: $(this).data('child-price'),
-                    available: $(this).data('available')
+                    available: $(this).data('available'),
+                    meeting_point_id: meetingPointId !== '' ? meetingPointId : null
                 };
-                
+
+                $('#fp-meeting-point-id').val(meetingPointId);
                 $('#fp-selected-slot').val(self.selectedDate + ' ' + self.selectedSlot.start_time);
-                
+
                 // GA4 select_item event
                 self.trackSlotSelection();
-                
+
                 // Update social proof
                 self.updateSocialProof();
-                
+
                 self.updateTotal();
                 self.validateForm();
             });
@@ -362,6 +369,7 @@
                            'data-start-time="' + slot.start_time + '" ' +
                            'data-adult-price="' + slot.adult_price + '" ' +
                            'data-child-price="' + slot.child_price + '" ' +
+                           'data-meeting-point="' + ((typeof slot.meeting_point_id !== 'undefined' && slot.meeting_point_id !== null) ? slot.meeting_point_id : '') + '" ' +
                            'data-available="' + slot.available + '" ' +
                            'role="radio" ' +
                            'tabindex="0" ' +
@@ -381,6 +389,7 @@
             this.adultPrice = 0;
             this.childPrice = 0;
             $('#fp-selected-slot').val('');
+            $('#fp-meeting-point-id').val('');
             this.updateTotal();
             this.validateForm();
         },
@@ -550,8 +559,7 @@
             var language = $('#fp-language').val();
             var adultQty = parseInt($('#fp-qty-adult').val()) || 0;
             var childQty = parseInt($('#fp-qty-child').val()) || 0;
-            var meetingPointId = $('#fp-meeting-point-id').val() || 1;
-            
+
             $('#fp-add-to-cart').prop('disabled', true).text(__('Adding...', 'fp-esperienze'));
             
             // Collect extras data

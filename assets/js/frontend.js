@@ -335,13 +335,20 @@
                 self.adultPrice = parseFloat($(this).data('adult-price')) || 0;
                 self.childPrice = parseFloat($(this).data('child-price')) || 0;
 
+                var meetingPointId = $(this).attr('data-meeting-point');
+                if (typeof meetingPointId === 'undefined' || meetingPointId === null) {
+                    meetingPointId = '';
+                }
+
                 self.selectedSlot = {
                     start_time: $(this).data('start-time'),
                     adult_price: $(this).data('adult-price'),
                     child_price: $(this).data('child-price'),
-                    available: $(this).data('available')
+                    available: $(this).data('available'),
+                    meeting_point_id: meetingPointId !== '' ? meetingPointId : null
                 };
-                
+
+                $('#fp-meeting-point-id').val(meetingPointId);
                 $('#fp-selected-slot').val(self.selectedDate + ' ' + self.selectedSlot.start_time);
                 self.updateTotal();
                 self.validateForm();
@@ -468,15 +475,16 @@
             } else {
                 slots.forEach(function(slot) {
                     var availableClass = slot.is_available ? '' : 'unavailable';
-                    var availableText = slot.is_available ? 
-                        slot.available + ' spots left' : 
+                    var availableText = slot.is_available ?
+                        slot.available + ' spots left' :
                         'Fully booked';
                     var availableColorClass = slot.is_available ? 'fp-slot-available' : 'fp-slot-unavailable';
-                    
+
                     html += '<div class="fp-time-slot ' + availableClass + '" ' +
                            'data-start-time="' + slot.start_time + '" ' +
                            'data-adult-price="' + slot.adult_price + '" ' +
                            'data-child-price="' + slot.child_price + '" ' +
+                           'data-meeting-point="' + ((typeof slot.meeting_point_id !== 'undefined' && slot.meeting_point_id !== null) ? slot.meeting_point_id : '') + '" ' +
                            'data-available="' + slot.available + '">' +
                            '<div class="fp-slot-time">' + slot.start_time + ' - ' + slot.end_time + '</div>' +
                            '<div class="fp-slot-info">' +
@@ -492,6 +500,7 @@
             this.adultPrice = 0;
             this.childPrice = 0;
             $('#fp-selected-slot').val('');
+            $('#fp-meeting-point-id').val('');
             this.updateTotal();
             this.validateForm();
         },
@@ -609,7 +618,7 @@
             var language = $('#fp-language').val();
             var adultQty = parseInt($('#fp-qty-adult').val()) || 0;
             var childQty = parseInt($('#fp-qty-child').val()) || 0;
-            var meetingPointId = $('#fp-meeting-point-id').val() || 1;
+            var meetingPointId = $('#fp-meeting-point-id').val();
             
             $('#fp-add-to-cart').prop('disabled', true).text(__('Adding...', 'fp-esperienze'));
             
@@ -633,7 +642,7 @@
             formData.append('add-to-cart', productId);
             formData.append('quantity', 1); // We handle quantity in our custom fields
             formData.append('fp_slot_start', slotStart);
-            formData.append('fp_meeting_point_id', meetingPointId);
+            formData.append('fp_meeting_point_id', meetingPointId !== null ? meetingPointId : '');
             formData.append('fp_lang', language);
             formData.append('fp_qty_adult', adultQty);
             formData.append('fp_qty_child', childQty);
