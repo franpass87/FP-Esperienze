@@ -28,6 +28,9 @@ class ScheduleHelper {
 		$groups     = array();
 
                 foreach ( $schedules as $schedule ) {
+                        if ( isset( $schedule->schedule_type ) && 'recurring' !== $schedule->schedule_type ) {
+                                continue;
+                        }
                         // Skip schedules missing required data
                         if ( $schedule->duration_min === null || $schedule->duration_min === '' ) {
                                 continue;
