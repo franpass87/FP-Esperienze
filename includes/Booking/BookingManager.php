@@ -121,33 +121,110 @@ class BookingManager {
      * @return array|null Booking data or null if invalid
      */
     private function extractBookingDataFromOrderItem(\WC_Order_Item_Product $item, int $product_id): ?array {
-        $time_slot = $item->get_meta('Time Slot');
-        $adults = $item->get_meta('Adults') ?: 0;
-        $children = $item->get_meta('Children') ?: 0;
-        $meeting_point_id = $item->get_meta('Meeting Point ID') ?: null;
-        $language = $item->get_meta('Language') ?: '';
-        
+        $time_slot = $this->getOrderItemBookingMeta(
+            $item,
+            '_fp_slot_start',
+            $this->getLegacyMetaLabels('Time Slot')
+        );
+
         if (empty($time_slot)) {
             return null;
         }
-        
+
         // Parse slot start (format: YYYY-MM-DD HH:MM)
-        $slot_datetime = \DateTime::createFromFormat('Y-m-d H:i', $time_slot);
+        $slot_datetime = \DateTime::createFromFormat('Y-m-d H:i', (string) $time_slot);
         if (!$slot_datetime) {
             return null;
         }
-        
+
+        $adults_meta = $this->getOrderItemBookingMeta(
+            $item,
+            '_fp_qty_adult',
+            $this->getLegacyMetaLabels('Adults')
+        );
+        $children_meta = $this->getOrderItemBookingMeta(
+            $item,
+            '_fp_qty_child',
+            $this->getLegacyMetaLabels('Children')
+        );
+        $meeting_point_meta = $this->getOrderItemBookingMeta(
+            $item,
+            '_fp_meeting_point_id',
+            $this->getLegacyMetaLabels('Meeting Point ID')
+        );
+        $language_meta = $this->getOrderItemBookingMeta(
+            $item,
+            '_fp_lang',
+            $this->getLegacyMetaLabels('Language')
+        );
+
+        $adults = is_numeric($adults_meta) ? max(0, (int) $adults_meta) : 0;
+        $children = is_numeric($children_meta) ? max(0, (int) $children_meta) : 0;
+        $meeting_point_id = is_numeric($meeting_point_meta) ? (int) $meeting_point_meta : null;
+        if ($meeting_point_id !== null && $meeting_point_id <= 0) {
+            $meeting_point_id = null;
+        }
+
+        $language = $language_meta !== null ? trim((string) $language_meta) : '';
+
         return [
             'product_id' => $product_id,
             'booking_date' => $slot_datetime->format('Y-m-d'),
             'booking_time' => $slot_datetime->format('H:i:s'),
-            'adults' => intval($adults),
-            'children' => intval($children),
-            'meeting_point_id' => $meeting_point_id ? intval($meeting_point_id) : null,
+            'adults' => $adults,
+            'children' => $children,
+            'meeting_point_id' => $meeting_point_id,
             'status' => 'confirmed',
             'customer_notes' => '',
             'admin_notes' => sprintf(__('Created from order #%d', 'fp-esperienze'), $item->get_order_id()),
         ];
+    }
+
+    /**
+     * Get booking-related meta value from an order item with backward compatibility.
+     *
+     * @param \WC_Order_Item_Product $item Order item.
+     * @param string $machine_key Machine-readable meta key.
+     * @param array $legacy_labels Legacy translated labels to try.
+     * @return mixed|null Meta value or null if not found.
+     */
+    private function getOrderItemBookingMeta(\WC_Order_Item_Product $item, string $machine_key, array $legacy_labels) {
+        $value = $item->get_meta($machine_key, true);
+        if ($value !== '' && $value !== null) {
+            return $value;
+        }
+
+        foreach ($legacy_labels as $label) {
+            if ($label === '') {
+                continue;
+            }
+
+            $legacy_value = $item->get_meta($label, true);
+            if ($legacy_value !== '' && $legacy_value !== null) {
+                return $legacy_value;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Build a list of legacy meta labels for backward compatibility lookups.
+     *
+     * @param string $label Base label string.
+     * @return array Legacy labels to check.
+     */
+    private function getLegacyMetaLabels(string $label): array {
+        $translated = __($label, 'fp-esperienze');
+        $labels = [$translated];
+
+        if ($translated !== $label) {
+            $labels[] = $label;
+        }
+
+        return array_values(array_unique(array_filter($labels, static function ($value) {
+            return $value !== '';
+        })));
     }
     
     /**
