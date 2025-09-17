@@ -2724,17 +2724,19 @@ class Experience {
 			true
 		);
 
-		$admin_data = array(
-			'ajax_url'      => admin_url( 'admin-ajax.php' ),
-			'rest_url'      => get_rest_url(),
-			'nonce'         => wp_create_nonce( 'fp_esperienze_admin_nonce' ),
-			'banner_offset' => apply_filters( 'fp_esperienze_banner_offset', 20 ),
-			'plugin_url'    => FP_ESPERIENZE_PLUGIN_URL,
-			'strings'       => array(
-				'confirm_remove_override' => __( 'Are you sure you want to remove this date override?', 'fp-esperienze' ),
-				'distant_date_warning'    => __( 'This date is very far in the future. Please verify it\'s correct.', 'fp-esperienze' ),
-			),
-		);
+                $admin_data = array(
+                        'ajax_url'            => admin_url( 'admin-ajax.php' ),
+                        'rest_url'            => get_rest_url(),
+                        'experience_rest_url' => get_rest_url( null, 'fp-exp/v1/' ),
+                        'rest_namespace'      => 'fp-exp/v1/',
+                        'nonce'               => wp_create_nonce( 'fp_esperienze_admin_nonce' ),
+                        'banner_offset'       => apply_filters( 'fp_esperienze_banner_offset', 20 ),
+                        'plugin_url'          => FP_ESPERIENZE_PLUGIN_URL,
+                        'strings'             => array(
+                                'confirm_remove_override' => __( 'Are you sure you want to remove this date override?', 'fp-esperienze' ),
+                                'distant_date_warning'    => __( 'This date is very far in the future. Please verify it\'s correct.', 'fp-esperienze' ),
+                        ),
+                );
 
 		$experience_strings = array(
 			'experience_type'           => __( 'Experience', 'fp-esperienze' ),
@@ -2758,10 +2760,8 @@ class Experience {
 			'remove'                    => __( 'Remove', 'fp-esperienze' ),
 		);
 
-		$admin_data['rest_url'] = get_rest_url( null, 'fp-exp/v1/' );
-
-		// Meeting point IDs mapped to names, no placeholder option.
-		$admin_data['fp_meeting_points'] = MeetingPointManager::getMeetingPointsForSelect();
+                // Meeting point IDs mapped to names, no placeholder option.
+                $admin_data['fp_meeting_points'] = MeetingPointManager::getMeetingPointsForSelect();
 		$admin_data['strings']           = array_merge_recursive( $admin_data['strings'], $experience_strings );
 
 		wp_localize_script(
