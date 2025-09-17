@@ -1785,13 +1785,37 @@ class Experience {
 		$table_name = $wpdb->prefix . 'fp_dynamic_pricing_rules';
 		$wpdb->delete( $table_name, array( 'product_id' => $product_id ), array( '%d' ) );
 
+		$pricing_rules = wp_unslash( $_POST['pricing_rules'] );
+
+		$float_fields = array(
+			'adult_adjustment',
+			'child_adjustment',
+			'action_value',
+		);
+
+		$int_fields = array(
+			'id',
+			'priority',
+			'days_before',
+			'min_participants',
+		);
+
+		$bool_fields = array( 'is_active' );
+
 		// Save new rules
-		foreach ( $_POST['pricing_rules'] as $rule_data ) {
+		foreach ( $pricing_rules as $rule_data ) {
+			if ( ! is_array( $rule_data ) ) {
+				continue;
+			}
+
+			$rule_data = wp_unslash( $rule_data );
+
 			// Sanitize rule data
 			$sanitized_rule = array(
 				'rule_name'  => sanitize_text_field( $rule_data['rule_name'] ?? '' ),
 				'rule_type'  => sanitize_text_field( $rule_data['rule_type'] ?? '' ),
 				'product_id' => $product_id,
+				'is_active'  => 0,
 			);
 
 			if ( empty( $sanitized_rule['rule_name'] ) || empty( $sanitized_rule['rule_type'] ) ) {
@@ -1800,12 +1824,29 @@ class Experience {
 
 			// Copy other sanitized fields if they exist
 			foreach ( $rule_data as $key => $value ) {
-				if ( ! in_array( $key, array( 'rule_name', 'rule_type', 'product_id' ) ) ) {
-					if ( is_numeric( $value ) ) {
-						$sanitized_rule[ $key ] = is_float( $value ) ? floatval( $value ) : absint( $value );
-					} else {
-						$sanitized_rule[ $key ] = sanitize_text_field( $value );
-					}
+				if ( in_array( $key, array( 'rule_name', 'rule_type', 'product_id' ), true ) ) {
+					continue;
+				}
+
+				if ( is_array( $value ) ) {
+					$value = wp_unslash( $value );
+					$sanitized_rule[ $key ] = array_map( 'sanitize_text_field', $value );
+					continue;
+				}
+
+				$value = wp_unslash( $value );
+
+				if ( in_array( $key, $float_fields, true ) ) {
+					$sanitized_rule[ $key ] = floatval( $value );
+				} elseif ( in_array( $key, $int_fields, true ) ) {
+					$sanitized_rule[ $key ] = absint( $value );
+				} elseif ( in_array( $key, $bool_fields, true ) ) {
+					$sanitized_rule[ $key ] = absint( $value ) > 0 ? 1 : 0;
+				} elseif ( preg_match( '/(amount|adjustment|percentage)$/', $key ) ) {
+					// Treat any additional amount/percentage fields as floats
+					$sanitized_rule[ $key ] = floatval( $value );
+				} else {
+					$sanitized_rule[ $key ] = sanitize_text_field( $value );
 				}
 			}
 
