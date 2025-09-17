@@ -51,22 +51,29 @@ class ScheduleManager {
      *
      * @param int $product_id Product ID
      * @param int $day_of_week Day of week (0=Sunday, 1=Monday, etc.)
+     * @param string|null $event_date Optional event date in Y-m-d format to filter fixed schedules
      * @return array
      */
-    public static function getSchedulesForDay(int $product_id, int $day_of_week): array {
+    public static function getSchedulesForDay(int $product_id, int $day_of_week, ?string $event_date = null): array {
         global $wpdb;
-        
+
         $table_name = $wpdb->prefix . 'fp_schedules';
-        $results = $wpdb->get_results($wpdb->prepare(
-            "SELECT * FROM $table_name 
-             WHERE product_id = %d 
-             AND ((schedule_type = 'recurring' AND day_of_week = %d) OR schedule_type = 'fixed')
-             AND is_active = 1 
-             ORDER BY start_time",
-            $product_id,
-            $day_of_week
-        ));
-        
+        $fixed_condition = "schedule_type = 'fixed'";
+        $params = [$product_id, $day_of_week];
+
+        if ($event_date !== null && $event_date !== '') {
+            $fixed_condition .= " AND event_date = %s";
+            $params[] = $event_date;
+        }
+
+        $sql = "SELECT * FROM $table_name
+             WHERE product_id = %d
+             AND ((schedule_type = 'recurring' AND day_of_week = %d) OR ($fixed_condition))
+             AND is_active = 1
+             ORDER BY start_time";
+
+        $results = $wpdb->get_results($wpdb->prepare($sql, ...$params));
+
         return $results ?: [];
     }
     
