@@ -615,6 +615,8 @@ class Plugin {
             wp_localize_script('fp-esperienze-admin-modular', 'fp_esperienze_admin', [
                 'ajax_url' => admin_url('admin-ajax.php'),
                 'rest_url' => get_rest_url(),
+                'experience_rest_url' => get_rest_url(null, 'fp-exp/v1/'),
+                'rest_namespace' => 'fp-exp/v1/',
                 'nonce' => wp_create_nonce('fp_esperienze_admin_nonce'),
                 'banner_offset' => apply_filters('fp_esperienze_banner_offset', 20),
                 'plugin_url' => FP_ESPERIENZE_PLUGIN_URL,
@@ -650,6 +652,8 @@ class Plugin {
             wp_localize_script('fp-esperienze-admin', 'fp_esperienze_admin', [
                 'ajax_url' => admin_url('admin-ajax.php'),
                 'rest_url' => get_rest_url(),
+                'experience_rest_url' => get_rest_url(null, 'fp-exp/v1/'),
+                'rest_namespace' => 'fp-exp/v1/',
                 'nonce' => wp_create_nonce('fp_esperienze_admin_nonce'),
                 'banner_offset' => apply_filters('fp_esperienze_banner_offset', 20),
                 'plugin_url' => FP_ESPERIENZE_PLUGIN_URL,

@@ -379,8 +379,40 @@
             var calendarEl = document.getElementById('fp-calendar');
             if (!calendarEl) return;
 
-            if (!adminData || !adminData.rest_url) {
+            if (!adminData || (!adminData.rest_url && !adminData.experience_rest_url)) {
                 console.error('REST URL missing; cannot render calendar.');
+                this.showUserFeedback(__('Required localization data is missing.', 'fp-esperienze'), 'error', 8000);
+                return;
+            }
+
+            var ensureTrailingSlash = function(value) {
+                if (typeof value !== 'string' || value.length === 0) {
+                    return '';
+                }
+
+                return value.endsWith('/') ? value : value + '/';
+            };
+
+            var normalizeNamespace = function(value) {
+                if (typeof value !== 'string' || value.length === 0) {
+                    return '';
+                }
+
+                var sanitized = value.replace(/^\//, '');
+                return sanitized.endsWith('/') ? sanitized : sanitized + '/';
+            };
+
+            var namespace = normalizeNamespace(adminData.rest_namespace) || 'fp-exp/v1/';
+            var experienceRestBase = '';
+
+            if (adminData.experience_rest_url) {
+                experienceRestBase = ensureTrailingSlash(adminData.experience_rest_url);
+            } else if (adminData.rest_url) {
+                experienceRestBase = ensureTrailingSlash(adminData.rest_url) + namespace;
+            }
+
+            if (!experienceRestBase) {
+                console.error('Unable to determine the experience REST base URL.');
                 this.showUserFeedback(__('Required localization data is missing.', 'fp-esperienze'), 'error', 8000);
                 return;
             }
@@ -394,7 +426,7 @@
                 },
                 height: 600,
                 events: {
-                    url: adminData.rest_url + 'fp-exp/v1/bookings/calendar',
+                    url: experienceRestBase + 'bookings/calendar',
                     method: 'GET',
                     extraParams: function() {
                         return {

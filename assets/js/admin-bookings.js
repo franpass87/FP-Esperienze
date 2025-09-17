@@ -10,11 +10,44 @@ if (typeof jQuery === 'undefined') {
 (function($) {
     'use strict';
 
+    var adminData = window.fpEsperienzeAdmin || window.fp_esperienze_admin || {};
+
     window.FPEsperienzeAdmin = window.FPEsperienzeAdmin || {};
 
     FPEsperienzeAdmin.initBookingsCalendar = function() {
         if (!$('#fp-calendar').length) {
             console.warn('FP Esperienze: Calendar container not found');
+            return;
+        }
+
+        var ensureTrailingSlash = function(value) {
+            if (typeof value !== 'string' || value.length === 0) {
+                return '';
+            }
+
+            return value.endsWith('/') ? value : value + '/';
+        };
+
+        var normalizeNamespace = function(value) {
+            if (typeof value !== 'string' || value.length === 0) {
+                return '';
+            }
+
+            var sanitized = value.replace(/^\//, '');
+            return sanitized.endsWith('/') ? sanitized : sanitized + '/';
+        };
+
+        var restNamespace = normalizeNamespace(adminData.rest_namespace) || 'fp-exp/v1/';
+        var experienceRestBase = '';
+
+        if (adminData.experience_rest_url) {
+            experienceRestBase = ensureTrailingSlash(adminData.experience_rest_url);
+        } else if (adminData.rest_url) {
+            experienceRestBase = ensureTrailingSlash(adminData.rest_url) + restNamespace;
+        }
+
+        if (!experienceRestBase) {
+            console.error('FP Esperienze: REST base URL missing; cannot load calendar events.');
             return;
         }
 
@@ -41,7 +74,7 @@ if (typeof jQuery === 'undefined') {
             events: function(start, end, timezone, callback) {
                 // Use our new REST endpoint
                 $.ajax({
-                    url: fpEsperienzeAdmin.rest_url + 'events',
+                    url: experienceRestBase + 'bookings/calendar',
                     type: 'GET',
                     dataType: 'json',
                     data: {
@@ -49,7 +82,9 @@ if (typeof jQuery === 'undefined') {
                         end: end.format('YYYY-MM-DD')
                     },
                     beforeSend: function(xhr) {
-                        xhr.setRequestHeader('X-WP-Nonce', fpEsperienzeAdmin.nonce);
+                        if (adminData.nonce) {
+                            xhr.setRequestHeader('X-WP-Nonce', adminData.nonce);
+                        }
                     },
                     success: function(response) {
                         if (response && response.events) {
@@ -65,14 +100,14 @@ if (typeof jQuery === 'undefined') {
                             error: error,
                             response: xhr.responseText
                         });
-                        
+
                         // Show user-friendly error message
-                        if (typeof fpEsperienzeAdmin.i18n !== 'undefined') {
-                            alert(fpEsperienzeAdmin.i18n.errorFetchingEvents);
+                        if (typeof adminData.i18n !== 'undefined') {
+                            alert(adminData.i18n.errorFetchingEvents);
                         } else {
                             alert('There was an error while fetching events. Please try again.');
                         }
-                        
+
                         callback([]);
                     }
                 });
@@ -101,7 +136,7 @@ if (typeof jQuery === 'undefined') {
             $('#fp-calendar').before(
                 '<div id="fp-calendar-loading" style="display:none; text-align:center; padding:20px;">' +
                 '<div class="spinner is-active"></div>' +
-                '<p>' + (fpEsperienzeAdmin.i18n ? fpEsperienzeAdmin.i18n.loadingEvents : 'Loading events...') + '</p>' +
+                '<p>' + (adminData.i18n ? adminData.i18n.loadingEvents : 'Loading events...') + '</p>' +
                 '</div>'
             );
         }
