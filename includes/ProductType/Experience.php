@@ -1683,6 +1683,19 @@ class Experience {
 		// Also set it on the global $_POST to ensure WooCommerce core picks it up
 		$_POST['product-type'] = 'experience';
 
+		if ( isset( $_POST['_experience_duration'] ) ) {
+			$raw_duration = wp_unslash( $_POST['_experience_duration'] );
+			$duration     = absint( $raw_duration );
+
+			if ( $duration > 0 ) {
+				update_post_meta( $post_id, '_experience_duration', $duration );
+				$_POST['_experience_duration'] = (string) $duration;
+			} else {
+				delete_post_meta( $post_id, '_experience_duration' );
+				$_POST['_experience_duration'] = '';
+			}
+		}
+
                 // Save basic experience fields
                 $fields = array(
                         '_fp_exp_cutoff_minutes',
@@ -2726,13 +2739,22 @@ class Experience {
 
                if ( $product_id ) {
                        $default_value = get_post_meta( $product_id, '_experience_duration', true );
+
+                       if ( '' !== $default_value ) {
+                               $default_value = absint( $default_value );
+
+                               if ( $default_value <= 0 ) {
+                                       $default_value = '';
+                               }
+                       }
                }
 
                echo '<div class="options_group show_if_experience">';
 
                woocommerce_wp_text_input(
                        array(
-                               'id'                => '_experience_duration_general',
+                               'id'                => '_experience_duration',
+                               'name'              => '_experience_duration',
                                'label'             => __( 'Duration (minutes)', 'fp-esperienze' ),
                                'placeholder'       => '60',
                                'desc_tip'          => true,
