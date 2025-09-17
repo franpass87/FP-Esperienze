@@ -28,9 +28,18 @@ class Experience {
 		// Load the WC_Product_Experience class immediately to ensure it's available
 		$this->loadProductClass();
 
-		// Register product type on init hook with proper timing
-		// This ensures WooCommerce is ready but our types are registered before WC core types
-		add_action( 'init', array( $this, 'registerProductType' ), 5 );
+		// Register product type filter IMMEDIATELY if WooCommerce is available
+		// This fixes the timing issue where the filter was registered too late
+		if ( function_exists( 'wc_get_product_types' ) ) {
+			add_filter( 'woocommerce_product_type_selector', array( $this, 'addProductType' ), 10 );
+			
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				error_log( 'FP Esperienze: Experience product type filter registered immediately' );
+			}
+		} else {
+			// Fallback: register on init hook if WooCommerce isn't ready yet
+			add_action( 'init', array( $this, 'registerProductType' ), 5 );
+		}
 		
 		// Register other filters with proper timing
 		add_action( 'init', array( $this, 'registerProductFilters' ), 6 );
