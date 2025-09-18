@@ -1090,12 +1090,12 @@ class MobileAPIManager {
 
         $payload_json = wp_json_encode($payload);
         $signature    = hash_hmac('sha256', $payload_json, wp_salt('auth'));
-        return rtrim(strtr(base64_encode($payload_json . '|' . $signature), '+/', '-_'), '=');
+
+        return $this->encodeMobileTokenPayload($payload_json . '|' . $signature);
     }
 
     private function validateMobileToken(string $token): ?int {
-        $token   = strtr($token, '-_', '+/');
-        $decoded = base64_decode($token, true);
+        $decoded = $this->decodeMobileTokenPayload($token);
 
         if ($decoded === false) {
             return null;
@@ -1138,6 +1138,27 @@ class MobileAPIManager {
         }
 
         return $user_id;
+    }
+
+    private function encodeMobileTokenPayload(string $data): string {
+        return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
+    }
+
+    private function decodeMobileTokenPayload(string $token): string|false {
+        $normalized_token = $this->normalizeMobileToken($token);
+
+        return base64_decode($normalized_token, true);
+    }
+
+    private function normalizeMobileToken(string $token): string {
+        $token = strtr($token, '-_', '+/');
+        $padding = strlen($token) % 4;
+
+        if ($padding !== 0) {
+            $token .= str_repeat('=', 4 - $padding);
+        }
+
+        return $token;
     }
 
     private function getMobileProductImages(\WC_Product $product): array {
