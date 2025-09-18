@@ -692,12 +692,26 @@
                 return response.json();
             })
             .then(function(response) {
-                if (response && response.success) {
+                var hasFragments = !!(response && response.fragments);
+                var hasErrorFlag = !!(response && response.error);
+                var rawErrorMessage = response?.data?.error
+                    || response?.data?.message
+                    || response?.message
+                    || response?.messages
+                    || (typeof response?.error === 'string' ? response.error : '');
+                var errorMessage = (typeof rawErrorMessage === 'string' && rawErrorMessage.trim().length)
+                    ? rawErrorMessage
+                    : '';
+
+                if (!hasErrorFlag || hasFragments) {
                     window.location.href = cartUrl;
                     return;
                 }
 
-                self.showError(response?.data?.error || defaultErrorMessage);
+                if (errorMessage) {
+                    self.showError(errorMessage);
+                }
+
                 $addToCartButton.prop('disabled', false).text(addToCartText);
             })
             .catch(function() {
