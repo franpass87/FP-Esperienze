@@ -558,32 +558,57 @@ class MobileAPIManager {
      */
     public function createMobileBooking(WP_REST_Request $request): WP_REST_Response|WP_Error {
         $user_id = $this->getCurrentMobileUserId($request);
-        
+        if (!$user_id) {
+            return new WP_Error('invalid_token', __('Unauthorized', 'fp-esperienze'), ['status' => 401]);
+        }
+
+        $participants_param = $request->get_param('participants');
+        if (is_array($participants_param)) {
+            $participants = [
+                'adults' => isset($participants_param['adults']) ? (int) $participants_param['adults'] : 0,
+                'children' => isset($participants_param['children']) ? (int) $participants_param['children'] : 0,
+            ];
+        } else {
+            $participants = (int) $participants_param;
+        }
+
+        $meeting_point_param = $request->get_param('meeting_point_id');
+        $meeting_point_id = null;
+        if ($meeting_point_param !== null && $meeting_point_param !== '') {
+            $meeting_point_id = (int) $meeting_point_param;
+            if ($meeting_point_id <= 0) {
+                $meeting_point_id = null;
+            }
+        }
+
+        $extras_param = $request->get_param('extras');
+        $extras = is_array($extras_param) ? $extras_param : [];
+
         $booking_data = [
-            'product_id' => intval($request->get_param('product_id')),
-            'booking_date' => sanitize_text_field($request->get_param('booking_date')),
-            'participants' => intval($request->get_param('participants')),
-            'meeting_point_id' => intval($request->get_param('meeting_point_id')),
-            'extras' => $request->get_param('extras') ?: [],
-            'customer_notes' => sanitize_textarea_field($request->get_param('notes'))
+            'product_id' => (int) $request->get_param('product_id'),
+            'booking_date' => sanitize_text_field((string) $request->get_param('booking_date')),
+            'booking_time' => sanitize_text_field((string) $request->get_param('booking_time')),
+            'participants' => $participants,
+            'meeting_point_id' => $meeting_point_id,
+            'extras' => $extras,
+            'customer_notes' => sanitize_textarea_field((string) $request->get_param('notes')),
         ];
 
-        // Validate booking data
         $validation = $this->validateBookingData($booking_data);
         if (is_wp_error($validation)) {
             return $validation;
         }
 
-        // Create booking
         $booking_manager = new \FP\Esperienze\Booking\BookingManager();
-        $booking_id = $booking_manager->createBooking($user_id, $booking_data);
+        $booking_id = $booking_manager->createCustomerBooking($user_id, $booking_data);
 
         if (is_wp_error($booking_id)) {
             return $booking_id;
         }
 
-        // Return created booking
-        return $this->getMobileBooking(new WP_REST_Request('GET', '', ['id' => $booking_id]));
+        $request->set_param('id', $booking_id);
+
+        return $this->getMobileBooking($request);
     }
 
     /**
@@ -1350,15 +1375,40 @@ class MobileAPIManager {
     }
 
     private function validateBookingData(array $data): bool|\WP_Error {
-        if (empty($data['product_id']) || !wc_get_product($data['product_id'])) {
+        $product_id = isset($data['product_id']) ? (int) $data['product_id'] : 0;
+        if ($product_id <= 0 || !wc_get_product($product_id)) {
             return new WP_Error('invalid_product', __('Invalid product', 'fp-esperienze'), ['status' => 400]);
         }
 
-        if (empty($data['booking_date']) || !strtotime($data['booking_date'])) {
+        $booking_date = isset($data['booking_date']) ? $data['booking_date'] : '';
+        $date_obj = DateTime::createFromFormat('Y-m-d', $booking_date);
+        if ($booking_date === '' || !$date_obj || $date_obj->format('Y-m-d') !== $booking_date) {
             return new WP_Error('invalid_date', __('Invalid booking date', 'fp-esperienze'), ['status' => 400]);
         }
 
-        if ($data['participants'] < 1) {
+        $booking_time = isset($data['booking_time']) ? $data['booking_time'] : '';
+        $valid_time = false;
+        foreach (['H:i:s', 'H:i'] as $format) {
+            $time_obj = DateTime::createFromFormat($format, $booking_time);
+            if ($time_obj && $time_obj->format($format) === $booking_time) {
+                $valid_time = true;
+                break;
+            }
+        }
+
+        if (!$valid_time) {
+            return new WP_Error('invalid_time', __('Invalid booking time', 'fp-esperienze'), ['status' => 400]);
+        }
+
+        $participants_total = 0;
+        $participants = $data['participants'] ?? 0;
+        if (is_array($participants)) {
+            $participants_total = (int) ($participants['adults'] ?? 0) + (int) ($participants['children'] ?? 0);
+        } else {
+            $participants_total = (int) $participants;
+        }
+
+        if ($participants_total < 1) {
             return new WP_Error('invalid_participants', __('At least one participant required', 'fp-esperienze'), ['status' => 400]);
         }
 

@@ -9,6 +9,8 @@ namespace FP\Esperienze\Booking;
 
 use FP\Esperienze\Data\HoldManager;
 use FP\Esperienze\Data\Availability;
+use FP\Esperienze\Data\MeetingPointManager;
+use WP_Error;
 
 defined('ABSPATH') || exit;
 
@@ -236,94 +238,429 @@ class BookingManager {
      * @return int|false Booking ID or false on failure
      */
     private function createBooking(int $order_id, int $item_id, array $booking_data) {
-        // Get order to find session ID for hold conversion
         $order = wc_get_order($order_id);
         if (!$order instanceof \WC_Order) {
             $order = null;
         }
-        $session_id = '';
 
+        $session_id = '';
         if ($order) {
-            // Try to get session ID from order meta or customer ID
-            $session_id = $order->get_meta('_fp_session_id') ?: $order->get_customer_id();
+            $session_id = (string) ($order->get_meta('_fp_session_id') ?: $order->get_customer_id());
         }
-        
-        // Prepare complete booking data for database
+
+        $participants = $this->parseParticipants([
+            'adults' => $booking_data['adults'] ?? 0,
+            'children' => $booking_data['children'] ?? 0,
+        ]);
+
         $complete_booking_data = array_merge($booking_data, [
             'order_id' => $order_id,
             'order_item_id' => $item_id,
+            'participants' => $participants['total'],
             'created_at' => current_time('mysql'),
             'updated_at' => current_time('mysql'),
         ]);
-        
-        // Create slot_start in the format expected by HoldManager
-        $slot_start = $booking_data['booking_date'] . ' ' . substr($booking_data['booking_time'], 0, 5);
-        
-        // Try to convert hold to booking if holds are enabled
-        if (HoldManager::isEnabled() && !empty($session_id)) {
+
+        if ($order && !isset($complete_booking_data['customer_id'])) {
+            $complete_booking_data['customer_id'] = $order->get_customer_id() ?: $order->get_user_id() ?: 0;
+        }
+
+        if ($order && !isset($complete_booking_data['total_amount'])) {
+            $complete_booking_data['total_amount'] = (float) $order->get_total();
+        }
+
+        $result = $this->persistBooking($complete_booking_data, $order, $session_id, 'order');
+
+        if (is_wp_error($result)) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log(sprintf(
+                    'Failed to create booking for order %d, item %d: %s',
+                    $order_id,
+                    $item_id,
+                    $result->get_error_message()
+                ));
+            }
+
+            return false;
+        }
+
+        return $result;
+    }
+
+    /**
+     * Create a booking for a customer without a WooCommerce order.
+     *
+     * @param int   $customer_id  Customer ID.
+     * @param array $booking_data Booking data.
+     *
+     * @return int|WP_Error
+     */
+    public function createCustomerBooking(int $customer_id, array $booking_data) {
+        $customer_id = absint($customer_id);
+
+        if ($customer_id <= 0) {
+            return new WP_Error('invalid_customer', __('A valid customer is required.', 'fp-esperienze'), ['status' => 400]);
+        }
+
+        $product_id = isset($booking_data['product_id']) ? (int) $booking_data['product_id'] : 0;
+        $product = $product_id > 0 ? wc_get_product($product_id) : null;
+
+        if (!$product || $product->get_type() !== 'experience') {
+            return new WP_Error('invalid_product', __('Invalid experience selected.', 'fp-esperienze'), ['status' => 400]);
+        }
+
+        $booking_date = isset($booking_data['booking_date']) ? sanitize_text_field((string) $booking_data['booking_date']) : '';
+        $date_obj = \DateTime::createFromFormat('Y-m-d', $booking_date);
+        if ($booking_date === '' || !$date_obj || $date_obj->format('Y-m-d') !== $booking_date) {
+            return new WP_Error('invalid_date', __('Invalid booking date.', 'fp-esperienze'), ['status' => 400]);
+        }
+
+        $normalized_time = $this->normalizeBookingTime($booking_data['booking_time'] ?? '');
+        if ($normalized_time === null) {
+            return new WP_Error('invalid_time', __('Invalid booking time.', 'fp-esperienze'), ['status' => 400]);
+        }
+
+        $participants = $this->parseParticipants($booking_data['participants'] ?? null);
+        if ($participants['total'] <= 0) {
+            return new WP_Error('invalid_participants', __('At least one participant is required.', 'fp-esperienze'), ['status' => 400]);
+        }
+
+        $cutoff_check = self::validateCutoffTime($product_id, $booking_date, $normalized_time);
+        if (!$cutoff_check['valid']) {
+            return new WP_Error('booking_cutoff', $cutoff_check['message'], ['status' => 400]);
+        }
+
+        $capacity_check = self::validateCapacity($product_id, $booking_date, $normalized_time, $participants['total']);
+        if (!$capacity_check['valid']) {
+            return new WP_Error('booking_capacity', $capacity_check['message'], ['status' => 400]);
+        }
+
+        $slot = $this->getSlotForBooking($product_id, $booking_date, $normalized_time);
+        if (!$slot) {
+            return new WP_Error('slot_unavailable', __('Time slot not available.', 'fp-esperienze'), ['status' => 400]);
+        }
+
+        $requested_meeting_point = isset($booking_data['meeting_point_id']) ? (int) $booking_data['meeting_point_id'] : 0;
+        $meeting_point_id = null;
+
+        if ($requested_meeting_point > 0) {
+            if (!MeetingPointManager::getMeetingPoint($requested_meeting_point)) {
+                return new WP_Error('invalid_meeting_point', __('Selected meeting point does not exist.', 'fp-esperienze'), ['status' => 400]);
+            }
+
+            if (!empty($slot['meeting_point_id']) && (int) $slot['meeting_point_id'] !== $requested_meeting_point) {
+                return new WP_Error('invalid_meeting_point', __('Selected meeting point is not available for this slot.', 'fp-esperienze'), ['status' => 400]);
+            }
+
+            $meeting_point_id = $requested_meeting_point;
+        } elseif (!empty($slot['meeting_point_id'])) {
+            $meeting_point_id = (int) $slot['meeting_point_id'];
+        }
+
+        $user = get_userdata($customer_id);
+        $customer_email = $user ? $user->user_email : '';
+        $customer_name = $user ? trim(sprintf('%s %s', $user->first_name, $user->last_name)) : '';
+        if ($customer_name === '' && $user) {
+            $customer_name = $user->display_name ?: $customer_email;
+        }
+        $customer_phone = $user ? get_user_meta($customer_id, 'billing_phone', true) : '';
+
+        $timestamp = current_time('mysql');
+        $extras = isset($booking_data['extras']) && is_array($booking_data['extras']) ? $booking_data['extras'] : [];
+        $total_amount = $this->calculateBookingTotal($slot, $participants, $extras);
+
+        $complete_booking_data = apply_filters(
+            'fp_customer_booking_data',
+            [
+                'order_id' => 0,
+                'order_item_id' => 0,
+                'product_id' => $product_id,
+                'booking_date' => $booking_date,
+                'booking_time' => $normalized_time,
+                'adults' => $participants['adults'],
+                'children' => $participants['children'],
+                'participants' => $participants['total'],
+                'meeting_point_id' => $meeting_point_id ?: null,
+                'status' => 'confirmed',
+                'customer_notes' => isset($booking_data['customer_notes']) ? sanitize_textarea_field((string) $booking_data['customer_notes']) : '',
+                'admin_notes' => isset($booking_data['admin_notes']) ? sanitize_textarea_field((string) $booking_data['admin_notes']) : __('Created via mobile app', 'fp-esperienze'),
+                'customer_id' => $customer_id,
+                'booking_number' => $this->generateBookingNumber(),
+                'total_amount' => $total_amount,
+                'created_at' => $timestamp,
+                'updated_at' => $timestamp,
+            ],
+            $booking_data,
+            $slot,
+            $customer_id
+        );
+
+        $payload_overrides = [
+            'customer_id' => $customer_id,
+            'customer_email' => $customer_email,
+            'customer_name' => $customer_name,
+            'customer_phone' => $customer_phone,
+        ];
+
+        $result = $this->persistBooking($complete_booking_data, null, '', 'customer', $payload_overrides);
+
+        if (is_wp_error($result)) {
+            return $result;
+        }
+
+        return $result;
+    }
+
+    /**
+     * Persist a booking record either converting a hold or creating it directly.
+     *
+     * @param array        $complete_booking_data Prepared booking data.
+     * @param \WC_Order|null $order               Related order instance.
+     * @param string       $session_id            Session identifier for hold conversion.
+     * @param string       $context               Context label for logging.
+     * @param array        $payload_overrides     Additional data for hook payloads.
+     *
+     * @return int|WP_Error
+     */
+    private function persistBooking(array $complete_booking_data, ?\WC_Order $order, string $session_id = '', string $context = 'order', array $payload_overrides = []) {
+        $product_id = isset($complete_booking_data['product_id']) ? (int) $complete_booking_data['product_id'] : 0;
+        $booking_date = $complete_booking_data['booking_date'] ?? '';
+        $booking_time = $complete_booking_data['booking_time'] ?? '';
+        $slot_start = trim($booking_date . ' ' . substr((string) $booking_time, 0, 5));
+
+        if (HoldManager::isEnabled() && $session_id !== '') {
             $conversion_result = HoldManager::convertHoldToBooking(
-                $booking_data['product_id'],
+                $product_id,
                 $slot_start,
                 $session_id,
                 $complete_booking_data
             );
-            
-            if ($conversion_result['success']) {
+
+            if (!empty($conversion_result['success'])) {
                 $booking_id = (int) $conversion_result['booking_id'];
 
-                // Trigger cache invalidation
-                do_action('fp_esperienze_booking_created', $booking_data['product_id'], $booking_data['booking_date']);
+                do_action('fp_esperienze_booking_created', $product_id, $booking_date);
 
                 $booking_record = self::getBooking($booking_id);
-                $booking_payload = $booking_record ? (array) $booking_record : array_merge(['id' => $booking_id], $complete_booking_data);
+                if ($booking_record) {
+                    $booking_payload = array_merge($complete_booking_data, $payload_overrides, (array) $booking_record);
+                } else {
+                    $booking_payload = array_merge(['id' => $booking_id], $payload_overrides, $complete_booking_data);
+                }
                 $booking_payload = $this->buildBookingPayload($booking_id, $booking_payload, $order);
 
                 do_action('fp_booking_confirmed', $booking_id, $booking_payload);
 
-                // Log success
                 if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log("Created booking #{$booking_id} from hold for order #{$order_id}, item #{$item_id}");
+                    error_log(sprintf('Created %s booking #%d from hold.', $context, $booking_id));
                 }
 
                 return $booking_id;
-            } else {
-                // Log hold conversion failure and fall through to direct creation
-                if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log("Hold conversion failed for order {$order_id}, item {$item_id}: " . $conversion_result['message']);
-                }
+            }
+
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                $message = isset($conversion_result['message']) ? (string) $conversion_result['message'] : 'unknown error';
+                error_log(sprintf('Hold conversion failed for %s booking: %s', $context, $message));
             }
         }
-        
-        // Fallback: Direct booking creation (when holds disabled or conversion failed)
+
         global $wpdb;
         $table_name = $wpdb->prefix . 'fp_bookings';
-        
+
         $result = $wpdb->insert($table_name, $complete_booking_data);
-        
+
         if ($result === false) {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log("Failed to create booking for order {$order_id}, item {$item_id}: " . $wpdb->last_error);
-            }
-            return false;
+            $error_message = $wpdb->last_error ?: __('Failed to create booking.', 'fp-esperienze');
+
+            return new WP_Error('booking_creation_failed', $error_message, ['status' => 500]);
         }
-        
-        $booking_id = $wpdb->insert_id;
-        
-        // Trigger cache invalidation
-        do_action('fp_esperienze_booking_created', $booking_data['product_id'], $booking_data['booking_date']);
+
+        $booking_id = (int) $wpdb->insert_id;
+
+        do_action('fp_esperienze_booking_created', $product_id, $booking_date);
 
         $booking_record = self::getBooking($booking_id);
-        $booking_payload = $booking_record ? (array) $booking_record : array_merge(['id' => $booking_id], $complete_booking_data);
+        if ($booking_record) {
+            $booking_payload = array_merge($complete_booking_data, $payload_overrides, (array) $booking_record);
+        } else {
+            $booking_payload = array_merge(['id' => $booking_id], $payload_overrides, $complete_booking_data);
+        }
         $booking_payload = $this->buildBookingPayload($booking_id, $booking_payload, $order);
 
         do_action('fp_booking_confirmed', $booking_id, $booking_payload);
-        
-        // Log success
+
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log("Created booking #{$booking_id} for order #{$order_id}, item #{$item_id}");
+            error_log(sprintf('Created %s booking #%d.', $context, $booking_id));
         }
-        
+
         return $booking_id;
+    }
+
+    /**
+     * Normalize participant data.
+     *
+     * @param mixed $participants Participants information.
+     *
+     * @return array{adults:int,children:int,total:int}
+     */
+    private function parseParticipants($participants): array {
+        $adults = 0;
+        $children = 0;
+
+        if (is_array($participants)) {
+            if (array_key_exists('adults', $participants) || array_key_exists('children', $participants)) {
+                $adults = isset($participants['adults']) ? max(0, (int) $participants['adults']) : 0;
+                $children = isset($participants['children']) ? max(0, (int) $participants['children']) : 0;
+            } else {
+                $values = array_values($participants);
+                $adults = isset($values[0]) ? max(0, (int) $values[0]) : 0;
+                $children = isset($values[1]) ? max(0, (int) $values[1]) : 0;
+            }
+        } elseif ($participants !== null) {
+            $adults = max(0, (int) $participants);
+        }
+
+        return [
+            'adults' => $adults,
+            'children' => $children,
+            'total' => $adults + $children,
+        ];
+    }
+
+    /**
+     * Normalize booking time to H:i:s format.
+     *
+     * @param string $time Time string.
+     *
+     * @return string|null
+     */
+    private function normalizeBookingTime(string $time): ?string {
+        $time = trim($time);
+        if ($time === '') {
+            return null;
+        }
+
+        foreach (['H:i:s', 'H:i'] as $format) {
+            $date = \DateTime::createFromFormat($format, $time);
+            if ($date && $date->format($format) === $time) {
+                return $date->format('H:i:s');
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Locate the availability slot for a booking.
+     *
+     * @param int    $product_id Product ID.
+     * @param string $date       Booking date.
+     * @param string $time       Booking time (H:i:s).
+     *
+     * @return array|null
+     */
+    private function getSlotForBooking(int $product_id, string $date, string $time): ?array {
+        $slots = Availability::getSlotsForDate($product_id, $date);
+        $target_time = substr($time, 0, 5);
+
+        foreach ($slots as $slot) {
+            if (!isset($slot['start_time'])) {
+                continue;
+            }
+
+            if ($slot['start_time'] === $target_time) {
+                return $slot;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Calculate total amount for a booking.
+     *
+     * @param array $slot         Availability slot information.
+     * @param array $participants Participant breakdown.
+     * @param array $extras       Selected extras.
+     *
+     * @return float
+     */
+    private function calculateBookingTotal(array $slot, array $participants, array $extras = []): float {
+        $adult_price = isset($slot['adult_price']) ? (float) $slot['adult_price'] : 0.0;
+        $child_price = isset($slot['child_price']) ? (float) $slot['child_price'] : $adult_price;
+
+        $total = ($participants['adults'] * $adult_price) + ($participants['children'] * $child_price);
+        $total += $this->calculateExtrasTotal($extras, $participants);
+
+        $total = (float) apply_filters('fp_customer_booking_total', $total, $slot, $participants, $extras);
+
+        return round($total, 2);
+    }
+
+    /**
+     * Calculate total amount for extras.
+     *
+     * @param array $extras       Extras selection.
+     * @param array $participants Participant breakdown.
+     *
+     * @return float
+     */
+    private function calculateExtrasTotal(array $extras, array $participants): float {
+        $total = 0.0;
+
+        foreach ($extras as $extra) {
+            if (is_array($extra)) {
+                if (isset($extra['total'])) {
+                    $total += (float) $extra['total'];
+                    continue;
+                }
+
+                $price = isset($extra['price']) ? (float) $extra['price'] : 0.0;
+                $quantity = isset($extra['quantity']) ? (int) $extra['quantity'] : 1;
+
+                if (isset($extra['billing_type']) && $extra['billing_type'] === 'per_person') {
+                    $quantity = max(1, $participants['total']);
+                } elseif ($quantity < 1) {
+                    $quantity = 1;
+                }
+
+                $total += $price * $quantity;
+            } elseif (is_numeric($extra)) {
+                $total += (float) $extra;
+            }
+        }
+
+        return $total;
+    }
+
+    /**
+     * Generate a unique booking number for customer bookings.
+     *
+     * @return string
+     */
+    private function generateBookingNumber(): string {
+        global $wpdb;
+
+        $table_name = $wpdb->prefix . 'fp_bookings';
+        $prefix = apply_filters('fp_booking_number_prefix', 'FP');
+        $timestamp = current_time('timestamp');
+
+        for ($attempt = 0; $attempt < 5; $attempt++) {
+            $candidate = apply_filters(
+                'fp_booking_number_candidate',
+                sprintf('%s-%s-%04d', strtoupper($prefix), date_i18n('Ymd', $timestamp), wp_rand(1000, 9999)),
+                $prefix,
+                $timestamp,
+                $attempt
+            );
+
+            $exists = $wpdb->get_var($wpdb->prepare("SELECT id FROM {$table_name} WHERE booking_number = %s", $candidate));
+            if (!$exists) {
+                return $candidate;
+            }
+        }
+
+        return strtoupper($prefix) . '-' . uniqid('', false);
     }
 
     /**
