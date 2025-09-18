@@ -202,8 +202,9 @@ class AdvancedAnalytics {
 
         // Get completed purchases
         $purchases = $this->getCompletedPurchases($date_from, $date_to);
+        $total_revenue = $this->getTotalRevenue($date_from, $date_to);
 
-        return [
+        $funnel_data = [
             'funnel_steps' => [
                 [
                     'step' => 'Website Visits',
@@ -237,8 +238,8 @@ class AdvancedAnalytics {
                 ]
             ],
             'overall_conversion_rate' => $visits > 0 ? round(($purchases / $visits) * 100, 2) : 0,
-            'total_revenue' => $this->getTotalRevenue($date_from, $date_to),
-            'average_order_value' => $purchases > 0 ? round($this->getTotalRevenue($date_from, $date_to) / $purchases, 2) : 0
+            'total_revenue' => $total_revenue,
+            'average_order_value' => $purchases > 0 ? round($total_revenue / $purchases, 2) : 0
         ];
 
         // Cache for 1 hour
