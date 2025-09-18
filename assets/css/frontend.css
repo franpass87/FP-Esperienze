@@ -8,6 +8,11 @@ html {
 :root {
     --fp-brand-primary: #ff6b35; /* Brand primary color for backgrounds and borders */
     --fp-brand-orange: var(--fp-brand-primary); /* Legacy alias for components still using the orange token */
+    --fp-brand-primary-hover: color-mix(in srgb, var(--fp-brand-primary) 88%, black); /* Darker tone for hover states */
+    --fp-brand-primary-soft: color-mix(in srgb, var(--fp-brand-primary) 75%, white); /* Softer tone for gradients */
+    --fp-brand-primary-focus-ring: color-mix(in srgb, var(--fp-brand-primary) 18%, transparent); /* Focus outlines */
+    --fp-brand-primary-shadow: color-mix(in srgb, var(--fp-brand-primary) 30%, transparent); /* Shadow accents */
+    --fp-brand-primary-tint: color-mix(in srgb, var(--fp-brand-primary) 12%, white); /* Subtle backgrounds */
     --fp-brand-secondary: #2c3e50; /* Brand secondary color - updated via branding settings */
     --fp-text-gray: #555; /* Improved from #666 for better contrast */
     --fp-text-light-gray: #666; /* Improved from #999 for better contrast */
@@ -89,7 +94,10 @@ html {
 .fp-filter-date:focus {
     outline: none;
     border-color: var(--fp-brand-orange);
-    box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+    box-shadow: 0 0 0 3px var(
+        --fp-brand-primary-focus-ring,
+        color-mix(in srgb, var(--fp-brand-primary) 18%, transparent)
+    );
 }
 
 .fp-filters-actions {
@@ -879,7 +887,11 @@ body.admin-bar .fp-booking-widget {
 
 /* Social Proof */
 .fp-social-proof {
-    background: linear-gradient(135deg, var(--fp-brand-orange), #ff8c42);
+    background: linear-gradient(
+        135deg,
+        var(--fp-brand-primary),
+        var(--fp-brand-primary-soft, color-mix(in srgb, var(--fp-brand-primary) 75%, white))
+    );
     color: white;
     padding: 12px 16px;
     border-radius: 8px;
@@ -937,7 +949,10 @@ body.admin-bar .fp-booking-widget {
 .fp-select:focus {
     outline: none;
     border-color: var(--fp-brand-orange);
-    box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+    box-shadow: 0 0 0 3px var(
+        --fp-brand-primary-focus-ring,
+        color-mix(in srgb, var(--fp-brand-primary) 18%, transparent)
+    );
 }
 
 /* Time Slots */
@@ -978,7 +993,10 @@ body.admin-bar .fp-booking-widget {
 
 .fp-time-slot:hover:not(.unavailable) {
     border-color: var(--fp-brand-orange);
-    background: #fff5f2;
+    background: var(
+        --fp-brand-primary-tint,
+        color-mix(in srgb, var(--fp-brand-primary) 12%, white)
+    );
 }
 
 .fp-time-slot:focus {
@@ -988,8 +1006,14 @@ body.admin-bar .fp-booking-widget {
 
 .fp-time-slot.selected {
     border-color: var(--fp-brand-orange);
-    background: #fff5f2;
-    box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+    background: var(
+        --fp-brand-primary-tint,
+        color-mix(in srgb, var(--fp-brand-primary) 12%, white)
+    );
+    box-shadow: 0 0 0 3px var(
+        --fp-brand-primary-focus-ring,
+        color-mix(in srgb, var(--fp-brand-primary) 18%, transparent)
+    );
 }
 
 .fp-time-slot.unavailable {
@@ -1327,10 +1351,16 @@ body.admin-bar .fp-booking-widget {
 }
 
 .fp-btn-primary:hover:not(:disabled) {
-    background: #e55a2b;
+    background: var(
+        --fp-brand-primary-hover,
+        color-mix(in srgb, var(--fp-brand-primary) 88%, black)
+    );
     color: white;
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+    box-shadow: 0 4px 12px var(
+        --fp-brand-primary-shadow,
+        color-mix(in srgb, var(--fp-brand-primary) 30%, transparent)
+    );
 }
 
 .fp-btn-primary:focus {
@@ -1707,7 +1737,10 @@ body.admin-bar .fp-booking-widget {
 .fp-input:focus {
     outline: none;
     border-color: var(--fp-brand-orange);
-    box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+    box-shadow: 0 0 0 3px var(
+        --fp-brand-primary-focus-ring,
+        color-mix(in srgb, var(--fp-brand-primary) 18%, transparent)
+    );
 }
 
 .fp-input.fp-required-field:invalid {
@@ -1729,7 +1762,10 @@ body.admin-bar .fp-booking-widget {
 .fp-textarea:focus {
     outline: none;
     border-color: var(--fp-brand-orange);
-    box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+    box-shadow: 0 0 0 3px var(
+        --fp-brand-primary-focus-ring,
+        color-mix(in srgb, var(--fp-brand-primary) 18%, transparent)
+    );
 }
 
 .fp-field-help {
@@ -1803,7 +1839,10 @@ body.admin-bar .fp-booking-widget {
 .fp-voucher-code-input:focus {
     outline: none;
     border-color: var(--fp-brand-orange);
-    box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+    box-shadow: 0 0 0 3px var(
+        --fp-brand-primary-focus-ring,
+        color-mix(in srgb, var(--fp-brand-primary) 18%, transparent)
+    );
 }
 
 .fp-voucher-code-input[readonly] {
@@ -1829,7 +1868,10 @@ body.admin-bar .fp-booking-widget {
 }
 
 .fp-apply-voucher-btn:hover:not(:disabled) {
-    background: #e55a2b;
+    background: var(
+        --fp-brand-primary-hover,
+        color-mix(in srgb, var(--fp-brand-primary) 88%, black)
+    );
 }
 
 .fp-apply-voucher-btn:disabled {
