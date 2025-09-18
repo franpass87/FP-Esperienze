@@ -69,16 +69,29 @@ class OverrideManager {
         // Check if override already exists
         $existing = self::getOverride($product_id, $date);
         
+        $has_capacity_override = isset($data['capacity_override'])
+            && $data['capacity_override'] !== ''
+            && is_numeric($data['capacity_override']);
+        $capacity_override = $has_capacity_override ? (int) $data['capacity_override'] : null;
+
         $override_data = [
             'product_id' => $product_id,
             'date' => $date,
             'is_closed' => isset($data['is_closed']) ? (int) $data['is_closed'] : 0,
-            'capacity_override' => isset($data['capacity_override']) && $data['capacity_override'] !== '' 
-                ? (int) $data['capacity_override'] : null,
-            'price_override_json' => isset($data['price_override_json']) 
-                ? wp_json_encode($data['price_override_json']) : null,
-            'reason' => isset($data['reason']) ? sanitize_text_field($data['reason']) : null
         ];
+        $formats = ['%d', '%s', '%d'];
+
+        if ($has_capacity_override) {
+            $override_data['capacity_override'] = $capacity_override;
+            $formats[] = '%d';
+        }
+
+        $override_data['price_override_json'] = isset($data['price_override_json'])
+            ? wp_json_encode($data['price_override_json']) : null;
+        $formats[] = '%s';
+
+        $override_data['reason'] = isset($data['reason']) ? sanitize_text_field($data['reason']) : null;
+        $formats[] = '%s';
         
         if ($existing) {
             // Update existing override
@@ -86,9 +99,20 @@ class OverrideManager {
                 $table_name,
                 $override_data,
                 ['id' => $existing->id],
-                ['%d', '%s', '%d', '%d', '%s', '%s'],
+                $formats,
                 ['%d']
             );
+
+            if ($result !== false && ! $has_capacity_override) {
+                $null_result = $wpdb->query($wpdb->prepare(
+                    "UPDATE $table_name SET capacity_override = NULL WHERE id = %d",
+                    $existing->id
+                ));
+
+                if ($null_result === false) {
+                    $result = false;
+                }
+            }
             
             if ($result !== false) {
                 // Trigger cache invalidation
@@ -101,8 +125,19 @@ class OverrideManager {
             $result = $wpdb->insert(
                 $table_name,
                 $override_data,
-                ['%d', '%s', '%d', '%d', '%s', '%s']
+                $formats
             );
+
+            if ($result && ! $has_capacity_override) {
+                $null_result = $wpdb->query($wpdb->prepare(
+                    "UPDATE $table_name SET capacity_override = NULL WHERE id = %d",
+                    $wpdb->insert_id
+                ));
+
+                if ($null_result === false) {
+                    $result = false;
+                }
+            }
             
             if ($result) {
                 // Trigger cache invalidation
