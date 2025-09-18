@@ -55,15 +55,34 @@ class PerformanceOptimizer {
     public static function initDatabaseOptimizations(): void {
         // Add missing indexes for better query performance
         add_action('admin_init', [__CLASS__, 'maybeAddOptimizedIndexes'], 5);
-        
+
         // Optimize database queries hooks
         add_filter('posts_clauses', [__CLASS__, 'optimizeExperienceQueries'], 10, 2);
-        
+
+        // Ensure weekly cron schedule is registered before scheduling events
+        add_filter('cron_schedules', [__CLASS__, 'registerWeeklyCronSchedule']);
+
         // Database maintenance scheduled task
         if (!wp_next_scheduled('fp_esperienze_db_optimization')) {
             wp_schedule_event(time(), 'weekly', 'fp_esperienze_db_optimization');
         }
         add_action('fp_esperienze_db_optimization', [__CLASS__, 'performDatabaseMaintenance']);
+    }
+
+    /**
+     * Register weekly cron schedule for database maintenance
+     *
+     * @param array<string, array<string, int|string>> $schedules Cron schedules
+     *
+     * @return array<string, array<string, int|string>>
+     */
+    public static function registerWeeklyCronSchedule(array $schedules): array {
+        $schedules['weekly'] = [
+            'interval' => WEEK_IN_SECONDS,
+            'display' => __('Once Weekly', 'fp-esperienze'),
+        ];
+
+        return $schedules;
     }
     
     /**
