@@ -271,9 +271,11 @@ class Plugin {
         new Templates();
         new SEOManager();
         new \FP\Esperienze\Frontend\WidgetCheckoutHandler();
-        
+
         // Hide Experience products from normal WooCommerce shop/catalog
         $this->initShopFiltering();
+
+        add_action('wp_head', [$this, 'outputBrandingCSS'], 90);
     }
 
     /**
