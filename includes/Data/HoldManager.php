@@ -287,7 +287,7 @@ class HoldManager {
             $booking_result = $wpdb->insert(
                 $bookings_table,
                 $booking_data,
-                ['%d', '%d', '%d', '%s', '%s', '%d', '%d', '%d', '%s', '%s', '%s', '%s', '%s']
+                ['%d', '%s', '%s', '%d', '%d', '%d', '%s', '%s', '%s', '%d', '%d', '%s', '%s']
             );
             
             if ($booking_result === false) {
@@ -394,7 +394,7 @@ class HoldManager {
             $booking_result = $wpdb->insert(
                 $bookings_table,
                 $booking_data,
-                ['%d', '%d', '%d', '%s', '%s', '%d', '%d', '%d', '%s', '%s', '%s', '%s', '%s']
+                ['%d', '%s', '%s', '%d', '%d', '%d', '%s', '%s', '%s', '%d', '%d', '%s', '%s']
             );
             
             if ($booking_result === false) {
