@@ -982,8 +982,9 @@ class Plugin {
         
         $primary_font = $branding_settings['primary_font'] ?? 'inherit';
         $heading_font = $branding_settings['heading_font'] ?? 'inherit';
-        $primary_color = $branding_settings['primary_color'] ?? '#ff6b35';
-        $secondary_color = $branding_settings['secondary_color'] ?? '#2c3e50';
+        $primary_color = self::sanitizeBrandColor($branding_settings['primary_color'] ?? '', '#ff6b35');
+        $secondary_color = self::sanitizeBrandColor($branding_settings['secondary_color'] ?? '', '#2c3e50');
+        $derived_colors = self::getDerivedBrandColors($primary_color);
         
         // Skip if all values are defaults
         if ($primary_font === 'inherit' && 
@@ -1003,6 +1004,9 @@ class Plugin {
         }
         if ($secondary_color !== '#2c3e50') {
             echo "    --fp-brand-secondary: " . esc_attr($secondary_color) . ";\n";
+        }
+        foreach ($derived_colors as $variable => $value) {
+            echo '    ' . esc_attr($variable) . ': ' . esc_attr($value) . ";\n";
         }
         echo "}\n";
         
@@ -1058,6 +1062,151 @@ class Plugin {
         }
         
         echo "<!-- End FP Esperienze Custom Branding CSS -->\n\n";
+    }
+
+    /**
+     * Build derived brand colors for CSS helper variables.
+     *
+     * @param string $primary_color Primary brand color in hex format.
+     * @return array<string, string> Map of CSS variable names to color values.
+     */
+    private static function getDerivedBrandColors(string $primary_color): array {
+        $base_color = self::sanitizeBrandColor($primary_color, '#ff6b35');
+
+        return [
+            '--fp-brand-primary-hover'      => self::mixColors($base_color, 88, '#000000', 12),
+            '--fp-brand-primary-soft'       => self::mixColors($base_color, 75, '#ffffff', 25),
+            '--fp-brand-primary-focus-ring' => self::hexToRgba($base_color, 0.18),
+            '--fp-brand-primary-shadow'     => self::hexToRgba($base_color, 0.30),
+            '--fp-brand-primary-tint'       => self::mixColors($base_color, 12, '#ffffff', 88),
+        ];
+    }
+
+    /**
+     * Sanitize a brand color value.
+     *
+     * @param mixed  $color    Raw color value from settings.
+     * @param string $fallback Fallback color if the value is invalid.
+     * @return string
+     */
+    private static function sanitizeBrandColor($color, string $fallback): string {
+        if (!is_string($color)) {
+            $color = '';
+        }
+
+        $sanitized = self::maybeSanitizeHexColor($color);
+        if ($sanitized === null) {
+            $sanitized = self::maybeSanitizeHexColor($fallback);
+        }
+
+        if ($sanitized === null) {
+            $sanitized = '#ff6b35';
+        }
+
+        return $sanitized;
+    }
+
+    /**
+     * Sanitize a hex color value when WordPress helpers are unavailable.
+     *
+     * @param string $color Potential hex color string.
+     * @return string|null
+     */
+    private static function maybeSanitizeHexColor(string $color): ?string {
+        if ($color === '') {
+            return null;
+        }
+
+        if (function_exists('sanitize_hex_color')) {
+            $sanitized = sanitize_hex_color($color);
+            if (is_string($sanitized) && $sanitized !== '') {
+                return strtolower($sanitized);
+            }
+
+            return null;
+        }
+
+        if (preg_match('/^#(?:[0-9a-f]{3}){1,2}$/i', $color)) {
+            return strtolower($color);
+        }
+
+        return null;
+    }
+
+    /**
+     * Convert a hex color to an RGB triplet.
+     *
+     * @param string $hex_color Hex color string.
+     * @return array<int, int>
+     */
+    private static function hexToRgb(string $hex_color): array {
+        $hex = ltrim($hex_color, '#');
+
+        if (strlen($hex) === 3) {
+            $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+        }
+
+        if (strlen($hex) !== 6 || preg_match('/[^0-9a-f]/i', $hex)) {
+            return [255, 107, 53];
+        }
+
+        return [
+            hexdec(substr($hex, 0, 2)),
+            hexdec(substr($hex, 2, 2)),
+            hexdec(substr($hex, 4, 2)),
+        ];
+    }
+
+    /**
+     * Mix two colors together using weighted ratios.
+     *
+     * @param string $first_color  First color in hex format.
+     * @param float  $first_weight Weight for the first color.
+     * @param string $second_color Second color in hex format.
+     * @param float  $second_weight Weight for the second color.
+     * @return string
+     */
+    private static function mixColors(string $first_color, float $first_weight, string $second_color, float $second_weight): string {
+        [$r1, $g1, $b1] = self::hexToRgb($first_color);
+        [$r2, $g2, $b2] = self::hexToRgb($second_color);
+
+        $first_weight = max(0.0, $first_weight);
+        $second_weight = max(0.0, $second_weight);
+        $total = $first_weight + $second_weight;
+
+        if ($total <= 0.0) {
+            $total = 1.0;
+            $first_weight = 1.0;
+            $second_weight = 0.0;
+        }
+
+        $first_ratio = $first_weight / $total;
+        $second_ratio = $second_weight / $total;
+
+        $red = (int) round(($r1 * $first_ratio) + ($r2 * $second_ratio));
+        $green = (int) round(($g1 * $first_ratio) + ($g2 * $second_ratio));
+        $blue = (int) round(($b1 * $first_ratio) + ($b2 * $second_ratio));
+
+        return strtolower(sprintf('#%02X%02X%02X', $red, $green, $blue));
+    }
+
+    /**
+     * Convert a hex color to an RGBA string with the given alpha.
+     *
+     * @param string $hex_color Hex color string.
+     * @param float  $alpha     Alpha value between 0 and 1.
+     * @return string
+     */
+    private static function hexToRgba(string $hex_color, float $alpha): string {
+        [$red, $green, $blue] = self::hexToRgb($hex_color);
+        $alpha = max(0.0, min(1.0, $alpha));
+        $alpha_formatted = rtrim(rtrim(sprintf('%.2F', $alpha), '0'), '.');
+
+        if ($alpha_formatted === '') {
+            $alpha_formatted = '0';
+        }
+
+        return sprintf('rgba(%d, %d, %d, %s)', $red, $green, $blue, $alpha_formatted);
     }
 
     /**
