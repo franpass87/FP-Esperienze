@@ -161,31 +161,120 @@ class EmailMarketingManager {
      * Process upselling campaigns
      */
     public function processUpsellingCampaigns(): void {
-        global $wpdb;
+        if (!function_exists('wc_get_orders')) {
+            return;
+        }
 
-        // Find customers who completed experiences 7+ days ago
-        $date_threshold = date('Y-m-d', strtotime('-7 days'));
+        $date_threshold_timestamp = current_time('timestamp') - WEEK_IN_SECONDS;
 
-        $potential_customers = $wpdb->get_results($wpdb->prepare("
-            SELECT DISTINCT o.customer_id, o.billing_email
-            FROM {$wpdb->prefix}wc_orders o
-            INNER JOIN {$wpdb->prefix}wc_order_items oi ON o.id = oi.order_id
-            INNER JOIN {$wpdb->prefix}wc_order_itemmeta oim ON oi.order_item_id = oim.order_item_id
-            WHERE o.date_created < %s
-            AND o.status IN ('wc-completed')
-            AND oim.meta_key = '_product_type'
-            AND oim.meta_value = 'experience'
-            AND NOT EXISTS (
-                SELECT 1 FROM {$wpdb->prefix}wc_orders o2
-                WHERE o2.customer_id = o.customer_id
-                AND o2.date_created > o.date_created
-                AND o2.status IN ('wc-processing', 'wc-completed')
-            )
-        ", $date_threshold));
+        $orders = wc_get_orders([
+            'status' => ['completed'],
+            'limit' => -1,
+            'orderby' => 'date',
+            'order' => 'DESC',
+            'date_created' => '<' . $date_threshold_timestamp,
+            'return' => 'objects',
+        ]);
 
-        foreach ($potential_customers as $customer) {
+        if (empty($orders)) {
+            return;
+        }
+
+        $processed_customers = [];
+        $eligible_customers = [];
+
+        foreach ($orders as $order) {
+            if (!$order instanceof \WC_Order) {
+                continue;
+            }
+
+            $order_date = $order->get_date_created();
+            if (!$order_date || !$this->orderContainsExperience($order)) {
+                continue;
+            }
+
+            $customer_id = (int) $order->get_customer_id();
+            $billing_email = $order->get_billing_email();
+
+            if (empty($billing_email)) {
+                continue;
+            }
+
+            $customer_key = $customer_id > 0
+                ? 'id_' . $customer_id
+                : 'email_' . strtolower($billing_email);
+
+            if (isset($processed_customers[$customer_key])) {
+                continue;
+            }
+
+            $has_recent_orders = $this->customerHasRecentOrder($order, $order_date->getTimestamp());
+            $processed_customers[$customer_key] = true;
+
+            if ($has_recent_orders) {
+                continue;
+            }
+
+            $customer_name = trim($order->get_billing_first_name() . ' ' . $order->get_billing_last_name());
+
+            $eligible_customers[] = (object) [
+                'customer_id' => $customer_id,
+                'billing_email' => $billing_email,
+                'customer_name' => $customer_name,
+            ];
+        }
+
+        foreach ($eligible_customers as $customer) {
             $this->sendUpsellingEmail($customer);
         }
+    }
+
+    /**
+     * Check if an order contains at least one experience product.
+     */
+    private function orderContainsExperience(\WC_Order $order): bool {
+        foreach ($order->get_items() as $item) {
+            $product = $item->get_product();
+
+            if ($product && $product->get_type() === 'experience') {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Determine whether the customer has more recent orders than the provided order.
+     */
+    private function customerHasRecentOrder(\WC_Order $order, int $order_timestamp): bool {
+        if (!function_exists('wc_get_orders')) {
+            return false;
+        }
+
+        $customer_id = (int) $order->get_customer_id();
+        $billing_email = $order->get_billing_email();
+
+        $query_args = [
+            'status' => ['processing', 'completed'],
+            'limit' => 1,
+            'orderby' => 'date',
+            'order' => 'DESC',
+            'date_created' => '>' . $order_timestamp,
+            'return' => 'ids',
+        ];
+
+        if ($customer_id > 0) {
+            $query_args['customer'] = $customer_id;
+        } elseif (!empty($billing_email)) {
+            $query_args['billing_email'] = $billing_email;
+        } else {
+            return false;
+        }
+
+        $recent_orders = wc_get_orders($query_args);
+
+        return !empty($recent_orders);
     }
 
     /**
