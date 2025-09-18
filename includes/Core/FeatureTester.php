@@ -75,9 +75,17 @@ class FeatureTester {
             
             // Test cache functionality
             try {
-                $cache_result = PerformanceOptimizer::cacheQuery('test_query', 'SELECT 1', 300);
+                $cache_result = PerformanceOptimizer::cacheQuery(
+                    'test_query',
+                    static function () {
+                        global $wpdb;
+
+                        return $wpdb->get_var('SELECT 1');
+                    },
+                    300
+                );
                 $results['cache_test'] = true;
-            } catch (\Exception $e) {
+            } catch (\Throwable $e) {
                 $results['cache_test'] = false;
                 $results['cache_error'] = $e->getMessage();
             }
