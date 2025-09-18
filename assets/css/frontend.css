@@ -7,6 +7,7 @@ html {
 /* CSS Custom Properties for consistent colors and accessibility */
 :root {
     --fp-brand-primary: #ff6b35; /* Brand primary color for backgrounds and borders */
+    --fp-brand-orange: var(--fp-brand-primary); /* Legacy alias for components still using the orange token */
     --fp-brand-secondary: #2c3e50; /* Brand secondary color - updated via branding settings */
     --fp-text-gray: #555; /* Improved from #666 for better contrast */
     --fp-text-light-gray: #666; /* Improved from #999 for better contrast */
