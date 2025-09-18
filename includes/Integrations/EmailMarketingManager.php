@@ -10,7 +10,9 @@
 
 namespace FP\Esperienze\Integrations;
 
+use FP\Esperienze\Booking\BookingManager;
 use FP\Esperienze\Core\CapabilityManager;
+use FP\Esperienze\Data\MeetingPointManager;
 
 defined('ABSPATH') || exit;
 
@@ -41,6 +43,8 @@ class EmailMarketingManager {
         add_action('fp_booking_completed', [$this, 'handleBookingCompleted'], 10, 2);
         add_action('woocommerce_cart_updated', [$this, 'trackCartActivity']);
         add_action('fp_send_review_request', [$this, 'sendReviewRequest'], 10, 2);
+        add_action('fp_send_pre_experience_email', [$this, 'sendPreExperienceEmail'], 10, 2);
+        add_action('fp_send_upselling_email', [$this, 'sendScheduledUpsellingEmail'], 10, 2);
         
         // Scheduled events
         add_action('fp_check_abandoned_carts', [$this, 'processAbandonedCarts']);
@@ -207,6 +211,99 @@ class EmailMarketingManager {
     }
 
     /**
+     * Send pre-experience reminder email.
+     *
+     * @param int   $booking_id   Booking ID.
+     * @param array $booking_data Booking data.
+     * @return bool
+     */
+    public function sendPreExperienceEmail(int $booking_id, array $booking_data): bool {
+        $prepared_data = $this->prepareBookingEmailData($booking_id, $booking_data);
+
+        if (!$prepared_data) {
+            return false;
+        }
+
+        $customer_email = $prepared_data['customer_email'] ?? '';
+        if (empty($customer_email) || !is_email($customer_email)) {
+            $this->logError('Invalid customer email for pre-experience reminder', [
+                'booking_id' => $booking_id,
+                'order_id' => $prepared_data['order_id'] ?? null,
+                'customer_email' => $customer_email,
+            ]);
+
+            return false;
+        }
+
+        $timestamp = $this->parseBookingTimestamp(
+            $prepared_data['booking_date'] ?? '',
+            $prepared_data['booking_time'] ?? ''
+        );
+
+        $template_data = [
+            'booking_id' => $booking_id,
+            'customer_name' => $prepared_data['customer_name'] ?? '',
+            'experience_name' => $prepared_data['experience_name'] ?? '',
+            'booking_date' => $prepared_data['booking_date'] ?? '',
+            'booking_time' => $prepared_data['booking_time'] ?? '',
+            'booking_datetime' => $timestamp ? date_i18n(get_option('date_format') . ' ' . get_option('time_format'), $timestamp) : trim(
+                ($prepared_data['booking_date'] ?? '') . ' ' . ($prepared_data['booking_time'] ?? '')
+            ),
+            'booking_date_formatted' => $timestamp ? date_i18n(get_option('date_format'), $timestamp) : ($prepared_data['booking_date'] ?? ''),
+            'booking_time_formatted' => $timestamp ? date_i18n(get_option('time_format'), $timestamp) : ($prepared_data['booking_time'] ?? ''),
+            'meeting_point' => $prepared_data['meeting_point'] ?? '',
+            'meeting_point_address' => $prepared_data['meeting_point_address'] ?? '',
+            'meeting_point_note' => $prepared_data['meeting_point_note'] ?? '',
+            'participants' => (int) ($prepared_data['participants'] ?? 1),
+            'total_amount' => $prepared_data['total_amount'] ?? 0,
+            'booking_details_url' => $prepared_data['booking_details_url'] ?? '',
+            'experience_url' => $prepared_data['experience_url'] ?? '',
+            'customer_phone' => $prepared_data['customer_phone'] ?? '',
+        ];
+
+        return $this->sendEmail(
+            'pre_experience_reminder',
+            $customer_email,
+            __('Reminder: Your experience is coming up', 'fp-esperienze'),
+            $template_data
+        );
+    }
+
+    /**
+     * Send scheduled upselling email based on booking data.
+     *
+     * @param int   $booking_id   Booking ID.
+     * @param array $booking_data Booking data.
+     * @return bool
+     */
+    public function sendScheduledUpsellingEmail(int $booking_id, array $booking_data): bool {
+        $prepared_data = $this->prepareBookingEmailData($booking_id, $booking_data);
+
+        if (!$prepared_data) {
+            return false;
+        }
+
+        $customer_email = $prepared_data['customer_email'] ?? '';
+        if (empty($customer_email) || !is_email($customer_email)) {
+            $this->logError('Invalid customer email for upselling reminder', [
+                'booking_id' => $booking_id,
+                'order_id' => $prepared_data['order_id'] ?? null,
+                'customer_email' => $customer_email,
+            ]);
+
+            return false;
+        }
+
+        $customer = (object) [
+            'customer_id' => (int) ($prepared_data['customer_id'] ?? 0),
+            'billing_email' => $customer_email,
+            'customer_name' => $prepared_data['customer_name'] ?? '',
+        ];
+
+        return $this->sendUpsellingEmail($customer);
+    }
+
+    /**
      * Test email system (AJAX handler)
      */
     public function ajaxTestEmailSystem(): void {
@@ -363,10 +460,155 @@ class EmailMarketingManager {
      */
     private function scheduleUpsellingEmail(int $booking_id, array $booking_data): void {
         $send_time = time() + (7 * DAY_IN_SECONDS); // 7 days after completion
-        
+
         if (!wp_next_scheduled('fp_send_upselling_email', [$booking_id, $booking_data])) {
             wp_schedule_single_event($send_time, 'fp_send_upselling_email', [$booking_id, $booking_data]);
         }
+    }
+
+    /**
+     * Prepare booking data with order, product and customer information.
+     *
+     * @param int   $booking_id   Booking ID.
+     * @param array $booking_data Booking data.
+     * @return array|null
+     */
+    private function prepareBookingEmailData(int $booking_id, array $booking_data): ?array {
+        $booking = BookingManager::getBooking($booking_id);
+        if ($booking) {
+            $booking_data = array_merge((array) $booking, $booking_data);
+        }
+
+        $order_id = isset($booking_data['order_id']) ? (int) $booking_data['order_id'] : 0;
+        if ($order_id <= 0) {
+            $this->logError('Missing order ID for booking email', ['booking_id' => $booking_id]);
+            return null;
+        }
+
+        $order = wc_get_order($order_id);
+        if (!$order) {
+            $this->logError('Order not found for booking email', [
+                'booking_id' => $booking_id,
+                'order_id' => $order_id,
+            ]);
+            return null;
+        }
+
+        if (empty($booking_data['customer_email'])) {
+            $booking_data['customer_email'] = $order->get_billing_email();
+        }
+
+        $customer_name = $booking_data['customer_name'] ?? '';
+        if ($customer_name === '') {
+            $customer_name = trim(sprintf('%s %s', $order->get_billing_first_name(), $order->get_billing_last_name()));
+        }
+
+        if ($customer_name === '') {
+            $customer_name = $order->get_formatted_billing_full_name() ?: $order->get_billing_email();
+        }
+
+        $booking_data['customer_name'] = $customer_name;
+
+        if (empty($booking_data['customer_phone'])) {
+            $booking_data['customer_phone'] = $order->get_billing_phone();
+        }
+
+        if (empty($booking_data['total_amount'])) {
+            $booking_data['total_amount'] = $order->get_total();
+        }
+
+        if (empty($booking_data['booking_details_url'])) {
+            $booking_data['booking_details_url'] = $order->get_view_order_url();
+        }
+
+        if (!isset($booking_data['customer_id']) || $booking_data['customer_id'] === null || $booking_data['customer_id'] === '') {
+            $booking_data['customer_id'] = $order->get_customer_id() ?: $order->get_user_id();
+        }
+
+        $product_id = isset($booking_data['product_id']) ? (int) $booking_data['product_id'] : 0;
+        $product = $product_id > 0 ? wc_get_product($product_id) : null;
+
+        if (!$product) {
+            foreach ($order->get_items() as $item) {
+                $item_product = $item->get_product();
+                if (!$item_product || $item_product->get_type() !== 'experience') {
+                    continue;
+                }
+
+                $product = $item_product;
+                $product_id = $item_product->get_id();
+
+                if (empty($booking_data['product_id'])) {
+                    $booking_data['product_id'] = $product_id;
+                }
+
+                if (empty($booking_data['experience_name'])) {
+                    $booking_data['experience_name'] = $item_product->get_name();
+                }
+
+                break;
+            }
+        }
+
+        if ($product) {
+            if (empty($booking_data['experience_name'])) {
+                $booking_data['experience_name'] = $product->get_name();
+            }
+
+            if (empty($booking_data['experience_url']) && method_exists($product, 'get_permalink')) {
+                $booking_data['experience_url'] = $product->get_permalink();
+            }
+        }
+
+        if (empty($booking_data['participants'])) {
+            $participants = (int) ($booking_data['adults'] ?? 0) + (int) ($booking_data['children'] ?? 0);
+            if ($participants <= 0) {
+                $participants = (int) ($booking_data['participants'] ?? 0);
+            }
+
+            $booking_data['participants'] = max(1, $participants);
+        }
+
+        if (!empty($booking_data['meeting_point_id']) && empty($booking_data['meeting_point'])) {
+            $meeting_point = MeetingPointManager::getMeetingPoint((int) $booking_data['meeting_point_id']);
+            if ($meeting_point) {
+                $booking_data['meeting_point'] = $meeting_point->name;
+
+                if (!empty($meeting_point->address)) {
+                    $booking_data['meeting_point_address'] = $meeting_point->address;
+                }
+
+                if (!empty($meeting_point->note)) {
+                    $booking_data['meeting_point_note'] = $meeting_point->note;
+                }
+            }
+        }
+
+        return $booking_data;
+    }
+
+    /**
+     * Parse booking date and time into a timestamp.
+     *
+     * @param string|null $date Booking date.
+     * @param string|null $time Booking time.
+     * @return int|false
+     */
+    private function parseBookingTimestamp(?string $date, ?string $time): int|false {
+        if (empty($date)) {
+            return false;
+        }
+
+        $date = trim((string) $date);
+        $time_string = $time !== null && $time !== '' ? trim((string) $time) : '00:00:00';
+
+        $timestamp = strtotime($date . ' ' . $time_string);
+
+        if ($timestamp === false) {
+            $timestamp = strtotime($date);
+        }
+
+        return $timestamp ?: false;
     }
 
     /**
@@ -407,18 +649,20 @@ class EmailMarketingManager {
      * Send upselling email
      *
      * @param object $customer Customer data
+     * @return bool
      */
-    private function sendUpsellingEmail(object $customer): void {
+    private function sendUpsellingEmail(object $customer): bool {
         // Get recommended experiences based on previous purchases
         $recommended_experiences = $this->getRecommendedExperiences($customer->customer_id);
 
         $template_data = [
             'customer_email' => $customer->billing_email,
             'recommended_experiences' => $recommended_experiences,
-            'discount_code' => $this->generateDiscountCode($customer->customer_id)
+            'discount_code' => $this->generateDiscountCode($customer->customer_id),
+            'customer_name' => $customer->customer_name ?? ''
         ];
 
-        $this->sendEmail(
+        return $this->sendEmail(
             'upselling',
             $customer->billing_email,
             __('Discover new amazing experiences!', 'fp-esperienze'),
@@ -611,6 +855,28 @@ class EmailMarketingManager {
                     <a href="' . esc_url($data['review_link'] ?? '') . '" style="background: #ffc107; color: #333; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">Share Your Experience</a>
                 </div>
             ',
+            'pre_experience_reminder' => '
+                <h2 style="color: #007cba; border-bottom: 2px solid #007cba; padding-bottom: 10px;">⏳ ' . esc_html__('Your experience is almost here!', 'fp-esperienze') . '</h2>
+                <p>Dear <strong>' . esc_html($data['customer_name'] ?? 'Customer') . '</strong>,</p>
+                <p>' . sprintf(
+                    /* translators: %s: experience name */
+                    esc_html__('We are excited to welcome you to %s. Here are the details for your upcoming adventure:', 'fp-esperienze'),
+                    '<strong>' . esc_html($data['experience_name'] ?? __('your upcoming experience', 'fp-esperienze')) . '</strong>'
+                ) . '</p>
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <tr><td style="padding: 8px; font-weight: bold;">' . esc_html__('Date', 'fp-esperienze') . ':</td><td style="padding: 8px;">' . esc_html($data['booking_date_formatted'] ?? ($data['booking_date'] ?? '')) . '</td></tr>
+                        <tr><td style="padding: 8px; font-weight: bold;">' . esc_html__('Time', 'fp-esperienze') . ':</td><td style="padding: 8px;">' . esc_html($data['booking_time_formatted'] ?? ($data['booking_time'] ?? '')) . '</td></tr>
+                        <tr><td style="padding: 8px; font-weight: bold;">' . esc_html__('Participants', 'fp-esperienze') . ':</td><td style="padding: 8px;">' . intval($data['participants'] ?? 1) . '</td></tr>
+                        ' . (!empty($data['meeting_point']) ? '<tr><td style="padding: 8px; font-weight: bold;">' . esc_html__('Meeting Point', 'fp-esperienze') . ':</td><td style="padding: 8px;">' . esc_html($data['meeting_point']) . (!empty($data['meeting_point_address']) ? '<br><span style="color:#555;">' . nl2br(esc_html($data['meeting_point_address'])) . '</span>' : '') . '</td></tr>' : '') . '
+                    </table>
+                </div>
+                ' . (!empty($data['meeting_point_note']) ? '<p style="background: #fff3cd; padding: 15px; border-radius: 6px; border: 1px solid #ffeeba; color: #856404;">' . esc_html($data['meeting_point_note']) . '</p>' : '') . '
+                <p style="margin: 20px 0;">' . esc_html__('Please arrive at least 10 minutes early so we can start on time.', 'fp-esperienze') . '</p>
+                ' . (!empty($data['booking_details_url']) ? '<div style="text-align: center; margin: 30px 0;"><a href="' . esc_url($data['booking_details_url']) . '" style="background: #007cba; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">' . esc_html__('View Booking Details', 'fp-esperienze') . '</a></div>' : '') . '
+                ' . (!empty($data['experience_url']) ? '<p style="text-align: center;"><a href="' . esc_url($data['experience_url']) . '" style="color: #007cba;">' . esc_html__('View experience information', 'fp-esperienze') . '</a></p>' : '') . '
+                <p>' . esc_html__('Need to make changes or have questions? Simply reply to this email and we will be happy to help.', 'fp-esperienze') . '</p>
+            ',
             'abandoned_cart' => '
                 <h2 style="color: #dc3545; border-bottom: 2px solid #dc3545; padding-bottom: 10px;">⏰ Don\'t Miss Out!</h2>
                 <p>You left some amazing experiences in your cart...</p>
@@ -753,6 +1019,10 @@ class EmailMarketingManager {
                 'name' => __('Booking Completion', 'fp-esperienze'),
                 'description' => __('Sent when an experience is completed', 'fp-esperienze')
             ],
+            'pre_experience_reminder' => [
+                'name' => __('Experience Reminder', 'fp-esperienze'),
+                'description' => __('Sent before the experience to remind customers about their booking', 'fp-esperienze')
+            ],
             'abandoned_cart' => [
                 'name' => __('Abandoned Cart Recovery', 'fp-esperienze'),
                 'description' => __('Sent to recover abandoned carts', 'fp-esperienze')
@@ -776,6 +1046,7 @@ class EmailMarketingManager {
         $template_mapping = [
             'booking_confirmation' => $this->settings['brevo_template_booking_confirmation'] ?? null,
             'booking_completion' => $this->settings['brevo_template_booking_completion'] ?? null,
+            'pre_experience_reminder' => $this->settings['brevo_template_pre_experience'] ?? null,
             'abandoned_cart' => $this->settings['brevo_template_abandoned_cart'] ?? null,
             'review_request' => $this->settings['brevo_template_review_request'] ?? null,
             'upselling' => $this->settings['brevo_template_upselling'] ?? null
