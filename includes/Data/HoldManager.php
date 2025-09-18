@@ -30,6 +30,13 @@ class HoldManager {
     public static function isEnabled(): bool {
         return (bool) get_option('fp_esperienze_enable_holds', 1);
     }
+
+    /**
+     * Get the site's configured timezone.
+     */
+    private static function getSiteTimezone(): \DateTimeZone {
+        return wp_timezone();
+    }
     
     /**
      * Create a hold for capacity
@@ -56,21 +63,26 @@ class HoldManager {
             return ['success' => false, 'message' => __('Invalid session', 'fp-esperienze')];
         }
         
+        $timezone = self::getSiteTimezone();
+
         // Convert slot_start to datetime format for database
-        $slot_datetime = \DateTime::createFromFormat('Y-m-d H:i', $slot_start);
+        $slot_datetime = \DateTime::createFromFormat('Y-m-d H:i', $slot_start, $timezone);
         if (!$slot_datetime) {
             return ['success' => false, 'message' => __('Invalid slot format', 'fp-esperienze')];
         }
-        
+
+        $slot_datetime->setTimezone($timezone);
+
         $table_name = $wpdb->prefix . 'fp_exp_holds';
-        
+
         // Remove any existing holds for this session/product/slot
         self::releaseHold($product_id, $slot_start, $session_id);
-        
+
         // Calculate expiry time
-        $expires_at = new \DateTime();
+        $current_time = new \DateTime('now', $timezone);
+        $expires_at = clone $current_time;
         $expires_at->add(new \DateInterval('PT' . self::getHoldDuration() . 'M'));
-        
+
         // Insert new hold
         $result = $wpdb->insert(
             $table_name,
@@ -80,7 +92,7 @@ class HoldManager {
                 'slot_start' => $slot_datetime->format('Y-m-d H:i:s'),
                 'qty' => $qty,
                 'expires_at' => $expires_at->format('Y-m-d H:i:s'),
-                'created_at' => current_time('mysql')
+                'created_at' => $current_time->format('Y-m-d H:i:s')
             ],
             ['%s', '%d', '%s', '%d', '%s', '%s']
         );
@@ -116,18 +128,23 @@ class HoldManager {
     public static function getHoldsForSlot(int $product_id, string $slot_start, bool $exclude_expired = true): array {
         global $wpdb;
         
-        $slot_datetime = \DateTime::createFromFormat('Y-m-d H:i', $slot_start);
+        $timezone = self::getSiteTimezone();
+
+        $slot_datetime = \DateTime::createFromFormat('Y-m-d H:i', $slot_start, $timezone);
         if (!$slot_datetime) {
             return [];
         }
-        
+
+        $slot_datetime->setTimezone($timezone);
+
         $table_name = $wpdb->prefix . 'fp_exp_holds';
         $where_clause = "WHERE product_id = %d AND slot_start = %s";
         $params = [$product_id, $slot_datetime->format('Y-m-d H:i:s')];
-        
+
         if ($exclude_expired) {
             $where_clause .= " AND expires_at > %s";
-            $params[] = current_time('mysql');
+            $current_time = new \DateTime('now', $timezone);
+            $params[] = $current_time->format('Y-m-d H:i:s');
         }
         
         $results = $wpdb->get_results($wpdb->prepare(
@@ -149,14 +166,19 @@ class HoldManager {
     public static function getHeldQuantity(int $product_id, string $slot_start, ?string $exclude_session_id = null): int {
         global $wpdb;
         
-        $slot_datetime = \DateTime::createFromFormat('Y-m-d H:i', $slot_start);
+        $timezone = self::getSiteTimezone();
+
+        $slot_datetime = \DateTime::createFromFormat('Y-m-d H:i', $slot_start, $timezone);
         if (!$slot_datetime) {
             return 0;
         }
-        
+
+        $slot_datetime->setTimezone($timezone);
+
         $table_name = $wpdb->prefix . 'fp_exp_holds';
         $where_clause = "WHERE product_id = %d AND slot_start = %s AND expires_at > %s";
-        $params = [$product_id, $slot_datetime->format('Y-m-d H:i:s'), current_time('mysql')];
+        $current_time = new \DateTime('now', $timezone);
+        $params = [$product_id, $slot_datetime->format('Y-m-d H:i:s'), $current_time->format('Y-m-d H:i:s')];
         
         if ($exclude_session_id) {
             $where_clause .= " AND session_id != %s";
@@ -182,10 +204,14 @@ class HoldManager {
     public static function releaseHold(int $product_id, string $slot_start, string $session_id): bool {
         global $wpdb;
         
-        $slot_datetime = \DateTime::createFromFormat('Y-m-d H:i', $slot_start);
+        $timezone = self::getSiteTimezone();
+
+        $slot_datetime = \DateTime::createFromFormat('Y-m-d H:i', $slot_start, $timezone);
         if (!$slot_datetime) {
             return false;
         }
+
+        $slot_datetime->setTimezone($timezone);
         
         $table_name = $wpdb->prefix . 'fp_exp_holds';
         
@@ -243,10 +269,14 @@ class HoldManager {
             return self::atomicCapacityCheck($product_id, $slot_start, $booking_data);
         }
         
-        $slot_datetime = \DateTime::createFromFormat('Y-m-d H:i', $slot_start);
+        $timezone = self::getSiteTimezone();
+
+        $slot_datetime = \DateTime::createFromFormat('Y-m-d H:i', $slot_start, $timezone);
         if (!$slot_datetime) {
             return ['success' => false, 'message' => __('Invalid slot format', 'fp-esperienze')];
         }
+
+        $slot_datetime->setTimezone($timezone);
         
         // Start transaction
         $wpdb->query('START TRANSACTION');
@@ -256,13 +286,15 @@ class HoldManager {
             $bookings_table = $wpdb->prefix . 'fp_bookings';
             
             // Check if hold exists and is valid
+            $comparison_time = (new \DateTime('now', $timezone))->format('Y-m-d H:i:s');
+
             $hold = $wpdb->get_row($wpdb->prepare(
-                "SELECT * FROM $holds_table 
+                "SELECT * FROM $holds_table
                  WHERE product_id = %d AND slot_start = %s AND session_id = %s AND expires_at > %s",
                 $product_id,
                 $slot_datetime->format('Y-m-d H:i:s'),
                 $session_id,
-                current_time('mysql')
+                $comparison_time
             ));
             
             if (!$hold) {
@@ -316,12 +348,14 @@ class HoldManager {
             }
             
             // Clean up other expired holds for this slot (this is not critical, so we don't rollback on failure)
+            $cleanup_time = (new \DateTime('now', $timezone))->format('Y-m-d H:i:s');
+
             $wpdb->query($wpdb->prepare(
-                "DELETE FROM $holds_table 
+                "DELETE FROM $holds_table
                  WHERE product_id = %d AND slot_start = %s AND expires_at <= %s",
                 $product_id,
                 $slot_datetime->format('Y-m-d H:i:s'),
-                current_time('mysql')
+                $cleanup_time
             ));
             
             // Commit transaction
@@ -353,10 +387,14 @@ class HoldManager {
     private static function atomicCapacityCheck(int $product_id, string $slot_start, array $booking_data): array {
         global $wpdb;
         
-        $slot_datetime = \DateTime::createFromFormat('Y-m-d H:i', $slot_start);
+        $timezone = self::getSiteTimezone();
+
+        $slot_datetime = \DateTime::createFromFormat('Y-m-d H:i', $slot_start, $timezone);
         if (!$slot_datetime) {
             return ['success' => false, 'message' => __('Invalid slot format', 'fp-esperienze')];
         }
+
+        $slot_datetime->setTimezone($timezone);
         
         // Start transaction
         $wpdb->query('START TRANSACTION');
@@ -433,11 +471,14 @@ class HoldManager {
     public static function cleanupExpiredHolds(): int {
         global $wpdb;
         
+        $timezone = self::getSiteTimezone();
         $table_name = $wpdb->prefix . 'fp_exp_holds';
-        
+
+        $current_time = new \DateTime('now', $timezone);
+
         $result = $wpdb->query($wpdb->prepare(
             "DELETE FROM $table_name WHERE expires_at <= %s",
-            current_time('mysql')
+            $current_time->format('Y-m-d H:i:s')
         ));
         
         return (int) ($result ?: 0);
@@ -454,20 +495,26 @@ class HoldManager {
     public static function getSessionHold(int $product_id, string $slot_start, string $session_id): ?object {
         global $wpdb;
         
-        $slot_datetime = \DateTime::createFromFormat('Y-m-d H:i', $slot_start);
+        $timezone = self::getSiteTimezone();
+
+        $slot_datetime = \DateTime::createFromFormat('Y-m-d H:i', $slot_start, $timezone);
         if (!$slot_datetime) {
             return null;
         }
-        
+
+        $slot_datetime->setTimezone($timezone);
+
         $table_name = $wpdb->prefix . 'fp_exp_holds';
-        
+
+        $current_time = new \DateTime('now', $timezone);
+
         $hold = $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM $table_name 
+            "SELECT * FROM $table_name
              WHERE product_id = %d AND slot_start = %s AND session_id = %s AND expires_at > %s",
             $product_id,
             $slot_datetime->format('Y-m-d H:i:s'),
             $session_id,
-            current_time('mysql')
+            $current_time->format('Y-m-d H:i:s')
         ));
         
         return $hold ?: null;
