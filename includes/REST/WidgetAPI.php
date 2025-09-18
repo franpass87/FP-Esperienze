@@ -22,11 +22,15 @@ defined('ABSPATH') || exit;
  */
 class WidgetAPI {
 
+    private const IFRAME_RESPONSE_HEADER = 'X-FP-Widget-Iframe';
+    private const IFRAME_ROUTE_PREFIX = '/fp-exp/v1/widget/iframe';
+
     /**
      * Constructor
      */
     public function __construct() {
         $this->registerRoutes();
+        add_filter('rest_pre_serve_request', [$this, 'serveIframeWidgetResponse'], 10, 4);
     }
 
     /**
@@ -109,13 +113,55 @@ class WidgetAPI {
 
         $response = new WP_REST_Response($html);
         $response->header('Content-Type', 'text/html; charset=utf-8');
-        
+
         // Add CORS headers for iframe embedding
         $response->header('Access-Control-Allow-Origin', '*');
         $response->header('X-Frame-Options', 'ALLOWALL');
         $response->header('Content-Security-Policy', "frame-ancestors *;");
+        $response->header(self::IFRAME_RESPONSE_HEADER, '1');
 
         return $response;
+    }
+
+    /**
+     * Serve iframe widget responses as raw HTML.
+     */
+    public function serveIframeWidgetResponse(
+        bool $served,
+        $result,
+        WP_REST_Request $request,
+        WP_REST_Server $server
+    ): bool {
+        if ($served) {
+            return true;
+        }
+
+        if (!$result instanceof WP_REST_Response) {
+            return false;
+        }
+
+        $headers = array_change_key_case($result->get_headers(), CASE_LOWER);
+        $has_marker_header = isset($headers[strtolower(self::IFRAME_RESPONSE_HEADER)]);
+
+        $route = $request->get_route();
+        $is_iframe_route = is_string($route) && str_starts_with($route, self::IFRAME_ROUTE_PREFIX);
+
+        if (!$has_marker_header && !$is_iframe_route) {
+            return false;
+        }
+
+        $data = $result->get_data();
+
+        if (!is_string($data)) {
+            return false;
+        }
+
+        $result->header('Content-Type', 'text/html; charset=utf-8');
+
+        $server->send_headers($result);
+        echo $data;
+
+        return true;
     }
 
     /**
