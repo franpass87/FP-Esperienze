@@ -258,12 +258,15 @@
         bindEvents: function() {
             // Schedule management
             this.bindScheduleEvents();
-            
+
             // Event schedule management
             this.bindEventScheduleEvents();
-            
+
             // Modern schedule and override management - REFACTORED
             this.initModernScheduleBuilder();
+
+            // Reset unsaved changes after automatic builder setup
+            this.clearUnsavedChanges();
         },
         
         /**
@@ -759,8 +762,8 @@
             });
             
             // Auto-save functionality for better UX
-            $(document).on('change', '#fp-time-slots-container input, #fp-time-slots-container select', function() {
-                self.markAsChanged();
+            $(document).on('change', '#fp-time-slots-container input, #fp-time-slots-container select', function(event) {
+                self.markAsChanged(event);
             });
         },
         
@@ -833,7 +836,11 @@
         /**
          * Mark form as changed for unsaved changes warning
          */
-        markAsChanged: function() {
+        markAsChanged: function(event) {
+            if (!event || !event.originalEvent) {
+                return;
+            }
+
             if (!this.hasUnsavedChanges) {
                 this.hasUnsavedChanges = true;
                 this.showUnsavedChangesWarning();
