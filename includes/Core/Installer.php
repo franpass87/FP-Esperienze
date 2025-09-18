@@ -8,6 +8,7 @@
 namespace FP\Esperienze\Core;
 
 use Exception;
+use Throwable;
 use FP\Esperienze\Core\CapabilityManager;
 use FP\Esperienze\Core\TranslationQueue;
 use FP\Esperienze\Core\PerformanceOptimizer;
