@@ -655,6 +655,10 @@
             formData.append('fp_qty_adult', adultQty);
             formData.append('fp_qty_child', childQty);
             formData.append('fp_extras', JSON.stringify(extras));
+
+            if (typeof wc_add_to_cart_params !== 'undefined' && wc_add_to_cart_params.add_to_cart_nonce) {
+                formData.append('security', wc_add_to_cart_params.add_to_cart_nonce);
+            }
             
             // Add gift data if this is a gift purchase
             if (isGift) {
