@@ -41,6 +41,7 @@ use FP\Esperienze\Core\SecurityEnhancer;
 use FP\Esperienze\Core\PerformanceOptimizer;
 use FP\Esperienze\Core\UXEnhancer;
 use FP\Esperienze\Core\FeatureTester;
+use Throwable;
 
 defined('ABSPATH') || exit;
 
