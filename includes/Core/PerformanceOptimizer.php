@@ -119,16 +119,16 @@ class PerformanceOptimizer {
             // Additional booking table optimizations
             $wpdb->prefix . 'fp_bookings' => [
                 'booking_lookup_optimized' => 'ADD INDEX idx_booking_lookup (product_id, booking_date, booking_time, status)',
-                'customer_bookings' => 'ADD INDEX idx_customer_bookings (customer_email(50), booking_date)',
+                'date_time_lookup' => 'ADD INDEX idx_booking_date_time (booking_date, booking_time)',
                 'performance_status_date' => 'ADD INDEX idx_perf_status_date (status, booking_date, created_at)',
             ],
-            
+
             // Schedule table optimizations for availability queries
             $wpdb->prefix . 'fp_schedules' => [
-                'availability_lookup' => 'ADD INDEX idx_availability_lookup (product_id, day_of_week, is_active, start_time, end_time)',
+                'availability_lookup' => 'ADD INDEX idx_availability_lookup (product_id, day_of_week, is_active, start_time, duration_min)',
                 'schedule_performance' => 'ADD INDEX idx_schedule_perf (is_active, product_id, day_of_week)',
             ],
-            
+
             // Override table optimizations
             $wpdb->prefix . 'fp_overrides' => [
                 'override_lookup_optimized' => 'ADD INDEX idx_override_lookup (product_id, date, is_closed)',
@@ -137,9 +137,9 @@ class PerformanceOptimizer {
             
             // Voucher table optimizations (if exists)
             $wpdb->prefix . 'fp_vouchers' => [
-                'voucher_code_status' => 'ADD INDEX idx_voucher_code_status (code(20), status)',
-                'voucher_validity' => 'ADD INDEX idx_voucher_validity (valid_from, valid_until, status)',
-                'redemption_lookup' => 'ADD INDEX idx_redemption_lookup (product_id, status, valid_from)',
+                'voucher_code_usage' => 'ADD INDEX idx_voucher_code_usage (voucher_code, is_used)',
+                'voucher_expiration' => 'ADD INDEX idx_voucher_expiration (expires_at, is_used)',
+                'voucher_booking_lookup' => 'ADD INDEX idx_voucher_booking_lookup (booking_id, is_used, expires_at)',
             ],
         ];
         
