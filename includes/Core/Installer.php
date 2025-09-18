@@ -522,6 +522,7 @@ class Installer {
         global $wpdb;
         
         $table_name = $wpdb->prefix . 'fp_schedules';
+        $table_name_escaped = esc_sql($table_name);
         
         // Check if migration has already been applied
         $migration_applied = get_option('fp_esperienze_schedule_null_migration_applied', false);
@@ -530,10 +531,9 @@ class Installer {
         }
         
         // Check current column definitions to see if they're already nullable
-        $duration_column = $wpdb->get_row($wpdb->prepare(
-            "SHOW COLUMNS FROM %i LIKE 'duration_min'",
-            $table_name
-        ));
+        $duration_column = $wpdb->get_row(
+            "SHOW COLUMNS FROM `{$table_name_escaped}` LIKE 'duration_min'"
+        );
         
         // If duration_min column is already nullable, migration was likely applied
         if ($duration_column && strpos($duration_column->Null, 'YES') !== false) {
@@ -543,22 +543,22 @@ class Installer {
         
         try {
             // Step 1: Alter table structure to allow NULL values
-            $wpdb->query($wpdb->prepare("
-                ALTER TABLE %i 
+            $wpdb->query("
+                ALTER TABLE `{$table_name_escaped}`
                 MODIFY `duration_min` int(11) NULL,
                 MODIFY `capacity` int(11) NULL,
                 MODIFY `lang` varchar(10) NULL,
                 MODIFY `price_adult` decimal(10,2) NULL,
                 MODIFY `price_child` decimal(10,2) NULL
-            ", $table_name));
+            ");
             
             // Step 2: Set values to NULL where they match product defaults to enable inheritance
             // Get all products with schedules
-            $products_with_schedules = $wpdb->get_results($wpdb->prepare("
-                SELECT DISTINCT s.product_id 
-                FROM %i s 
+            $products_with_schedules = $wpdb->get_results("
+                SELECT DISTINCT s.product_id
+                FROM `{$table_name_escaped}` s
                 WHERE s.is_active = 1
-            ", $table_name));
+            ");
             
             foreach ($products_with_schedules as $product) {
                 # Product defaults removed; no migration needed.
@@ -622,9 +622,10 @@ class Installer {
      */
     private static function migrateForEventSupport() {
         global $wpdb;
-        
+
         $table_name = $wpdb->prefix . 'fp_schedules';
-        
+        $table_name_escaped = esc_sql($table_name);
+
         // Check if migration has already been applied
         $migration_applied = get_option('fp_esperienze_event_support_migration_applied', false);
         if ($migration_applied) {
@@ -633,7 +634,7 @@ class Installer {
         
         try {
             // Check if the new columns already exist
-            $columns = $wpdb->get_results($wpdb->prepare("SHOW COLUMNS FROM %i", $table_name));
+            $columns = $wpdb->get_results("SHOW COLUMNS FROM `{$table_name_escaped}`");
             $existing_columns = wp_list_pluck($columns, 'Field');
             
             $alterations = [];
@@ -649,16 +650,15 @@ class Installer {
             }
             
             // Make day_of_week nullable for events (only required for recurring)
-            $day_of_week_column = $wpdb->get_row($wpdb->prepare(
-                "SHOW COLUMNS FROM %i LIKE 'day_of_week'", 
-                $table_name
-            ));
+            $day_of_week_column = $wpdb->get_row(
+                "SHOW COLUMNS FROM `{$table_name_escaped}` LIKE 'day_of_week'"
+            );
             if ($day_of_week_column && strpos($day_of_week_column->Null, 'NO') !== false) {
                 $alterations[] = "MODIFY COLUMN `day_of_week` tinyint(1) DEFAULT NULL COMMENT '0=Sunday, 1=Monday, etc. Used for recurring schedules'";
             }
             
             if (!empty($alterations)) {
-                $alter_sql = "ALTER TABLE `{$table_name}` " . implode(', ', $alterations);
+                $alter_sql = "ALTER TABLE `{$table_name_escaped}` " . implode(', ', $alterations);
                 $result = $wpdb->query($alter_sql);
                 
                 if ($result === false) {
@@ -666,7 +666,7 @@ class Installer {
                 }
                 
                 // Add indexes for new columns
-                $index_sql = "ALTER TABLE `{$table_name}` 
+                $index_sql = "ALTER TABLE `{$table_name_escaped}`
                              ADD INDEX idx_event_date (event_date),
                              ADD INDEX idx_schedule_type (schedule_type)";
                 $wpdb->query($index_sql);
@@ -723,18 +723,18 @@ class Installer {
         ];
 
         foreach ($indexes as $table => $table_indexes) {
+            $table_escaped = esc_sql($table);
             foreach ($table_indexes as $index_name => $index_sql) {
                 $key_name = ($index_name === 'order_item_unique') ? 'order_item_unique' : 'idx_' . $index_name;
 
                 // Check if index already exists
                 $existing_index = $wpdb->get_var($wpdb->prepare(
-                    "SHOW INDEX FROM %i WHERE Key_name = %s",
-                    $table,
+                    "SHOW INDEX FROM `{$table_escaped}` WHERE Key_name = %s",
                     $key_name
                 ));
 
                 if (!$existing_index) {
-                    $full_sql = $wpdb->prepare("ALTER TABLE %i {$index_sql}", $table);
+                    $full_sql = "ALTER TABLE `{$table_escaped}` {$index_sql}";
                     $wpdb->query($full_sql);
 
                     if (defined('WP_DEBUG') && WP_DEBUG) {
