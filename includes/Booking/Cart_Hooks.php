@@ -432,19 +432,25 @@ class Cart_Hooks {
         // Save gift meta data
         if (isset($values['fp_gift']) && $values['fp_gift']['is_gift']) {
             $gift_data = $values['fp_gift'];
-            
+
+            $item->add_meta_data('_fp_is_gift', 'yes');
             $item->add_meta_data(__('Gift Purchase', 'fp-esperienze'), __('Yes', 'fp-esperienze'));
+            $item->add_meta_data('_fp_gift_recipient_name', $gift_data['recipient_name']);
             $item->add_meta_data(__('Recipient Name', 'fp-esperienze'), $gift_data['recipient_name']);
+            $item->add_meta_data('_fp_gift_recipient_email', $gift_data['recipient_email']);
             $item->add_meta_data(__('Recipient Email', 'fp-esperienze'), $gift_data['recipient_email']);
-            
+
             if (!empty($gift_data['sender_name'])) {
+                $item->add_meta_data('_fp_gift_sender_name', $gift_data['sender_name']);
                 $item->add_meta_data(__('Sender Name', 'fp-esperienze'), $gift_data['sender_name']);
             }
-            
+
             if (!empty($gift_data['message'])) {
+                $item->add_meta_data('_fp_gift_message', $gift_data['message']);
                 $item->add_meta_data(__('Gift Message', 'fp-esperienze'), $gift_data['message']);
             }
-            
+
+            $item->add_meta_data('_fp_gift_send_date', $gift_data['send_date']);
             $item->add_meta_data(__('Send Date', 'fp-esperienze'), $gift_data['send_date']);
         }
         
