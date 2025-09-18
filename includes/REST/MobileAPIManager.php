@@ -30,9 +30,22 @@ class MobileAPIManager {
     private const API_NAMESPACE = 'fp-esperienze/v2';
 
     /**
+     * Tracks whether the mobile endpoints have already been registered.
+     *
+     * @var bool
+     */
+    private static $endpointsRegistered = false;
+
+    /**
      * Constructor
      */
     public function __construct() {
+        if (did_action('rest_api_init')) {
+            $this->registerMobileEndpoints();
+
+            return;
+        }
+
         add_action('rest_api_init', [$this, 'registerMobileEndpoints']);
     }
 
@@ -40,6 +53,12 @@ class MobileAPIManager {
      * Register mobile-specific REST endpoints
      */
     public function registerMobileEndpoints(): void {
+        if (self::$endpointsRegistered) {
+            return;
+        }
+
+        self::$endpointsRegistered = true;
+
         // Authentication endpoints
         register_rest_route(self::API_NAMESPACE, '/mobile/auth/login', [
             'methods' => 'POST',
