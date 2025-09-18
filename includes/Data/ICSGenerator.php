@@ -121,19 +121,27 @@ class ICSGenerator {
         for ($i = 0; $i < $days_ahead; $i++) {
             $date_str = $current_date->format('Y-m-d');
             $slots = Availability::forDay($product_id, $date_str);
-            
+
             foreach ($slots as $slot) {
-                if ($slot['available_spots'] > 0) {
-                    $events[] = [
-                        'date' => $date_str,
-                        'time' => $slot['start_time'],
-                        'duration' => $slot['duration'],
-                        'capacity' => $slot['capacity'],
-                        'available' => $slot['available_spots']
-                    ];
+                $available_spots = isset($slot['available']) ? (int) $slot['available'] : 0;
+
+                if ($available_spots <= 0) {
+                    continue;
                 }
+
+                if (empty($slot['start_time']) || empty($slot['end_time'])) {
+                    continue;
+                }
+
+                $events[] = [
+                    'date' => $date_str,
+                    'start_time' => $slot['start_time'],
+                    'end_time' => $slot['end_time'],
+                    'capacity' => isset($slot['capacity']) ? (int) $slot['capacity'] : 0,
+                    'available' => $available_spots,
+                ];
             }
-            
+
             $current_date->add(new \DateInterval('P1D'));
         }
         
@@ -149,18 +157,21 @@ class ICSGenerator {
         $ics_content .= "METHOD:PUBLISH\r\n";
         
         foreach ($events as $index => $event) {
-            $start_datetime = new \DateTime($event['date'] . ' ' . $event['time'], wp_timezone());
-            $end_datetime = clone $start_datetime;
-            $end_datetime->add(new \DateInterval('PT' . $event['duration'] . 'M'));
-            
+            try {
+                $start_datetime = new \DateTime($event['date'] . ' ' . $event['start_time'], wp_timezone());
+                $end_datetime = new \DateTime($event['date'] . ' ' . $event['end_time'], wp_timezone());
+            } catch (\Exception $e) {
+                continue;
+            }
+
             // Convert to UTC
             $start_utc = clone $start_datetime;
             $start_utc->setTimezone(new \DateTimeZone('UTC'));
             $end_utc = clone $end_datetime;
             $end_utc->setTimezone(new \DateTimeZone('UTC'));
-            
+
             $summary = sprintf('%s (%d spots available)', $product->get_name(), $event['available']);
-            $uid = 'product-' . $product_id . '-' . $event['date'] . '-' . str_replace(':', '', $event['time']) . '@' . parse_url(home_url(), PHP_URL_HOST);
+            $uid = 'product-' . $product_id . '-' . $event['date'] . '-' . str_replace(':', '', $event['start_time']) . '@' . parse_url(home_url(), PHP_URL_HOST);
             
             $ics_content .= "BEGIN:VEVENT\r\n";
             $ics_content .= "UID:" . $uid . "\r\n";
