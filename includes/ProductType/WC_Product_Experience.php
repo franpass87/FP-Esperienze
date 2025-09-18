@@ -24,6 +24,15 @@ class WC_Product_Experience extends \WC_Product {
     protected $product_type = 'experience';
 
     /**
+     * Supported features for the experience product type.
+     *
+     * @var array<string>
+     */
+    protected $supports = [
+        'ajax_add_to_cart',
+    ];
+
+    /**
      * Constructor
      *
      * @param mixed $product Product ID or WC_Product
@@ -57,6 +66,22 @@ class WC_Product_Experience extends \WC_Product {
      */
     public function is_downloadable() {
         return false;
+    }
+
+    /**
+     * Check if product can be purchased.
+     *
+     * @return bool
+     */
+    public function is_purchasable() {
+        $purchasable = $this->exists() && $this->get_status() === 'publish';
+
+        if ($purchasable) {
+            $schedules = ScheduleManager::getSchedules($this->get_id());
+            $purchasable = !empty($schedules);
+        }
+
+        return apply_filters('woocommerce_is_purchasable', $purchasable, $this);
     }
 
     /**
