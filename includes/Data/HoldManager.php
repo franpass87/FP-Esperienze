@@ -318,8 +318,7 @@ class HoldManager {
             // Create booking
             $booking_result = $wpdb->insert(
                 $bookings_table,
-                $booking_data,
-                ['%d', '%s', '%s', '%d', '%d', '%d', '%s', '%s', '%s', '%d', '%d', '%s', '%s']
+                $booking_data
             );
             
             if ($booking_result === false) {
@@ -431,8 +430,7 @@ class HoldManager {
             $bookings_table = $wpdb->prefix . 'fp_bookings';
             $booking_result = $wpdb->insert(
                 $bookings_table,
-                $booking_data,
-                ['%d', '%s', '%s', '%d', '%d', '%d', '%s', '%s', '%s', '%d', '%d', '%s', '%s']
+                $booking_data
             );
             
             if ($booking_result === false) {

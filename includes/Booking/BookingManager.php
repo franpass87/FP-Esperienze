@@ -243,6 +243,13 @@ class BookingManager {
             $order = null;
         }
 
+        $order_currency = '';
+        $order_item_total = 0.0;
+        if ($order) {
+            $order_item_total = $this->calculateOrderItemTotal($order, $item_id);
+            $order_currency = (string) $order->get_currency();
+        }
+
         $session_id = '';
         if ($order) {
             $session_id = (string) ($order->get_meta('_fp_session_id') ?: $order->get_customer_id());
@@ -253,21 +260,34 @@ class BookingManager {
             'children' => $booking_data['children'] ?? 0,
         ]);
 
+        $currency_fallback = '';
+        if ($order_currency === '' && function_exists('get_woocommerce_currency')) {
+            $currency_fallback = (string) get_woocommerce_currency();
+        }
+
         $complete_booking_data = array_merge($booking_data, [
             'order_id' => $order_id,
             'order_item_id' => $item_id,
             'participants' => $participants['total'],
+            'customer_id' => $booking_data['customer_id'] ?? 0,
+            'booking_number' => $booking_data['booking_number'] ?? self::generateBookingNumber(),
+            'total_amount' => isset($booking_data['total_amount']) ? round((float) $booking_data['total_amount'], 2) : $order_item_total,
+            'currency' => isset($booking_data['currency']) ? (string) $booking_data['currency'] : ($order_currency ?: $currency_fallback),
+            'checked_in_at' => $booking_data['checked_in_at'] ?? null,
+            'checked_in_by' => $booking_data['checked_in_by'] ?? null,
             'created_at' => current_time('mysql'),
             'updated_at' => current_time('mysql'),
         ]);
 
-        if ($order && !isset($complete_booking_data['customer_id'])) {
+        if ($order && (int) $complete_booking_data['customer_id'] <= 0) {
             $complete_booking_data['customer_id'] = $order->get_customer_id() ?: $order->get_user_id() ?: 0;
         }
 
-        if ($order && !isset($complete_booking_data['total_amount'])) {
-            $complete_booking_data['total_amount'] = (float) $order->get_total();
+        if ($complete_booking_data['currency'] === '' && function_exists('get_woocommerce_currency')) {
+            $complete_booking_data['currency'] = (string) get_woocommerce_currency();
         }
+
+        $complete_booking_data['customer_id'] = max(0, (int) $complete_booking_data['customer_id']);
 
         $result = $this->persistBooking($complete_booking_data, $order, $session_id, 'order');
 
@@ -385,8 +405,11 @@ class BookingManager {
                 'customer_notes' => isset($booking_data['customer_notes']) ? sanitize_textarea_field((string) $booking_data['customer_notes']) : '',
                 'admin_notes' => isset($booking_data['admin_notes']) ? sanitize_textarea_field((string) $booking_data['admin_notes']) : __('Created via mobile app', 'fp-esperienze'),
                 'customer_id' => $customer_id,
-                'booking_number' => $this->generateBookingNumber(),
-                'total_amount' => $total_amount,
+                'booking_number' => self::generateBookingNumber(),
+                'total_amount' => round($total_amount, 2),
+                'currency' => function_exists('get_woocommerce_currency') ? (string) get_woocommerce_currency() : '',
+                'checked_in_at' => null,
+                'checked_in_by' => null,
                 'created_at' => $timestamp,
                 'updated_at' => $timestamp,
             ],
@@ -427,6 +450,47 @@ class BookingManager {
         $booking_date = $complete_booking_data['booking_date'] ?? '';
         $booking_time = $complete_booking_data['booking_time'] ?? '';
         $slot_start = trim($booking_date . ' ' . substr((string) $booking_time, 0, 5));
+
+        if (!isset($complete_booking_data['customer_id'])) {
+            $complete_booking_data['customer_id'] = $order ? ($order->get_customer_id() ?: $order->get_user_id() ?: 0) : 0;
+        }
+
+        $complete_booking_data['customer_id'] = max(0, (int) $complete_booking_data['customer_id']);
+
+        if (!isset($complete_booking_data['participants'])) {
+            $adult_count = isset($complete_booking_data['adults']) ? max(0, (int) $complete_booking_data['adults']) : 0;
+            $child_count = isset($complete_booking_data['children']) ? max(0, (int) $complete_booking_data['children']) : 0;
+            $complete_booking_data['participants'] = $adult_count + $child_count;
+        }
+
+        if (!isset($complete_booking_data['booking_number']) || $complete_booking_data['booking_number'] === '') {
+            $complete_booking_data['booking_number'] = self::generateBookingNumber();
+        }
+
+        if (!isset($complete_booking_data['total_amount'])) {
+            $order_item_id = isset($complete_booking_data['order_item_id']) ? (int) $complete_booking_data['order_item_id'] : 0;
+            $complete_booking_data['total_amount'] = $this->calculateOrderItemTotal($order, $order_item_id);
+        } else {
+            $complete_booking_data['total_amount'] = round((float) $complete_booking_data['total_amount'], 2);
+        }
+
+        if (!isset($complete_booking_data['currency']) || $complete_booking_data['currency'] === '') {
+            if ($order) {
+                $complete_booking_data['currency'] = (string) $order->get_currency();
+            } elseif (function_exists('get_woocommerce_currency')) {
+                $complete_booking_data['currency'] = (string) get_woocommerce_currency();
+            } else {
+                $complete_booking_data['currency'] = '';
+            }
+        }
+
+        if (!array_key_exists('checked_in_at', $complete_booking_data)) {
+            $complete_booking_data['checked_in_at'] = null;
+        }
+
+        if (!array_key_exists('checked_in_by', $complete_booking_data)) {
+            $complete_booking_data['checked_in_by'] = null;
+        }
 
         if (HoldManager::isEnabled() && $session_id !== '') {
             $conversion_result = HoldManager::convertHoldToBooking(
@@ -577,6 +641,51 @@ class BookingManager {
     }
 
     /**
+     * Calculate the total amount for a WooCommerce order item including taxes.
+     *
+     * @param \WC_Order|null $order   Related order instance.
+     * @param int             $item_id Order item ID.
+     *
+     * @return float
+     */
+    private function calculateOrderItemTotal(?\WC_Order $order, int $item_id): float {
+        if (!$order instanceof \WC_Order) {
+            return 0.0;
+        }
+
+        if ($item_id > 0) {
+            $order_item = $order->get_item($item_id);
+            if ($order_item instanceof \WC_Order_Item_Product) {
+                $total = (float) $order_item->get_total() + (float) $order_item->get_total_tax();
+
+                if ($total <= 0) {
+                    $total = (float) $order_item->get_subtotal() + (float) $order_item->get_subtotal_tax();
+                }
+
+                return round($total, 2);
+            }
+        }
+
+        $items = $order->get_items();
+        if (count($items) === 1) {
+            $single_item = reset($items);
+            if ($single_item instanceof \WC_Order_Item_Product) {
+                $total = (float) $single_item->get_total() + (float) $single_item->get_total_tax();
+
+                if ($total <= 0) {
+                    $total = (float) $single_item->get_subtotal() + (float) $single_item->get_subtotal_tax();
+                }
+
+                return round($total, 2);
+            }
+
+            return round((float) $order->get_total(), 2);
+        }
+
+        return 0.0;
+    }
+
+    /**
      * Calculate total amount for a booking.
      *
      * @param array $slot         Availability slot information.
@@ -634,11 +743,11 @@ class BookingManager {
     }
 
     /**
-     * Generate a unique booking number for customer bookings.
+     * Generate a unique booking number.
      *
      * @return string
      */
-    private function generateBookingNumber(): string {
+    public static function generateBookingNumber(): string {
         global $wpdb;
 
         $table_name = $wpdb->prefix . 'fp_bookings';

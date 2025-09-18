@@ -9,6 +9,7 @@ namespace FP\Esperienze\Core;
 
 use Exception;
 use Throwable;
+use FP\Esperienze\Booking\BookingManager;
 use FP\Esperienze\Core\CapabilityManager;
 use FP\Esperienze\Core\TranslationQueue;
 use FP\Esperienze\Core\PerformanceOptimizer;
@@ -31,7 +32,12 @@ class Installer {
             if (is_wp_error($result)) {
                 return $result;
             }
-            
+
+            $result = self::migrateBookingTable();
+            if (is_wp_error($result)) {
+                return $result;
+            }
+
             $result = self::createDefaultOptions();
             if (is_wp_error($result)) {
                 return $result;
@@ -367,13 +373,20 @@ class Installer {
             id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
             order_id bigint(20) unsigned NOT NULL,
             order_item_id bigint(20) unsigned NOT NULL,
+            customer_id bigint(20) unsigned NOT NULL DEFAULT 0,
+            booking_number varchar(191) DEFAULT NULL,
             product_id bigint(20) unsigned NOT NULL,
             booking_date date NOT NULL,
             booking_time time NOT NULL,
             adults int(11) NOT NULL DEFAULT 0,
             children int(11) NOT NULL DEFAULT 0,
+            participants int(11) NOT NULL DEFAULT 0,
             meeting_point_id bigint(20) unsigned DEFAULT NULL,
             status varchar(20) NOT NULL DEFAULT 'confirmed',
+            total_amount decimal(10,2) NOT NULL DEFAULT 0.00,
+            currency varchar(10) NOT NULL DEFAULT '',
+            checked_in_at datetime DEFAULT NULL,
+            checked_in_by bigint(20) unsigned DEFAULT NULL,
             customer_notes text DEFAULT NULL,
             admin_notes text DEFAULT NULL,
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
@@ -383,6 +396,12 @@ class Installer {
             KEY product_id (product_id),
             KEY booking_date (booking_date),
             KEY status (status),
+            KEY idx_customer_id (customer_id),
+            KEY idx_booking_number (booking_number),
+            KEY idx_total_amount (total_amount),
+            KEY idx_participants (participants),
+            KEY idx_checked_in_at (checked_in_at),
+            KEY idx_checked_in_by (checked_in_by),
             UNIQUE KEY order_item_unique (order_id, order_item_id)
         ) $charset_collate;";
 
@@ -512,6 +531,228 @@ class Installer {
         }
         
         return true;
+    }
+
+    /**
+     * Ensure bookings table schema is up to date and perform backfill of new fields.
+     *
+     * @return bool|\WP_Error
+     */
+    private static function migrateBookingTable() {
+        global $wpdb;
+
+        $table_name = $wpdb->prefix . 'fp_bookings';
+        $table_name_escaped = esc_sql($table_name);
+
+        $table_exists = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $table_name));
+        if (!$table_exists) {
+            return true;
+        }
+
+        $columns = $wpdb->get_results("SHOW COLUMNS FROM `{$table_name_escaped}`");
+        if ($columns === null) {
+            return new \WP_Error('fp_booking_migration_failed', 'Unable to inspect fp_bookings table.');
+        }
+
+        $existing_columns = wp_list_pluck($columns, 'Field');
+        $alterations = [];
+
+        if (!in_array('customer_id', $existing_columns, true)) {
+            $alterations[] = "ADD COLUMN `customer_id` bigint(20) unsigned NOT NULL DEFAULT 0 AFTER `order_item_id`";
+        }
+
+        if (!in_array('booking_number', $existing_columns, true)) {
+            $alterations[] = "ADD COLUMN `booking_number` varchar(191) DEFAULT NULL AFTER `customer_id`";
+        }
+
+        if (!in_array('participants', $existing_columns, true)) {
+            $alterations[] = "ADD COLUMN `participants` int(11) NOT NULL DEFAULT 0 AFTER `children`";
+        }
+
+        if (!in_array('total_amount', $existing_columns, true)) {
+            $alterations[] = "ADD COLUMN `total_amount` decimal(10,2) NOT NULL DEFAULT 0.00 AFTER `status`";
+        }
+
+        if (!in_array('currency', $existing_columns, true)) {
+            $alterations[] = "ADD COLUMN `currency` varchar(10) NOT NULL DEFAULT '' AFTER `total_amount`";
+        }
+
+        if (!in_array('checked_in_at', $existing_columns, true)) {
+            $alterations[] = "ADD COLUMN `checked_in_at` datetime DEFAULT NULL AFTER `currency`";
+        }
+
+        if (!in_array('checked_in_by', $existing_columns, true)) {
+            $alterations[] = "ADD COLUMN `checked_in_by` bigint(20) unsigned DEFAULT NULL AFTER `checked_in_at`";
+        }
+
+        if (!empty($alterations)) {
+            $alter_sql = "ALTER TABLE `{$table_name_escaped}` " . implode(', ', $alterations);
+            $result = $wpdb->query($alter_sql);
+
+            if ($result === false) {
+                return new \WP_Error('fp_booking_migration_failed', 'Failed to alter fp_bookings table: ' . $wpdb->last_error);
+            }
+        }
+
+        $existing_indexes = $wpdb->get_results("SHOW INDEX FROM `{$table_name_escaped}`");
+        $existing_index_names = [];
+
+        foreach ($existing_indexes as $index) {
+            if (isset($index->Key_name)) {
+                $existing_index_names[$index->Key_name] = true;
+            }
+        }
+
+        $index_definitions = [
+            'idx_customer_id' => 'ADD INDEX idx_customer_id (customer_id)',
+            'idx_booking_number' => 'ADD INDEX idx_booking_number (booking_number)',
+            'idx_total_amount' => 'ADD INDEX idx_total_amount (total_amount)',
+            'idx_participants' => 'ADD INDEX idx_participants (participants)',
+            'idx_checked_in_at' => 'ADD INDEX idx_checked_in_at (checked_in_at)',
+            'idx_checked_in_by' => 'ADD INDEX idx_checked_in_by (checked_in_by)',
+        ];
+
+        $index_alterations = [];
+
+        foreach ($index_definitions as $index_name => $definition) {
+            if (!isset($existing_index_names[$index_name])) {
+                $index_alterations[] = $definition;
+            }
+        }
+
+        if (!empty($index_alterations)) {
+            $index_sql = "ALTER TABLE `{$table_name_escaped}` " . implode(', ', $index_alterations);
+            $index_result = $wpdb->query($index_sql);
+
+            if ($index_result === false) {
+                return new \WP_Error('fp_booking_index_migration_failed', 'Failed to update booking indexes: ' . $wpdb->last_error);
+            }
+        }
+
+        self::backfillBookingsData();
+
+        return true;
+    }
+
+    /**
+     * Populate new booking columns for existing installations.
+     */
+    private static function backfillBookingsData(): void {
+        global $wpdb;
+
+        $option_key = 'fp_esperienze_booking_backfill_completed';
+        if (get_option($option_key)) {
+            return;
+        }
+
+        $table_name = $wpdb->prefix . 'fp_bookings';
+        $table_name_escaped = esc_sql($table_name);
+
+        if (!function_exists('wc_get_order') && defined('WC_ABSPATH')) {
+            include_once WC_ABSPATH . 'includes/wc-order-functions.php';
+        }
+
+        if (!function_exists('wc_get_order')) {
+            return;
+        }
+
+        $batch_size = 200;
+        $offset = 0;
+        $orders_cache = [];
+
+        do {
+            $bookings = $wpdb->get_results($wpdb->prepare(
+                "SELECT id, order_id, order_item_id, adults, children, participants, customer_id, total_amount, currency, booking_number
+                 FROM `{$table_name_escaped}`
+                 ORDER BY id ASC
+                 LIMIT %d OFFSET %d",
+                $batch_size,
+                $offset
+            ));
+
+            if (empty($bookings)) {
+                break;
+            }
+
+            foreach ($bookings as $booking) {
+                $updates = [];
+                $formats = [];
+
+                $calculated_participants = max(0, (int) $booking->adults) + max(0, (int) $booking->children);
+                if ((int) $booking->participants !== $calculated_participants) {
+                    $updates['participants'] = $calculated_participants;
+                    $formats[] = '%d';
+                }
+
+                $order = null;
+                $order_id = (int) $booking->order_id;
+
+                if ($order_id > 0) {
+                    if (!array_key_exists($order_id, $orders_cache)) {
+                        $orders_cache[$order_id] = wc_get_order($order_id) ?: false;
+                    }
+
+                    $order = $orders_cache[$order_id];
+                }
+
+                if ((int) $booking->customer_id <= 0 && $order) {
+                    $customer_id = $order->get_customer_id() ?: $order->get_user_id() ?: 0;
+                    if ($customer_id > 0) {
+                        $updates['customer_id'] = (int) $customer_id;
+                        $formats[] = '%d';
+                    }
+                }
+
+                if (empty($booking->currency)) {
+                    if ($order) {
+                        $updates['currency'] = (string) $order->get_currency();
+                    } elseif (function_exists('get_woocommerce_currency')) {
+                        $updates['currency'] = (string) get_woocommerce_currency();
+                    }
+
+                    if (isset($updates['currency'])) {
+                        $formats[] = '%s';
+                    }
+                }
+
+                if (($booking->total_amount === null || (float) $booking->total_amount <= 0) && $order) {
+                    $order_item = $order->get_item((int) $booking->order_item_id);
+                    $total_amount = 0.0;
+
+                    if ($order_item instanceof \WC_Order_Item_Product) {
+                        $total_amount = (float) $order_item->get_total() + (float) $order_item->get_total_tax();
+
+                        if ($total_amount <= 0) {
+                            $total_amount = (float) $order_item->get_subtotal() + (float) $order_item->get_subtotal_tax();
+                        }
+                    } else {
+                        $total_amount = (float) $order->get_total();
+                    }
+
+                    $updates['total_amount'] = round($total_amount, 2);
+                    $formats[] = '%f';
+                }
+
+                if (empty($booking->booking_number)) {
+                    $updates['booking_number'] = BookingManager::generateBookingNumber();
+                    $formats[] = '%s';
+                }
+
+                if (!empty($updates)) {
+                    $wpdb->update(
+                        $table_name,
+                        $updates,
+                        ['id' => (int) $booking->id],
+                        $formats,
+                        ['%d']
+                    );
+                }
+            }
+
+            $offset += $batch_size;
+        } while (count($bookings) === $batch_size);
+
+        update_option($option_key, true);
     }
 
     /**
@@ -700,6 +941,12 @@ class Installer {
                 'date_status' => 'ADD INDEX idx_date_status (booking_date, status)',
                 'product_status' => 'ADD INDEX idx_product_status (product_id, status)',
                 'status_active' => 'ADD INDEX idx_status_active (status)',
+                'customer_id' => 'ADD INDEX idx_customer_id (customer_id)',
+                'booking_number' => 'ADD INDEX idx_booking_number (booking_number)',
+                'total_amount' => 'ADD INDEX idx_total_amount (total_amount)',
+                'participants' => 'ADD INDEX idx_participants (participants)',
+                'checked_in_at' => 'ADD INDEX idx_checked_in_at (checked_in_at)',
+                'checked_in_by' => 'ADD INDEX idx_checked_in_by (checked_in_by)',
                 'order_item_unique' => 'ADD UNIQUE KEY order_item_unique (order_id, order_item_id)',
             ],
             
