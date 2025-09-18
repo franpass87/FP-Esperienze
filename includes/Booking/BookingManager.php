@@ -238,8 +238,11 @@ class BookingManager {
     private function createBooking(int $order_id, int $item_id, array $booking_data) {
         // Get order to find session ID for hold conversion
         $order = wc_get_order($order_id);
+        if (!$order instanceof \WC_Order) {
+            $order = null;
+        }
         $session_id = '';
-        
+
         if ($order) {
             // Try to get session ID from order meta or customer ID
             $session_id = $order->get_meta('_fp_session_id') ?: $order->get_customer_id();
@@ -266,15 +269,23 @@ class BookingManager {
             );
             
             if ($conversion_result['success']) {
+                $booking_id = (int) $conversion_result['booking_id'];
+
                 // Trigger cache invalidation
                 do_action('fp_esperienze_booking_created', $booking_data['product_id'], $booking_data['booking_date']);
-                
+
+                $booking_record = self::getBooking($booking_id);
+                $booking_payload = $booking_record ? (array) $booking_record : array_merge(['id' => $booking_id], $complete_booking_data);
+                $booking_payload = $this->buildBookingPayload($booking_id, $booking_payload, $order);
+
+                do_action('fp_booking_confirmed', $booking_id, $booking_payload);
+
                 // Log success
                 if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log("Created booking #{$conversion_result['booking_id']} from hold for order #{$order_id}, item #{$item_id}");
+                    error_log("Created booking #{$booking_id} from hold for order #{$order_id}, item #{$item_id}");
                 }
-                
-                return $conversion_result['booking_id'];
+
+                return $booking_id;
             } else {
                 // Log hold conversion failure and fall through to direct creation
                 if (defined('WP_DEBUG') && WP_DEBUG) {
@@ -300,6 +311,12 @@ class BookingManager {
         
         // Trigger cache invalidation
         do_action('fp_esperienze_booking_created', $booking_data['product_id'], $booking_data['booking_date']);
+
+        $booking_record = self::getBooking($booking_id);
+        $booking_payload = $booking_record ? (array) $booking_record : array_merge(['id' => $booking_id], $complete_booking_data);
+        $booking_payload = $this->buildBookingPayload($booking_id, $booking_payload, $order);
+
+        do_action('fp_booking_confirmed', $booking_id, $booking_payload);
         
         // Log success
         if (defined('WP_DEBUG') && WP_DEBUG) {
@@ -308,7 +325,71 @@ class BookingManager {
         
         return $booking_id;
     }
-    
+
+    /**
+     * Build a payload for booking hooks ensuring required information is present.
+     *
+     * @param int            $booking_id Booking ID.
+     * @param array          $payload    Booking payload data.
+     * @param \WC_Order|null $order      Related order instance.
+     *
+     * @return array
+     */
+    private function buildBookingPayload(int $booking_id, array $payload, ?\WC_Order $order): array {
+        $payload['id'] = $payload['id'] ?? $booking_id;
+        $payload['booking_id'] = $payload['booking_id'] ?? $booking_id;
+
+        if ($order) {
+            $order_id = isset($payload['order_id']) ? (int) $payload['order_id'] : 0;
+            if ($order_id <= 0) {
+                $payload['order_id'] = (int) $order->get_id();
+            }
+
+            if (!isset($payload['customer_id']) || $payload['customer_id'] === null || $payload['customer_id'] === '') {
+                $payload['customer_id'] = $order->get_customer_id() ?: $order->get_user_id() ?: 0;
+            }
+
+            if (empty($payload['customer_email'])) {
+                $payload['customer_email'] = $order->get_billing_email();
+            }
+
+            $customer_name = $payload['customer_name'] ?? '';
+            if ($customer_name === '') {
+                $customer_name = trim(sprintf('%s %s', $order->get_billing_first_name(), $order->get_billing_last_name()));
+                if ($customer_name === '') {
+                    $customer_name = $order->get_formatted_billing_full_name() ?: $order->get_billing_email();
+                }
+
+                $payload['customer_name'] = $customer_name;
+            }
+
+            if (empty($payload['customer_phone'])) {
+                $payload['customer_phone'] = $order->get_billing_phone();
+            }
+
+            $product_id = isset($payload['product_id']) ? (int) $payload['product_id'] : 0;
+            if ($product_id <= 0 && !empty($payload['order_item_id'])) {
+                $order_item = $order->get_item((int) $payload['order_item_id']);
+                if ($order_item instanceof \WC_Order_Item_Product) {
+                    $product = $order_item->get_product();
+                    if ($product) {
+                        $payload['product_id'] = $product->get_id();
+
+                        if (empty($payload['experience_name'])) {
+                            $payload['experience_name'] = $product->get_name();
+                        }
+
+                        if (empty($payload['experience_url']) && method_exists($product, 'get_permalink')) {
+                            $payload['experience_url'] = $product->get_permalink();
+                        }
+                    }
+                }
+            }
+        }
+
+        return $payload;
+    }
+
     /**
      * Update booking status
      *
@@ -324,28 +405,53 @@ class BookingManager {
         
         // Get booking data before update for cache invalidation
         $booking = $wpdb->get_row($wpdb->prepare(
-            "SELECT product_id, booking_date FROM $table_name WHERE order_id = %d AND order_item_id = %d",
+            "SELECT * FROM $table_name WHERE order_id = %d AND order_item_id = %d",
             $order_id,
             $item_id
         ));
-        
+
+        $updated_at = current_time('mysql');
+
         $result = $wpdb->update(
             $table_name,
-            ['status' => $status, 'updated_at' => current_time('mysql')],
+            ['status' => $status, 'updated_at' => $updated_at],
             ['order_id' => $order_id, 'order_item_id' => $item_id],
             ['%s', '%s'],
             ['%d', '%d']
         );
-        
+
         if ($result !== false && $booking) {
+            $booking_id = isset($booking->id) ? (int) $booking->id : 0;
+
             // Trigger cache invalidation based on status
             if ($status === 'cancelled') {
                 do_action('fp_esperienze_booking_cancelled', $booking->product_id, $booking->booking_date);
             } elseif ($status === 'refunded') {
                 do_action('fp_esperienze_booking_refunded', $booking->product_id, $booking->booking_date);
+            } elseif ($status === 'completed' && $booking_id > 0) {
+                $updated_booking = self::getBooking($booking_id);
+                $booking_payload = $updated_booking ? (array) $updated_booking : array_merge(
+                    (array) $booking,
+                    [
+                        'status' => $status,
+                        'updated_at' => $updated_at,
+                    ]
+                );
+
+                $order = null;
+                if (!empty($booking_payload['order_id'])) {
+                    $order_candidate = wc_get_order((int) $booking_payload['order_id']);
+                    if ($order_candidate instanceof \WC_Order) {
+                        $order = $order_candidate;
+                    }
+                }
+
+                $booking_payload = $this->buildBookingPayload($booking_id, $booking_payload, $order);
+
+                do_action('fp_booking_completed', $booking_id, $booking_payload);
             }
         }
-        
+
         return $result !== false;
     }
     
