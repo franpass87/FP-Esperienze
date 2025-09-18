@@ -391,6 +391,7 @@ class MobileAPIManager {
             'post_status' => 'publish',
             'posts_per_page' => $per_page,
             'paged' => $page,
+            'no_found_rows' => false,
             'meta_query' => [
                 [
                     'key' => '_product_type',
@@ -407,7 +408,8 @@ class MobileAPIManager {
             ];
         }
 
-        $experiences = get_posts($args);
+        $query = new \WP_Query($args);
+        $experiences = $query->posts;
         $mobile_experiences = [];
 
         foreach ($experiences as $experience) {
@@ -436,8 +438,8 @@ class MobileAPIManager {
             'pagination' => [
                 'page' => $page,
                 'per_page' => $per_page,
-                'total' => wp_count_posts('product')->publish,
-                'has_more' => count($experiences) === $per_page
+                'total' => $query->found_posts,
+                'has_more' => $page < $query->max_num_pages
             ]
         ]);
     }
