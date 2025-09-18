@@ -114,19 +114,34 @@ class MeetingPointManager {
         
         $data = wp_parse_args($data, $defaults);
         
+        $insert_data = [
+            'name' => sanitize_text_field($data['name']),
+            'address' => sanitize_textarea_field($data['address'])
+        ];
+        $insert_formats = ['%s', '%s'];
+
+        if (array_key_exists('lat', $data) && is_numeric($data['lat'])) {
+            $insert_data['lat'] = (float) $data['lat'];
+            $insert_formats[] = '%f';
+        }
+
+        if (array_key_exists('lng', $data) && is_numeric($data['lng'])) {
+            $insert_data['lng'] = (float) $data['lng'];
+            $insert_formats[] = '%f';
+        }
+
+        $insert_data['place_id'] = ($data['place_id'] !== null && $data['place_id'] !== '')
+            ? sanitize_text_field($data['place_id'])
+            : null;
+        $insert_formats[] = '%s';
+
+        $insert_data['note'] = sanitize_textarea_field($data['note']);
+        $insert_formats[] = '%s';
+
         $result = $wpdb->insert(
             $table_name,
-            [
-                'name' => sanitize_text_field($data['name']),
-                'address' => sanitize_textarea_field($data['address']),
-                'lat' => $data['lat'] ? (float) $data['lat'] : null,
-                'lng' => $data['lng'] ? (float) $data['lng'] : null,
-                'place_id' => $data['place_id'] ? sanitize_text_field($data['place_id']) : null,
-                'note' => sanitize_textarea_field($data['note'])
-            ],
-            [
-                '%s', '%s', '%f', '%f', '%s', '%s'
-            ]
+            $insert_data,
+            $insert_formats
         );
         
         if ($result) {
@@ -166,14 +181,25 @@ class MeetingPointManager {
             $formats[] = '%s';
         }
         
-        if (isset($data['lat'])) {
-            $update_data['lat'] = $data['lat'] ? (float) $data['lat'] : null;
-            $formats[] = $data['lat'] ? '%f' : '%s';
+        $clear_lat = false;
+        $clear_lng = false;
+
+        if (array_key_exists('lat', $data)) {
+            if ($data['lat'] === '' || $data['lat'] === null) {
+                $clear_lat = true;
+            } elseif (is_numeric($data['lat'])) {
+                $update_data['lat'] = (float) $data['lat'];
+                $formats[] = '%f';
+            }
         }
-        
-        if (isset($data['lng'])) {
-            $update_data['lng'] = $data['lng'] ? (float) $data['lng'] : null;
-            $formats[] = $data['lng'] ? '%f' : '%s';
+
+        if (array_key_exists('lng', $data)) {
+            if ($data['lng'] === '' || $data['lng'] === null) {
+                $clear_lng = true;
+            } elseif (is_numeric($data['lng'])) {
+                $update_data['lng'] = (float) $data['lng'];
+                $formats[] = '%f';
+            }
         }
         
         if (isset($data['place_id'])) {
@@ -186,24 +212,60 @@ class MeetingPointManager {
             $formats[] = '%s';
         }
         
-        if (empty($update_data)) {
+        if (empty($update_data) && !$clear_lat && !$clear_lng) {
             return false;
         }
-        
-        $result = $wpdb->update(
-            $table_name,
-            $update_data,
-            ['id' => $id],
-            $formats,
-            ['%d']
-        );
-        
-        if ($result !== false) {
+
+        $updated = false;
+
+        if (!empty($update_data)) {
+            $result = $wpdb->update(
+                $table_name,
+                $update_data,
+                ['id' => $id],
+                $formats,
+                ['%d']
+            );
+
+            if ($result === false) {
+                return false;
+            }
+
+            $updated = true;
+        }
+
+        if ($clear_lat || $clear_lng) {
+            $set_null_clauses = [];
+
+            if ($clear_lat) {
+                $set_null_clauses[] = 'lat = NULL';
+            }
+
+            if ($clear_lng) {
+                $set_null_clauses[] = 'lng = NULL';
+            }
+
+            $null_query = sprintf(
+                'UPDATE %s SET %s WHERE id = %%d',
+                $table_name,
+                implode(', ', $set_null_clauses)
+            );
+
+            $null_result = $wpdb->query($wpdb->prepare($null_query, $id));
+
+            if ($null_result === false) {
+                return false;
+            }
+
+            $updated = true;
+        }
+
+        if ($updated) {
             // Fire hook for translation registration
             do_action('fp_meeting_point_updated', $id);
         }
-        
-        return $result !== false;
+
+        return $updated;
     }
 
     /**
