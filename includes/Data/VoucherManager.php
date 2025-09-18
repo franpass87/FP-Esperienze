@@ -44,11 +44,10 @@ class VoucherManager {
             }
             
             // Check if this is a gift purchase
-            $is_gift = $item->get_meta('Gift Purchase');
-            if ($is_gift !== __('Yes', 'fp-esperienze')) {
+            if (!$this->isGiftOrderItem($item)) {
                 continue;
             }
-            
+
             // Generate voucher
             $this->generateVoucher($order, $item, $item_id);
         }
@@ -63,7 +62,7 @@ class VoucherManager {
      */
     private function generateVoucher($order, $item, $item_id) {
         global $wpdb;
-        
+
         $product = $item->get_product();
         $table_name = $wpdb->prefix . 'fp_exp_vouchers';
         
@@ -86,11 +85,11 @@ class VoucherManager {
         $expires_on = date('Y-m-d', strtotime('+' . $exp_months . ' months'));
         
         // Get gift data from order item meta
-        $recipient_name = $item->get_meta('Recipient Name');
-        $recipient_email = $item->get_meta('Recipient Email');
-        $sender_name = $item->get_meta('Sender Name');
-        $gift_message = $item->get_meta('Gift Message');
-        $send_date = $item->get_meta('Send Date');
+        $recipient_name = $this->getGiftMetaValue($item, '_fp_gift_recipient_name', 'Recipient Name');
+        $recipient_email = $this->getGiftMetaValue($item, '_fp_gift_recipient_email', 'Recipient Email');
+        $sender_name = $this->getGiftMetaValue($item, '_fp_gift_sender_name', 'Sender Name');
+        $gift_message = $this->getGiftMetaValue($item, '_fp_gift_message', 'Gift Message');
+        $send_date = $this->getGiftMetaValue($item, '_fp_gift_send_date', 'Send Date');
         
         // Insert voucher into database
         $voucher_data = [
@@ -151,7 +150,78 @@ class VoucherManager {
             }
         }
     }
-    
+
+    /**
+     * Determine if the order item represents a gift purchase.
+     *
+     * @param \WC_Order_Item_Product $item Order item.
+     * @return bool True when the item should generate a voucher.
+     */
+    private function isGiftOrderItem(\WC_Order_Item_Product $item): bool {
+        $is_gift_meta = $item->get_meta('_fp_is_gift', true);
+
+        if ($is_gift_meta !== '') {
+            return $this->parseBooleanFlag($is_gift_meta);
+        }
+
+        $localized_key = __('Gift Purchase', 'fp-esperienze');
+        $legacy_value = $item->get_meta($localized_key, true);
+
+        if ($legacy_value === '') {
+            $legacy_value = $item->get_meta('Gift Purchase', true);
+        }
+
+        return !empty($legacy_value);
+    }
+
+    /**
+     * Retrieve a gift-related meta value from the order item.
+     *
+     * @param \WC_Order_Item_Product $item Order item.
+     * @param string $machine_key Machine-readable meta key.
+     * @param string $label_key Human-readable label source.
+     * @return string Meta value or empty string when not set.
+     */
+    private function getGiftMetaValue(\WC_Order_Item_Product $item, string $machine_key, string $label_key): string {
+        $value = $item->get_meta($machine_key, true);
+        if ($value !== '') {
+            return is_scalar($value) ? (string) $value : '';
+        }
+
+        $localized_key = __($label_key, 'fp-esperienze');
+        $value = $item->get_meta($localized_key, true);
+        if ($value !== '') {
+            return is_scalar($value) ? (string) $value : '';
+        }
+
+        $value = $item->get_meta($label_key, true);
+        if ($value !== '') {
+            return is_scalar($value) ? (string) $value : '';
+        }
+
+        return '';
+    }
+
+    /**
+     * Normalize meta values that represent boolean flags.
+     *
+     * @param mixed $value Meta value to convert.
+     * @return bool Converted boolean value.
+     */
+    private function parseBooleanFlag($value): bool {
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        if (function_exists('wc_string_to_bool')) {
+            return wc_string_to_bool((string) $value);
+        }
+
+        $value = strtolower((string) $value);
+
+        return in_array($value, ['1', 'true', 'yes', 'on'], true);
+    }
+
     /**
      * Generate unique voucher code using cryptographically secure random_bytes
      *
