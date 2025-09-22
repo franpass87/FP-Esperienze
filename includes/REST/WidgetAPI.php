@@ -215,7 +215,10 @@ class WidgetAPI {
         }
 
         // Get extras
-        $extras = ExtraManager::getExtras($product_id);
+        $extras = ExtraManager::getProductExtras($product_id, true);
+        if (!is_array($extras)) {
+            $extras = [];
+        }
 
         // Get images
         $image_id = $product->get_image_id();
@@ -252,12 +255,19 @@ class WidgetAPI {
                 'languages' => array_unique(array_filter(array_column($schedules, 'lang'))),
             ],
             'meeting_points' => $meeting_points_data,
-            'extras' => array_map(function($extra) {
+            'extras' => array_map(static function($extra) {
+                $extra_id = isset($extra->id) ? (int) $extra->id : 0;
+
                 return [
-                    'id' => $extra->id,
-                    'name' => $extra->name,
-                    'price' => floatval($extra->price),
-                    'max_quantity' => $extra->max_quantity,
+                    'id' => $extra_id,
+                    'name' => (string) ($extra->name ?? ''),
+                    'description' => (string) ($extra->description ?? ''),
+                    'price' => isset($extra->price) ? (float) $extra->price : 0.0,
+                    'billing_type' => (string) ($extra->billing_type ?? 'per_person'),
+                    'tax_class' => (string) ($extra->tax_class ?? ''),
+                    'is_required' => !empty($extra->is_required),
+                    'max_quantity' => isset($extra->max_quantity) ? (int) $extra->max_quantity : 1,
+                    'sort_order' => isset($extra->sort_order) ? (int) $extra->sort_order : 0,
                 ];
             }, $extras),
             'checkout_url' => home_url('/checkout'),

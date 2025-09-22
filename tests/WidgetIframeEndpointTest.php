@@ -342,8 +342,28 @@ namespace FP\Esperienze\Data {
         /** @var array<int, array<int, object>> */
         public static array $extras = [];
 
+        public static function getProductExtras(int $product_id, bool $active_only = true): array {
+            $extras = self::$extras[$product_id] ?? [];
+
+            if (!$active_only) {
+                return $extras;
+            }
+
+            return array_values(array_filter($extras, static function($extra) {
+                if (!is_object($extra)) {
+                    return false;
+                }
+
+                if (!property_exists($extra, 'is_active')) {
+                    return true;
+                }
+
+                return (bool) $extra->is_active;
+            }));
+        }
+
         public static function getExtras(int $product_id): array {
-            return self::$extras[$product_id] ?? [];
+            return self::getProductExtras($product_id, true);
         }
     }
 }
@@ -429,6 +449,33 @@ namespace {
         501 => new DummyWidgetProduct(501),
     ];
 
+    \FP\Esperienze\Data\ExtraManager::$extras[501] = [
+        (object) [
+            'id' => 301,
+            'name' => 'Wine Tasting',
+            'description' => 'Enjoy regional wines',
+            'price' => '30.00',
+            'billing_type' => 'per_person',
+            'tax_class' => 'reduced-rate',
+            'is_required' => 1,
+            'max_quantity' => 2,
+            'sort_order' => 1,
+            'is_active' => 1,
+        ],
+        (object) [
+            'id' => 302,
+            'name' => 'Hotel Pickup',
+            'description' => 'Return transfer to hotel',
+            'price' => '15.00',
+            'billing_type' => 'per_booking',
+            'tax_class' => '',
+            'is_required' => 0,
+            'max_quantity' => 1,
+            'sort_order' => 2,
+            'is_active' => 1,
+        ],
+    ];
+
     $cacheProperty = new \ReflectionProperty(\FP\Esperienze\Data\MeetingPointManager::class, 'cache');
     $cacheProperty->setAccessible(true);
     $cacheProperty->setValue(null, []);
@@ -491,6 +538,39 @@ namespace {
 
     if (count($meetingPointIds) !== count(array_unique($meetingPointIds))) {
         echo "Meeting points include duplicate entries\n";
+        exit(1);
+    }
+
+    if (!isset($widgetData['extras']) || !is_array($widgetData['extras'])) {
+        echo "Widget data is missing extras section\n";
+        exit(1);
+    }
+
+    if (count($widgetData['extras']) !== 2) {
+        echo "Widget extras should include two associated items\n";
+        exit(1);
+    }
+
+    $firstExtra = $widgetData['extras'][0];
+    if (
+        ($firstExtra['id'] ?? null) !== 301
+        || ($firstExtra['name'] ?? '') !== 'Wine Tasting'
+        || !($firstExtra['is_required'] ?? false)
+        || ($firstExtra['sort_order'] ?? null) !== 1
+        || abs(($firstExtra['price'] ?? 0) - 30.0) > 0.001
+    ) {
+        echo "First extra data does not match expectations\n";
+        exit(1);
+    }
+
+    $secondExtra = $widgetData['extras'][1];
+    if (
+        ($secondExtra['id'] ?? null) !== 302
+        || ($secondExtra['billing_type'] ?? '') !== 'per_booking'
+        || ($secondExtra['is_required'] ?? true)
+        || ($secondExtra['sort_order'] ?? null) !== 2
+    ) {
+        echo "Second extra data does not match expectations\n";
         exit(1);
     }
 
