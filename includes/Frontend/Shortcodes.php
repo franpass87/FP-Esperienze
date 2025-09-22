@@ -646,12 +646,42 @@ class Shortcodes {
         $first_schedule = $schedules[0] ?? null;
         $duration = $first_schedule->duration_min ?? null;
         $adult_price = $first_schedule->price_adult ?? null;
-        $languages = '';
-        if ($schedules) {
-            $lang_list = array_unique(array_filter(array_map(static function ($s) {
-                return $s->lang;
-            }, $schedules)));
-            $languages = implode(', ', $lang_list);
+        $language_codes = [];
+        if ( $schedules ) {
+            foreach ( $schedules as $schedule ) {
+                if ( empty( $schedule->lang ) ) {
+                    continue;
+                }
+
+                $lang_parts = array_map( 'trim', explode( ',', (string) $schedule->lang ) );
+                foreach ( $lang_parts as $lang_code ) {
+                    if ( '' === $lang_code ) {
+                        continue;
+                    }
+
+                    $normalized_code = strtolower( $lang_code );
+                    if ( ! isset( $language_codes[ $normalized_code ] ) ) {
+                        $language_codes[ $normalized_code ] = $lang_code;
+                    }
+                }
+            }
+        }
+
+        $language_codes = array_values( $language_codes );
+        $languages_label = '';
+
+        if ( ! empty( $language_codes ) ) {
+            $labels = array_map(
+                static function ( $code ) {
+                    $code = trim( (string) $code );
+                    $code = str_replace( '_', '-', $code );
+
+                    return strtoupper( $code );
+                },
+                $language_codes
+            );
+
+            $languages_label = implode( ', ', $labels );
         }
 
         ?>
@@ -662,13 +692,43 @@ class Shortcodes {
                          alt="<?php echo esc_attr($product->get_name()); ?>" 
                          loading="lazy" />
                 </a>
-                <?php if ($duration) : ?>
-                    <div class="fp-experience-duration">
-                        <?php printf( esc_html__( '%d min', 'fp-esperienze' ), intval( $duration ) ); ?>
+                <?php if ( $duration || ! empty( $language_codes ) ) : ?>
+                    <div class="fp-experience-badge">
+                        <?php if ( $duration ) : ?>
+                            <span class="fp-experience-duration">
+                                <?php printf( esc_html__( '%d min', 'fp-esperienze' ), intval( $duration ) ); ?>
+                            </span>
+                        <?php endif; ?>
+
+                        <?php if ( ! empty( $language_codes ) ) : ?>
+                            <?php
+                            $languages_aria_label = '';
+                            if ( $languages_label ) {
+                                /* translators: %s: comma separated list of language codes. */
+                                $languages_aria_label = sprintf( esc_html__( 'Languages: %s', 'fp-esperienze' ), $languages_label );
+                            }
+                            ?>
+                            <span class="fp-experience-languages" role="img" <?php echo $languages_aria_label ? 'aria-label="' . esc_attr( $languages_aria_label ) . '"' : ''; ?>>
+                                <?php foreach ( $language_codes as $language_code ) : ?>
+                                    <?php
+                                    $language_label = strtoupper( trim( (string) $language_code ) );
+                                    $language_asset = $this->getLanguageAsset( $language_code );
+                                    $language_classes = [ 'fp-experience-language' ];
+
+                                    if ( $language_asset === $language_label ) {
+                                        $language_classes[] = 'fp-experience-language--text';
+                                    }
+                                    ?>
+                                    <span class="<?php echo esc_attr( implode( ' ', $language_classes ) ); ?>" title="<?php echo esc_attr( $language_label ); ?>" aria-hidden="true">
+                                        <?php echo esc_html( $language_asset ); ?>
+                                    </span>
+                                <?php endforeach; ?>
+                            </span>
+                        <?php endif; ?>
                     </div>
                 <?php endif; ?>
             </div>
-            
+
             <div class="fp-experience-content">
                 <h3 class="fp-experience-title">
                     <a href="<?php echo esc_url(get_permalink($product_id)); ?>">
@@ -679,17 +739,6 @@ class Shortcodes {
                 <div class="fp-experience-excerpt">
                     <?php echo wp_kses_post(wp_trim_words($product->get_short_description(), 20)); ?>
                 </div>
-                
-                <?php if ($languages) : ?>
-                    <div class="fp-experience-languages">
-                        <?php
-                        $lang_list = array_map('trim', explode(',', $languages));
-                        foreach ($lang_list as $lang) {
-                            echo '<span class="fp-language-chip">' . esc_html($lang) . '</span>';
-                        }
-                        ?>
-                    </div>
-                <?php endif; ?>
                 
                 <div class="fp-experience-meta">
                     <?php if ($adult_price) : ?>
@@ -710,6 +759,111 @@ class Shortcodes {
             </div>
         </div>
         <?php
+    }
+
+    /**
+     * Convert a language code into the corresponding icon/emoji asset.
+     *
+     * Provides a graceful textual fallback when the language code is not
+     * mapped to a dedicated asset.
+     *
+     * @param string $language_code Language code coming from schedules.
+     * @return string
+     */
+    private function getLanguageAsset( string $language_code ): string {
+        $normalized = strtolower( trim( $language_code ) );
+        $normalized = str_replace( '_', '-', $normalized );
+
+        $map = [
+            'ar'      => '🇸🇦',
+            'bg'      => '🇧🇬',
+            'br'      => '🇧🇷',
+            'cs'      => '🇨🇿',
+            'cz'      => '🇨🇿',
+            'da'      => '🇩🇰',
+            'de'      => '🇩🇪',
+            'el'      => '🇬🇷',
+            'en'      => '🇬🇧',
+            'en-au'   => '🇦🇺',
+            'en-ca'   => '🇨🇦',
+            'en-gb'   => '🇬🇧',
+            'en-nz'   => '🇳🇿',
+            'en-us'   => '🇺🇸',
+            'en-za'   => '🇿🇦',
+            'es'      => '🇪🇸',
+            'es-es'   => '🇪🇸',
+            'es-mx'   => '🇲🇽',
+            'fi'      => '🇫🇮',
+            'fr'      => '🇫🇷',
+            'fr-ca'   => '🇨🇦',
+            'fr-fr'   => '🇫🇷',
+            'gb'      => '🇬🇧',
+            'he'      => '🇮🇱',
+            'hk'      => '🇭🇰',
+            'hr'      => '🇭🇷',
+            'hu'      => '🇭🇺',
+            'id'      => '🇮🇩',
+            'is'      => '🇮🇸',
+            'it'      => '🇮🇹',
+            'it-it'   => '🇮🇹',
+            'ja'      => '🇯🇵',
+            'jp'      => '🇯🇵',
+            'ko'      => '🇰🇷',
+            'kr'      => '🇰🇷',
+            'nb'      => '🇳🇴',
+            'nl'      => '🇳🇱',
+            'no'      => '🇳🇴',
+            'pl'      => '🇵🇱',
+            'pt'      => '🇵🇹',
+            'pt-br'   => '🇧🇷',
+            'pt-pt'   => '🇵🇹',
+            'ro'      => '🇷🇴',
+            'ru'      => '🇷🇺',
+            'ru-ru'   => '🇷🇺',
+            'se'      => '🇸🇪',
+            'sk'      => '🇸🇰',
+            'sl'      => '🇸🇮',
+            'sv'      => '🇸🇪',
+            'th'      => '🇹🇭',
+            'tr'      => '🇹🇷',
+            'tw'      => '🇹🇼',
+            'ua'      => '🇺🇦',
+            'uk'      => '🇺🇦',
+            'us'      => '🇺🇸',
+            'vi'      => '🇻🇳',
+            'zh'      => '🇨🇳',
+            'zh-cn'   => '🇨🇳',
+            'zh-hans' => '🇨🇳',
+            'zh-hant' => '🇹🇼',
+            'zh-hk'   => '🇭🇰',
+            'zh-tw'   => '🇹🇼',
+        ];
+
+        if ( isset( $map[ $normalized ] ) ) {
+            return $map[ $normalized ];
+        }
+
+        if ( str_contains( $normalized, '-' ) ) {
+            $primary_parts = explode( '-', $normalized );
+            $primary       = $primary_parts[0];
+
+            if ( isset( $map[ $primary ] ) ) {
+                return $map[ $primary ];
+            }
+        }
+
+        $fallback = str_replace( '_', '-', trim( (string) $language_code ) );
+        if ( '' === $fallback ) {
+            $fallback = $normalized;
+        }
+
+        if ( function_exists( 'mb_strtoupper' ) ) {
+            $fallback = mb_strtoupper( $fallback );
+        } else {
+            $fallback = strtoupper( $fallback );
+        }
+
+        return '' !== $fallback ? $fallback : '--';
     }
 
     /**
