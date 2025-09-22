@@ -1772,24 +1772,38 @@ class MobileAPIManager {
     private function processOfflineCheckin(int $booking_id, int $staff_user_id): array {
         global $wpdb;
 
-        $result = $wpdb->update(
-            $wpdb->prefix . 'fp_bookings',
-            [
-                'checked_in_at' => current_time('mysql'),
-                'checked_in_by' => $staff_user_id
-            ],
-            [
-                'id' => $booking_id,
-                'checked_in_at' => null // Only update if not already checked in
-            ],
-            ['%s', '%d'],
-            ['%d', '%s']
+        $table_name     = $wpdb->prefix . 'fp_bookings';
+        $checked_in_at  = current_time('mysql');
+        $prepared_query = $wpdb->prepare(
+            "UPDATE {$table_name} SET checked_in_at = %s, checked_in_by = %d WHERE id = %d AND checked_in_at IS NULL",
+            $checked_in_at,
+            $staff_user_id,
+            $booking_id
         );
 
+        $result = $wpdb->query($prepared_query);
+
+        if ($result === false) {
+            return [
+                'success' => false,
+                'booking_id' => $booking_id,
+                'action' => 'check_in',
+            ];
+        }
+
+        if ($result === 0) {
+            return [
+                'success' => false,
+                'booking_id' => $booking_id,
+                'action' => 'check_in',
+                'message' => __('Booking not found or already checked in.', 'fp-esperienze'),
+            ];
+        }
+
         return [
-            'success' => $result !== false,
+            'success' => true,
             'booking_id' => $booking_id,
-            'action' => 'check_in'
+            'action' => 'check_in',
         ];
     }
 
@@ -1810,11 +1824,30 @@ class MobileAPIManager {
             ['%d']
         );
 
+        if ($result === false) {
+            return [
+                'success' => false,
+                'booking_id' => $booking_id,
+                'action' => 'status_update',
+                'status' => $status,
+            ];
+        }
+
+        if ($result === 0) {
+            return [
+                'success' => false,
+                'booking_id' => $booking_id,
+                'action' => 'status_update',
+                'status' => $status,
+                'message' => __('Booking status was not updated. The booking may not exist or already has this status.', 'fp-esperienze'),
+            ];
+        }
+
         return [
-            'success' => $result !== false,
+            'success' => true,
             'booking_id' => $booking_id,
             'action' => 'status_update',
-            'status' => $status
+            'status' => $status,
         ];
     }
 
