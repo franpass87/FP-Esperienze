@@ -52,7 +52,9 @@ class MobileAPIManager {
         $this->qrCodeLibraryAvailable = class_exists(QRCode::class) && class_exists(QROptions::class);
 
         if (!$this->qrCodeLibraryAvailable) {
-            error_log('FP Esperienze: QR code library chillerlan/php-qrcode is not available. QR code generation will be disabled.');
+            if (defined('WP_DEBUG') && WP_DEBUG && defined('WP_DEBUG_LOG') && WP_DEBUG_LOG) {
+                error_log('FP Esperienze: QR code library chillerlan/php-qrcode is not available. QR code generation will be disabled.');
+            }
         }
 
         if (did_action('rest_api_init')) {
