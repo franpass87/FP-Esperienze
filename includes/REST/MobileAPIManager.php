@@ -15,6 +15,7 @@ use chillerlan\QRCode\QROptions;
 use FP\Esperienze\Core\CapabilityManager;
 use FP\Esperienze\Core\Installer;
 use FP\Esperienze\Core\RateLimiter;
+use FP\Esperienze\Data\StaffScheduleManager;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_Error;
@@ -2266,25 +2267,292 @@ class MobileAPIManager {
     }
 
     private function getStaffScheduleData(int $staff_user_id, string $date_from, string $date_to): array {
-        // Placeholder - would integrate with staff scheduling system
-        $schedule = [];
-        
-        $current_date = $date_from;
-        while ($current_date <= $date_to) {
-            $schedule[] = [
-                'date' => $current_date,
-                'shift_start' => '09:00',
-                'shift_end' => '17:00',
-                'assigned_experiences' => [
-                    ['id' => 1, 'name' => 'City Tour', 'time' => '10:00'],
-                    ['id' => 2, 'name' => 'Wine Tasting', 'time' => '14:00']
-                ]
-            ];
-            
-            $current_date = date('Y-m-d', strtotime($current_date . ' +1 day'));
+        $assignments = StaffScheduleManager::getAssignmentsForStaff($staff_user_id, $date_from, $date_to);
+
+        if (empty($assignments)) {
+            return [];
         }
 
+        $shifts = [];
+
+        foreach ($assignments as $assignment) {
+            $shift_start = $this->createDateTimeFromString($assignment['shift_start'] ?? null);
+            $shift_end   = $this->createDateTimeFromString($assignment['shift_end'] ?? null);
+            $resolved_date = $shift_start ? $shift_start->format('Y-m-d') : $this->normalizeDateValue($assignment['booking_date'] ?? null, $date_from);
+
+            $key_start = $shift_start ? $shift_start->format('Y-m-d H:i:s') : ($resolved_date . ' 00:00:00');
+            $key_end   = $shift_end ? $shift_end->format('Y-m-d H:i:s') : '';
+            $shift_key = $key_start . '|' . $key_end;
+
+            if ($shift_start === null && $shift_end === null) {
+                $shift_key .= '|assignment-' . ($assignment['assignment_id'] ?? uniqid('assignment', true));
+            }
+
+            if (!isset($shifts[$shift_key])) {
+                $shifts[$shift_key] = [
+                    'date' => $resolved_date,
+                    'shift_start' => $shift_start ? $shift_start->format('H:i') : null,
+                    'shift_end' => $shift_end ? $shift_end->format('H:i') : null,
+                    'roles' => [],
+                    'assigned_experiences' => [],
+                ];
+            }
+
+            $assignment_roles = $this->normalizeScheduleRoles($assignment['roles'] ?? null);
+            if (!empty($assignment_roles)) {
+                foreach ($assignment_roles as $role) {
+                    if (!in_array($role, $shifts[$shift_key]['roles'], true)) {
+                        $shifts[$shift_key]['roles'][] = $role;
+                    }
+                }
+            }
+
+            $experience = $this->normalizeAssignmentPayload($assignment, $resolved_date, $shift_start, $assignment_roles);
+            if ($experience !== null) {
+                $shifts[$shift_key]['assigned_experiences'][] = $experience;
+            }
+        }
+
+        $schedule = [];
+
+        foreach ($shifts as $shift) {
+            $shift['roles'] = array_values($shift['roles']);
+
+            if (!empty($shift['assigned_experiences'])) {
+                usort($shift['assigned_experiences'], function(array $a, array $b): int {
+                    $time_a = $a['booking_time'] ?? '';
+                    $time_b = $b['booking_time'] ?? '';
+
+                    $comparison = strcmp((string) $time_a, (string) $time_b);
+                    if ($comparison !== 0) {
+                        return $comparison;
+                    }
+
+                    return ($a['assignment_id'] ?? 0) <=> ($b['assignment_id'] ?? 0);
+                });
+
+                $shift['assigned_experiences'] = array_values($shift['assigned_experiences']);
+            }
+
+            $schedule[] = $shift;
+        }
+
+        usort($schedule, function(array $a, array $b): int {
+            $date_comparison = strcmp($a['date'] ?? '', $b['date'] ?? '');
+            if ($date_comparison !== 0) {
+                return $date_comparison;
+            }
+
+            return strcmp($a['shift_start'] ?? '', $b['shift_start'] ?? '');
+        });
+
         return $schedule;
+    }
+
+    /**
+     * Create DateTime instance from database value.
+     */
+    private function createDateTimeFromString(?string $datetime): ?DateTime {
+        if (!is_string($datetime)) {
+            return null;
+        }
+
+        $datetime = trim($datetime);
+
+        if ($datetime === '') {
+            return null;
+        }
+
+        $object = DateTime::createFromFormat('Y-m-d H:i:s', $datetime);
+        if ($object instanceof DateTime) {
+            return $object;
+        }
+
+        $object = DateTime::createFromFormat(DateTime::ATOM, $datetime);
+        if ($object instanceof DateTime) {
+            return $object;
+        }
+
+        return null;
+    }
+
+    /**
+     * Normalize any supported date value to Y-m-d format.
+     *
+     * @param mixed  $value    Raw value from the assignment row.
+     * @param string $fallback Fallback date.
+     */
+    private function normalizeDateValue($value, string $fallback): string {
+        if ($value instanceof DateTime) {
+            return $value->format('Y-m-d');
+        }
+
+        if (is_string($value)) {
+            $value = trim($value);
+
+            if ($value === '') {
+                return $fallback;
+            }
+
+            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
+                return $value;
+            }
+
+            $object = DateTime::createFromFormat('Y-m-d H:i:s', $value);
+            if ($object instanceof DateTime) {
+                return $object->format('Y-m-d');
+            }
+        }
+
+        return $fallback;
+    }
+
+    /**
+     * Normalize the roles payload into a sanitized array of strings.
+     *
+     * @param mixed $roles Roles value from database.
+     *
+     * @return array<int, string>
+     */
+    private function normalizeScheduleRoles($roles): array {
+        if (is_array($roles)) {
+            $roles_list = $roles;
+        } elseif (is_string($roles)) {
+            $roles = trim($roles);
+
+            if ($roles === '') {
+                return [];
+            }
+
+            $decoded = json_decode($roles, true);
+            if (is_array($decoded)) {
+                $roles_list = $decoded;
+            } else {
+                $roles_list = array_map('trim', explode(',', $roles));
+            }
+        } else {
+            return [];
+        }
+
+        $normalized = [];
+
+        foreach ($roles_list as $role) {
+            if (is_array($role)) {
+                $role = implode(' ', $role);
+            }
+
+            if (!is_scalar($role)) {
+                continue;
+            }
+
+            $clean_role = sanitize_text_field((string) $role);
+
+            if ($clean_role === '') {
+                continue;
+            }
+
+            if (!in_array($clean_role, $normalized, true)) {
+                $normalized[] = $clean_role;
+            }
+        }
+
+        return $normalized;
+    }
+
+    /**
+     * Build the normalized experience payload for a single assignment.
+     *
+     * @param array<string, mixed> $assignment  Assignment row.
+     * @param string               $resolved_date Resolved date for the shift.
+     * @param DateTime|null        $shift_start Shift start time.
+     * @param array<int, string>   $roles       Roles attached to the assignment.
+     */
+    private function normalizeAssignmentPayload(array $assignment, string $resolved_date, ?DateTime $shift_start, array $roles): ?array {
+        $booking_id    = $assignment['booking_id'] ?? null;
+        $product_id    = $assignment['product_id'] ?? null;
+        $product_name  = $assignment['product_name'] ?? null;
+        $booking_time  = $assignment['booking_time'] ?? null;
+        $booking_status = $assignment['booking_status'] ?? null;
+        $participants  = $assignment['participants'] ?? null;
+
+        $normalized_time = null;
+        if (is_string($booking_time)) {
+            $booking_time = trim($booking_time);
+
+            if ($booking_time !== '') {
+                $time_object = DateTime::createFromFormat('H:i:s', $booking_time);
+                if (!$time_object instanceof DateTime) {
+                    $time_object = DateTime::createFromFormat('H:i', $booking_time);
+                }
+
+                if ($time_object instanceof DateTime) {
+                    $normalized_time = $time_object->format('H:i');
+                } else {
+                    $normalized_time = substr($booking_time, 0, 5);
+                }
+            }
+        }
+
+        if ($normalized_time === null && $shift_start instanceof DateTime) {
+            $normalized_time = $shift_start->format('H:i');
+        }
+
+        $payload = [
+            'assignment_id' => (int) ($assignment['assignment_id'] ?? 0),
+            'booking_id' => $booking_id !== null ? (int) $booking_id : null,
+            'product_id' => $product_id !== null ? (int) $product_id : null,
+            'product_name' => is_string($product_name) ? sanitize_text_field($product_name) : '',
+            'booking_date' => $this->normalizeDateValue($assignment['booking_date'] ?? null, $resolved_date),
+            'booking_time' => $normalized_time,
+            'booking_status' => is_string($booking_status) ? sanitize_text_field($booking_status) : '',
+            'roles' => $roles,
+        ];
+
+        if ($participants !== null && $participants !== '') {
+            $payload['participants'] = (int) $participants;
+        }
+
+        if (!empty($assignment['notes'])) {
+            $payload['notes'] = sanitize_textarea_field((string) $assignment['notes']);
+        }
+
+        $meeting_point = $this->normalizeMeetingPointPayload($assignment);
+        if ($meeting_point !== null) {
+            $payload['meeting_point'] = $meeting_point;
+        }
+
+        return $payload;
+    }
+
+    /**
+     * Normalize meeting point payload from assignment data.
+     *
+     * @param array<string, mixed> $assignment Assignment data.
+     */
+    private function normalizeMeetingPointPayload(array $assignment): ?array {
+        $meeting_point = [];
+
+        if (isset($assignment['meeting_point_id']) && $assignment['meeting_point_id'] !== null) {
+            $meeting_point['id'] = (int) $assignment['meeting_point_id'];
+        }
+
+        if (!empty($assignment['meeting_point_name']) && is_string($assignment['meeting_point_name'])) {
+            $meeting_point['name'] = sanitize_text_field($assignment['meeting_point_name']);
+        }
+
+        if (!empty($assignment['meeting_point_address']) && is_string($assignment['meeting_point_address'])) {
+            $meeting_point['address'] = sanitize_textarea_field($assignment['meeting_point_address']);
+        }
+
+        if (isset($assignment['meeting_point_lat']) && $assignment['meeting_point_lat'] !== null && $assignment['meeting_point_lat'] !== '') {
+            $meeting_point['lat'] = (float) $assignment['meeting_point_lat'];
+        }
+
+        if (isset($assignment['meeting_point_lng']) && $assignment['meeting_point_lng'] !== null && $assignment['meeting_point_lng'] !== '') {
+            $meeting_point['lng'] = (float) $assignment['meeting_point_lng'];
+        }
+
+        return $meeting_point ?: null;
     }
 
     /**
