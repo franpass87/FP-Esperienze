@@ -496,7 +496,7 @@ class Plugin {
             wp_enqueue_script(
                 'fp-esperienze-frontend',
                 FP_ESPERIENZE_PLUGIN_URL . 'assets/js/frontend.js',
-                ['jquery'],
+                ['jquery', 'wp-i18n'],
                 FP_ESPERIENZE_VERSION,
                 true
             );
@@ -514,7 +514,7 @@ class Plugin {
             wp_enqueue_script(
                 'fp-esperienze-frontend',
                 $frontend_js_url,
-                ['jquery'],
+                ['jquery', 'wp-i18n'],
                 FP_ESPERIENZE_VERSION,
                 true
             );
@@ -541,7 +541,7 @@ class Plugin {
                 wp_enqueue_script(
                     'fp-esperienze-booking-widget',
                     $booking_widget_url,
-                    ['jquery', 'fp-esperienze-frontend'],
+                    ['jquery', 'wp-i18n', 'fp-esperienze-frontend'],
                     FP_ESPERIENZE_VERSION,
                     true
                 );
