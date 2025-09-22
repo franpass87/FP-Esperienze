@@ -555,7 +555,21 @@ class EmailMarketingManager {
             return;
         }
 
-        if (!wp_next_scheduled('fp_send_pre_experience_email', [$booking_id, $booking_data], $send_timestamp)) {
+        $existing_event = wp_get_scheduled_event(
+            'fp_send_pre_experience_email',
+            [$booking_id, $booking_data]
+        );
+
+        if ($existing_event && isset($existing_event->timestamp) && (int) $existing_event->timestamp !== $send_timestamp) {
+            wp_unschedule_event(
+                $existing_event->timestamp,
+                'fp_send_pre_experience_email',
+                [$booking_id, $booking_data]
+            );
+            $existing_event = null;
+        }
+
+        if (!$existing_event) {
             wp_schedule_single_event($send_timestamp, 'fp_send_pre_experience_email', [$booking_id, $booking_data]);
         }
     }
