@@ -411,6 +411,20 @@ html {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 12px;
+    padding-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.fp-experience-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    margin-left: auto;
+    margin-inline-start: auto;
+    padding-left: 12px;
+    padding-inline-start: 12px;
+    gap: 8px;
 }
 
 .fp-experience-price {
