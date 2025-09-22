@@ -31,9 +31,9 @@ class ExtraManager {
                 1
             ));
         } else {
-            $results = $wpdb->get_results($wpdb->prepare(
+            $results = $wpdb->get_results(
                 "SELECT * FROM `{$table_name}` ORDER BY name ASC"
-            ));
+            );
         }
         
         return $results ?: [];
