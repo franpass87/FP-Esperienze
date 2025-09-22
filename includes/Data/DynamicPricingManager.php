@@ -18,6 +18,26 @@ class DynamicPricingManager {
      * Cache group for dynamic pricing rules.
      */
     private const CACHE_GROUP = 'fp_dynamic_pricing_rules';
+
+    /**
+     * Option name used to persist historical pricing adjustments.
+     */
+    private const HISTORY_OPTION = 'fp_dynamic_pricing_history';
+
+    /**
+     * Number of days to retain pricing adjustment history.
+     */
+    private const HISTORY_RETENTION_DAYS = 90;
+
+    /**
+     * Maximum number of history entries to store.
+     */
+    private const HISTORY_MAX_ENTRIES = 500;
+
+    /**
+     * Seconds contained in a day (fallback when DAY_IN_SECONDS is unavailable).
+     */
+    private const SECONDS_PER_DAY = 86400;
     
     /**
      * Get all pricing rules for a product
@@ -239,12 +259,25 @@ class DynamicPricingManager {
         
         // Ensure price doesn't go below 0
         $current_price = max(0, $current_price);
-        
-        // Store applied rules in context for display purposes
-        if (!empty($applied_rules)) {
+
+        $price_changed = abs($current_price - $base_price) > 0.0001;
+        $should_log = $context['log_history'] ?? true;
+
+        if ($price_changed && !empty($applied_rules)) {
             $GLOBALS['fp_applied_pricing_rules'][$product_id][$type] = $applied_rules;
+
+            if ($should_log) {
+                self::recordAdjustmentHistory(
+                    $product_id,
+                    $type,
+                    $base_price,
+                    $current_price,
+                    $applied_rules,
+                    $context
+                );
+            }
         }
-        
+
         return $current_price;
     }
     
@@ -372,7 +405,8 @@ class DynamicPricingManager {
         $context = [
             'booking_date' => $test_data['booking_date'] ?? date('Y-m-d'),
             'purchase_date' => $test_data['purchase_date'] ?? date('Y-m-d'),
-            'total_participants' => absint(($test_data['qty_adult'] ?? 0) + ($test_data['qty_child'] ?? 0))
+            'total_participants' => absint(($test_data['qty_adult'] ?? 0) + ($test_data['qty_child'] ?? 0)),
+            'log_history' => false,
         ];
         
         // Clear previous applied rules
@@ -402,5 +436,142 @@ class DynamicPricingManager {
                 'final' => ($final_adult_price * ($test_data['qty_adult'] ?? 0)) + ($final_child_price * ($test_data['qty_child'] ?? 0))
             ]
         ];
+    }
+
+    /**
+     * Retrieve pricing adjustment history for analytics.
+     *
+     * @param int      $days            Number of days to include.
+     * @param int|null $reference_time  Optional timestamp used for filtering.
+     * @return array<int, array<string, mixed>>
+     */
+    public static function getAdjustmentHistory(int $days = 30, ?int $reference_time = null): array {
+        $history = get_option(self::HISTORY_OPTION, []);
+
+        if (!is_array($history)) {
+            return [];
+        }
+
+        $days = max(0, $days);
+
+        if (0 === $days) {
+            return array_values($history);
+        }
+
+        $reference_time = $reference_time ?? time();
+        $cutoff = $reference_time - ($days * self::SECONDS_PER_DAY);
+
+        $filtered = array_filter(
+            $history,
+            static function ($entry) use ($cutoff) {
+                if (!is_array($entry) || !isset($entry['timestamp'])) {
+                    return false;
+                }
+
+                return (int) $entry['timestamp'] >= $cutoff;
+            }
+        );
+
+        return array_values($filtered);
+    }
+
+    /**
+     * Persist pricing adjustment metadata for later insights.
+     *
+     * @param int   $product_id    Product identifier.
+     * @param string $type         Price type (adult/child).
+     * @param float $base_price    Original price prior to adjustments.
+     * @param float $final_price   Final price after adjustments.
+     * @param array $applied_rules Applied rules metadata.
+     * @param array $context       Pricing context values.
+     * @return void
+     */
+    private static function recordAdjustmentHistory(
+        int $product_id,
+        string $type,
+        float $base_price,
+        float $final_price,
+        array $applied_rules,
+        array $context
+    ): void {
+        $history = get_option(self::HISTORY_OPTION, []);
+
+        if (!is_array($history)) {
+            $history = [];
+        }
+
+        $timestamp = isset($context['history_timestamp'])
+            ? (int) $context['history_timestamp']
+            : time();
+
+        $booking_date = isset($context['booking_date']) && is_string($context['booking_date'])
+            ? date('Y-m-d', strtotime($context['booking_date']))
+            : date('Y-m-d', $timestamp);
+
+        $participants = $context['total_participants'] ?? 0;
+        if (function_exists('absint')) {
+            $participants = absint($participants);
+        } else {
+            $participants = (int) max(0, (int) $participants);
+        }
+
+        $difference = $final_price - $base_price;
+        $percent = $base_price > 0.0 ? ($difference / $base_price) * 100 : 0.0;
+
+        $rules = array_map(
+            static function ($rule) {
+                return [
+                    'rule_name' => is_array($rule) && isset($rule['rule_name']) ? (string) $rule['rule_name'] : ($rule->rule_name ?? ''),
+                    'rule_type' => is_array($rule) && isset($rule['rule_type']) ? (string) $rule['rule_type'] : ($rule->rule_type ?? ''),
+                    'adjustment' => (float) (is_array($rule) && isset($rule['adjustment']) ? $rule['adjustment'] : ($rule->adjustment ?? 0)),
+                    'adjustment_type' => is_array($rule) && isset($rule['adjustment_type']) ? (string) $rule['adjustment_type'] : ($rule->adjustment_type ?? ''),
+                ];
+            },
+            $applied_rules
+        );
+
+        $source = 'calculation';
+        if (isset($context['history_source']) && is_string($context['history_source'])) {
+            if (function_exists('sanitize_text_field')) {
+                $source = sanitize_text_field($context['history_source']);
+            } else {
+                $source = preg_replace('/[^a-z0-9_\- ]/i', '', $context['history_source']);
+            }
+        }
+
+        $history[] = [
+            'timestamp' => $timestamp,
+            'product_id' => $product_id,
+            'price_type' => $type,
+            'base_price' => round($base_price, 2),
+            'final_price' => round($final_price, 2),
+            'adjustment_amount' => round($difference, 2),
+            'adjustment_percent' => round($percent, 2),
+            'rules' => $rules,
+            'total_participants' => $participants,
+            'booking_date' => $booking_date,
+            'source' => $source,
+        ];
+
+        $retention_cutoff = $timestamp - (self::HISTORY_RETENTION_DAYS * self::SECONDS_PER_DAY);
+
+        $history = array_filter(
+            $history,
+            static function ($entry) use ($retention_cutoff) {
+                if (!is_array($entry) || !isset($entry['timestamp'])) {
+                    return false;
+                }
+
+                return (int) $entry['timestamp'] >= $retention_cutoff;
+            }
+        );
+
+        if (count($history) > self::HISTORY_MAX_ENTRIES) {
+            $history = array_slice(array_values($history), -self::HISTORY_MAX_ENTRIES);
+        } else {
+            $history = array_values($history);
+        }
+
+        update_option(self::HISTORY_OPTION, $history, false);
     }
 }
