@@ -271,6 +271,13 @@ function fp_esperienze_init() {
             error_log('FP Esperienze: Failed to load text domain for localization');
         }
         
+        if (class_exists('FP\Esperienze\Core\Installer')) {
+            $staff_attendance_result = FP\Esperienze\Core\Installer::maybeCreateStaffAttendanceTable();
+            if (is_wp_error($staff_attendance_result) && defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('FP Esperienze: ' . $staff_attendance_result->get_error_message());
+            }
+        }
+        
         // Initialize main plugin class with error handling
         if (class_exists('FP\Esperienze\Core\Plugin')) {
             FP\Esperienze\Core\Plugin::getInstance();

@@ -11,6 +11,7 @@
 namespace FP\Esperienze\REST;
 
 use FP\Esperienze\Core\CapabilityManager;
+use FP\Esperienze\Core\Installer;
 use FP\Esperienze\Core\RateLimiter;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -1059,6 +1060,8 @@ class MobileAPIManager {
 
         global $wpdb;
 
+        $table_name = $wpdb->prefix . 'fp_staff_attendance';
+        $formats = ['%d', '%s', '%s', '%s'];
         $attendance_data = [
             'staff_id'      => $staff_user_id,
             'action_type'   => $action_type,
@@ -1067,13 +1070,63 @@ class MobileAPIManager {
         ];
 
         $result = $wpdb->insert(
-            $wpdb->prefix . 'fp_staff_attendance',
+            $table_name,
             $attendance_data,
-            ['%d', '%s', '%s', '%s']
+            $formats
         );
 
         if ($result === false) {
-            return new WP_Error('attendance_failed', __('Failed to record attendance', 'fp-esperienze'), ['status' => 500]);
+            $last_error = $wpdb->last_error;
+            $table_missing = false;
+
+            if ($last_error) {
+                $table_missing = str_contains($last_error, $table_name) && (
+                    str_contains($last_error, "doesn't exist") ||
+                    str_contains($last_error, 'does not exist') ||
+                    str_contains($last_error, 'no such table')
+                );
+            }
+
+            if ($table_missing) {
+                error_log('FP Esperienze: Staff attendance table missing. Attempting to recreate. Error: ' . $last_error);
+
+                if (!class_exists(Installer::class)) {
+                    error_log('FP Esperienze: Installer class missing while recreating staff attendance table.');
+                    return new WP_Error(
+                        'attendance_table_missing',
+                        __('Attendance tracking is temporarily unavailable. Please contact the site administrator.', 'fp-esperienze'),
+                        ['status' => 500]
+                    );
+                }
+
+                $upgrade_result = Installer::maybeCreateStaffAttendanceTable();
+                if (is_wp_error($upgrade_result)) {
+                    error_log('FP Esperienze: Unable to recreate staff attendance table: ' . $upgrade_result->get_error_message());
+                    return new WP_Error(
+                        'attendance_table_missing',
+                        __('Attendance tracking is temporarily unavailable. Please contact the site administrator.', 'fp-esperienze'),
+                        ['status' => 500]
+                    );
+                }
+
+                $attendance_data['timestamp'] = current_time('mysql');
+                $result = $wpdb->insert($table_name, $attendance_data, $formats);
+
+                if ($result === false) {
+                    error_log('FP Esperienze: Failed to record attendance after recreating table: ' . $wpdb->last_error);
+                    return new WP_Error(
+                        'attendance_table_missing',
+                        __('Attendance tracking is temporarily unavailable. Please try again in a moment.', 'fp-esperienze'),
+                        ['status' => 500]
+                    );
+                }
+            } else {
+                if ($last_error) {
+                    error_log('FP Esperienze: Failed to record attendance: ' . $last_error);
+                }
+
+                return new WP_Error('attendance_failed', __('Failed to record attendance', 'fp-esperienze'), ['status' => 500]);
+            }
         }
 
         return new WP_REST_Response([

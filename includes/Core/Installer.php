@@ -22,6 +22,13 @@ defined('ABSPATH') || exit;
 class Installer {
 
     /**
+     * Tracks whether the staff attendance table has been verified in this request
+     *
+     * @var bool
+     */
+    private static bool $staffAttendanceVerified = false;
+
+    /**
      * Plugin activation
      *
      * @return bool|\WP_Error True on success or WP_Error on failure
@@ -29,6 +36,11 @@ class Installer {
     public static function activate() {
         try {
             $result = self::createTables();
+            if (is_wp_error($result)) {
+                return $result;
+            }
+
+            $result = self::maybeCreateStaffAttendanceTable();
             if (is_wp_error($result)) {
                 return $result;
             }
@@ -495,8 +507,11 @@ class Installer {
             KEY expires_at (expires_at)
         ) $charset_collate;";
 
+        // Staff attendance tracking table
+        $sql_staff_attendance = self::getStaffAttendanceTableSql($charset_collate);
+
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-        
+
         // Execute table creation with error checking
         $tables_sql = [
             'meeting_points' => $sql_meeting_points,
@@ -508,7 +523,8 @@ class Installer {
             'exp_vouchers' => $sql_exp_vouchers,
             'vouchers' => $sql_vouchers,
             'dynamic_pricing' => $sql_dynamic_pricing,
-            'holds' => $sql_holds
+            'holds' => $sql_holds,
+            'staff_attendance' => $sql_staff_attendance
         ];
 
         foreach ($tables_sql as $table_name => $sql) {
@@ -531,6 +547,71 @@ class Installer {
         }
         
         return true;
+    }
+
+    /**
+     * Ensure the staff attendance table exists for upgrades and runtime checks.
+     *
+     * @return bool|\WP_Error True when the table exists or WP_Error on failure.
+     */
+    public static function maybeCreateStaffAttendanceTable() {
+        if (self::$staffAttendanceVerified) {
+            return true;
+        }
+
+        global $wpdb;
+
+        $table_name = $wpdb->prefix . 'fp_staff_attendance';
+        $table_exists = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $table_name));
+
+        if ($table_exists) {
+            self::$staffAttendanceVerified = true;
+            return true;
+        }
+
+        if (!function_exists('dbDelta')) {
+            require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+        }
+
+        if (!function_exists('dbDelta')) {
+            return new \WP_Error('fp_dbdelta_missing', 'WordPress dbDelta function not available');
+        }
+
+        $sql = self::getStaffAttendanceTableSql($wpdb->get_charset_collate());
+        dbDelta($sql);
+
+        $table_exists = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $table_name));
+        if (!$table_exists) {
+            $message = 'FP Esperienze: Failed to create fp_staff_attendance table during upgrade.';
+            error_log($message);
+            return new \WP_Error('fp_staff_attendance_creation_failed', 'Failed to create staff attendance table.');
+        }
+
+        self::$staffAttendanceVerified = true;
+
+        return true;
+    }
+
+    /**
+     * Generate SQL statement for the staff attendance table.
+     */
+    private static function getStaffAttendanceTableSql(string $charset_collate): string {
+        global $wpdb;
+
+        $table_staff_attendance = $wpdb->prefix . 'fp_staff_attendance';
+
+        return "CREATE TABLE $table_staff_attendance (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            staff_id bigint(20) unsigned NOT NULL,
+            action_type varchar(50) NOT NULL,
+            `timestamp` datetime NOT NULL,
+            location_data text DEFAULT NULL,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY staff_id (staff_id),
+            KEY action_type (action_type),
+            KEY idx_timestamp (`timestamp`)
+        ) $charset_collate;";
     }
 
     /**
