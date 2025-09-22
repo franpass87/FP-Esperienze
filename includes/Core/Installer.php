@@ -29,6 +29,13 @@ class Installer {
     private static bool $staffAttendanceVerified = false;
 
     /**
+     * Tracks whether the staff assignments table has been verified in this request
+     *
+     * @var bool
+     */
+    private static bool $staffAssignmentsVerified = false;
+
+    /**
      * Tracks whether the booking extras table has been verified in this request
      *
      * @var bool
@@ -48,6 +55,11 @@ class Installer {
             }
 
             $result = self::maybeCreateStaffAttendanceTable();
+            if (is_wp_error($result)) {
+                return $result;
+            }
+
+            $result = self::maybeCreateStaffAssignmentsTable();
             if (is_wp_error($result)) {
                 return $result;
             }
@@ -429,6 +441,26 @@ class Installer {
             UNIQUE KEY order_item_unique (order_id, order_item_id)
         ) $charset_collate;";
 
+        // Staff assignments table
+        $table_staff_assignments = $wpdb->prefix . 'fp_staff_assignments';
+        $sql_staff_assignments = "CREATE TABLE $table_staff_assignments (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            staff_id bigint(20) unsigned NOT NULL,
+            booking_id bigint(20) unsigned DEFAULT NULL,
+            shift_start datetime NOT NULL,
+            shift_end datetime DEFAULT NULL,
+            roles text DEFAULT NULL,
+            notes text DEFAULT NULL,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY staff_id (staff_id),
+            KEY booking_id (booking_id),
+            KEY shift_start (shift_start),
+            KEY shift_end (shift_end),
+            KEY staff_shift (staff_id, shift_start)
+        ) $charset_collate;";
+
         // Gift Vouchers table (new structure for gift experience feature)
         $table_exp_vouchers = $wpdb->prefix . 'fp_exp_vouchers';
         $sql_exp_vouchers = "CREATE TABLE $table_exp_vouchers (
@@ -535,6 +567,7 @@ class Installer {
             'schedules' => $sql_schedules,
             'overrides' => $sql_overrides,
             'bookings' => $sql_bookings,
+            'staff_assignments' => $sql_staff_assignments,
             'exp_vouchers' => $sql_exp_vouchers,
             'vouchers' => $sql_vouchers,
             'dynamic_pricing' => $sql_dynamic_pricing,
@@ -652,6 +685,49 @@ class Installer {
     }
 
     /**
+     * Ensure the staff assignments table exists for upgrades and runtime checks.
+     *
+     * @return bool|\WP_Error True when the table exists or WP_Error on failure.
+     */
+    public static function maybeCreateStaffAssignmentsTable() {
+        if (self::$staffAssignmentsVerified) {
+            return true;
+        }
+
+        global $wpdb;
+
+        $table_name = $wpdb->prefix . 'fp_staff_assignments';
+        $table_exists = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $table_name));
+
+        if ($table_exists) {
+            self::$staffAssignmentsVerified = true;
+            return true;
+        }
+
+        if (!function_exists('dbDelta')) {
+            require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+        }
+
+        if (!function_exists('dbDelta')) {
+            return new \WP_Error('fp_dbdelta_missing', 'WordPress dbDelta function not available');
+        }
+
+        $sql = self::getStaffAssignmentsTableSql($wpdb->get_charset_collate());
+        dbDelta($sql);
+
+        $table_exists = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $table_name));
+        if (!$table_exists) {
+            $message = 'FP Esperienze: Failed to create fp_staff_assignments table during upgrade.';
+            error_log($message);
+            return new \WP_Error('fp_staff_assignments_creation_failed', 'Failed to create staff assignments table.');
+        }
+
+        self::$staffAssignmentsVerified = true;
+
+        return true;
+    }
+
+    /**
      * Generate SQL statement for the staff attendance table.
      */
     private static function getStaffAttendanceTableSql(string $charset_collate): string {
@@ -670,6 +746,33 @@ class Installer {
             KEY staff_id (staff_id),
             KEY action_type (action_type),
             KEY idx_timestamp (`timestamp`)
+        ) $charset_collate;";
+    }
+
+    /**
+     * Generate SQL statement for the staff assignments table.
+     */
+    private static function getStaffAssignmentsTableSql(string $charset_collate): string {
+        global $wpdb;
+
+        $table_staff_assignments = $wpdb->prefix . 'fp_staff_assignments';
+
+        return "CREATE TABLE $table_staff_assignments (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            staff_id bigint(20) unsigned NOT NULL,
+            booking_id bigint(20) unsigned DEFAULT NULL,
+            shift_start datetime NOT NULL,
+            shift_end datetime DEFAULT NULL,
+            roles text DEFAULT NULL,
+            notes text DEFAULT NULL,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY staff_id (staff_id),
+            KEY booking_id (booking_id),
+            KEY shift_start (shift_start),
+            KEY shift_end (shift_end),
+            KEY staff_shift (staff_id, shift_start)
         ) $charset_collate;";
     }
 
