@@ -44,6 +44,11 @@ class MobileAPIManager {
     private static $endpointsRegistered = false;
 
     /**
+     * Lifetime for generated QR codes in seconds (24 hours).
+     */
+    private const QR_CODE_TTL = 86400;
+
+    /**
      * Tracks the availability of the QR code library.
      */
     private bool $qrCodeLibraryAvailable = false;
@@ -724,7 +729,8 @@ class MobileAPIManager {
             'qr_data' => $qr_data,
             'qr_image' => $qr_image,
             'booking_id' => $booking_id,
-            'expires_at' => date('Y-m-d H:i:s', strtotime('+24 hours'))
+            'expires_at' => date('Y-m-d H:i:s', time() + self::QR_CODE_TTL),
+            'expires_in' => self::QR_CODE_TTL,
         ]);
     }
 
@@ -738,7 +744,11 @@ class MobileAPIManager {
         $qr_data = sanitize_text_field($request->get_param('qr_data'));
         
         $booking_info = $this->decodeQRData($qr_data);
-        
+
+        if ($booking_info instanceof WP_Error) {
+            return $booking_info;
+        }
+
         if (!$booking_info) {
             return new WP_Error('invalid_qr', __('Invalid QR code', 'fp-esperienze'), ['status' => 400]);
         }
@@ -1835,18 +1845,57 @@ class MobileAPIManager {
         }
     }
 
-    private function decodeQRData(string $qr_data): ?array {
-        $decoded = base64_decode($qr_data);
-        $data    = json_decode($decoded, true);
-
-        if (!$data || !isset($data['booking_id'], $data['timestamp'], $data['hash'])) {
+    /**
+     * Decode QR payload and ensure it has not expired.
+     *
+     * @param string $qr_data Encoded QR payload.
+     * @return array|WP_Error|null
+     */
+    private function decodeQRData(string $qr_data): array|WP_Error|null {
+        $decoded = base64_decode($qr_data, true);
+        if ($decoded === false) {
             return null;
         }
 
-        // Verify hash
+        $data = json_decode($decoded, true);
+
+        if (!is_array($data) || !isset($data['booking_id'], $data['timestamp'], $data['hash'])) {
+            return null;
+        }
+
+        // Verify hash integrity before trusting the payload.
         $expected_hash = hash_hmac('sha256', 'booking_' . $data['booking_id'] . '_' . $data['timestamp'], wp_salt('auth'));
         if (!hash_equals($expected_hash, $data['hash'])) {
             return null;
+        }
+
+        $timestamp = (int) $data['timestamp'];
+        if ($timestamp <= 0) {
+            return null;
+        }
+
+        $expiry_timestamp = $timestamp + self::QR_CODE_TTL;
+        if ($expiry_timestamp < time()) {
+            $valid_hours = max(1, (int) ceil(self::QR_CODE_TTL / 3600));
+
+            return new WP_Error(
+                'qr_expired',
+                sprintf(
+                    /* translators: %d: number of hours a QR code remains valid */
+                    __('This QR code has expired. QR codes remain valid for %d hours. Please generate a new code.', 'fp-esperienze'),
+                    $valid_hours
+                ),
+                [
+                    'status' => 410,
+                    'expires_after' => self::QR_CODE_TTL,
+                    'expiration_policy' => sprintf(
+                        /* translators: %d: number of hours a QR code remains valid */
+                        __('For security, QR codes expire %d hours after they are generated. Request a fresh code to continue.', 'fp-esperienze'),
+                        $valid_hours
+                    ),
+                    'expired_at' => $expiry_timestamp,
+                ]
+            );
         }
 
         return $data;
