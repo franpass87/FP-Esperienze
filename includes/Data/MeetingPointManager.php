@@ -93,6 +93,64 @@ class MeetingPointManager {
     }
 
     /**
+     * Get meeting points assigned to a specific product through its schedules.
+     *
+     * Attempts to load the distinct meeting point IDs referenced by the product
+     * schedules and resolve them to full meeting point records. When no meeting
+     * points are associated with the product (or the referenced meeting points
+     * no longer exist) it falls back to returning the complete meeting point
+     * list.
+     *
+     * @param int  $product_id Product ID.
+     * @param bool $translate  Whether to return translated versions of the meeting points.
+     * @return array<int, object>
+     */
+    public static function getMeetingPointsForProduct(int $product_id, bool $translate = true): array {
+        if ($product_id <= 0) {
+            return [];
+        }
+
+        global $wpdb;
+
+        $table_schedules = $wpdb->prefix . 'fp_schedules';
+
+        $meeting_point_ids = $wpdb->get_col($wpdb->prepare(
+            "SELECT DISTINCT meeting_point_id FROM {$table_schedules} WHERE product_id = %d AND meeting_point_id IS NOT NULL",
+            $product_id
+        ));
+
+        if (empty($meeting_point_ids)) {
+            $all_meeting_points = self::getAllMeetingPoints($translate);
+
+            return $all_meeting_points ?: [];
+        }
+
+        $meeting_points = [];
+
+        foreach ($meeting_point_ids as $meeting_point_id) {
+            $meeting_point_id = (int) $meeting_point_id;
+
+            if ($meeting_point_id <= 0) {
+                continue;
+            }
+
+            $meeting_point = self::getMeetingPoint($meeting_point_id, $translate);
+
+            if ($meeting_point !== null) {
+                $meeting_points[$meeting_point_id] = $meeting_point;
+            }
+        }
+
+        if (!empty($meeting_points)) {
+            return array_values($meeting_points);
+        }
+
+        $all_meeting_points = self::getAllMeetingPoints($translate);
+
+        return $all_meeting_points ?: [];
+    }
+
+    /**
      * Create a new meeting point
      *
      * @param array $data Meeting point data
