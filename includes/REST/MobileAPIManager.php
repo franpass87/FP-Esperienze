@@ -554,7 +554,9 @@ class MobileAPIManager {
                 'status' => $booking->status,
                 'total_amount' => floatval($booking->total_amount),
                 'currency' => !empty($booking->currency) ? (string) $booking->currency : get_woocommerce_currency(),
-                'meeting_point' => $this->getMeetingPointById($booking->meeting_point_id),
+                'meeting_point' => !empty($booking->meeting_point_id)
+                    ? $this->getMeetingPointById((int) $booking->meeting_point_id)
+                    : null,
                 'qr_code' => $this->generateBookingQRData($booking->id),
                 'can_cancel' => $this->canCancelBooking($booking),
                 'can_reschedule' => $this->canRescheduleBooking($booking)
@@ -651,7 +653,10 @@ class MobileAPIManager {
         }
 
         $product = wc_get_product($booking->product_id);
-        $meeting_point = $this->getMeetingPointById($booking->meeting_point_id);
+        $meeting_point = null;
+        if (!empty($booking->meeting_point_id)) {
+            $meeting_point = $this->getMeetingPointById((int) $booking->meeting_point_id);
+        }
 
         $booking_details = [
             'id' => $booking->id,
@@ -1568,10 +1573,14 @@ class MobileAPIManager {
         return $data;
     }
 
-    private function getMeetingPointById(int $meeting_point_id): ?array {
+    private function getMeetingPointById(?int $meeting_point_id): ?array {
         global $wpdb;
-        
-        $point = $wpdb->get_row($wpdb->prepare("
+
+        if ($meeting_point_id === null || $meeting_point_id <= 0) {
+            return null;
+        }
+
+        $point = $wpdb->get_row($wpdb->prepare(" 
             SELECT * FROM {$wpdb->prefix}fp_meeting_points WHERE id = %d
         ", $meeting_point_id));
 
