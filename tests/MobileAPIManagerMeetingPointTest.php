@@ -5,10 +5,23 @@ namespace FP\Esperienze\Data {
     class MeetingPointManager {
         /** @var array<int, object> */
         public static array $points = [];
+        /** @var array<int, array<int, object>> */
+        public static array $productPoints = [];
+        public static int $getMeetingPointsForProductCalls = 0;
+        public static int $getAllMeetingPointsCalls = 0;
 
         public static function getAllMeetingPoints(bool $translate = true): array
         {
+            self::$getAllMeetingPointsCalls++;
+
             return self::$points;
+        }
+
+        public static function getMeetingPointsForProduct(int $product_id, bool $translate = true): array
+        {
+            self::$getMeetingPointsForProductCalls++;
+
+            return self::$productPoints[$product_id] ?? [];
         }
 
         public static function getMeetingPoint(int $id, bool $translate = true): ?object
@@ -368,17 +381,31 @@ namespace {
         'lng' => 9.204,
         'note' => 'Meet near the main fountain.',
     ];
-    \FP\Esperienze\Data\MeetingPointManager::$points = [$centralMeetingPoint];
+    $riverMeetingPoint = (object) [
+        'id' => 9,
+        'name' => 'River Dock',
+        'address' => 'Navigli area docking platform',
+        'lat' => 45.45,
+        'lng' => 9.18,
+        'note' => 'Boarding at pier 2.',
+    ];
+    \FP\Esperienze\Data\MeetingPointManager::$points = [$centralMeetingPoint, $riverMeetingPoint];
+    \FP\Esperienze\Data\MeetingPointManager::$productPoints = [
+        12 => [$centralMeetingPoint],
+    ];
+    \FP\Esperienze\Data\MeetingPointManager::$getMeetingPointsForProductCalls = 0;
+    \FP\Esperienze\Data\MeetingPointManager::$getAllMeetingPointsCalls = 0;
     $wpdb->meetingPoints = [
         7 => $centralMeetingPoint,
+        9 => $riverMeetingPoint,
     ];
 
     $meetingPointsMethod = $reflection->getMethod('getMeetingPoints');
     $meetingPointsMethod->setAccessible(true);
     $meetingPoints = $meetingPointsMethod->invoke($manager, 12);
 
-    if (!is_array($meetingPoints) || count($meetingPoints) < 1) {
-        echo "Expected at least one meeting point\n";
+    if (!is_array($meetingPoints) || count($meetingPoints) !== 1) {
+        echo "Expected a single associated meeting point\n";
         exit(1);
     }
 
@@ -419,6 +446,16 @@ namespace {
         exit(1);
     }
 
+    if (\FP\Esperienze\Data\MeetingPointManager::$getMeetingPointsForProductCalls !== 1) {
+        echo "Meeting point association lookup not triggered\n";
+        exit(1);
+    }
+
+    if (\FP\Esperienze\Data\MeetingPointManager::$getAllMeetingPointsCalls !== 0) {
+        echo "Unexpected fallback when associations exist\n";
+        exit(1);
+    }
+
     if ($wpdb->meetingPointQueryCount !== 0) {
         echo "Meeting point query executed during meeting points fetch\n";
         exit(1);
@@ -426,6 +463,27 @@ namespace {
 
     if ($wpdb->last_error !== '') {
         echo "Unexpected SQL error during meeting point fetch\n";
+        exit(1);
+    }
+
+    \FP\Esperienze\Data\MeetingPointManager::$productPoints = [];
+    \FP\Esperienze\Data\MeetingPointManager::$getMeetingPointsForProductCalls = 0;
+    \FP\Esperienze\Data\MeetingPointManager::$getAllMeetingPointsCalls = 0;
+
+    $fallbackMeetingPoints = $meetingPointsMethod->invoke($manager, 55);
+
+    if (!is_array($fallbackMeetingPoints) || count($fallbackMeetingPoints) !== 2) {
+        echo "Expected fallback to include all meeting points\n";
+        exit(1);
+    }
+
+    if (\FP\Esperienze\Data\MeetingPointManager::$getMeetingPointsForProductCalls !== 1) {
+        echo "Fallback did not query meeting point associations\n";
+        exit(1);
+    }
+
+    if (\FP\Esperienze\Data\MeetingPointManager::$getAllMeetingPointsCalls !== 1) {
+        echo "Fallback did not load global meeting points\n";
         exit(1);
     }
 
