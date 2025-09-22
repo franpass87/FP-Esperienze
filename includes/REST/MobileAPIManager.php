@@ -1421,27 +1421,97 @@ class MobileAPIManager {
 
     private function getExperienceExtras(int $product_id): array {
         global $wpdb;
-        
-        $extras = $wpdb->get_results($wpdb->prepare("
-            SELECT * FROM {$wpdb->prefix}fp_extras
-            WHERE product_id = %d OR product_id = 0
-            ORDER BY name ASC
-        ", $product_id));
+
+        $table_extras = $wpdb->prefix . 'fp_extras';
+        $table_product_extras = $wpdb->prefix . 'fp_product_extras';
+
+        $prepared = $wpdb->prepare(
+            "SELECT e.*, pe.sort_order
+            FROM {$table_extras} e
+            INNER JOIN {$table_product_extras} pe ON e.id = pe.extra_id
+            WHERE pe.product_id = %d
+            ORDER BY pe.sort_order ASC, e.name ASC",
+            $product_id
+        );
+
+        $extras = $wpdb->get_results($prepared);
+
+        if (!empty($wpdb->last_error)) {
+            if (defined('WP_DEBUG') && WP_DEBUG && defined('WP_DEBUG_LOG') && WP_DEBUG_LOG) {
+                error_log(sprintf(
+                    'FP Esperienze: Failed to load extras for product %d - %s',
+                    $product_id,
+                    $wpdb->last_error
+                ));
+            }
+
+            return [];
+        }
+
+        if (empty($extras)) {
+            return [];
+        }
+
+        $metadata_map = $this->getProductExtraMetadata($product_id);
 
         $mobile_extras = [];
 
         foreach ($extras as $extra) {
+            $extra_id = isset($extra->id) ? (int) $extra->id : 0;
+            $extra_metadata = $metadata_map[$extra_id] ?? [];
+            if (!is_array($extra_metadata)) {
+                $extra_metadata = [];
+            }
+
             $mobile_extras[] = [
-                'id' => $extra->id,
-                'name' => $extra->name,
-                'description' => $extra->description,
-                'price' => floatval($extra->price),
-                'type' => $extra->type,
-                'is_required' => (bool)$extra->is_required
+                'id' => $extra_id,
+                'name' => (string) ($extra->name ?? ''),
+                'description' => (string) ($extra->description ?? ''),
+                'price' => isset($extra->price) ? (float) $extra->price : 0.0,
+                'billing_type' => (string) ($extra->billing_type ?? 'per_person'),
+                'type' => (string) ($extra->billing_type ?? 'per_person'),
+                'is_required' => !empty($extra->is_required),
+                'max_quantity' => isset($extra->max_quantity) ? (int) $extra->max_quantity : 1,
+                'tax_class' => (string) ($extra->tax_class ?? ''),
+                'sort_order' => isset($extra->sort_order) ? (int) $extra->sort_order : 0,
+                'metadata' => $extra_metadata,
             ];
         }
 
         return $mobile_extras;
+    }
+
+    /**
+     * Retrieve metadata for extras associated with a product.
+     *
+     * @param int $product_id Product identifier.
+     * @return array<int, array<string, mixed>>
+     */
+    private function getProductExtraMetadata(int $product_id): array {
+        if (!function_exists('get_post_meta')) {
+            return [];
+        }
+
+        $metadata = get_post_meta($product_id, '_fp_product_extra_meta', true);
+
+        if (!is_array($metadata)) {
+            $metadata = [];
+        }
+
+        foreach ($metadata as $extra_id => $extra_meta) {
+            if (!is_array($extra_meta)) {
+                $metadata[$extra_id] = (array) $extra_meta;
+            }
+        }
+
+        if (function_exists('apply_filters')) {
+            $filtered = apply_filters('fp_esperienze_mobile_product_extra_meta', $metadata, $product_id);
+            if (is_array($filtered)) {
+                $metadata = $filtered;
+            }
+        }
+
+        return $metadata;
     }
 
     private function getSimilarExperiences(int $product_id, int $limit = 3): array {
