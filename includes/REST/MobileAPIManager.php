@@ -1519,46 +1519,72 @@ class MobileAPIManager {
     }
 
     private function getMeetingPoints(int $product_id): array {
-        $meeting_points = MeetingPointManager::getAllMeetingPoints();
+        if ($product_id > 0) {
+            $meeting_points = MeetingPointManager::getMeetingPointsForProduct($product_id, false);
+
+            if (empty($meeting_points)) {
+                $meeting_points = MeetingPointManager::getAllMeetingPoints(false);
+            }
+        } else {
+            $meeting_points = MeetingPointManager::getAllMeetingPoints(false);
+        }
 
         if (empty($meeting_points)) {
             return [];
         }
 
-        return array_map([$this, 'formatMeetingPointForMobile'], $meeting_points);
+        $normalized_points = [];
+
+        foreach ($meeting_points as $meeting_point) {
+            if (is_array($meeting_point)) {
+                $meeting_point = (object) $meeting_point;
+            }
+
+            if (!is_object($meeting_point)) {
+                continue;
+            }
+
+            $normalized_points[] = $meeting_point;
+        }
+
+        if (empty($normalized_points)) {
+            return [];
+        }
+
+        return array_map([$this, 'formatMeetingPointForMobile'], $normalized_points);
     }
 
     private function formatMeetingPointForMobile(object $point): array {
-        $latitude = 0.0;
-        if (property_exists($point, 'lat') && is_numeric($point->lat)) {
+        $latitude = null;
+        if (isset($point->lat) && is_numeric($point->lat)) {
             $latitude = (float) $point->lat;
-        } elseif (property_exists($point, 'latitude') && is_numeric($point->latitude)) {
+        } elseif (isset($point->latitude) && is_numeric($point->latitude)) {
             $latitude = (float) $point->latitude;
         }
 
-        $longitude = 0.0;
-        if (property_exists($point, 'lng') && is_numeric($point->lng)) {
+        $longitude = null;
+        if (isset($point->lng) && is_numeric($point->lng)) {
             $longitude = (float) $point->lng;
-        } elseif (property_exists($point, 'longitude') && is_numeric($point->longitude)) {
+        } elseif (isset($point->longitude) && is_numeric($point->longitude)) {
             $longitude = (float) $point->longitude;
         }
 
-        $description = '';
-        if (property_exists($point, 'note') && $point->note !== null) {
+        $description = null;
+        if (isset($point->note) && $point->note !== '') {
             $description = (string) $point->note;
-        } elseif (property_exists($point, 'description') && $point->description !== null) {
+        } elseif (isset($point->description) && $point->description !== '') {
             $description = (string) $point->description;
         }
 
         $is_default = false;
-        if (property_exists($point, 'is_default') && $point->is_default !== null) {
+        if (isset($point->is_default)) {
             $is_default = (bool) $point->is_default;
         }
 
         return [
-            'id' => property_exists($point, 'id') ? (int) $point->id : 0,
-            'name' => property_exists($point, 'name') ? (string) $point->name : '',
-            'address' => property_exists($point, 'address') ? (string) $point->address : '',
+            'id' => property_exists($point, 'id') && is_numeric($point->id) ? (int) $point->id : 0,
+            'name' => property_exists($point, 'name') && $point->name !== null ? (string) $point->name : '',
+            'address' => property_exists($point, 'address') && $point->address !== null ? (string) $point->address : '',
             'latitude' => $latitude,
             'longitude' => $longitude,
             'description' => $description,

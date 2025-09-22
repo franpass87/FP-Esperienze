@@ -261,6 +261,7 @@ jQuery.post(ajaxurl, {
    - Shows `remaining_capacity` equal to the sum of the slot `available` counts.
    - Exposes `prices.adult_from` and `prices.child_from` matching the configured schedule prices.
 3. Call `GET /wp-json/fp-esperienze/v2/mobile/experiences/{id}` for the same product and confirm the `available_dates` payload mirrors the list endpoint (dates, capacities and prices all aligned with the planner).
+4. Create at least two meeting points, assign only one of them to the product schedules, and call `GET /wp-json/fp-esperienze/v2/mobile/experiences/{id}`. Verify that the `meeting_points` array only contains the associated entry. Remove the association (or assign a different meeting point) and repeat the call to confirm the endpoint falls back to the global meeting point catalog when no schedule links exist.
 
 #### Test 3.3: QR Code Generation and Scanning
 **Generate QR Code:**
