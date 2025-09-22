@@ -285,9 +285,19 @@ class WidgetAPI {
         $meeting_points = $data['meeting_points'];
         $extras = $data['extras'];
 
+        // Normalize pricing values for display
+        $adult_price_raw = $pricing['adult_price'] ?? null;
+        $child_price_raw = $pricing['child_price'] ?? null;
+
+        $has_adult_price = is_numeric($adult_price_raw);
+        $has_child_price = is_numeric($child_price_raw);
+
+        $adult_price_value = $has_adult_price ? (float) $adult_price_raw : null;
+        $child_price_value = $has_child_price ? (float) $child_price_raw : null;
+
         // Encode data for JavaScript
         $json_data = wp_json_encode($data);
-        
+
         // Generate CSS classes based on theme
         $theme_class = $theme === 'dark' ? 'fp-widget-dark' : 'fp-widget-light';
 
@@ -439,9 +449,9 @@ class WidgetAPI {
             
             <h1 class="fp-widget-title"><?php echo esc_html($product['name']); ?></h1>
             
-            <?php if ($pricing['adult_price']): ?>
+            <?php if ($has_adult_price): ?>
                 <div class="fp-widget-price">
-                    <?php echo __('From', 'fp-esperienze'); ?> <?php echo esc_html($pricing['currency_symbol'] . number_format($pricing['adult_price'], 2)); ?>
+                    <?php echo __('From', 'fp-esperienze'); ?> <?php echo esc_html($pricing['currency_symbol'] . number_format($adult_price_value ?? 0.0, 2)); ?>
                     <small><?php echo __('per person', 'fp-esperienze'); ?></small>
                 </div>
             <?php endif; ?>
@@ -484,25 +494,25 @@ class WidgetAPI {
             
             <div class="fp-widget-quantity">
                 <label><?php echo __('Adults', 'fp-esperienze'); ?>:</label>
-                <input type="number" 
-                       id="adult-qty" 
-                       class="fp-widget-quantity-input" 
-                       min="0" 
-                       max="<?php echo esc_attr($details['capacity'] ?? 10); ?>" 
+                <input type="number"
+                       id="adult-qty"
+                       class="fp-widget-quantity-input"
+                       min="0"
+                       max="<?php echo esc_attr($details['capacity'] ?? 10); ?>"
                        value="1">
-                <span><?php echo esc_html($pricing['currency_symbol'] . number_format($pricing['adult_price'], 2)); ?></span>
+                <span><?php echo esc_html($pricing['currency_symbol'] . number_format($adult_price_value ?? 0.0, 2)); ?></span>
             </div>
-            
-            <?php if ($pricing['child_price']): ?>
+
+            <?php if ($has_child_price): ?>
                 <div class="fp-widget-quantity">
                     <label><?php echo __('Children', 'fp-esperienze'); ?>:</label>
-                    <input type="number" 
-                           id="child-qty" 
-                           class="fp-widget-quantity-input" 
-                           min="0" 
-                           max="<?php echo esc_attr($details['capacity'] ?? 10); ?>" 
+                    <input type="number"
+                           id="child-qty"
+                           class="fp-widget-quantity-input"
+                           min="0"
+                           max="<?php echo esc_attr($details['capacity'] ?? 10); ?>"
                            value="0">
-                    <span><?php echo esc_html($pricing['currency_symbol'] . number_format($pricing['child_price'], 2)); ?></span>
+                    <span><?php echo esc_html($pricing['currency_symbol'] . number_format($child_price_value ?? 0.0, 2)); ?></span>
                 </div>
             <?php endif; ?>
         </div>
