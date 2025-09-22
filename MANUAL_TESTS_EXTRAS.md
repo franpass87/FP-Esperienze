@@ -60,6 +60,18 @@
 
 **Expected Result**: Required extra is created.
 
+### 1.5 Verify Extras Overview Shows All Configured Entries
+1. Stay on **WP Admin → FP Esperienze → Extras**
+2. Confirm the extras table lists every extra created above:
+   - Professional Photography
+   - Private Transfer
+   - Insurance
+3. Toggle the **Active** status of one extra (e.g., uncheck **Active** for "Private Transfer") and save
+4. Refresh the page and ensure the extras table still lists all extras, including the one marked inactive, with the correct status indicator
+5. Re-enable the extra after verification to restore the original setup
+
+**Expected Result**: The extras overview displays all configured extras regardless of their active status.
+
 ## Test 2: Product Association
 
 ### 2.1 Associate Extras with Experience Product
