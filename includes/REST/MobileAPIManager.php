@@ -15,6 +15,7 @@ use chillerlan\QRCode\QROptions;
 use FP\Esperienze\Core\CapabilityManager;
 use FP\Esperienze\Core\Installer;
 use FP\Esperienze\Core\RateLimiter;
+use FP\Esperienze\Data\MeetingPointManager;
 use FP\Esperienze\Data\StaffScheduleManager;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -1371,29 +1372,51 @@ class MobileAPIManager {
     }
 
     private function getMeetingPoints(int $product_id): array {
-        global $wpdb;
-        
-        $meeting_points = $wpdb->get_results($wpdb->prepare("
-            SELECT * FROM {$wpdb->prefix}fp_meeting_points
-            WHERE product_id = %d OR product_id = 0
-            ORDER BY is_default DESC, name ASC
-        ", $product_id));
+        $meeting_points = MeetingPointManager::getAllMeetingPoints();
 
-        $mobile_points = [];
-
-        foreach ($meeting_points as $point) {
-            $mobile_points[] = [
-                'id' => $point->id,
-                'name' => $point->name,
-                'address' => $point->address,
-                'latitude' => floatval($point->latitude),
-                'longitude' => floatval($point->longitude),
-                'description' => $point->description,
-                'is_default' => (bool)$point->is_default
-            ];
+        if (empty($meeting_points)) {
+            return [];
         }
 
-        return $mobile_points;
+        return array_map([$this, 'formatMeetingPointForMobile'], $meeting_points);
+    }
+
+    private function formatMeetingPointForMobile(object $point): array {
+        $latitude = 0.0;
+        if (property_exists($point, 'lat') && is_numeric($point->lat)) {
+            $latitude = (float) $point->lat;
+        } elseif (property_exists($point, 'latitude') && is_numeric($point->latitude)) {
+            $latitude = (float) $point->latitude;
+        }
+
+        $longitude = 0.0;
+        if (property_exists($point, 'lng') && is_numeric($point->lng)) {
+            $longitude = (float) $point->lng;
+        } elseif (property_exists($point, 'longitude') && is_numeric($point->longitude)) {
+            $longitude = (float) $point->longitude;
+        }
+
+        $description = '';
+        if (property_exists($point, 'note') && $point->note !== null) {
+            $description = (string) $point->note;
+        } elseif (property_exists($point, 'description') && $point->description !== null) {
+            $description = (string) $point->description;
+        }
+
+        $is_default = false;
+        if (property_exists($point, 'is_default') && $point->is_default !== null) {
+            $is_default = (bool) $point->is_default;
+        }
+
+        return [
+            'id' => property_exists($point, 'id') ? (int) $point->id : 0,
+            'name' => property_exists($point, 'name') ? (string) $point->name : '',
+            'address' => property_exists($point, 'address') ? (string) $point->address : '',
+            'latitude' => $latitude,
+            'longitude' => $longitude,
+            'description' => $description,
+            'is_default' => $is_default,
+        ];
     }
 
     private function getExperienceExtras(int $product_id): array {
@@ -1587,28 +1610,17 @@ class MobileAPIManager {
     }
 
     private function getMeetingPointById(?int $meeting_point_id): ?array {
-        global $wpdb;
-
         if ($meeting_point_id === null || $meeting_point_id <= 0) {
             return null;
         }
 
-        $point = $wpdb->get_row($wpdb->prepare(" 
-            SELECT * FROM {$wpdb->prefix}fp_meeting_points WHERE id = %d
-        ", $meeting_point_id));
+        $point = MeetingPointManager::getMeetingPoint($meeting_point_id);
 
         if (!$point) {
             return null;
         }
 
-        return [
-            'id' => $point->id,
-            'name' => $point->name,
-            'address' => $point->address,
-            'latitude' => floatval($point->latitude),
-            'longitude' => floatval($point->longitude),
-            'description' => $point->description
-        ];
+        return $this->formatMeetingPointForMobile($point);
     }
 
     private function canCancelBooking(object $booking): bool {
