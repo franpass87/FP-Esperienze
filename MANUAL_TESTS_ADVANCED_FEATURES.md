@@ -336,6 +336,25 @@ Authorization: Bearer {mobile_token}
 }
 ```
 
+#### Test 3.5: Mobile Booking Action Buttons (24h Cutoff)
+**Purpose:** Verify the mobile app surfaces "Cancel" and "Reschedule" buttons only when the booking is more than 24 hours away.
+
+**Setup:**
+- Confirm the site timezone in **Settings → General → Timezone** (e.g., `Europe/Rome`).
+- Create an experience schedule that starts **25 hours from the current site time**.
+- Place a customer order for that slot and ensure the booking status is `confirmed`.
+- Log into the mobile app with the customer account tied to the booking.
+
+**Steps:**
+1. Open the mobile app and navigate to **My Bookings**.
+2. Select the booking scheduled 25 hours in the future.
+3. Observe the booking detail screen.
+
+**Expected Results:**
+- The booking detail screen displays active **Cancel** and **Reschedule** buttons.
+- Tapping either button opens the corresponding flow without errors.
+- No warning about the 24-hour cutoff is shown because the booking is still eligible.
+
 ### 4. AI Features Testing
 
 #### Test 4.1: Dynamic Pricing
