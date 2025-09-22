@@ -412,8 +412,8 @@ class BookingManager {
         $complete_booking_data = apply_filters(
             'fp_customer_booking_data',
             [
-                'order_id' => 0,
-                'order_item_id' => 0,
+                'order_id' => null,
+                'order_item_id' => null,
                 'product_id' => $product_id,
                 'booking_date' => $booking_date,
                 'booking_time' => $normalized_time,
@@ -475,6 +475,9 @@ class BookingManager {
         $booking_time = $complete_booking_data['booking_time'] ?? '';
         $slot_start = trim($booking_date . ' ' . substr((string) $booking_time, 0, 5));
 
+        $order_id_value = isset($complete_booking_data['order_id']) ? (int) $complete_booking_data['order_id'] : 0;
+        $order_item_id_value = isset($complete_booking_data['order_item_id']) ? (int) $complete_booking_data['order_item_id'] : 0;
+
         if (!isset($complete_booking_data['customer_id'])) {
             $complete_booking_data['customer_id'] = $order ? ($order->get_customer_id() ?: $order->get_user_id() ?: 0) : 0;
         }
@@ -492,8 +495,7 @@ class BookingManager {
         }
 
         if (!isset($complete_booking_data['total_amount'])) {
-            $order_item_id = isset($complete_booking_data['order_item_id']) ? (int) $complete_booking_data['order_item_id'] : 0;
-            $complete_booking_data['total_amount'] = $this->calculateOrderItemTotal($order, $order_item_id);
+            $complete_booking_data['total_amount'] = $this->calculateOrderItemTotal($order, $order_item_id_value);
         } else {
             $complete_booking_data['total_amount'] = round((float) $complete_booking_data['total_amount'], 2);
         }
@@ -514,6 +516,14 @@ class BookingManager {
 
         if (!array_key_exists('checked_in_by', $complete_booking_data)) {
             $complete_booking_data['checked_in_by'] = null;
+        }
+
+        if ($order_id_value > 0) {
+            $complete_booking_data['order_id'] = $order_id_value;
+            $complete_booking_data['order_item_id'] = $order_item_id_value > 0 ? $order_item_id_value : null;
+        } else {
+            $complete_booking_data['order_id'] = null;
+            $complete_booking_data['order_item_id'] = null;
         }
 
         if (HoldManager::isEnabled() && $session_id !== '') {
