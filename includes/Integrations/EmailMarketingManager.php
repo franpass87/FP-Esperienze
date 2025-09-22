@@ -1285,33 +1285,109 @@ class EmailMarketingManager {
     }
 
     private function getCampaignRecipients(string $recipient_type): array {
-        global $wpdb;
+        if (!class_exists('WC_Order_Query')) {
+            return [];
+        }
+
+        $recipients = [];
+        $seen_emails = [];
 
         switch ($recipient_type) {
             case 'all':
-                return $wpdb->get_results("
-                    SELECT DISTINCT billing_email as email, 
-                           CONCAT(billing_first_name, ' ', billing_last_name) as name
-                    FROM {$wpdb->prefix}wc_orders 
-                    WHERE billing_email != ''
-                ", ARRAY_A);
+                $recent_limit = (int) apply_filters('fp_esperienze_email_marketing_recent_orders_limit', 200);
+
+                $orders = (new \WC_Order_Query([
+                    'status' => ['completed', 'processing', 'on-hold'],
+                    'limit' => $recent_limit,
+                    'orderby' => 'date',
+                    'order' => 'DESC',
+                    'return' => 'objects',
+                ]))->get_orders();
+
+                foreach ($orders as $order) {
+                    if (!$order instanceof \WC_Order) {
+                        continue;
+                    }
+
+                    $billing_email = $order->get_billing_email();
+
+                    if (empty($billing_email)) {
+                        continue;
+                    }
+
+                    $email_key = strtolower($billing_email);
+
+                    if (isset($seen_emails[$email_key])) {
+                        continue;
+                    }
+
+                    $seen_emails[$email_key] = true;
+
+                    $name = trim($order->get_billing_first_name() . ' ' . $order->get_billing_last_name());
+
+                    if ($name === '') {
+                        $name = $order->get_formatted_billing_full_name();
+                    }
+
+                    $recipients[] = [
+                        'email' => $billing_email,
+                        'name' => $name,
+                    ];
+                }
+
+                break;
 
             case 'customers':
-                return $wpdb->get_results("
-                    SELECT DISTINCT o.billing_email as email,
-                           CONCAT(o.billing_first_name, ' ', o.billing_last_name) as name
-                    FROM {$wpdb->prefix}wc_orders o
-                    INNER JOIN {$wpdb->prefix}wc_order_items oi ON o.id = oi.order_id
-                    INNER JOIN {$wpdb->prefix}wc_order_itemmeta oim ON oi.order_item_id = oim.order_item_id
-                    WHERE o.status IN ('wc-processing', 'wc-completed')
-                    AND oim.meta_key = '_product_type'
-                    AND oim.meta_value = 'experience'
-                    AND o.billing_email != ''
-                ", ARRAY_A);
+                $orders = (new \WC_Order_Query([
+                    'status' => ['processing', 'completed'],
+                    'limit' => -1,
+                    'orderby' => 'date',
+                    'order' => 'DESC',
+                    'return' => 'objects',
+                ]))->get_orders();
+
+                foreach ($orders as $order) {
+                    if (!$order instanceof \WC_Order) {
+                        continue;
+                    }
+
+                    if (!$this->orderContainsExperience($order)) {
+                        continue;
+                    }
+
+                    $billing_email = $order->get_billing_email();
+
+                    if (empty($billing_email)) {
+                        continue;
+                    }
+
+                    $email_key = strtolower($billing_email);
+
+                    if (isset($seen_emails[$email_key])) {
+                        continue;
+                    }
+
+                    $seen_emails[$email_key] = true;
+
+                    $name = trim($order->get_billing_first_name() . ' ' . $order->get_billing_last_name());
+
+                    if ($name === '') {
+                        $name = $order->get_formatted_billing_full_name();
+                    }
+
+                    $recipients[] = [
+                        'email' => $billing_email,
+                        'name' => $name,
+                    ];
+                }
+
+                break;
 
             default:
                 return [];
         }
+
+        return $recipients;
     }
 
     /**
