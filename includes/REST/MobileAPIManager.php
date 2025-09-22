@@ -22,6 +22,7 @@ use WP_REST_Request;
 use WP_REST_Response;
 use WP_Error;
 use DateTime;
+use DateTimeImmutable;
 use Throwable;
 
 defined('ABSPATH') || exit;
@@ -1982,13 +1983,49 @@ class MobileAPIManager {
     }
 
     private function canCancelBooking(object $booking): bool {
-        // Simple logic - can cancel if booking is confirmed and date is more than 24 hours away
-        return $booking->status === 'confirmed' && 
-               strtotime($booking->booking_date) > (time() + DAY_IN_SECONDS);
+        if ($booking->status !== 'confirmed') {
+            return false;
+        }
+
+        return $this->isBookingBeyondTwentyFourHours($booking);
     }
 
     private function canRescheduleBooking(object $booking): bool {
-        return $this->canCancelBooking($booking);
+        if ($booking->status !== 'confirmed') {
+            return false;
+        }
+
+        return $this->isBookingBeyondTwentyFourHours($booking);
+    }
+
+    private function isBookingBeyondTwentyFourHours(object $booking): bool {
+        if (!isset($booking->booking_date) || $booking->booking_date === '') {
+            return false;
+        }
+
+        $timezone = wp_timezone();
+        $booking_date = trim((string) $booking->booking_date);
+
+        $booking_time = '';
+        if (isset($booking->booking_time) && is_scalar($booking->booking_time)) {
+            $booking_time = trim((string) $booking->booking_time);
+        }
+
+        if ($booking_time === '') {
+            $booking_time = '00:00:00';
+        }
+
+        $datetime_string = trim($booking_date . ' ' . $booking_time);
+
+        try {
+            $booking_datetime = new DateTimeImmutable($datetime_string, $timezone);
+        } catch (Throwable $exception) {
+            return false;
+        }
+
+        $threshold = current_time('timestamp') + DAY_IN_SECONDS;
+
+        return $booking_datetime->getTimestamp() > $threshold;
     }
 
     private function getBookingExtras(int $booking_id): array {
