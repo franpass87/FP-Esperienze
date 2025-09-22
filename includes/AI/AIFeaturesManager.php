@@ -15,6 +15,7 @@ use DateTimeZone;
 use Exception;
 use FP\Esperienze\Core\CapabilityManager;
 use FP\Esperienze\Data\Availability;
+use FP\Esperienze\Data\DynamicPricingManager;
 use Throwable;
 
 defined('ABSPATH') || exit;
@@ -1194,16 +1195,212 @@ class AIFeaturesManager {
     }
 
     private function getPricingInsights(string $date_range): array {
+        $active = $this->isFeatureEnabled('dynamic_pricing');
+
+        $days = 30;
+        if (preg_match('/\d+/', $date_range, $matches)) {
+            $days = (int) $matches[0];
+        }
+
+        if ($days <= 0) {
+            $days = 30;
+        }
+
+        $days = min($days, 365);
+
+        $history = DynamicPricingManager::getAdjustmentHistory($days);
+
+        if (empty($history)) {
+            return [
+                'dynamic_pricing_active' => $active,
+                'price_adjustments' => 0,
+                'revenue_impact' => '+0.0%',
+                'adjustment_summary' => [
+                    'increases' => 0,
+                    'decreases' => 0,
+                    'average_percent' => 0.0,
+                    'window_days' => $days,
+                ],
+                'recommendations' => [
+                    'No pricing adjustments recorded in the selected window.',
+                    'Enable or fine-tune dynamic pricing rules to gather actionable data.',
+                    sprintf('Revisit the dashboard after %d days of activity for meaningful insights.', $days),
+                ],
+            ];
+        }
+
+        $total_adjustments = count($history);
+        $total_base = 0.0;
+        $total_delta = 0.0;
+        $total_percent = 0.0;
+        $positive = 0;
+        $negative = 0;
+        $rule_stats = [];
+
+        foreach ($history as $entry) {
+            $base = isset($entry['base_price']) ? (float) $entry['base_price'] : 0.0;
+            $final = isset($entry['final_price']) ? (float) $entry['final_price'] : 0.0;
+            $delta = isset($entry['adjustment_amount']) ? (float) $entry['adjustment_amount'] : ($final - $base);
+            $percent = isset($entry['adjustment_percent']) ? (float) $entry['adjustment_percent'] : ($base > 0.0 ? (($final - $base) / $base) * 100 : 0.0);
+
+            $total_base += $base;
+            $total_delta += $delta;
+            $total_percent += $percent;
+
+            if ($delta > 0) {
+                $positive++;
+            } elseif ($delta < 0) {
+                $negative++;
+            }
+
+            if (!empty($entry['rules']) && is_array($entry['rules'])) {
+                foreach ($entry['rules'] as $rule) {
+                    $type = '';
+                    $impact = 0.0;
+
+                    if (is_array($rule)) {
+                        $type = isset($rule['rule_type']) ? (string) $rule['rule_type'] : '';
+                        $impact = abs((float) ($rule['adjustment'] ?? $percent));
+                    } elseif (is_object($rule)) {
+                        $type = isset($rule->rule_type) ? (string) $rule->rule_type : '';
+                        $impact = isset($rule->adjustment) ? abs((float) $rule->adjustment) : abs($percent);
+                    }
+
+                    if ($type === '') {
+                        continue;
+                    }
+
+                    if (!isset($rule_stats[$type])) {
+                        $rule_stats[$type] = [
+                            'count' => 0,
+                            'impact' => 0.0,
+                        ];
+                    }
+
+                    $rule_stats[$type]['count']++;
+                    $rule_stats[$type]['impact'] += $impact;
+                }
+            }
+        }
+
+        $impact_percent = $total_base > 0.0 ? ($total_delta / $total_base) * 100 : 0.0;
+        $impact_percent = round($impact_percent, 1);
+        $formatted_impact = sprintf('%+0.1f%%', $impact_percent);
+
+        $average_percent = $total_adjustments > 0 ? round($total_percent / $total_adjustments, 2) : 0.0;
+
+        $increase_label = $positive === 1 ? 'increase' : 'increases';
+        $decrease_label = $negative === 1 ? 'decrease' : 'decreases';
+        $impact_magnitude = abs($impact_percent);
+
+        if ($impact_percent > 2.0) {
+            $impact_recommendation = sprintf(
+                'Positive revenue impact detected (%.1f%%) with %d price %s versus %d %s.',
+                $impact_magnitude,
+                $positive,
+                $increase_label,
+                $negative,
+                $decrease_label
+            );
+        } elseif ($impact_percent < -2.0) {
+            $impact_recommendation = sprintf(
+                'Revenue impact is negative (-%.1f%%) with %d price %s versus %d %s — review discount-heavy rules.',
+                $impact_magnitude,
+                $positive,
+                $increase_label,
+                $negative,
+                $decrease_label
+            );
+        } else {
+            $impact_recommendation = sprintf(
+                'Revenue impact is flat (%.1f%%); %d price %s and %d %s were applied.',
+                $impact_magnitude,
+                $positive,
+                $increase_label,
+                $negative,
+                $decrease_label
+            );
+        }
+
+        $summary_recommendation = sprintf(
+            'Analyzed %d adjustments in the last %d days.',
+            $total_adjustments,
+            $days
+        );
+
+        $rule_recommendation = $this->buildRuleRecommendation($rule_stats);
+        if (null === $rule_recommendation) {
+            $rule_recommendation = $impact_percent >= 0
+                ? 'Add more dynamic pricing rules to capture emerging demand patterns.'
+                : 'Evaluate existing pricing rules to ensure they align with booking demand.';
+        }
+
         return [
-            'dynamic_pricing_active' => $this->isFeatureEnabled('dynamic_pricing'),
-            'price_adjustments' => rand(5, 20),
-            'revenue_impact' => '+' . rand(5, 15) . '%',
+            'dynamic_pricing_active' => $active,
+            'price_adjustments' => $total_adjustments,
+            'revenue_impact' => $formatted_impact,
+            'adjustment_summary' => [
+                'increases' => $positive,
+                'decreases' => $negative,
+                'average_percent' => $average_percent,
+                'window_days' => $days,
+            ],
             'recommendations' => [
-                'Increase prices for weekend slots',
-                'Apply seasonal discounts for winter experiences',
-                'Optimize pricing for high-demand experiences'
-            ]
+                $summary_recommendation,
+                $impact_recommendation,
+                $rule_recommendation,
+            ],
         ];
+    }
+
+    private function buildRuleRecommendation(array $rule_stats): ?string {
+        if (empty($rule_stats)) {
+            return null;
+        }
+
+        $ranking = [];
+
+        foreach ($rule_stats as $type => $data) {
+            $ranking[] = [
+                'type' => $type,
+                'count' => (int) ($data['count'] ?? 0),
+                'impact' => (float) ($data['impact'] ?? 0.0),
+            ];
+        }
+
+        usort(
+            $ranking,
+            static function (array $a, array $b): int {
+                if ($a['count'] === $b['count']) {
+                    if ($a['impact'] === $b['impact']) {
+                        return strcmp($a['type'], $b['type']);
+                    }
+
+                    return ($a['impact'] < $b['impact']) ? 1 : -1;
+                }
+
+                return ($a['count'] < $b['count']) ? 1 : -1;
+            }
+        );
+
+        $top = $ranking[0] ?? null;
+
+        if (!$top || empty($top['type'])) {
+            return null;
+        }
+
+        switch ($top['type']) {
+            case 'seasonal':
+                return 'Seasonal rules drive most adjustments — verify upcoming peak and off-peak periods.';
+            case 'weekend_weekday':
+                return 'Weekend pricing rules drive most adjustments — keep weekend premiums optimized.';
+            case 'early_bird':
+                return 'Early bird incentives dominate — confirm lead time discounts remain profitable.';
+            case 'group':
+                return 'Group discount rules are most active — monitor margins for larger parties.';
+            default:
+                return sprintf('Rules of type "%s" are driving most adjustments — review their configuration.', $top['type']);
+        }
     }
 
     private function getDemandInsights(string $date_range): array {
