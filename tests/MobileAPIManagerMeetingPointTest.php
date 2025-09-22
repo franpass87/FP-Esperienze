@@ -360,15 +360,17 @@ namespace {
 
     $wpdb->meetingPointQueryCount = 0;
     $wpdb->last_error = '';
-    \FP\Esperienze\Data\MeetingPointManager::$points = [
-        (object) [
-            'id' => 7,
-            'name' => 'Central Station',
-            'address' => "Piazza Duca d'Aosta, Milano",
-            'lat' => 45.484,
-            'lng' => 9.204,
-            'note' => 'Meet near the main fountain.',
-        ],
+    $centralMeetingPoint = (object) [
+        'id' => 7,
+        'name' => 'Central Station',
+        'address' => "Piazza Duca d'Aosta, Milano",
+        'lat' => 45.484,
+        'lng' => 9.204,
+        'note' => 'Meet near the main fountain.',
+    ];
+    \FP\Esperienze\Data\MeetingPointManager::$points = [$centralMeetingPoint];
+    $wpdb->meetingPoints = [
+        7 => $centralMeetingPoint,
     ];
 
     $meetingPointsMethod = $reflection->getMethod('getMeetingPoints');
@@ -387,13 +389,13 @@ namespace {
         exit(1);
     }
 
-    if (abs($firstMeetingPoint['latitude']) <= 0.0) {
-        echo "Expected non-zero latitude for meeting point\n";
+    if (abs($firstMeetingPoint['latitude'] - 45.484) >= 0.0001) {
+        echo "Meeting point latitude mismatch\n";
         exit(1);
     }
 
-    if (abs($firstMeetingPoint['longitude']) <= 0.0) {
-        echo "Expected non-zero longitude for meeting point\n";
+    if (abs($firstMeetingPoint['longitude'] - 9.204) >= 0.0001) {
+        echo "Meeting point longitude mismatch\n";
         exit(1);
     }
 
@@ -433,8 +435,8 @@ namespace {
         exit(1);
     }
 
-    if (abs($singlePoint['latitude']) <= 0.0 || abs($singlePoint['longitude']) <= 0.0) {
-        echo "Non-zero coordinates expected for single meeting point\n";
+    if (abs($singlePoint['latitude'] - 45.484) >= 0.0001 || abs($singlePoint['longitude'] - 9.204) >= 0.0001) {
+        echo "Single meeting point coordinates mismatch\n";
         exit(1);
     }
 
@@ -445,6 +447,38 @@ namespace {
 
     if ($singlePoint['is_default'] !== false) {
         echo "Unexpected default flag for single meeting point\n";
+        exit(1);
+    }
+
+    $noCoordinatePoint = (object) [
+        'id' => 8,
+        'name' => 'No Coordinates',
+        'address' => 'Unknown location',
+        'lat' => null,
+        'lng' => null,
+        'note' => null,
+    ];
+    \FP\Esperienze\Data\MeetingPointManager::$points[] = $noCoordinatePoint;
+    $wpdb->meetingPoints[8] = $noCoordinatePoint;
+
+    $nullCoordinatePayload = $meetingPointMethod->invoke($manager, 8);
+    if ($nullCoordinatePayload === null) {
+        echo "Expected payload for meeting point without coordinates\n";
+        exit(1);
+    }
+
+    if ($nullCoordinatePayload['latitude'] !== null) {
+        echo "Expected null latitude for meeting point without coordinates\n";
+        exit(1);
+    }
+
+    if ($nullCoordinatePayload['longitude'] !== null) {
+        echo "Expected null longitude for meeting point without coordinates\n";
+        exit(1);
+    }
+
+    if ($nullCoordinatePayload['description'] !== null) {
+        echo "Expected null description for meeting point without notes\n";
         exit(1);
     }
 

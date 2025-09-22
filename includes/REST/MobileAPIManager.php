@@ -1620,7 +1620,73 @@ class MobileAPIManager {
             return null;
         }
 
-        return $this->formatMeetingPointForMobile($point);
+        $meeting_point = $this->formatMeetingPointForMobile($point);
+
+        $latitude = null;
+        foreach (['lat', 'latitude'] as $latitude_property) {
+            if (is_object($point) && property_exists($point, $latitude_property)) {
+                $value = $point->{$latitude_property};
+            } elseif (is_array($point) && array_key_exists($latitude_property, $point)) {
+                $value = $point[$latitude_property];
+            } else {
+                continue;
+            }
+
+            if ($value === null || $value === '') {
+                continue;
+            }
+
+            if (is_numeric($value)) {
+                $latitude = (float) $value;
+                break;
+            }
+        }
+
+        $longitude = null;
+        foreach (['lng', 'longitude'] as $longitude_property) {
+            if (is_object($point) && property_exists($point, $longitude_property)) {
+                $value = $point->{$longitude_property};
+            } elseif (is_array($point) && array_key_exists($longitude_property, $point)) {
+                $value = $point[$longitude_property];
+            } else {
+                continue;
+            }
+
+            if ($value === null || $value === '') {
+                continue;
+            }
+
+            if (is_numeric($value)) {
+                $longitude = (float) $value;
+                break;
+            }
+        }
+
+        $description = null;
+        foreach (['note', 'description'] as $description_property) {
+            if (is_object($point) && property_exists($point, $description_property)) {
+                $value = $point->{$description_property};
+            } elseif (is_array($point) && array_key_exists($description_property, $point)) {
+                $value = $point[$description_property];
+            } else {
+                continue;
+            }
+
+            if ($value === null) {
+                continue;
+            }
+
+            if (is_scalar($value)) {
+                $description = (string) $value;
+                break;
+            }
+        }
+
+        $meeting_point['latitude'] = $latitude;
+        $meeting_point['longitude'] = $longitude;
+        $meeting_point['description'] = $description;
+
+        return $meeting_point;
     }
 
     private function canCancelBooking(object $booking): bool {
