@@ -604,24 +604,54 @@ class AdvancedAnalytics {
      * Helper methods for data retrieval
      */
 
+    /**
+     * Retrieve analytics event counts from the tracking table.
+     */
+    private function getAnalyticsEventCount(string $event_type, string $date_from, string $date_to): int {
+        global $wpdb;
+
+        $cache_key = 'fp_analytics_event_' . $event_type . '_' . md5($date_from . $date_to);
+        $cached = get_transient($cache_key);
+        if ($cached !== false && is_numeric($cached)) {
+            return (int) $cached;
+        }
+
+        $table = $wpdb->prefix . 'fp_analytics_events';
+        $query = $wpdb->prepare(
+            "SELECT COUNT(*) FROM {$table} WHERE event_type = %s AND created_at BETWEEN %s AND %s",
+            $event_type,
+            $date_from . ' 00:00:00',
+            $date_to . ' 23:59:59'
+        );
+
+        $previous_suppress = method_exists($wpdb, 'suppress_errors') ? $wpdb->suppress_errors(true) : false;
+        $count = $wpdb->get_var($query);
+        if (method_exists($wpdb, 'suppress_errors')) {
+            $wpdb->suppress_errors((bool) $previous_suppress);
+        }
+
+        $count = $count !== null ? (int) $count : 0;
+
+        $ttl = defined('MINUTE_IN_SECONDS') ? 15 * MINUTE_IN_SECONDS : 900;
+        set_transient($cache_key, $count, $ttl);
+
+        return $count;
+    }
+
     private function getWebsiteVisits(string $date_from, string $date_to): int {
-        // Placeholder - would integrate with GA4 API
-        return rand(1000, 5000);
+        return $this->getAnalyticsEventCount('visit', $date_from, $date_to);
     }
 
     private function getProductViews(string $date_from, string $date_to): int {
-        // Placeholder - would track via custom events
-        return rand(200, 800);
+        return $this->getAnalyticsEventCount('product_view', $date_from, $date_to);
     }
 
     private function getCartAdditions(string $date_from, string $date_to): int {
-        // Placeholder - would track via WooCommerce events
-        return rand(50, 200);
+        return $this->getAnalyticsEventCount('add_to_cart', $date_from, $date_to);
     }
 
     private function getCheckoutStarts(string $date_from, string $date_to): int {
-        // Placeholder - would track via checkout events
-        return rand(30, 150);
+        return $this->getAnalyticsEventCount('checkout_start', $date_from, $date_to);
     }
 
     private function getCompletedPurchases(string $date_from, string $date_to): int {

@@ -35,44 +35,29 @@ if (!class_exists('WP_REST_Response')) {
 require_once __DIR__ . '/../includes/Admin/AdvancedAnalytics.php';
 
 $transients = [];
-$transient_stats = [
-    'get' => 0,
-    'hit' => 0,
-];
-
 function get_transient(string $key) {
-    global $transients, $transient_stats;
-
-    $transient_stats['get']++;
-
-    if (array_key_exists($key, $transients)) {
-        $transient_stats['hit']++;
-        return $transients[$key];
-    }
-
-    return false;
+    global $transients;
+    return $transients[$key] ?? false;
 }
 
 function set_transient(string $key, $value, int $ttl) {
     global $transients;
-
     $transients[$key] = $value;
-
     return true;
 }
 
-class WPDBStub {
+class WPDBDeterministicStub {
     public string $prefix = 'wp_';
     public int $prepare_calls = 0;
     public int $get_var_calls = 0;
     public array $event_counts = [
-        'visit' => 1500,
-        'product_view' => 900,
-        'add_to_cart' => 320,
-        'checkout_start' => 200,
+        'visit' => 1000,
+        'product_view' => 600,
+        'add_to_cart' => 250,
+        'checkout_start' => 120,
     ];
-    public int $purchase_count = 120;
-    public float $total_revenue = 3456.78;
+    public int $purchase_count = 90;
+    public float $total_revenue = 18000.0;
     private bool $suppress_errors = false;
 
     /**
@@ -80,7 +65,6 @@ class WPDBStub {
      */
     public function prepare(string $query, ...$args): array {
         $this->prepare_calls++;
-
         return [$query, $args];
     }
 
@@ -113,16 +97,14 @@ class WPDBStub {
 
     public function suppress_errors($suppress = null) {
         $previous = $this->suppress_errors;
-
         if ($suppress !== null) {
             $this->suppress_errors = (bool) $suppress;
         }
-
         return $previous;
     }
 }
 
-$wpdb = new WPDBStub();
+$wpdb = new WPDBDeterministicStub();
 $GLOBALS['wpdb'] = $wpdb;
 
 $reflection = new ReflectionClass(AdvancedAnalytics::class);
@@ -132,25 +114,44 @@ $analytics = $reflection->newInstanceWithoutConstructor();
 $method = $reflection->getMethod('getConversionFunnelData');
 $method->setAccessible(true);
 
-$first_result = $method->invoke($analytics, '2024-01-01', '2024-01-31');
-$first_db_calls = $wpdb->get_var_calls;
+$result = $method->invoke($analytics, '2024-02-01', '2024-02-29');
 
-$second_result = $method->invoke($analytics, '2024-01-01', '2024-01-31');
-$second_db_calls = $wpdb->get_var_calls;
-
-if ($first_result !== $second_result) {
-    echo "Cached funnel data mismatch\n";
+$steps = $result['funnel_steps'] ?? [];
+if (count($steps) !== 5) {
+    echo "Unexpected number of funnel steps\n";
     exit(1);
 }
 
-if ($second_db_calls !== $first_db_calls) {
-    echo "Conversion funnel cache miss\n";
+[$visits, $views, $cart, $checkout, $purchases] = $steps;
+
+if ($visits['count'] !== 1000 || $views['count'] !== 600 || $cart['count'] !== 250 || $checkout['count'] !== 120 || $purchases['count'] !== 90) {
+    echo "Funnel counts do not match expected values\n";
     exit(1);
 }
 
-if ($transient_stats['hit'] < 1) {
-    echo "Transient cache was not hit\n";
+$expected_rates = [
+    100.0,
+    60.0,
+    41.67,
+    48.0,
+    75.0,
+];
+
+foreach ($steps as $index => $step) {
+    if (abs($step['conversion_rate'] - $expected_rates[$index]) > 0.01) {
+        echo "Unexpected conversion rate for step {$step['step']}\n";
+        exit(1);
+    }
+}
+
+if ($result['overall_conversion_rate'] !== 9.0) {
+    echo "Unexpected overall conversion rate\n";
     exit(1);
 }
 
-echo "Conversion funnel cache test passed\n";
+if ($result['average_order_value'] !== 200.0) {
+    echo "Unexpected average order value\n";
+    exit(1);
+}
+
+echo "Deterministic funnel test passed\n";

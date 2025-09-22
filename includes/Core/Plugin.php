@@ -34,6 +34,7 @@ use FP\Esperienze\Core\CapabilityManager;
 use FP\Esperienze\Core\WebhookManager;
 use FP\Esperienze\Core\I18nManager;
 use FP\Esperienze\Core\CacheManager;
+use FP\Esperienze\Core\AnalyticsTracker;
 use FP\Esperienze\Core\AssetOptimizer;
 use FP\Esperienze\Core\QueryMonitor;
 use FP\Esperienze\Core\TranslationQueue;
@@ -206,7 +207,10 @@ class Plugin {
         
         // Initialize cache manager for performance
         new CacheManager();
-        
+
+        // Initialize analytics tracker to persist funnel events
+        new AnalyticsTracker();
+
         // Initialize asset optimizer
         AssetOptimizer::init();
         
