@@ -72,6 +72,13 @@ class Plugin {
     private static $product_type_error = null;
 
     /**
+     * Tracks whether the push token cleanup hooks have been registered.
+     *
+     * @var bool
+     */
+    private $push_token_cleanup_registered = false;
+
+    /**
      * Get plugin instance
      *
      * @return Plugin
@@ -243,6 +250,14 @@ class Plugin {
 
         // Initialize holds cleanup cron
         $this->initHoldsCron();
+
+        // Register push token cleanup handler and schedule the daily event during bootstrap
+        if (!$this->push_token_cleanup_registered) {
+            add_action('fp_cleanup_push_tokens', [$this, 'cleanupExpiredPushTokens']);
+            $this->push_token_cleanup_registered = true;
+        }
+
+        $this->initPushTokenCron();
 
         // Initialize REST API
         add_action('rest_api_init', [$this, 'initREST']);
