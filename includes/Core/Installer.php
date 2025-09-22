@@ -407,8 +407,8 @@ class Installer {
         $table_bookings = $wpdb->prefix . 'fp_bookings';
         $sql_bookings = "CREATE TABLE $table_bookings (
             id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-            order_id bigint(20) unsigned NOT NULL,
-            order_item_id bigint(20) unsigned NOT NULL,
+            order_id bigint(20) unsigned DEFAULT NULL,
+            order_item_id bigint(20) unsigned DEFAULT NULL,
             customer_id bigint(20) unsigned NOT NULL DEFAULT 0,
             booking_number varchar(191) DEFAULT NULL,
             product_id bigint(20) unsigned NOT NULL,
@@ -824,6 +824,53 @@ class Installer {
         $existing_columns = wp_list_pluck($columns, 'Field');
         $alterations = [];
 
+        $order_id_column = null;
+        $order_item_id_column = null;
+
+        foreach ($columns as $column) {
+            if (!isset($column->Field)) {
+                continue;
+            }
+
+            if ($column->Field === 'order_id') {
+                $order_id_column = $column;
+            }
+
+            if ($column->Field === 'order_item_id') {
+                $order_item_id_column = $column;
+            }
+        }
+
+        $needs_order_id_nullable = false;
+        if ($order_id_column) {
+            $is_nullable = isset($order_id_column->Null) && strtoupper((string) $order_id_column->Null) === 'YES';
+            $default_is_null = !isset($order_id_column->Default) || $order_id_column->Default === null;
+
+            if (!$is_nullable || !$default_is_null) {
+                $alterations[] = "MODIFY COLUMN `order_id` bigint(20) unsigned DEFAULT NULL";
+                $needs_order_id_nullable = true;
+            }
+        }
+
+        $needs_order_item_nullable = false;
+        if ($order_item_id_column) {
+            $is_nullable = isset($order_item_id_column->Null) && strtoupper((string) $order_item_id_column->Null) === 'YES';
+            $default_is_null = !isset($order_item_id_column->Default) || $order_item_id_column->Default === null;
+
+            if (!$is_nullable || !$default_is_null) {
+                $alterations[] = "MODIFY COLUMN `order_item_id` bigint(20) unsigned DEFAULT NULL";
+                $needs_order_item_nullable = true;
+            }
+        }
+
+        $needs_zero_cleanup = false;
+        if ($order_id_column || $order_item_id_column) {
+            $zero_count = $wpdb->get_var("SELECT COUNT(*) FROM `{$table_name_escaped}` WHERE order_id = 0 OR order_item_id = 0");
+            if (is_numeric($zero_count) && (int) $zero_count > 0) {
+                $needs_zero_cleanup = true;
+            }
+        }
+
         if (!in_array('customer_id', $existing_columns, true)) {
             $alterations[] = "ADD COLUMN `customer_id` bigint(20) unsigned NOT NULL DEFAULT 0 AFTER `order_item_id`";
         }
@@ -868,6 +915,42 @@ class Installer {
             if (isset($index->Key_name)) {
                 $existing_index_names[$index->Key_name] = true;
             }
+        }
+
+        $unique_index_exists = isset($existing_index_names['order_item_unique']);
+        $needs_unique_recreation = $unique_index_exists && ($needs_order_id_nullable || $needs_order_item_nullable || $needs_zero_cleanup);
+
+        if ($needs_unique_recreation) {
+            $drop_result = $wpdb->query("ALTER TABLE `{$table_name_escaped}` DROP INDEX `order_item_unique`");
+            if ($drop_result === false) {
+                return new \WP_Error('fp_booking_index_drop_failed', 'Failed to drop booking unique index: ' . $wpdb->last_error);
+            }
+
+            unset($existing_index_names['order_item_unique']);
+        }
+
+        if ($needs_zero_cleanup) {
+            $cleanup_queries = [
+                "UPDATE `{$table_name_escaped}` SET order_id = NULL WHERE order_id = 0",
+                "UPDATE `{$table_name_escaped}` SET order_item_id = NULL WHERE order_item_id = 0",
+                "UPDATE `{$table_name_escaped}` SET order_item_id = NULL WHERE order_id IS NULL",
+            ];
+
+            foreach ($cleanup_queries as $cleanup_query) {
+                $cleanup_result = $wpdb->query($cleanup_query);
+                if ($cleanup_result === false) {
+                    return new \WP_Error('fp_booking_cleanup_failed', 'Failed to normalize booking order references: ' . $wpdb->last_error);
+                }
+            }
+        }
+
+        if ($needs_unique_recreation) {
+            $add_result = $wpdb->query("ALTER TABLE `{$table_name_escaped}` ADD UNIQUE KEY `order_item_unique` (`order_id`, `order_item_id`)");
+            if ($add_result === false) {
+                return new \WP_Error('fp_booking_index_recreate_failed', 'Failed to recreate booking unique index: ' . $wpdb->last_error);
+            }
+
+            $existing_index_names['order_item_unique'] = true;
         }
 
         $index_definitions = [
