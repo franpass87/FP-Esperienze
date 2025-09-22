@@ -909,20 +909,32 @@ class MobileAPIManager {
             $data['booking_id'] = absint( $data['booking_id'] );
         }
 
+        $priority = $request->get_param( 'priority' );
+
+        if ( is_string( $priority ) ) {
+            $priority = strtolower( sanitize_text_field( $priority ) );
+        } else {
+            $priority = 'high';
+        }
+
+        if ( ! in_array( $priority, [ 'high', 'normal' ], true ) ) {
+            $priority = 'high';
+        }
+
         if (empty($recipient_id) || empty($title) || empty($message)) {
             return new WP_Error('missing_params', __('Recipient, title and message are required', 'fp-esperienze'), ['status' => 400]);
         }
 
-        $result = $this->sendPushToUser($recipient_id, $title, $message, $data);
+        $result = $this->sendPushToUser($recipient_id, $title, $message, $data, $priority);
 
-        if ($result) {
-            return new WP_REST_Response([
-                'success' => true,
-                'message' => __('Notification sent successfully', 'fp-esperienze')
-            ]);
-        } else {
-            return new WP_Error('send_failed', __('Failed to send notification', 'fp-esperienze'), ['status' => 500]);
+        if (is_wp_error($result)) {
+            return $result;
         }
+
+        return new WP_REST_Response([
+            'success' => true,
+            'message' => __('Notification sent successfully', 'fp-esperienze')
+        ]);
     }
 
     /**
@@ -1672,76 +1684,478 @@ class MobileAPIManager {
     /**
      * Send a push notification to a user.
      *
-     * @param int    $user_id User ID.
-     * @param string $title   Notification title.
-     * @param string $message Notification message.
-     * @param array  $data    Optional additional data.
+     * @param int    $user_id  User ID.
+     * @param string $title    Notification title.
+     * @param string $message  Notification message/body.
+     * @param array  $data     Optional additional data.
+     * @param string $priority Notification priority.
      *
-     * @return bool Whether the push notification was sent.
+     * @return bool|WP_Error Whether the push notification was sent, or WP_Error on failure.
      */
-    private function sendPushToUser(int $user_id, string $title, string $message, array $data = []): bool {
+    private function sendPushToUser(int $user_id, string $title, string $message, array $data = [], string $priority = 'high'): bool|WP_Error {
         $tokens   = get_user_meta( $user_id, '_push_notification_tokens', true );
         $expiries = get_user_meta( $user_id, '_push_token_expires_at', true );
 
         if ( ! is_array( $tokens ) || empty( $tokens ) ) {
-            return false;
+            return new WP_Error(
+                'push_no_tokens',
+                __( 'The user has no registered push notification tokens', 'fp-esperienze' ),
+                [
+                    'status'  => 400,
+                    'user_id' => $user_id,
+                ]
+            );
         }
 
         if ( ! is_array( $expiries ) ) {
             $expiries = [];
         }
 
+        $priority        = $this->normalizeNotificationPriority( $priority );
+        $normalized_data = $this->normalizeNotificationData( $data );
+
         $payload = [
-            'title'   => $title,
-            'message' => $message,
-            'data'    => $data,
+            'title'    => $title,
+            'body'     => $message,
+            'data'     => $normalized_data,
+            'priority' => $priority,
         ];
 
-        $sent             = false;
-        $valid_tokens     = [];
-        $valid_expiries   = [];
-        $now              = time();
+        $sent               = false;
+        $retained_tokens     = [];
+        $retained_expiries   = [];
+        $errors              = [];
+        $invalid_tokens      = [];
+        $now                 = time();
 
         foreach ( $tokens as $token ) {
             $expiry = isset( $expiries[ $token ] ) ? (int) $expiries[ $token ] : 0;
 
             if ( $expiry <= $now ) {
+                $invalid_tokens[] = $token;
                 continue;
             }
 
-            if ( $this->sendPushPayload( $token, $payload ) ) {
-                $sent               = true;
-                $valid_tokens[]     = $token;
-                $valid_expiries[ $token ] = $expiry;
+            $result = $this->sendPushPayload( $token, $payload );
+
+            if ( true === $result ) {
+                $sent                     = true;
+                $retained_tokens[]        = $token;
+                $retained_expiries[ $token ] = $expiry;
+                continue;
             }
+
+            if ( is_wp_error( $result ) ) {
+                $errors[] = $result;
+
+                $error_data   = $result->get_error_data();
+                $remove_token = is_array( $error_data ) && ! empty( $error_data['remove_token'] );
+
+                if ( $remove_token ) {
+                    $invalid_tokens[] = $token;
+                    continue;
+                }
+
+                $retained_tokens[]        = $token;
+                $retained_expiries[ $token ] = $expiry;
+                continue;
+            }
+
+            $retained_tokens[]        = $token;
+            $retained_expiries[ $token ] = $expiry;
         }
 
-        if ( $valid_tokens !== $tokens ) {
-            if ( ! empty( $valid_tokens ) ) {
-                update_user_meta( $user_id, '_push_notification_tokens', $valid_tokens );
-                update_user_meta( $user_id, '_push_token_expires_at', $valid_expiries );
-            } else {
-                delete_user_meta( $user_id, '_push_notification_tokens' );
-                delete_user_meta( $user_id, '_push_token_expires_at' );
+        if ( ! empty( $retained_tokens ) ) {
+            if ( $tokens !== $retained_tokens ) {
+                update_user_meta( $user_id, '_push_notification_tokens', $retained_tokens );
             }
+
+            if ( $expiries !== $retained_expiries ) {
+                update_user_meta( $user_id, '_push_token_expires_at', $retained_expiries );
+            }
+        } else {
+            delete_user_meta( $user_id, '_push_notification_tokens' );
+            delete_user_meta( $user_id, '_push_token_expires_at' );
         }
 
-        return $sent;
+        $invalid_tokens = array_values( array_unique( $invalid_tokens ) );
+
+        if ( $sent ) {
+            return true;
+        }
+
+        if ( ! empty( $errors ) ) {
+            if ( 1 === count( $errors ) ) {
+                $error      = $errors[0];
+                $error_data = $error->get_error_data();
+
+                if ( ! is_array( $error_data ) ) {
+                    $error_data = [];
+                }
+
+                $error_data = array_merge(
+                    $error_data,
+                    [
+                        'user_id'        => $user_id,
+                        'invalid_tokens' => $invalid_tokens,
+                    ]
+                );
+
+                if ( ! isset( $error_data['status'] ) ) {
+                    $error_data['status'] = 500;
+                }
+
+                $error->add_data( $error_data );
+
+                return $error;
+            }
+
+            $messages = array_map(
+                static fn( WP_Error $error ): string => $error->get_error_message(),
+                $errors
+            );
+
+            return new WP_Error(
+                'push_delivery_failed',
+                __( 'Failed to deliver push notification to any device', 'fp-esperienze' ),
+                [
+                    'status'          => 500,
+                    'user_id'         => $user_id,
+                    'errors'          => $messages,
+                    'invalid_tokens'  => $invalid_tokens,
+                ]
+            );
+        }
+
+        return new WP_Error(
+            'push_no_valid_tokens',
+            __( 'No valid push notification tokens are available for this user', 'fp-esperienze' ),
+            [
+                'status'         => 400,
+                'user_id'        => $user_id,
+                'invalid_tokens' => $invalid_tokens,
+            ]
+        );
     }
 
     /**
-     * Placeholder for actual push notification service integration.
+     * Send the push payload to the configured provider.
      *
      * @param string $token   Device token.
      * @param array  $payload Notification payload.
      *
-     * @return bool Whether the notification was sent successfully.
+     * @return bool|WP_Error Whether the notification was sent successfully, or WP_Error on failure.
      */
-    private function sendPushPayload( string $token, array $payload ): bool {
-        // Would integrate with Firebase Cloud Messaging, Apple Push Notification Service, etc.
-        // $token and $payload would be used here.
+    private function sendPushPayload( string $token, array $payload ): bool|WP_Error {
+        $config = get_option( 'fp_esperienze_mobile_notifications' );
 
-        return true;
+        if ( ! is_array( $config ) ) {
+            $this->logPushError( 'Push notification configuration is missing.' );
+
+            return new WP_Error(
+                'push_config_missing',
+                __( 'Push notification service is not configured', 'fp-esperienze' ),
+                [
+                    'status' => 500,
+                    'token'  => $token,
+                ]
+            );
+        }
+
+        $provider  = isset( $config['provider'] ) ? strtolower( (string) $config['provider'] ) : 'fcm';
+        $server_key = isset( $config['server_key'] ) ? trim( (string) $config['server_key'] ) : '';
+        $project_id = isset( $config['project_id'] ) ? trim( (string) $config['project_id'] ) : '';
+
+        if ( '' === $server_key ) {
+            $this->logPushError( 'Missing Firebase server key in configuration.', [ 'provider' => $provider ] );
+
+            return new WP_Error(
+                'push_missing_credentials',
+                __( 'Push notification credentials are missing', 'fp-esperienze' ),
+                [
+                    'status'   => 500,
+                    'token'    => $token,
+                    'provider' => $provider,
+                ]
+            );
+        }
+
+        if ( '' === $project_id ) {
+            $this->logPushError( 'Missing Firebase project ID in configuration.', [ 'provider' => $provider ] );
+
+            return new WP_Error(
+                'push_missing_project',
+                __( 'Push notification project ID is missing', 'fp-esperienze' ),
+                [
+                    'status'   => 500,
+                    'token'    => $token,
+                    'provider' => $provider,
+                ]
+            );
+        }
+
+        if ( 'fcm' !== $provider ) {
+            $this->logPushError( 'Unsupported push provider requested.', [ 'provider' => $provider ] );
+
+            return new WP_Error(
+                'push_provider_unsupported',
+                __( 'Configured push notification provider is not supported', 'fp-esperienze' ),
+                [
+                    'status'   => 500,
+                    'token'    => $token,
+                    'provider' => $provider,
+                ]
+            );
+        }
+
+        $body = [
+            'to'           => $token,
+            'priority'     => $payload['priority'] ?? 'high',
+            'notification' => [
+                'title' => (string) ( $payload['title'] ?? '' ),
+                'body'  => (string) ( $payload['body'] ?? ( $payload['message'] ?? '' ) ),
+            ],
+            'data'         => is_array( $payload['data'] ?? null ) ? $payload['data'] : [],
+        ];
+
+        $body_json = wp_json_encode( $body );
+
+        if ( false === $body_json ) {
+            $this->logPushError(
+                'Failed to encode push payload as JSON.',
+                [
+                    'token'   => $token,
+                    'payload' => $body,
+                ]
+            );
+
+            return new WP_Error(
+                'push_payload_encoding_failed',
+                __( 'Unable to encode push notification payload', 'fp-esperienze' ),
+                [
+                    'status'  => 500,
+                    'token'   => $token,
+                    'payload' => $body,
+                ]
+            );
+        }
+
+        $args = [
+            'timeout' => 10,
+            'headers' => [
+                'Authorization' => 'key=' . $server_key,
+                'Content-Type'  => 'application/json; charset=utf-8',
+            ],
+            'body'    => $body_json,
+        ];
+
+        $response = wp_remote_post( 'https://fcm.googleapis.com/fcm/send', $args );
+
+        if ( is_wp_error( $response ) ) {
+            $this->logPushError(
+                'Push notification request failed.',
+                [
+                    'token'   => $token,
+                    'reason'  => $response->get_error_message(),
+                    'project' => $project_id,
+                ]
+            );
+
+            return new WP_Error(
+                'push_http_request_failed',
+                __( 'Unable to contact the push notification service', 'fp-esperienze' ),
+                [
+                    'status'  => 500,
+                    'token'   => $token,
+                    'reason'  => $response->get_error_message(),
+                    'project' => $project_id,
+                ]
+            );
+        }
+
+        $status_code = wp_remote_retrieve_response_code( $response );
+        $body_raw    = wp_remote_retrieve_body( $response );
+
+        if ( 200 !== $status_code ) {
+            $this->logPushError(
+                'Unexpected HTTP status from push provider.',
+                [
+                    'token'   => $token,
+                    'status'  => $status_code,
+                    'body'    => $body_raw,
+                    'project' => $project_id,
+                ]
+            );
+
+            return new WP_Error(
+                'push_http_error',
+                __( 'Push notification service returned an unexpected status code', 'fp-esperienze' ),
+                [
+                    'status'  => 500,
+                    'token'   => $token,
+                    'body'    => $body_raw,
+                    'project' => $project_id,
+                ]
+            );
+        }
+
+        $decoded = json_decode( $body_raw, true );
+
+        if ( ! is_array( $decoded ) ) {
+            $this->logPushError(
+                'Unable to decode push provider response.',
+                [
+                    'token'   => $token,
+                    'body'    => $body_raw,
+                    'project' => $project_id,
+                ]
+            );
+
+            return new WP_Error(
+                'push_invalid_response',
+                __( 'Push notification service returned an invalid response', 'fp-esperienze' ),
+                [
+                    'status'  => 500,
+                    'token'   => $token,
+                    'body'    => $body_raw,
+                    'project' => $project_id,
+                ]
+            );
+        }
+
+        $success = isset( $decoded['success'] ) ? (int) $decoded['success'] : 0;
+        $results = isset( $decoded['results'] ) && is_array( $decoded['results'] ) ? $decoded['results'] : [];
+
+        foreach ( $results as $result ) {
+            if ( isset( $result['message_id'] ) ) {
+                return true;
+            }
+
+            if ( isset( $result['error'] ) ) {
+                $error_reason  = (string) $result['error'];
+                $remove_token  = in_array( $error_reason, [ 'NotRegistered', 'InvalidRegistration', 'MismatchSenderId' ], true );
+                $log_context   = [
+                    'token'        => $token,
+                    'error'        => $error_reason,
+                    'project'      => $project_id,
+                    'remove_token' => $remove_token,
+                ];
+
+                $this->logPushError( 'Push provider reported delivery error.', $log_context );
+
+                return new WP_Error(
+                    'push_delivery_failed',
+                    __( 'Push notification could not be delivered', 'fp-esperienze' ),
+                    [
+                        'status'        => $remove_token ? 410 : 500,
+                        'token'         => $token,
+                        'provider'      => $provider,
+                        'project'       => $project_id,
+                        'error'         => $error_reason,
+                        'remove_token'  => $remove_token,
+                        'response_body' => $decoded,
+                    ]
+                );
+            }
+        }
+
+        if ( $success > 0 ) {
+            return true;
+        }
+
+        $this->logPushError(
+            'Push provider response did not confirm delivery.',
+            [
+                'token'   => $token,
+                'body'    => $decoded,
+                'project' => $project_id,
+            ]
+        );
+
+        return new WP_Error(
+            'push_delivery_unconfirmed',
+            __( 'Push notification delivery could not be confirmed', 'fp-esperienze' ),
+            [
+                'status'        => 500,
+                'token'         => $token,
+                'provider'      => $provider,
+                'project'       => $project_id,
+                'response_body' => $decoded,
+            ]
+        );
+    }
+
+    /**
+     * Normalize additional payload data for the push provider.
+     *
+     * @param array $data Arbitrary notification data.
+     *
+     * @return array Normalized data with scalar string values.
+     */
+    private function normalizeNotificationData( array $data ): array {
+        $normalized = [];
+
+        foreach ( $data as $key => $value ) {
+            if ( null === $value ) {
+                continue;
+            }
+
+            if ( is_bool( $value ) ) {
+                $normalized[ $key ] = $value ? '1' : '0';
+                continue;
+            }
+
+            if ( is_scalar( $value ) ) {
+                $normalized[ $key ] = (string) $value;
+                continue;
+            }
+
+            if ( is_object( $value ) && method_exists( $value, '__toString' ) ) {
+                $normalized[ $key ] = (string) $value;
+                continue;
+            }
+
+            $normalized[ $key ] = wp_json_encode( $value );
+        }
+
+        return $normalized;
+    }
+
+    /**
+     * Ensure push notification priority is one of the supported values.
+     *
+     * @param string $priority Requested priority.
+     *
+     * @return string Normalized priority.
+     */
+    private function normalizeNotificationPriority( string $priority ): string {
+        $priority = strtolower( $priority );
+
+        if ( ! in_array( $priority, [ 'high', 'normal' ], true ) ) {
+            return 'high';
+        }
+
+        return $priority;
+    }
+
+    /**
+     * Log push notification errors for debugging.
+     *
+     * @param string $message Error message.
+     * @param array  $context Additional context.
+     */
+    private function logPushError( string $message, array $context = [] ): void {
+        $log_message = 'FP Esperienze Push: ' . $message;
+
+        if ( ! empty( $context ) ) {
+            $encoded_context = wp_json_encode( $context, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
+
+            if ( false !== $encoded_context ) {
+                $log_message .= ' ' . $encoded_context;
+            }
+        }
+
+        error_log( $log_message );
     }
 
     private function processOfflineAction(array $action, int $staff_user_id): array {
