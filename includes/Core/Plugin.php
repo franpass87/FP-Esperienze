@@ -103,6 +103,9 @@ class Plugin {
     private function init(): void {
         // Initialize components safely with error handling
         try {
+            // Initialize Gutenberg blocks so they can register on the init hook.
+            $this->initBlocks();
+
             // Initialize the Experience product type IMMEDIATELY, not on 'init' action
             // This ensures it's registered before WooCommerce loads product types
             $this->initExperienceProductType();
@@ -122,8 +125,9 @@ class Plugin {
             if (is_admin()) {
                 add_action('init', [$this, 'initAdmin']);
                 add_action('admin_enqueue_scripts', [$this, 'enqueueAdminScripts']);
+                add_action('enqueue_block_editor_assets', [$this, 'enqueueBlockAssets']);
             }
-            
+
             // Initialize frontend
             if (!is_admin()) {
                 add_action('init', [$this, 'initFrontend']);
