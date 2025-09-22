@@ -1541,21 +1541,35 @@ class MobileAPIManager {
         global $wpdb;
         
         $extras = $wpdb->get_results($wpdb->prepare("
-            SELECT e.*, be.quantity
-            FROM {$wpdb->prefix}fp_booking_extras be
-            INNER JOIN {$wpdb->prefix}fp_extras e ON be.extra_id = e.id
-            WHERE be.booking_id = %d
+            SELECT extra_id, name, price, billing_type, quantity, total
+            FROM {$wpdb->prefix}fp_booking_extras
+            WHERE booking_id = %d
+            ORDER BY id ASC
         ", $booking_id));
+
+        if (!$extras) {
+            return [];
+        }
 
         $booking_extras = [];
 
         foreach ($extras as $extra) {
+            $price = isset($extra->price) ? (float) $extra->price : 0.0;
+            $quantity = isset($extra->quantity) ? (int) $extra->quantity : 0;
+            $total = isset($extra->total) ? (float) $extra->total : $price * $quantity;
+            $billing_type = isset($extra->billing_type) ? (string) $extra->billing_type : 'per_booking';
+            $billing_type = str_replace(['-', ' '], '_', strtolower($billing_type));
+            if (!in_array($billing_type, ['per_person', 'per_booking'], true)) {
+                $billing_type = 'per_booking';
+            }
+
             $booking_extras[] = [
-                'id' => $extra->id,
-                'name' => $extra->name,
-                'price' => floatval($extra->price),
-                'quantity' => intval($extra->quantity),
-                'total' => floatval($extra->price) * intval($extra->quantity)
+                'id' => isset($extra->extra_id) ? (int) $extra->extra_id : 0,
+                'name' => (string) $extra->name,
+                'price' => round($price, 2),
+                'quantity' => $quantity,
+                'billing_type' => $billing_type,
+                'total' => round($total, 2),
             ];
         }
 
