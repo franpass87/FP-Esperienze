@@ -15,6 +15,7 @@ use chillerlan\QRCode\QROptions;
 use FP\Esperienze\Core\CapabilityManager;
 use FP\Esperienze\Core\Installer;
 use FP\Esperienze\Core\RateLimiter;
+use FP\Esperienze\Data\Availability;
 use FP\Esperienze\Data\MeetingPointManager;
 use FP\Esperienze\Data\StaffScheduleManager;
 use WP_REST_Request;
@@ -1354,18 +1355,164 @@ class MobileAPIManager {
     }
 
     private function getAvailableDates(int $product_id, ?string $from_date = null): array {
-        // This would integrate with the schedule system
-        // For now, return sample dates
+        $max_results = 30;
+        if (function_exists('apply_filters')) {
+            $max_results = (int) apply_filters('fp_esperienze_mobile_available_dates_window', $max_results, $product_id, $from_date);
+        }
+
+        if ($max_results <= 0) {
+            return [];
+        }
+
+        $lookahead_days = $max_results;
+        if (function_exists('apply_filters')) {
+            $lookahead_days = (int) apply_filters('fp_esperienze_mobile_available_dates_lookahead', $lookahead_days, $product_id, $from_date);
+        }
+
+        if ($lookahead_days < $max_results) {
+            $lookahead_days = $max_results;
+        }
+
+        $timezone = null;
+        if (function_exists('wp_timezone')) {
+            $timezone = wp_timezone();
+        }
+
+        if (!$timezone instanceof \DateTimeZone) {
+            $timezone_string = '';
+            if (function_exists('wp_timezone_string')) {
+                $timezone_string = (string) wp_timezone_string();
+            }
+
+            if ($timezone_string === '') {
+                $timezone_string = (string) date_default_timezone_get();
+            }
+
+            try {
+                $timezone = new \DateTimeZone($timezone_string !== '' ? $timezone_string : 'UTC');
+            } catch (Throwable $exception) {
+                $timezone = new \DateTimeZone('UTC');
+            }
+        }
+
+        $start_date = null;
+        if ($from_date) {
+            $start_date = DateTime::createFromFormat('Y-m-d', $from_date, $timezone);
+        }
+
+        if (!$start_date) {
+            $start_date = new DateTime('now', $timezone);
+        }
+
+        $start_date->setTime(0, 0, 0);
+
+        $today = new DateTime('now', $timezone);
+        $today->setTime(0, 0, 0);
+
+        if ($start_date < $today) {
+            $start_date = $today;
+        }
+
         $dates = [];
-        $start_date = $from_date ?: date('Y-m-d');
-        
-        for ($i = 0; $i < 30; $i++) {
-            $date = date('Y-m-d', strtotime($start_date . " +{$i} days"));
-            $dates[] = [
-                'date' => $date,
-                'available_slots' => rand(0, 5),
-                'price' => rand(50, 150)
-            ];
+        $checked_days = 0;
+
+        while ($checked_days < $lookahead_days && count($dates) < $max_results) {
+            $date_string = $start_date->format('Y-m-d');
+
+            try {
+                $slots = Availability::forDay($product_id, $date_string);
+            } catch (Throwable $exception) {
+                $slots = [];
+            }
+
+            $normalized_slots = [];
+            $remaining_capacity = 0;
+            $min_adult_price = null;
+            $min_child_price = null;
+
+            foreach ($slots as $slot) {
+                if (!is_array($slot)) {
+                    continue;
+                }
+
+                $start_time = isset($slot['start_time']) ? (string) $slot['start_time'] : '';
+
+                if ($start_time === '') {
+                    continue;
+                }
+
+                $end_time = isset($slot['end_time']) ? (string) $slot['end_time'] : '';
+                $capacity = isset($slot['capacity']) ? (int) $slot['capacity'] : 0;
+                $booked = isset($slot['booked']) ? (int) $slot['booked'] : 0;
+                $available = isset($slot['available']) ? (int) $slot['available'] : 0;
+
+                if ($available < 0) {
+                    $available = 0;
+                }
+
+                $held = isset($slot['held_count']) ? (int) $slot['held_count'] : 0;
+                $is_available = $available > 0 ? true : (bool) ($slot['is_available'] ?? false);
+                $schedule_id = isset($slot['schedule_id']) ? (int) $slot['schedule_id'] : 0;
+
+                $adult_price = array_key_exists('adult_price', $slot) ? (float) $slot['adult_price'] : null;
+                $child_price = array_key_exists('child_price', $slot) ? (float) $slot['child_price'] : null;
+
+                if ($adult_price !== null) {
+                    $min_adult_price = $min_adult_price === null ? $adult_price : min($min_adult_price, $adult_price);
+                }
+
+                if ($child_price !== null) {
+                    $min_child_price = $min_child_price === null ? $child_price : min($min_child_price, $child_price);
+                }
+
+                $remaining_capacity += $available;
+
+                $normalized_slot = [
+                    'schedule_id' => $schedule_id,
+                    'start_time' => $start_time,
+                    'end_time' => $end_time,
+                    'capacity' => $capacity,
+                    'booked' => $booked,
+                    'available' => $available,
+                    'held_count' => $held,
+                    'is_available' => $is_available,
+                    'adult_price' => $adult_price,
+                    'child_price' => $child_price,
+                ];
+
+                if (array_key_exists('languages', $slot)) {
+                    $normalized_slot['languages'] = $slot['languages'];
+                }
+
+                if (array_key_exists('meeting_point_id', $slot)) {
+                    $normalized_slot['meeting_point_id'] = $slot['meeting_point_id'] !== null
+                        ? (int) $slot['meeting_point_id']
+                        : null;
+                }
+
+                $normalized_slots[] = $normalized_slot;
+            }
+
+            if (!empty($normalized_slots)) {
+                $day_data = [
+                    'date' => $date_string,
+                    'remaining_capacity' => $remaining_capacity,
+                    'slots' => array_values($normalized_slots),
+                    'prices' => [
+                        'adult_from' => $min_adult_price,
+                        'child_from' => $min_child_price,
+                    ],
+                ];
+
+                if (function_exists('apply_filters')) {
+                    $day_data = apply_filters('fp_esperienze_mobile_available_date', $day_data, $product_id, $date_string);
+                }
+
+                $dates[] = $day_data;
+            }
+
+            $start_date->modify('+1 day');
+            $checked_days++;
         }
 
         return $dates;

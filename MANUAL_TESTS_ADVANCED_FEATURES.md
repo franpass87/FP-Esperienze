@@ -252,6 +252,16 @@ jQuery.post(ajaxurl, {
 }
 ```
 
+**Availability verification steps:**
+
+1. Configure the planner with known schedules for a test product (recurring or fixed dates).
+2. Call `GET /wp-json/fp-esperienze/v2/mobile/experiences` and ensure every element in `available_dates`:
+   - Lists only the planner dates (no empty days).
+   - Reports slot `start_time`/`end_time` pairs that match the planner entries.
+   - Shows `remaining_capacity` equal to the sum of the slot `available` counts.
+   - Exposes `prices.adult_from` and `prices.child_from` matching the configured schedule prices.
+3. Call `GET /wp-json/fp-esperienze/v2/mobile/experiences/{id}` for the same product and confirm the `available_dates` payload mirrors the list endpoint (dates, capacities and prices all aligned with the planner).
+
 #### Test 3.3: QR Code Generation and Scanning
 **Generate QR Code:**
 `GET /wp-json/fp-esperienze/v2/mobile/qr/generate/123`
