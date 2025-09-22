@@ -10,8 +10,12 @@
 
 namespace FP\Esperienze\AI;
 
+use DateTimeImmutable;
+use DateTimeZone;
 use Exception;
 use FP\Esperienze\Core\CapabilityManager;
+use FP\Esperienze\Data\Availability;
+use Throwable;
 
 defined('ABSPATH') || exit;
 
@@ -468,26 +472,122 @@ class AIFeaturesManager {
      * @return float Inventory factor (0.5 to 2.0)
      */
     private function calculateInventoryFactor(int $product_id): float {
-        // Get availability for next 7 days
-        $available_slots = $this->getAvailableSlots($product_id, 7);
-        $total_possible_slots = 7 * 3; // Assume 3 slots per day max
+        $availability = $this->getAvailableSlots($product_id, 7);
 
-        if ($total_possible_slots == 0) {
+        $total_capacity = (int) ($availability['total_capacity'] ?? 0);
+        if ($total_capacity <= 0) {
             return 1.0;
         }
 
-        $availability_ratio = $available_slots / $total_possible_slots;
+        $available_capacity = (int) ($availability['available_capacity'] ?? 0);
+        $available_capacity = max(0, min($total_capacity, $available_capacity));
+
+        $availability_ratio = $available_capacity / $total_capacity;
 
         // High availability = lower prices, Low availability = higher prices
-        if ($availability_ratio < 0.2) {
+        if ($availability_ratio <= 0.2) {
             return 1.8; // Very low availability, increase prices
-        } elseif ($availability_ratio < 0.5) {
+        } elseif ($availability_ratio <= 0.5) {
             return 1.3; // Low availability, increase prices
-        } elseif ($availability_ratio > 0.8) {
+        } elseif ($availability_ratio >= 0.8) {
             return 0.7; // High availability, decrease prices
         }
 
         return 1.0; // Normal availability
+    }
+
+    /**
+     * Aggregate availability information for upcoming dates.
+     *
+     * @param int $product_id Product ID
+     * @param int $days Number of days to inspect
+     * @return array{
+     *     available_capacity: int,
+     *     total_capacity: int,
+     *     days_evaluated: int
+     * }
+     */
+    private function getAvailableSlots(int $product_id, int $days): array {
+        $metrics = [
+            'available_capacity' => 0,
+            'total_capacity' => 0,
+            'days_evaluated' => 0,
+        ];
+
+        if ($days <= 0) {
+            return $metrics;
+        }
+
+        $timezone = function_exists('wp_timezone') ? wp_timezone() : null;
+        if (!$timezone instanceof DateTimeZone) {
+            $default_timezone = @date_default_timezone_get();
+            try {
+                $timezone = new DateTimeZone($default_timezone ?: 'UTC');
+            } catch (Exception $e) {
+                $timezone = new DateTimeZone('UTC');
+            }
+        }
+
+        $current_day = new DateTimeImmutable('today', $timezone);
+
+        for ($offset = 0; $offset < $days; $offset++) {
+            $date = $current_day->modify("+{$offset} days");
+            if (!$date) {
+                continue;
+            }
+
+            $date_string = $date->format('Y-m-d');
+
+            try {
+                $slots = Availability::forDay($product_id, $date_string);
+            } catch (Throwable $exception) {
+                error_log(
+                    sprintf(
+                        'FP Esperienze: Failed to load availability for product %d on %s: %s',
+                        $product_id,
+                        $date_string,
+                        $exception->getMessage()
+                    )
+                );
+                continue;
+            }
+
+            if (empty($slots) || !is_array($slots)) {
+                continue;
+            }
+
+            $day_contributed = false;
+
+            foreach ($slots as $slot) {
+                if (!is_array($slot)) {
+                    continue;
+                }
+
+                $capacity = isset($slot['capacity']) ? (int) $slot['capacity'] : 0;
+                if ($capacity <= 0) {
+                    continue;
+                }
+
+                $available_capacity = null;
+                if (array_key_exists('available', $slot)) {
+                    $available_capacity = (int) $slot['available'];
+                } else {
+                    $booked = isset($slot['booked']) ? (int) $slot['booked'] : 0;
+                    $held = isset($slot['held_count']) ? (int) $slot['held_count'] : 0;
+                    $available_capacity = $capacity - $booked - $held;
+                }
+
+                $metrics['total_capacity'] += $capacity;
+                $metrics['available_capacity'] += max(0, min($capacity, $available_capacity));
+                $day_contributed = true;
+            }
+
+            if ($day_contributed) {
+                $metrics['days_evaluated']++;
+            }
+        }
+
+        return $metrics;
     }
 
     /**
@@ -957,11 +1057,6 @@ class AIFeaturesManager {
 
     private function isFeatureEnabled(string $feature): bool {
         return !empty($this->settings[$feature . '_enabled']);
-    }
-
-    private function getAvailableSlots(int $product_id, int $days): int {
-        // Placeholder - would integrate with schedule system
-        return rand(5, 20);
     }
 
     private function getSeasonalityFactor(string $date): float {
