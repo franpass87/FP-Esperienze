@@ -484,7 +484,8 @@ class SystemStatus {
             'Overrides' => $wpdb->prefix . 'fp_overrides',
             'Bookings' => $wpdb->prefix . 'fp_bookings',
             'Experience Vouchers' => $wpdb->prefix . 'fp_exp_vouchers',
-            'Legacy Vouchers' => $wpdb->prefix . 'fp_vouchers'
+            'Legacy Vouchers' => $wpdb->prefix . 'fp_vouchers',
+            'Analytics Events' => $wpdb->prefix . 'fp_analytics_events'
         ];
 
         ?>

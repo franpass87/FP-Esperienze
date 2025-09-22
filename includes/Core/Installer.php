@@ -236,6 +236,7 @@ class Installer {
             $wpdb->prefix . 'fp_vouchers',
             $wpdb->prefix . 'fp_dynamic_pricing_rules',
             $wpdb->prefix . 'fp_exp_holds',
+            $wpdb->prefix . 'fp_analytics_events',
         ];
 
         foreach ($tables as $table) {
@@ -551,6 +552,22 @@ class Installer {
             KEY expires_at (expires_at)
         ) $charset_collate;";
 
+        // Analytics events table
+        $table_analytics = $wpdb->prefix . 'fp_analytics_events';
+        $sql_analytics = "CREATE TABLE $table_analytics (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            event_type varchar(32) NOT NULL,
+            product_id bigint(20) unsigned DEFAULT NULL,
+            session_id varchar(128) DEFAULT NULL,
+            customer_id bigint(20) unsigned DEFAULT NULL,
+            quantity int(11) DEFAULT NULL,
+            created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY event_type_date (event_type, created_at),
+            KEY product_date (product_id, created_at),
+            KEY session_date (session_id(32), created_at)
+        ) $charset_collate;";
+
         // Staff attendance tracking table
         $sql_staff_attendance = self::getStaffAttendanceTableSql($charset_collate);
 
@@ -572,6 +589,7 @@ class Installer {
             'vouchers' => $sql_vouchers,
             'dynamic_pricing' => $sql_dynamic_pricing,
             'holds' => $sql_holds,
+            'analytics_events' => $sql_analytics,
             'staff_attendance' => $sql_staff_attendance,
             'booking_extras' => $sql_booking_extras
         ];
