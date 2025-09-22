@@ -61,10 +61,20 @@ namespace {
         }
     }
 
-    function wp_next_scheduled($hook)
+    function wp_next_scheduled($hook, $args = [], $timestamp = 0)
     {
         global $scheduled_events;
-        return $scheduled_events[$hook]['timestamp'] ?? false;
+        $scheduled = $scheduled_events[$hook]['timestamp'] ?? false;
+
+        if (!$scheduled) {
+            return false;
+        }
+
+        if (!empty($timestamp) && (int) $timestamp !== (int) $scheduled) {
+            return false;
+        }
+
+        return $scheduled;
     }
 
     function wp_schedule_event($timestamp, $recurrence, $hook): void

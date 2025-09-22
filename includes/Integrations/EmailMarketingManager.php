@@ -518,12 +518,39 @@ class EmailMarketingManager {
             return;
         }
 
-        $send_time = strtotime($booking_date . ' -1 day');
-        
-        if ($send_time > time()) {
-            if (!wp_next_scheduled('fp_send_pre_experience_email', [$booking_id, $booking_data])) {
-                wp_schedule_single_event($send_time, 'fp_send_pre_experience_email', [$booking_id, $booking_data]);
-            }
+        $timezone = wp_timezone();
+
+        try {
+            $booking_datetime = new \DateTimeImmutable($booking_date, $timezone);
+        } catch (\Throwable $exception) {
+            return;
+        }
+
+        $booking_time = trim((string) ($booking_data['booking_time'] ?? ''));
+        if ($booking_time === '') {
+            $booking_time = '00:00:00';
+        }
+
+        $time_parts = array_map('intval', explode(':', $booking_time));
+        $hours = $time_parts[0] ?? 0;
+        $minutes = $time_parts[1] ?? 0;
+        $seconds = $time_parts[2] ?? 0;
+
+        try {
+            $booking_datetime = $booking_datetime->setTime($hours, $minutes, $seconds);
+        } catch (\Throwable $exception) {
+            return;
+        }
+
+        $send_datetime = $booking_datetime->sub(new \DateInterval('P1D'));
+        $send_timestamp = $send_datetime->getTimestamp();
+
+        if ($send_timestamp <= current_time('timestamp')) {
+            return;
+        }
+
+        if (!wp_next_scheduled('fp_send_pre_experience_email', [$booking_id, $booking_data], $send_timestamp)) {
+            wp_schedule_single_event($send_timestamp, 'fp_send_pre_experience_email', [$booking_id, $booking_data]);
         }
     }
 
