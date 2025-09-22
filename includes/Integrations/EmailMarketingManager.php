@@ -346,6 +346,7 @@ class EmailMarketingManager {
             'participants' => (int) ($prepared_data['participants'] ?? 1),
             'total_amount' => $prepared_data['total_amount'] ?? 0,
             'booking_details_url' => $prepared_data['booking_details_url'] ?? '',
+            'booking_link' => $prepared_data['booking_link'] ?? ($prepared_data['booking_details_url'] ?? ''),
             'experience_url' => $prepared_data['experience_url'] ?? '',
             'customer_phone' => $prepared_data['customer_phone'] ?? '',
         ];
@@ -383,10 +384,15 @@ class EmailMarketingManager {
             return false;
         }
 
+        $customer_name = $prepared_data['customer_name'] ?? '';
+        if ($customer_name === '' && $customer_email !== '') {
+            $customer_name = $customer_email;
+        }
+
         $customer = (object) [
             'customer_id' => (int) ($prepared_data['customer_id'] ?? 0),
             'billing_email' => $customer_email,
-            'customer_name' => $prepared_data['customer_name'] ?? '',
+            'customer_name' => $customer_name,
         ];
 
         return $this->sendUpsellingEmail($customer);
@@ -589,6 +595,7 @@ class EmailMarketingManager {
      * @param array $booking_data Booking data.
      * @return array|null
      */
+
     private function prepareBookingEmailData(int $booking_id, array $booking_data): ?array {
         $booking = BookingManager::getBooking($booking_id);
         if ($booking) {
@@ -596,55 +603,127 @@ class EmailMarketingManager {
         }
 
         $order_id = isset($booking_data['order_id']) ? (int) $booking_data['order_id'] : 0;
+        $order = null;
+
+        if ($order_id > 0) {
+            $order = wc_get_order($order_id);
+
+            if (!$order) {
+                $this->logError('Order not found for booking email', [
+                    'booking_id' => $booking_id,
+                    'order_id' => $order_id,
+                ]);
+            }
+        }
+
         if ($order_id <= 0) {
-            $this->logError('Missing order ID for booking email', ['booking_id' => $booking_id]);
-            return null;
+            $booking_data['order_id'] = null;
+        } else {
+            $booking_data['order_id'] = $order_id;
         }
 
-        $order = wc_get_order($order_id);
-        if (!$order) {
-            $this->logError('Order not found for booking email', [
-                'booking_id' => $booking_id,
-                'order_id' => $order_id,
-            ]);
-            return null;
+        $customer_id = isset($booking_data['customer_id']) ? (int) $booking_data['customer_id'] : 0;
+
+        if ($order) {
+            if ($customer_id <= 0) {
+                $customer_id = (int) ($order->get_customer_id() ?: $order->get_user_id());
+                $booking_data['customer_id'] = $customer_id > 0 ? $customer_id : null;
+            }
+
+            if (empty($booking_data['customer_email'])) {
+                $booking_data['customer_email'] = $order->get_billing_email();
+            }
+
+            $customer_name = $booking_data['customer_name'] ?? '';
+            if ($customer_name === '') {
+                $customer_name = trim(sprintf('%s %s', $order->get_billing_first_name(), $order->get_billing_last_name()));
+            }
+
+            if ($customer_name === '') {
+                $customer_name = $order->get_formatted_billing_full_name() ?: $order->get_billing_email();
+            }
+
+            if ($customer_name !== '') {
+                $booking_data['customer_name'] = $customer_name;
+            }
+
+            if (empty($booking_data['customer_phone'])) {
+                $booking_data['customer_phone'] = $order->get_billing_phone();
+            }
+
+            if (empty($booking_data['total_amount'])) {
+                $booking_data['total_amount'] = $order->get_total();
+            }
+
+            if (empty($booking_data['currency']) && method_exists($order, 'get_currency')) {
+                $booking_data['currency'] = (string) $order->get_currency();
+            }
+
+            if (empty($booking_data['booking_details_url'])) {
+                $booking_data['booking_details_url'] = $order->get_view_order_url();
+            }
+        } elseif ($customer_id <= 0 && isset($booking_data['customer_id'])) {
+            $booking_data['customer_id'] = null;
         }
 
-        if (empty($booking_data['customer_email'])) {
-            $booking_data['customer_email'] = $order->get_billing_email();
+        if (($booking_data['customer_email'] ?? '') === '' && $customer_id > 0) {
+            $user = get_userdata($customer_id);
+            if ($user) {
+                if (empty($booking_data['customer_email']) && !empty($user->user_email)) {
+                    $booking_data['customer_email'] = $user->user_email;
+                }
+
+                if (empty($booking_data['customer_name'])) {
+                    $name = trim(sprintf('%s %s', $user->first_name ?? '', $user->last_name ?? ''));
+                    if ($name === '') {
+                        $name = $user->display_name ?: ($user->user_email ?? '');
+                    }
+                    if ($name !== '') {
+                        $booking_data['customer_name'] = $name;
+                    }
+                }
+
+                if (empty($booking_data['customer_phone'])) {
+                    $phone = get_user_meta($customer_id, 'billing_phone', true);
+                    if (is_string($phone) && $phone !== '') {
+                        $booking_data['customer_phone'] = $phone;
+                    }
+                }
+            }
         }
 
-        $customer_name = $booking_data['customer_name'] ?? '';
-        if ($customer_name === '') {
-            $customer_name = trim(sprintf('%s %s', $order->get_billing_first_name(), $order->get_billing_last_name()));
+        if (empty($booking_data['customer_name']) && !empty($booking_data['customer_email'])) {
+            $booking_data['customer_name'] = $booking_data['customer_email'];
         }
 
-        if ($customer_name === '') {
-            $customer_name = $order->get_formatted_billing_full_name() ?: $order->get_billing_email();
+        if (!isset($booking_data['total_amount']) || $booking_data['total_amount'] === '' || $booking_data['total_amount'] === null) {
+            if ($booking && isset($booking->total_amount)) {
+                $booking_data['total_amount'] = (float) $booking->total_amount;
+            } else {
+                $booking_data['total_amount'] = 0.0;
+            }
+        } else {
+            $booking_data['total_amount'] = (float) $booking_data['total_amount'];
         }
 
-        $booking_data['customer_name'] = $customer_name;
-
-        if (empty($booking_data['customer_phone'])) {
-            $booking_data['customer_phone'] = $order->get_billing_phone();
-        }
-
-        if (empty($booking_data['total_amount'])) {
-            $booking_data['total_amount'] = $order->get_total();
+        if (empty($booking_data['currency']) && $booking && isset($booking->currency) && $booking->currency !== '') {
+            $booking_data['currency'] = (string) $booking->currency;
         }
 
         if (empty($booking_data['booking_details_url'])) {
-            $booking_data['booking_details_url'] = $order->get_view_order_url();
-        }
-
-        if (!isset($booking_data['customer_id']) || $booking_data['customer_id'] === null || $booking_data['customer_id'] === '') {
-            $booking_data['customer_id'] = $order->get_customer_id() ?: $order->get_user_id();
+            if (function_exists('rest_url')) {
+                $booking_data['booking_details_url'] = rest_url('fp-esperienze/v2/mobile/bookings/' . $booking_id);
+            } elseif (function_exists('home_url')) {
+                $booking_data['booking_details_url'] = home_url('/?fp-booking=' . $booking_id);
+            } else {
+                $booking_data['booking_details_url'] = '';
+            }
         }
 
         $product_id = isset($booking_data['product_id']) ? (int) $booking_data['product_id'] : 0;
         $product = $product_id > 0 ? wc_get_product($product_id) : null;
 
-        if (!$product) {
+        if (!$product && $order) {
             foreach ($order->get_items() as $item) {
                 $item_product = $item->get_product();
                 if (!$item_product || $item_product->get_type() !== 'experience') {
@@ -676,14 +755,16 @@ class EmailMarketingManager {
             }
         }
 
-        if (empty($booking_data['participants'])) {
+        $participants = isset($booking_data['participants']) ? (int) $booking_data['participants'] : 0;
+        if ($participants <= 0) {
             $participants = (int) ($booking_data['adults'] ?? 0) + (int) ($booking_data['children'] ?? 0);
-            if ($participants <= 0) {
-                $participants = (int) ($booking_data['participants'] ?? 0);
-            }
-
-            $booking_data['participants'] = max(1, $participants);
         }
+
+        if ($participants <= 0) {
+            $participants = 1;
+        }
+
+        $booking_data['participants'] = $participants;
 
         if (!empty($booking_data['meeting_point_id']) && empty($booking_data['meeting_point'])) {
             $meeting_point = MeetingPointManager::getMeetingPoint((int) $booking_data['meeting_point_id']);
@@ -700,8 +781,13 @@ class EmailMarketingManager {
             }
         }
 
+        if (!isset($booking_data['booking_link'])) {
+            $booking_data['booking_link'] = $booking_data['booking_details_url'] ?? '';
+        }
+
         return $booking_data;
     }
+
 
     /**
      * Parse booking date and time into a timestamp.
