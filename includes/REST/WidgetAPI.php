@@ -199,7 +199,20 @@ class WidgetAPI {
         $first_schedule = $schedules[0];
 
         // Get meeting points
-        $meeting_points = MeetingPointManager::getMeetingPoints($product_id);
+        $meeting_points = MeetingPointManager::getMeetingPointsForProduct($product_id);
+        $meeting_points_data = [];
+
+        if (!empty($meeting_points)) {
+            $meeting_points_data = array_map(function($mp) {
+                return [
+                    'id' => $mp->id,
+                    'name' => $mp->name,
+                    'address' => $mp->address,
+                    'lat' => $mp->lat,
+                    'lng' => $mp->lng,
+                ];
+            }, $meeting_points);
+        }
 
         // Get extras
         $extras = ExtraManager::getExtras($product_id);
@@ -238,15 +251,7 @@ class WidgetAPI {
                 'capacity' => $first_schedule->capacity ?? null,
                 'languages' => array_unique(array_filter(array_column($schedules, 'lang'))),
             ],
-            'meeting_points' => array_map(function($mp) {
-                return [
-                    'id' => $mp->id,
-                    'name' => $mp->name,
-                    'address' => $mp->address,
-                    'lat' => $mp->lat,
-                    'lng' => $mp->lng,
-                ];
-            }, $meeting_points),
+            'meeting_points' => $meeting_points_data,
             'extras' => array_map(function($extra) {
                 return [
                     'id' => $extra->id,
