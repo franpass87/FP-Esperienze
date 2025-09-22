@@ -29,6 +29,13 @@ class Installer {
     private static bool $staffAttendanceVerified = false;
 
     /**
+     * Tracks whether the booking extras table has been verified in this request
+     *
+     * @var bool
+     */
+    private static bool $bookingExtrasVerified = false;
+
+    /**
      * Plugin activation
      *
      * @return bool|\WP_Error True on success or WP_Error on failure
@@ -41,6 +48,11 @@ class Installer {
             }
 
             $result = self::maybeCreateStaffAttendanceTable();
+            if (is_wp_error($result)) {
+                return $result;
+            }
+
+            $result = self::maybeCreateBookingExtrasTable();
             if (is_wp_error($result)) {
                 return $result;
             }
@@ -510,6 +522,9 @@ class Installer {
         // Staff attendance tracking table
         $sql_staff_attendance = self::getStaffAttendanceTableSql($charset_collate);
 
+        // Booking extras table
+        $sql_booking_extras = self::getBookingExtrasTableSql($charset_collate);
+
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
 
         // Execute table creation with error checking
@@ -524,7 +539,8 @@ class Installer {
             'vouchers' => $sql_vouchers,
             'dynamic_pricing' => $sql_dynamic_pricing,
             'holds' => $sql_holds,
-            'staff_attendance' => $sql_staff_attendance
+            'staff_attendance' => $sql_staff_attendance,
+            'booking_extras' => $sql_booking_extras
         ];
 
         foreach ($tables_sql as $table_name => $sql) {
@@ -546,6 +562,49 @@ class Installer {
             }
         }
         
+        return true;
+    }
+
+    /**
+     * Ensure the booking extras table exists for upgrades and runtime checks.
+     *
+     * @return bool|\WP_Error True when the table exists or WP_Error on failure.
+     */
+    public static function maybeCreateBookingExtrasTable() {
+        if (self::$bookingExtrasVerified) {
+            return true;
+        }
+
+        global $wpdb;
+
+        $table_name = $wpdb->prefix . 'fp_booking_extras';
+        $table_exists = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $table_name));
+
+        if ($table_exists) {
+            self::$bookingExtrasVerified = true;
+            return true;
+        }
+
+        if (!function_exists('dbDelta')) {
+            require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+        }
+
+        if (!function_exists('dbDelta')) {
+            return new \WP_Error('fp_dbdelta_missing', 'WordPress dbDelta function not available');
+        }
+
+        $sql = self::getBookingExtrasTableSql($wpdb->get_charset_collate());
+        dbDelta($sql);
+
+        $table_exists = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $table_name));
+        if (!$table_exists) {
+            $message = 'FP Esperienze: Failed to create fp_booking_extras table during upgrade.';
+            error_log($message);
+            return new \WP_Error('fp_booking_extras_creation_failed', 'Failed to create booking extras table.');
+        }
+
+        self::$bookingExtrasVerified = true;
+
         return true;
     }
 
@@ -611,6 +670,30 @@ class Installer {
             KEY staff_id (staff_id),
             KEY action_type (action_type),
             KEY idx_timestamp (`timestamp`)
+        ) $charset_collate;";
+    }
+
+    /**
+     * Generate SQL statement for the booking extras table.
+     */
+    private static function getBookingExtrasTableSql(string $charset_collate): string {
+        global $wpdb;
+
+        $table_booking_extras = $wpdb->prefix . 'fp_booking_extras';
+
+        return "CREATE TABLE $table_booking_extras (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            booking_id bigint(20) unsigned NOT NULL,
+            extra_id bigint(20) unsigned DEFAULT 0,
+            name varchar(255) NOT NULL,
+            price decimal(10,2) NOT NULL DEFAULT 0.00,
+            billing_type varchar(20) NOT NULL DEFAULT 'per_booking',
+            quantity int(11) NOT NULL DEFAULT 1,
+            total decimal(10,2) NOT NULL DEFAULT 0.00,
+            `timestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY booking_id (booking_id),
+            KEY extra_id (extra_id)
         ) $charset_collate;";
     }
 

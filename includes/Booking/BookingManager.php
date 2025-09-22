@@ -10,6 +10,7 @@ namespace FP\Esperienze\Booking;
 use FP\Esperienze\Data\HoldManager;
 use FP\Esperienze\Data\Availability;
 use FP\Esperienze\Data\MeetingPointManager;
+use FP\Esperienze\Data\ExtraManager;
 use WP_Error;
 
 defined('ABSPATH') || exit;
@@ -260,6 +261,21 @@ class BookingManager {
             'children' => $booking_data['children'] ?? 0,
         ]);
 
+        $extras = [];
+        if (isset($booking_data['extras']) && is_array($booking_data['extras'])) {
+            $extras = $booking_data['extras'];
+        }
+
+        if ($order instanceof \WC_Order) {
+            $order_item = $order->get_item($item_id);
+            if ($order_item instanceof \WC_Order_Item_Product) {
+                $order_extras = $this->extractExtrasFromOrderItem($order_item);
+                if (!empty($order_extras)) {
+                    $extras = $order_extras;
+                }
+            }
+        }
+
         $currency_fallback = '';
         if ($order_currency === '' && function_exists('get_woocommerce_currency')) {
             $currency_fallback = (string) get_woocommerce_currency();
@@ -304,7 +320,11 @@ class BookingManager {
             return false;
         }
 
-        return $result;
+        $booking_id = (int) $result;
+
+        $this->saveBookingExtras($booking_id, $extras);
+
+        return $booking_id;
     }
 
     /**
@@ -431,7 +451,11 @@ class BookingManager {
             return $result;
         }
 
-        return $result;
+        $booking_id = (int) $result;
+
+        $this->saveBookingExtras($booking_id, $extras);
+
+        return $booking_id;
     }
 
     /**
@@ -558,6 +582,290 @@ class BookingManager {
         }
 
         return $booking_id;
+    }
+
+    /**
+     * Persist extras associated with a booking.
+     *
+     * @param int   $booking_id Booking identifier.
+     * @param array $extras     Raw extras payload.
+     */
+    private function saveBookingExtras(int $booking_id, array $extras): void {
+        global $wpdb;
+
+        $table_name = $wpdb->prefix . 'fp_booking_extras';
+
+        $wpdb->delete($table_name, ['booking_id' => $booking_id], ['%d']);
+
+        if (empty($extras)) {
+            return;
+        }
+
+        $extra_cache = [];
+
+        foreach ($extras as $key => $raw_extra) {
+            $normalized = $this->normalizeBookingExtraEntry($key, $raw_extra, $extra_cache);
+            if ($normalized === null) {
+                continue;
+            }
+
+            $data = [
+                'booking_id' => $booking_id,
+                'extra_id' => $normalized['extra_id'],
+                'name' => $normalized['name'],
+                'price' => $normalized['price'],
+                'billing_type' => $normalized['billing_type'],
+                'quantity' => $normalized['quantity'],
+                'total' => $normalized['total'],
+                'timestamp' => current_time('mysql'),
+            ];
+
+            $formats = ['%d', '%d', '%s', '%f', '%s', '%d', '%f', '%s'];
+
+            $result = $wpdb->insert($table_name, $data, $formats);
+
+            if ($result === false && defined('WP_DEBUG') && WP_DEBUG) {
+                error_log(sprintf('Failed to save extras for booking #%d: %s', $booking_id, $wpdb->last_error));
+            }
+        }
+    }
+
+    /**
+     * Normalize a raw extra entry for database persistence.
+     *
+     * @param mixed $key         Original array key.
+     * @param mixed $raw_extra   Raw extra payload.
+     * @param array $extra_cache Cached extras metadata indexed by ID.
+     *
+     * @return array{extra_id:int,name:string,price:float,billing_type:string,quantity:int,total:float}|null
+     */
+    private function normalizeBookingExtraEntry($key, $raw_extra, array &$extra_cache): ?array {
+        $extra_id = 0;
+        $quantity = null;
+        $price = null;
+        $billing_type = '';
+        $name = '';
+        $total = null;
+
+        if (is_array($raw_extra)) {
+            if (isset($raw_extra['extra_id'])) {
+                $extra_id = (int) $raw_extra['extra_id'];
+            } elseif (isset($raw_extra['id'])) {
+                $extra_id = (int) $raw_extra['id'];
+            } elseif (is_numeric($key)) {
+                $extra_id = (int) $key;
+            }
+
+            if (isset($raw_extra['quantity'])) {
+                $quantity = (int) $raw_extra['quantity'];
+            } elseif (isset($raw_extra['qty'])) {
+                $quantity = (int) $raw_extra['qty'];
+            } elseif (isset($raw_extra[0]) && is_numeric($raw_extra[0])) {
+                $quantity = (int) $raw_extra[0];
+            }
+
+            if (isset($raw_extra['price'])) {
+                $price = (float) $raw_extra['price'];
+            }
+
+            if (isset($raw_extra['billing_type'])) {
+                $billing_type = (string) $raw_extra['billing_type'];
+            }
+
+            if (isset($raw_extra['name'])) {
+                $name = (string) $raw_extra['name'];
+            } elseif (isset($raw_extra['label'])) {
+                $name = (string) $raw_extra['label'];
+            }
+
+            if (isset($raw_extra['total'])) {
+                $total = (float) $raw_extra['total'];
+            }
+        } else {
+            if (is_numeric($key)) {
+                $extra_id = (int) $key;
+            }
+
+            if (is_numeric($raw_extra)) {
+                $quantity = (int) $raw_extra;
+            }
+        }
+
+        if ($extra_id <= 0 && is_numeric($key)) {
+            $extra_id = (int) $key;
+        }
+
+        if ($quantity === null && is_scalar($raw_extra) && is_numeric($raw_extra)) {
+            $quantity = (int) $raw_extra;
+        }
+
+        $extra_details = null;
+        if ($extra_id > 0) {
+            if (!array_key_exists($extra_id, $extra_cache)) {
+                $extra_cache[$extra_id] = ExtraManager::getExtra($extra_id) ?: null;
+            }
+
+            $extra_details = $extra_cache[$extra_id];
+        }
+
+        if ($extra_details) {
+            if ($name === '' && isset($extra_details->name)) {
+                $name = (string) $extra_details->name;
+            }
+
+            if ($price === null && isset($extra_details->price)) {
+                $price = (float) $extra_details->price;
+            }
+
+            if ($billing_type === '' && isset($extra_details->billing_type)) {
+                $billing_type = (string) $extra_details->billing_type;
+            }
+        }
+
+        if ($quantity === null) {
+            $quantity = 1;
+        }
+
+        $quantity = (int) $quantity;
+        if ($quantity <= 0) {
+            return null;
+        }
+
+        if ($price === null && $total !== null && $quantity > 0) {
+            $price = $total / $quantity;
+        }
+
+        if ($price === null) {
+            $price = 0.0;
+        }
+
+        $price = round(max(0.0, (float) $price), 2);
+
+        $billing_type = is_string($billing_type) ? strtolower(trim((string) $billing_type)) : '';
+        $billing_type = str_replace(['-', ' '], '_', $billing_type);
+        if (!in_array($billing_type, ['per_person', 'per_booking'], true)) {
+            $billing_type = 'per_booking';
+        }
+
+        if ($total === null) {
+            $total = $price * $quantity;
+        }
+
+        $total = round(max(0.0, (float) $total), 2);
+
+        if ($name === '') {
+            $name = $extra_id > 0 ? sprintf(__('Extra #%d', 'fp-esperienze'), $extra_id) : __('Extra', 'fp-esperienze');
+        }
+
+        $name = sanitize_text_field($name);
+
+        return [
+            'extra_id' => max(0, (int) $extra_id),
+            'name' => $name,
+            'price' => $price,
+            'billing_type' => $billing_type,
+            'quantity' => $quantity,
+            'total' => $total,
+        ];
+    }
+
+    /**
+     * Extract extras selection from an order item.
+     *
+     * @param \WC_Order_Item_Product $item Order item instance.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function extractExtrasFromOrderItem(\WC_Order_Item_Product $item): array {
+        $stored_payload = $item->get_meta('_fp_extras_payload', true);
+        if (!empty($stored_payload)) {
+            $decoded = is_string($stored_payload) ? json_decode($stored_payload, true) : $stored_payload;
+            if (is_array($decoded)) {
+                return $decoded;
+            }
+        }
+
+        $meta_data = $item->get_meta_data();
+        if (empty($meta_data)) {
+            return [];
+        }
+
+        $available_extras = ExtraManager::getAllExtras(false);
+        if (empty($available_extras)) {
+            return [];
+        }
+
+        $extras_by_name = [];
+        foreach ($available_extras as $extra) {
+            if (!isset($extra->name)) {
+                continue;
+            }
+            $extras_by_name[$extra->name] = $extra;
+        }
+
+        if (empty($extras_by_name)) {
+            return [];
+        }
+
+        $found = [];
+
+        foreach ($meta_data as $meta) {
+            if (!($meta instanceof \WC_Meta_Data) && !method_exists($meta, 'get_data')) {
+                continue;
+            }
+
+            $data = method_exists($meta, 'get_data') ? $meta->get_data() : ['key' => $meta->key ?? null, 'value' => $meta->value ?? null];
+            $key = $data['key'] ?? null;
+
+            if ($key === null || !array_key_exists($key, $extras_by_name)) {
+                continue;
+            }
+
+            $value = $data['value'] ?? null;
+            $quantity = null;
+
+            if (is_numeric($value)) {
+                $quantity = (int) $value;
+            } elseif (is_string($value) && preg_match('/(-?\d+)/', $value, $matches)) {
+                $quantity = (int) $matches[0];
+            } elseif (is_array($value) && isset($value['quantity'])) {
+                $quantity = (int) $value['quantity'];
+            }
+
+            if ($quantity === null) {
+                $quantity = 1;
+            }
+
+            $quantity = max(1, (int) $quantity);
+
+            $extra = $extras_by_name[$key];
+            $extra_id = isset($extra->id) ? (int) $extra->id : 0;
+
+            if ($extra_id > 0 && isset($found[$extra_id])) {
+                continue;
+            }
+
+            $price = isset($extra->price) ? (float) $extra->price : 0.0;
+            $billing_type = isset($extra->billing_type) ? (string) $extra->billing_type : 'per_booking';
+            $billing_type = str_replace(['-', ' '], '_', strtolower($billing_type));
+            if (!in_array($billing_type, ['per_person', 'per_booking'], true)) {
+                $billing_type = 'per_booking';
+            }
+
+            $total = round($price * $quantity, 2);
+
+            $found[$extra_id ?: $key] = [
+                'extra_id' => $extra_id,
+                'id' => $extra_id,
+                'name' => $extra->name,
+                'price' => round($price, 2),
+                'billing_type' => $billing_type,
+                'quantity' => $quantity,
+                'total' => $total,
+            ];
+        }
+
+        return array_values($found);
     }
 
     /**
