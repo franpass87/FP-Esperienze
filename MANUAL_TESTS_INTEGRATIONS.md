@@ -252,6 +252,21 @@
 - No cross-contamination between tab data
 - Both settings types can coexist
 
+### 13. Pre-Experience Reminder Scheduling
+
+**Objective**: Ensure pre-experience reminders respect the booking date, time, and site timezone.
+
+**Steps**:
+1. Configure the site timezone to a non-UTC value (e.g., Europe/Rome).
+2. Create an experience booking scheduled for **2024-06-10** at **14:00**.
+3. Trigger the booking confirmation flow so the reminder is queued.
+4. Run `wp cron event list fp_send_pre_experience_email` or inspect `wp_next_scheduled( 'fp_send_pre_experience_email', [ $booking_id, $booking_data ] )`.
+
+**Expected Results**:
+- The scheduled timestamp corresponds to **2024-06-09 14:00** in the configured site timezone.
+- No reminder is scheduled if the computed time is already in the past.
+- Only one reminder is scheduled per booking/time combination.
+
 ## Test Results Template
 
 ```
