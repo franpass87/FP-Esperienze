@@ -849,11 +849,19 @@
             var skeletonHtml = '';
             for (var i = 0; i < 6; i++) {
                 skeletonHtml += '<div class="fp-experience-card fp-skeleton">' +
-                    '<div class="fp-experience-image"></div>' +
+                    '<div class="fp-experience-image">' +
+                        '<div class="fp-experience-badge" aria-hidden="true">' +
+                            '<span class="fp-experience-duration"></span>' +
+                            '<span class="fp-experience-languages">' +
+                                '<span class="fp-experience-language"></span>' +
+                                '<span class="fp-experience-language"></span>' +
+                            '</span>' +
+                        '</div>' +
+                    '</div>' +
                     '<div class="fp-experience-content">' +
-                    '<h3 class="fp-experience-title">Loading experience...</h3>' +
-                    '<div class="fp-experience-excerpt">Loading description...</div>' +
-                    '<div class="fp-experience-price">Loading price...</div>' +
+                        '<h3 class="fp-experience-title">Loading experience...</h3>' +
+                        '<div class="fp-experience-excerpt">Loading description...</div>' +
+                        '<div class="fp-experience-price">Loading price...</div>' +
                     '</div></div>';
             }
 
