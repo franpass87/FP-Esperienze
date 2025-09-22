@@ -10,6 +10,8 @@
 
 namespace FP\Esperienze\REST;
 
+use chillerlan\QRCode\QRCode;
+use chillerlan\QRCode\QROptions;
 use FP\Esperienze\Core\CapabilityManager;
 use FP\Esperienze\Core\Installer;
 use FP\Esperienze\Core\RateLimiter;
@@ -17,6 +19,7 @@ use WP_REST_Request;
 use WP_REST_Response;
 use WP_Error;
 use DateTime;
+use Throwable;
 
 defined('ABSPATH') || exit;
 
@@ -38,9 +41,20 @@ class MobileAPIManager {
     private static $endpointsRegistered = false;
 
     /**
+     * Tracks the availability of the QR code library.
+     */
+    private bool $qrCodeLibraryAvailable = false;
+
+    /**
      * Constructor
      */
     public function __construct() {
+        $this->qrCodeLibraryAvailable = class_exists(QRCode::class) && class_exists(QROptions::class);
+
+        if (!$this->qrCodeLibraryAvailable) {
+            error_log('FP Esperienze: QR code library chillerlan/php-qrcode is not available. QR code generation will be disabled.');
+        }
+
         if (did_action('rest_api_init')) {
             $this->registerMobileEndpoints();
 
@@ -691,6 +705,10 @@ class MobileAPIManager {
 
         $qr_data = $this->generateBookingQRData($booking_id);
         $qr_image = $this->generateQRCodeImage($qr_data);
+
+        if (is_wp_error($qr_image)) {
+            return $qr_image;
+        }
 
         return new WP_REST_Response([
             'qr_data' => $qr_data,
@@ -1481,12 +1499,54 @@ class MobileAPIManager {
         return base64_encode(wp_json_encode($data));
     }
 
-    private function generateQRCodeImage(string $data): string {
-        // Placeholder - would use a QR code library like chillerlan/php-qr-code
-        // For now, return a data URL placeholder
-        return 'data:image/svg+xml;base64,' . base64_encode(
-            '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="white"/><text x="100" y="100" text-anchor="middle" fill="black">QR CODE</text></svg>'
-        );
+    /**
+     * Generate a QR code image for the provided data.
+     *
+     * @param string $data QR data payload.
+     * @return string|WP_Error Data URL representing the QR code, or WP_Error on failure.
+     */
+    private function generateQRCodeImage(string $data): string|WP_Error {
+        if ('' === trim($data)) {
+            return new WP_Error('invalid_qr_data', __('Invalid QR code data.', 'fp-esperienze'), ['status' => 400]);
+        }
+
+        if (!$this->qrCodeLibraryAvailable) {
+            return new WP_Error(
+                'qr_library_missing',
+                __('QR code generation is currently unavailable. Please contact support.', 'fp-esperienze'),
+                ['status' => 500]
+            );
+        }
+
+        try {
+            $options = new QROptions([
+                'outputType' => QRCode::OUTPUT_MARKUP_SVG,
+                'eccLevel'   => QRCode::ECC_M,
+            ]);
+
+            $qrCode = new QRCode($options);
+            $svg     = $qrCode->render($data);
+
+            if (!is_string($svg) || '' === trim($svg)) {
+                error_log('FP Esperienze: QR code generation returned empty output.');
+
+                return new WP_Error(
+                    'qr_generation_failed',
+                    __('Unable to generate QR code at the moment. Please try again later.', 'fp-esperienze'),
+                    ['status' => 500]
+                );
+            }
+
+            return 'data:image/svg+xml;base64,' . base64_encode($svg);
+        } catch (Throwable $exception) {
+            error_log('FP Esperienze: Failed to generate QR code: ' . $exception->getMessage());
+
+            return new WP_Error(
+                'qr_generation_failed',
+                __('Unable to generate QR code at the moment. Please try again later.', 'fp-esperienze'),
+                ['status' => 500]
+            );
+        }
     }
 
     private function decodeQRData(string $qr_data): ?array {
