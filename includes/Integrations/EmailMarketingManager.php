@@ -32,6 +32,11 @@ class EmailMarketingManager {
     private BrevoManager $brevo_manager;
 
     /**
+     * Active customer email used while building recommendations.
+     */
+    private ?string $activeRecommendationEmail = null;
+
+    /**
      * Constructor
      */
     public function __construct() {
@@ -868,22 +873,31 @@ class EmailMarketingManager {
      * @return bool
      */
     private function sendUpsellingEmail(object $customer): bool {
-        // Get recommended experiences based on previous purchases
+        $raw_email = $customer->billing_email ?? '';
+        $sanitized_email = sanitize_email($raw_email);
+        $this->activeRecommendationEmail = is_email($sanitized_email) ? $sanitized_email : null;
+
+        $recipient_email = $sanitized_email !== '' ? $sanitized_email : $raw_email;
+
         $recommended_experiences = $this->getRecommendedExperiences($customer->customer_id);
 
         $template_data = [
-            'customer_email' => $customer->billing_email,
+            'customer_email' => $recipient_email,
             'recommended_experiences' => $recommended_experiences,
             'discount_code' => $this->generateDiscountCode($customer->customer_id),
             'customer_name' => $customer->customer_name ?? ''
         ];
 
-        return $this->sendEmail(
-            'upselling',
-            $customer->billing_email,
-            __('Discover new amazing experiences!', 'fp-esperienze'),
-            $template_data
-        );
+        try {
+            return $this->sendEmail(
+                'upselling',
+                $recipient_email,
+                __('Discover new amazing experiences!', 'fp-esperienze'),
+                $template_data
+            );
+        } finally {
+            $this->activeRecommendationEmail = null;
+        }
     }
 
     /**
@@ -1276,12 +1290,365 @@ class EmailMarketingManager {
     }
 
     private function getRecommendedExperiences(int $customer_id): array {
-        // Placeholder for AI-powered recommendations
-        return [
-            ['name' => 'Sunset Photography Tour', 'price' => 89],
-            ['name' => 'Wine Tasting Experience', 'price' => 65],
-            ['name' => 'Historic City Walk', 'price' => 25]
+        $limit = (int) apply_filters('fp_esperienze_email_recommendation_limit', 3, $customer_id);
+        $limit = $limit > 0 ? $limit : 3;
+
+        $ai_recommendations = apply_filters('fp_esperienze_email_recommendations', [], $customer_id, $limit);
+        $normalized_ai = $this->normalizeRecommendationEntries($ai_recommendations, $limit);
+
+        if (!empty($normalized_ai)) {
+            return $normalized_ai;
+        }
+
+        if (!function_exists('wc_get_products')) {
+            return [];
+        }
+
+        $purchased_ids = $this->getCustomerPurchasedExperienceIds($customer_id);
+
+        $product_map = [];
+
+        $rating_args = [
+            'status' => 'publish',
+            'type' => ['experience'],
+            'limit' => $limit * 2,
+            'orderby' => 'meta_value_num',
+            'meta_key' => '_wc_average_rating',
+            'order' => 'DESC',
         ];
+
+        if (!empty($purchased_ids)) {
+            $rating_args['exclude'] = $purchased_ids;
+        }
+
+        $this->appendRecommendedProducts($rating_args, $product_map, $limit);
+
+        if (count($product_map) < $limit) {
+            $exclude_for_popularity = $this->normalizeProductIdList(array_merge($purchased_ids, array_keys($product_map)));
+
+            $popularity_args = [
+                'status' => 'publish',
+                'type' => ['experience'],
+                'limit' => $limit * 2,
+                'orderby' => 'meta_value_num',
+                'meta_key' => 'total_sales',
+                'order' => 'DESC',
+            ];
+
+            if (!empty($exclude_for_popularity)) {
+                $popularity_args['exclude'] = $exclude_for_popularity;
+            }
+
+            $this->appendRecommendedProducts($popularity_args, $product_map, $limit);
+        }
+
+        if (count($product_map) < $limit) {
+            $exclude_for_latest = $this->normalizeProductIdList(array_merge($purchased_ids, array_keys($product_map)));
+
+            $latest_args = [
+                'status' => 'publish',
+                'type' => ['experience'],
+                'limit' => $limit * 2,
+                'orderby' => 'date',
+                'order' => 'DESC',
+            ];
+
+            if (!empty($exclude_for_latest)) {
+                $latest_args['exclude'] = $exclude_for_latest;
+            }
+
+            $this->appendRecommendedProducts($latest_args, $product_map, $limit);
+        }
+
+        if (empty($product_map) && !empty($purchased_ids)) {
+            $revisit_args = [
+                'status' => 'publish',
+                'type' => ['experience'],
+                'include' => array_slice($purchased_ids, 0, $limit),
+                'limit' => $limit,
+            ];
+
+            $this->appendRecommendedProducts($revisit_args, $product_map, $limit);
+        }
+
+        $recommendations = [];
+
+        foreach ($product_map as $product) {
+            if (!$product instanceof \WC_Product) {
+                continue;
+            }
+
+            $recommendations[] = $this->buildExperienceRecommendation($product);
+
+            if (count($recommendations) >= $limit) {
+                break;
+            }
+        }
+
+        return apply_filters('fp_esperienze_email_recommended_experiences', $recommendations, $customer_id, $limit);
+    }
+
+    /**
+     * Normalize recommendation entries so templates receive a consistent payload.
+     *
+     * @param mixed $recommendations Raw recommendation data.
+     * @param int   $limit           Maximum number of recommendations.
+     * @return array
+     */
+    private function normalizeRecommendationEntries($recommendations, int $limit): array {
+        if (empty($recommendations) || (!is_array($recommendations) && !$recommendations instanceof \Traversable)) {
+            return [];
+        }
+
+        if ($limit <= 0) {
+            $limit = 3;
+        }
+
+        $normalized = [];
+
+        foreach ($recommendations as $entry) {
+            $item = null;
+
+            if ($entry instanceof \WC_Product) {
+                $item = $this->buildExperienceRecommendation($entry);
+            } elseif (is_numeric($entry) && function_exists('wc_get_product')) {
+                $product = wc_get_product((int) $entry);
+                if ($product instanceof \WC_Product) {
+                    $item = $this->buildExperienceRecommendation($product);
+                }
+            } elseif (is_array($entry)) {
+                if (isset($entry['product_id']) && empty($entry['name']) && function_exists('wc_get_product')) {
+                    $product = wc_get_product((int) $entry['product_id']);
+                    if ($product instanceof \WC_Product) {
+                        $item = $this->buildExperienceRecommendation($product);
+                    }
+                }
+
+                if ($item === null) {
+                    $name = isset($entry['name']) ? (string) $entry['name'] : '';
+
+                    if ($name === '') {
+                        $item = null;
+                    } else {
+                        $price = $entry['price'] ?? 0;
+                        $url = $entry['url'] ?? ($entry['link'] ?? '');
+
+                        $item = [
+                            'id' => isset($entry['product_id']) ? (int) $entry['product_id'] : (isset($entry['id']) ? (int) $entry['id'] : null),
+                            'name' => $name,
+                            'description' => isset($entry['description']) ? (string) $entry['description'] : '',
+                            'price' => is_numeric($price) ? (float) $price : $price,
+                            'url' => is_string($url) ? $url : '',
+                            'image' => isset($entry['image']) ? (string) $entry['image'] : '',
+                        ];
+                    }
+                }
+            }
+
+            if ($item !== null && !empty($item['name'])) {
+                $normalized[] = $item;
+            }
+
+            if (count($normalized) >= $limit) {
+                break;
+            }
+        }
+
+        if (count($normalized) > $limit) {
+            $normalized = array_slice($normalized, 0, $limit);
+        }
+
+        return array_values($normalized);
+    }
+
+    /**
+     * Convert a WooCommerce product into the recommendation payload structure.
+     *
+     * @param \WC_Product $product Product instance.
+     * @return array
+     */
+    private function buildExperienceRecommendation(\WC_Product $product): array {
+        $raw_price = $product->get_price();
+
+        if (function_exists('wc_get_price_to_display')) {
+            $display_price = wc_get_price_to_display($product);
+            if ($display_price !== '') {
+                $raw_price = $display_price;
+            }
+        }
+
+        $description = $product->get_short_description();
+        if ($description === '') {
+            $description = $product->get_description();
+        }
+
+        $description = $description ? trim(wp_strip_all_tags((string) $description)) : '';
+
+        $url = get_permalink($product->get_id());
+        $image = '';
+
+        if ($product->get_image_id()) {
+            $image = wp_get_attachment_image_url($product->get_image_id(), 'medium') ?: '';
+        }
+
+        return [
+            'id' => $product->get_id(),
+            'name' => $product->get_name(),
+            'description' => $description,
+            'price' => is_numeric($raw_price) ? (float) $raw_price : $raw_price,
+            'url' => is_string($url) ? $url : '',
+            'image' => $image,
+        ];
+    }
+
+    /**
+     * Append recommended products to the map while respecting the requested limit.
+     *
+     * @param array $args        Query arguments passed to wc_get_products().
+     * @param array $product_map Reference to the product map being built.
+     * @param int   $limit       Maximum number of products required.
+     */
+    private function appendRecommendedProducts(array $args, array &$product_map, int $limit): void {
+        if (isset($args['exclude']) && empty($args['exclude'])) {
+            unset($args['exclude']);
+        }
+
+        if (isset($args['include']) && empty($args['include'])) {
+            unset($args['include']);
+        }
+
+        $products = wc_get_products($args);
+
+        foreach ($products as $product) {
+            if (!$product instanceof \WC_Product) {
+                continue;
+            }
+
+            if ($product->get_type() !== 'experience') {
+                continue;
+            }
+
+            if (isset($product_map[$product->get_id()])) {
+                continue;
+            }
+
+            $product_map[$product->get_id()] = $product;
+
+            if (count($product_map) >= $limit) {
+                break;
+            }
+        }
+    }
+
+    /**
+     * Retrieve the list of experience product IDs already purchased by the customer.
+     *
+     * @param int $customer_id Customer ID.
+     * @return array
+     */
+    private function getCustomerPurchasedExperienceIds(int $customer_id): array {
+        if (!function_exists('wc_get_orders')) {
+            return [];
+        }
+
+        $statuses = (array) apply_filters(
+            'fp_esperienze_email_recommendation_order_statuses',
+            ['completed', 'processing', 'on-hold'],
+            $customer_id
+        );
+
+        $order_limit = (int) apply_filters('fp_esperienze_email_recommendation_order_limit', 50, $customer_id);
+        $order_limit = $order_limit > 0 ? $order_limit : 50;
+
+        $query_base = [
+            'status' => $statuses,
+            'limit' => $order_limit,
+            'orderby' => 'date',
+            'order' => 'DESC',
+            'return' => 'objects',
+        ];
+
+        $orders = [];
+
+        if ($customer_id > 0) {
+            $orders = wc_get_orders(array_merge($query_base, ['customer_id' => $customer_id]));
+        }
+
+        $customer_email = '';
+        if ($customer_id > 0) {
+            $user = get_userdata($customer_id);
+            if ($user && isset($user->user_email)) {
+                $customer_email = (string) $user->user_email;
+            }
+        }
+
+        if ($customer_email === '' && $this->activeRecommendationEmail) {
+            $customer_email = $this->activeRecommendationEmail;
+        }
+
+        $customer_email = apply_filters(
+            'fp_esperienze_email_recommendation_customer_email',
+            $customer_email,
+            $customer_id,
+            $this->activeRecommendationEmail
+        );
+
+        $customer_email = sanitize_email($customer_email);
+
+        if ($customer_email !== '') {
+            $orders_by_email = wc_get_orders(array_merge($query_base, ['billing_email' => $customer_email]));
+            if (!empty($orders_by_email)) {
+                $orders = array_merge($orders, $orders_by_email);
+            }
+        }
+
+        if (empty($orders)) {
+            return [];
+        }
+
+        $order_map = [];
+
+        foreach ($orders as $order) {
+            if ($order instanceof \WC_Order) {
+                $order_map[$order->get_id()] = $order;
+            }
+        }
+
+        if (empty($order_map)) {
+            return [];
+        }
+
+        $product_ids = [];
+
+        foreach ($order_map as $order) {
+            foreach ($order->get_items() as $item) {
+                $product = $item->get_product();
+
+                if ($product && $product->get_type() === 'experience') {
+                    $product_ids[] = $product->get_id();
+                }
+            }
+        }
+
+        return $this->normalizeProductIdList($product_ids);
+    }
+
+    /**
+     * Normalize a list of product identifiers, removing duplicates and invalid values.
+     *
+     * @param array $ids Product identifiers.
+     * @return array
+     */
+    private function normalizeProductIdList(array $ids): array {
+        $ids = array_map('intval', $ids);
+        $ids = array_filter(
+            $ids,
+            static function (int $id): bool {
+                return $id > 0;
+            }
+        );
+
+        return array_values(array_unique($ids));
     }
 
     private function getCampaignRecipients(string $recipient_type): array {
