@@ -236,7 +236,7 @@ class MobileAPIManager {
         // Clear rate limiting on successful login
         delete_transient($rate_limit_key);
 
-        if (!get_user_meta($user->ID, '_mobile_email_verified', true)) {
+        if (!$this->isMobileEmailVerified($user->ID, true)) {
             return new WP_Error(
                 'email_not_verified',
                 __('Please verify your email before logging in.', 'fp-esperienze'),
@@ -1197,7 +1197,7 @@ class MobileAPIManager {
             return new WP_Error('invalid_token', __('Unauthorized', 'fp-esperienze'), ['status' => 401]);
         }
 
-        if (!get_user_meta($user_id, '_mobile_email_verified', true)) {
+        if (!$this->isMobileEmailVerified($user_id)) {
             return new WP_Error('email_not_verified', __('Email not verified', 'fp-esperienze'), ['status' => 403]);
         }
 
@@ -1218,9 +1218,25 @@ class MobileAPIManager {
      * Helper methods
      */
 
+    private function isMobileEmailVerified(int $user_id, bool $backfill_if_missing = false): bool {
+        $meta_exists = metadata_exists('user', $user_id, '_mobile_email_verified');
+
+        if (!$meta_exists) {
+            if ($backfill_if_missing) {
+                update_user_meta($user_id, '_mobile_email_verified', 1);
+            }
+
+            return true;
+        }
+
+        $meta_value = get_user_meta($user_id, '_mobile_email_verified', true);
+
+        return wp_validate_boolean($meta_value);
+    }
+
     private function getCurrentMobileUserId(WP_REST_Request $request): ?int {
         $token = $request->get_header('Authorization');
-        
+
         if (!$token) {
             return null;
         }
