@@ -224,7 +224,7 @@ class Plugin {
         new DynamicPricingHooks();
         
         // Initialize booking manager for order processing
-        new BookingManager();
+        BookingManager::getInstance();
         
         // Initialize voucher manager for gift vouchers
         new VoucherManager();

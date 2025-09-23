@@ -19,19 +19,48 @@ defined('ABSPATH') || exit;
  * Booking manager class for handling experience bookings
  */
 class BookingManager {
-    
+
+    /**
+     * Shared instance of the booking manager.
+     */
+    private static ?self $instance = null;
+
     /**
      * Constructor - Initialize WooCommerce hooks
      */
     public function __construct() {
+        if (self::$instance instanceof self) {
+            return;
+        }
+
+        self::$instance = $this;
+
         // Order status change hooks
         add_action('woocommerce_order_status_processing', [$this, 'createBookingsFromOrder'], 10, 1);
         add_action('woocommerce_order_status_completed', [$this, 'createBookingsFromOrder'], 10, 1);
-        
+
         // Refund hooks
         add_action('woocommerce_order_refunded', [$this, 'handleOrderRefund'], 10, 2);
         add_action('woocommerce_order_status_cancelled', [$this, 'cancelBookingsFromOrder'], 10, 1);
         add_action('woocommerce_order_status_refunded', [$this, 'cancelBookingsFromOrder'], 10, 1);
+    }
+
+    /**
+     * Retrieve the shared booking manager instance.
+     */
+    public static function getInstance(): self {
+        if (!(self::$instance instanceof self)) {
+            new self();
+        }
+
+        return self::$instance;
+    }
+
+    /**
+     * Reset or replace the shared instance for testing scenarios.
+     */
+    public static function setInstanceForTesting(?self $instance): void {
+        self::$instance = $instance;
     }
     
     /**
