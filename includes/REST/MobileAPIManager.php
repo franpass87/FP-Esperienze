@@ -731,7 +731,7 @@ class MobileAPIManager {
             'qr_data' => $qr_data,
             'qr_image' => $qr_image,
             'booking_id' => $booking_id,
-            'expires_at' => date('Y-m-d H:i:s', time() + self::QR_CODE_TTL),
+            'expires_at' => wp_date('Y-m-d H:i:s', current_time('timestamp') + self::QR_CODE_TTL),
             'expires_in' => self::QR_CODE_TTL,
         ]);
     }
