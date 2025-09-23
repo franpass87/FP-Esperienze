@@ -170,7 +170,14 @@ class TranslationQueue {
         // Call I18nManager to handle translation/registration.
         $translated = I18nManager::translateString($text, $key, false);
         if ($translated === $text) {
-            TranslationLogger::log('TranslationQueue string job untranslated for key ' . $key);
+            TranslationLogger::log(
+                'TranslationQueue string job untranslated',
+                [
+                    'key'  => $key,
+                    'job'  => $job_id,
+                    'lang' => get_post_meta($job_id, self::META_LANG, true),
+                ]
+            );
         }
     }
 
