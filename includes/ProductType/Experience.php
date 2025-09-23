@@ -270,19 +270,35 @@ class Experience {
 				)
 			);
 
-			// What's excluded
-			woocommerce_wp_textarea_input(
-				array(
-					'id'          => '_fp_exp_excluded',
-					'label'       => __( "What's Not Included", 'fp-esperienze' ),
-					'placeholder' => __( "Hotel pickup and drop-off\nFood and drinks\nPersonal expenses\nGratuities", 'fp-esperienze' ),
-					'desc_tip'    => true,
-					'description' => __( 'List what is not included in the experience (one item per line)', 'fp-esperienze' ),
-					'rows'        => 5,
-				)
-			);
+                        // What's excluded
+                        woocommerce_wp_textarea_input(
+                                array(
+                                        'id'          => '_fp_exp_excluded',
+                                        'label'       => __( "What's Not Included", 'fp-esperienze' ),
+                                        'placeholder' => __( "Hotel pickup and drop-off\nFood and drinks\nPersonal expenses\nGratuities", 'fp-esperienze' ),
+                                        'desc_tip'    => true,
+                                        'description' => __( 'List what is not included in the experience (one item per line)', 'fp-esperienze' ),
+                                        'rows'        => 5,
+                                )
+                        );
 
-			?>
+                        // Reviews section toggle
+                        $reviews_enabled_meta = get_post_meta( $post->ID, '_fp_exp_enable_reviews', true );
+                        if ( '' === $reviews_enabled_meta ) {
+                                $reviews_enabled_meta = 'yes';
+                        }
+
+                        woocommerce_wp_checkbox(
+                                array(
+                                        'id'          => '_fp_exp_enable_reviews',
+                                        'label'       => __( 'Enable Reviews Section', 'fp-esperienze' ),
+                                        'description' => __( 'Show the reviews section on the experience page and related APIs.', 'fp-esperienze' ),
+                                        'value'       => 'no' === $reviews_enabled_meta ? 'no' : 'yes',
+                                        'cbvalue'     => 'yes',
+                                )
+                        );
+
+                        ?>
 
 			<div class="options_group fp-exp-gallery-group">
 				<p class="form-field fp-exp-gallery-field__actions">
@@ -1786,17 +1802,28 @@ class Experience {
 			'_fp_exp_excluded',
 		);
 
-		foreach ( $textarea_fields as $field ) {
-			if ( isset( $_POST[ $field ] ) ) {
-				update_post_meta( $post_id, $field, sanitize_textarea_field( wp_unslash( $_POST[ $field ] ) ) );
-			}
-		}
+                foreach ( $textarea_fields as $field ) {
+                        if ( isset( $_POST[ $field ] ) ) {
+                                update_post_meta( $post_id, $field, sanitize_textarea_field( wp_unslash( $_POST[ $field ] ) ) );
+                        }
+                }
 
-		// Save experience type
-		if ( isset( $_POST['_fp_experience_type'] ) ) {
-			$experience_type = sanitize_text_field( wp_unslash( $_POST['_fp_experience_type'] ) );
-			if ( in_array( $experience_type, array( 'experience', 'event' ) ) ) {
-				update_post_meta( $post_id, '_fp_experience_type', $experience_type );
+                // Reviews section toggle - default to enabled for existing products.
+                $existing_reviews_flag = get_post_meta( $post_id, '_fp_exp_enable_reviews', true );
+                $enable_reviews        = 'no' === $existing_reviews_flag ? 'no' : 'yes';
+
+                if ( isset( $_POST['_fp_exp_enable_reviews'] ) ) {
+                        $raw_enable_reviews = sanitize_text_field( wp_unslash( $_POST['_fp_exp_enable_reviews'] ) );
+                        $enable_reviews     = ( 'yes' === $raw_enable_reviews ) ? 'yes' : 'no';
+                }
+
+                update_post_meta( $post_id, '_fp_exp_enable_reviews', $enable_reviews );
+
+                // Save experience type
+                if ( isset( $_POST['_fp_experience_type'] ) ) {
+                        $experience_type = sanitize_text_field( wp_unslash( $_POST['_fp_experience_type'] ) );
+                        if ( in_array( $experience_type, array( 'experience', 'event' ) ) ) {
+                                update_post_meta( $post_id, '_fp_experience_type', $experience_type );
 			}
 		}
 
