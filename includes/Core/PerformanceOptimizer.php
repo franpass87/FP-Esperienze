@@ -331,24 +331,25 @@ class PerformanceOptimizer {
         global $wpdb;
         
         // Only optimize for experience product queries
-        if (!$query->get('post_type') === 'product' || !$query->get('meta_query')) {
+        if ($query->get('post_type') !== 'product' || !$query->get('meta_query')) {
             return $clauses;
         }
-        
+
         // Check if this is an experience product query
         $meta_query = $query->get('meta_query');
+        if (!is_array($meta_query)) {
+            return $clauses;
+        }
         $is_experience_query = false;
-        
-        if (is_array($meta_query)) {
-            foreach ($meta_query as $meta_clause) {
-                if (isset($meta_clause['key']) && $meta_clause['key'] === '_product_type' && 
-                    isset($meta_clause['value']) && $meta_clause['value'] === 'experience') {
-                    $is_experience_query = true;
-                    break;
-                }
+
+        foreach ($meta_query as $meta_clause) {
+            if (isset($meta_clause['key']) && $meta_clause['key'] === '_product_type' &&
+                isset($meta_clause['value']) && $meta_clause['value'] === 'experience') {
+                $is_experience_query = true;
+                break;
             }
         }
-        
+
         if ($is_experience_query) {
             // Add index hints for better performance
             $clauses['join'] = str_replace(
