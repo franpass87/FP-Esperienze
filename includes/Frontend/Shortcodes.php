@@ -884,17 +884,20 @@ class Shortcodes {
         global $wpdb;
         
         // Get product IDs that have event schedules
-        $event_product_ids = $wpdb->get_col($wpdb->prepare(
-            "SELECT DISTINCT product_id FROM {$wpdb->prefix}fp_schedules 
+        $event_product_ids = $wpdb->get_col(
+            "SELECT DISTINCT product_id FROM {$wpdb->prefix}fp_schedules
              WHERE schedule_type = 'fixed' AND is_active = 1"
-        ));
-        
+        );
+
         if (empty($event_product_ids)) {
             $event_product_ids = [0]; // No events found
         }
 
         $orderby = sanitize_text_field($atts['orderby']);
         $order = strtoupper(sanitize_text_field($atts['order']));
+        if (!in_array($order, ['ASC', 'DESC'], true)) {
+            $order = 'ASC';
+        }
 
         $args = [
             'post_type'      => 'product',
@@ -921,13 +924,15 @@ class Shortcodes {
         // Handle different ordering options
         if ($orderby === 'event_date' || $orderby === 'meta_value') {
             // Order by earliest event date
+            $placeholders = implode(',', array_fill(0, count($event_product_ids), '%d'));
             $ordered_ids = $wpdb->get_col($wpdb->prepare(
-                "SELECT DISTINCT s.product_id 
+                "SELECT DISTINCT s.product_id
                  FROM {$wpdb->prefix}fp_schedules s
-                 WHERE s.schedule_type = 'fixed' 
-                 AND s.is_active = 1 
-                 AND s.product_id IN (" . implode(',', array_map('absint', $event_product_ids)) . ")
-                 ORDER BY s.event_date {$order}, s.start_time ASC"
+                 WHERE s.schedule_type = 'fixed'
+                 AND s.is_active = 1
+                 AND s.product_id IN ($placeholders)
+                 ORDER BY s.event_date {$order}, s.start_time ASC",
+                ...$event_product_ids
             ));
             
             if (!empty($ordered_ids)) {
