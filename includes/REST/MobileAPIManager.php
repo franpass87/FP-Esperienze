@@ -442,7 +442,8 @@ class MobileAPIManager {
 
         foreach ($experiences as $experience) {
             $product = wc_get_product($experience->ID);
-            
+            $reviews_enabled = $this->isReviewsEnabledForProduct($experience->ID, $product);
+
             $mobile_experiences[] = [
                 'id' => $experience->ID,
                 'name' => $experience->post_title,
@@ -451,13 +452,14 @@ class MobileAPIManager {
                 'price' => floatval($product->get_price()),
                 'currency' => get_woocommerce_currency(),
                 'images' => $this->getMobileProductImages($product),
-                'rating' => floatval($product->get_average_rating()),
-                'review_count' => intval($product->get_review_count()),
+                'rating' => $reviews_enabled ? floatval($product->get_average_rating()) : 0.0,
+                'review_count' => $reviews_enabled ? intval($product->get_review_count()) : 0,
                 'duration' => get_post_meta($experience->ID, '_experience_duration', true),
                 'location' => get_post_meta($experience->ID, '_experience_location', true),
                 'categories' => wp_get_post_terms($experience->ID, 'product_cat', ['fields' => 'names']),
                 'available_dates' => $this->getAvailableDates($experience->ID, $date_from),
-                'features' => get_post_meta($experience->ID, '_experience_features', true)
+                'features' => get_post_meta($experience->ID, '_experience_features', true),
+                'reviews_enabled' => $reviews_enabled
             ];
         }
 
@@ -491,6 +493,8 @@ class MobileAPIManager {
             return new WP_Error('not_found', __('Experience not found', 'fp-esperienze'), ['status' => 404]);
         }
 
+        $reviews_enabled = $this->isReviewsEnabledForProduct($id, $product);
+
         $experience_data = [
             'id' => $id,
             'name' => $product->get_name(),
@@ -500,9 +504,9 @@ class MobileAPIManager {
             'currency' => get_woocommerce_currency(),
             'images' => $this->getMobileProductImages($product),
             'gallery' => $this->getMobileProductGallery($product),
-            'rating' => floatval($product->get_average_rating()),
-            'review_count' => intval($product->get_review_count()),
-            'reviews' => $this->getMobileReviews($id),
+            'rating' => $reviews_enabled ? floatval($product->get_average_rating()) : 0.0,
+            'review_count' => $reviews_enabled ? intval($product->get_review_count()) : 0,
+            'reviews' => $reviews_enabled ? $this->getMobileReviews($id) : [],
             'duration' => get_post_meta($id, '_experience_duration', true),
             'location' => get_post_meta($id, '_experience_location', true),
             'meeting_points' => $this->getMeetingPoints($id),
@@ -512,7 +516,8 @@ class MobileAPIManager {
             'cancellation_policy' => wp_strip_all_tags((string) get_post_meta($id, '_cancellation_policy', true)),
             'available_dates' => $this->getAvailableDates($id),
             'extras' => $this->getExperienceExtras($id),
-            'similar_experiences' => $this->getSimilarExperiences($id)
+            'similar_experiences' => $this->getSimilarExperiences($id),
+            'reviews_enabled' => $reviews_enabled
         ];
 
         return new WP_REST_Response($experience_data);
@@ -1378,6 +1383,17 @@ class MobileAPIManager {
         return $images;
     }
 
+    private function isReviewsEnabledForProduct(int $product_id, ?\WC_Product $product = null): bool {
+        $flag = get_post_meta($product_id, '_fp_exp_enable_reviews', true);
+        $enabled = $flag !== 'no';
+
+        if ($product === null) {
+            $product = wc_get_product($product_id);
+        }
+
+        return (bool) apply_filters('fp_experience_reviews_enabled', $enabled, $product);
+    }
+
     private function getMobileProductGallery(\WC_Product $product): array {
         $gallery = [];
         $gallery_ids = $product->get_gallery_image_ids();
@@ -1395,6 +1411,10 @@ class MobileAPIManager {
     }
 
     private function getMobileReviews(int $product_id, int $limit = 5): array {
+        if (!$this->isReviewsEnabledForProduct($product_id)) {
+            return [];
+        }
+
         $reviews = get_comments([
             'post_id' => $product_id,
             'status' => 'approve',

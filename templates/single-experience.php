@@ -123,6 +123,11 @@ $meeting_point = $meeting_point_id ? MeetingPointManager::getMeetingPoint((int) 
 $included = get_post_meta($product_id, '_fp_exp_included', true);
 $excluded = get_post_meta($product_id, '_fp_exp_excluded', true);
 
+// Reviews visibility toggle (defaults to enabled)
+$reviews_enabled_meta = get_post_meta($product_id, '_fp_exp_enable_reviews', true);
+$reviews_enabled = $reviews_enabled_meta !== 'no';
+$reviews_enabled = apply_filters('fp_experience_reviews_enabled', $reviews_enabled, $product);
+
 // Parse language chips
 $language_chips = [];
 if ($languages) {
@@ -491,12 +496,12 @@ jQuery(document).ready(function($) {
                 </section>
                 
                 <!-- Meeting Point Reviews -->
-                <?php if ($meeting_point && !empty($meeting_point->place_id)) : ?>
-                    <?php 
+                <?php if ($meeting_point && $reviews_enabled && !empty($meeting_point->place_id)) : ?>
+                    <?php
                     // Load Google Places Manager with error handling
                     $places_manager = null;
                     $place_data = null;
-                    
+
                     try {
                         if (class_exists('FP\Esperienze\Integrations\GooglePlacesManager')) {
                             $places_manager = new GooglePlacesManager();
@@ -590,7 +595,7 @@ jQuery(document).ready(function($) {
                                 </div>
                             </div>
                         </section>
-                    <?php elseif ($places_manager->isEnabled()) : ?>
+                    <?php elseif ($places_manager && $places_manager->isEnabled()) : ?>
                         <!-- Fallback: Show only rating/count if available -->
                         <?php if ($place_data && $place_data['rating']) : ?>
                             <section class="fp-meeting-point-reviews fp-reviews-minimal">
@@ -672,6 +677,7 @@ jQuery(document).ready(function($) {
                 <?php endif; ?>
 
                 <!-- Reviews Placeholder -->
+                <?php if ($reviews_enabled) : ?>
                 <section class="fp-experience-reviews">
                     <h2><?php _e('Customer Reviews', 'fp-esperienze'); ?></h2>
                     <div class="fp-reviews-disclaimer">
@@ -690,6 +696,7 @@ jQuery(document).ready(function($) {
                         </div>
                     </div>
                 </section>
+                <?php endif; ?>
             </div>
 
             <!-- Booking Widget Sidebar -->
