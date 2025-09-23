@@ -1664,22 +1664,27 @@ class BookingManager {
         $free_cancel_until = get_post_meta($booking->product_id, '_fp_exp_free_cancel_until_minutes', true) ?: 1440;
         $cancel_fee_percent = get_post_meta($booking->product_id, '_fp_exp_cancel_fee_percent', true) ?: 0;
         
+        $timezone = wp_timezone();
+
         // Calculate booking datetime
-        $booking_datetime = \DateTime::createFromFormat('Y-m-d H:i:s', $booking->booking_date . ' ' . $booking->booking_time);
+        $booking_datetime = \DateTimeImmutable::createFromFormat(
+            'Y-m-d H:i:s',
+            $booking->booking_date . ' ' . $booking->booking_time,
+            $timezone
+        );
         if (!$booking_datetime) {
             return [
                 'can_cancel' => false,
                 'message' => __('Invalid booking date/time.', 'fp-esperienze')
             ];
         }
-        
+
         // Calculate free cancellation deadline
-        $free_cancel_deadline = clone $booking_datetime;
-        $free_cancel_deadline->sub(new \DateInterval('PT' . $free_cancel_until . 'M'));
-        
-        $now = new \DateTime();
+        $free_cancel_deadline = $booking_datetime->sub(new \DateInterval('PT' . $free_cancel_until . 'M'));
+
+        $now = new \DateTimeImmutable('now', $timezone);
         $is_free_cancellation = $now <= $free_cancel_deadline;
-        
+
         return [
             'can_cancel' => true,
             'is_free' => $is_free_cancellation,
