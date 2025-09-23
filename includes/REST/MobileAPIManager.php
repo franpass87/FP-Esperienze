@@ -543,7 +543,7 @@ class MobileAPIManager {
         $bookings = $wpdb->get_results($wpdb->prepare("
             SELECT * FROM {$bookings_table}
             WHERE {$where_clause}
-            ORDER BY booking_date DESC
+            ORDER BY booking_date DESC, booking_time DESC
         ", $where_params));
 
         $mobile_bookings = [];
