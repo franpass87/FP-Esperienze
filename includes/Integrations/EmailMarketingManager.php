@@ -37,6 +37,12 @@ class EmailMarketingManager {
     private ?string $activeRecommendationEmail = null;
 
     /**
+     * Transient prefix and index option for abandoned cart tracking.
+     */
+    private const CART_TRANSIENT_PREFIX = 'fp_cart_activity_';
+    private const CART_INDEX_OPTION = 'fp_cart_activity_index';
+
+    /**
      * Constructor
      */
     public function __construct() {
@@ -126,40 +132,204 @@ class EmailMarketingManager {
             'last_activity' => current_time('mysql')
         ];
 
-        set_transient('fp_cart_activity_' . ($user_id ?: $session_id), $cart_data, HOUR_IN_SECONDS * 2);
+        $transient_key = self::CART_TRANSIENT_PREFIX . ($user_id ?: $session_id);
+
+        set_transient($transient_key, $cart_data, HOUR_IN_SECONDS * 2);
+        $this->addCartToIndex($transient_key);
     }
 
     /**
      * Process abandoned carts
      */
     public function processAbandonedCarts(): void {
-        global $wpdb;
-
-        // Find abandoned carts (inactive for 1+ hours)
         $abandoned_time = date('Y-m-d H:i:s', strtotime('-1 hour'));
-        
-        $abandoned_carts = $wpdb->get_results($wpdb->prepare("
-            SELECT option_name, option_value
-            FROM {$wpdb->options}
-            WHERE option_name LIKE '_transient_fp_cart_activity_%'
-            AND option_value LIKE %s
-        ", '%"last_activity"%'));
 
-        foreach ($abandoned_carts as $cart_option) {
-            $transient_key = str_replace('_transient_', '', $cart_option->option_name);
+        $index_keys = $this->getCartIndex();
+        $remaining_index_keys = $index_keys;
+        $index_changed = false;
+
+        $transient_keys = $this->isExternalObjectCacheEnabled()
+            ? $index_keys
+            : $this->getCartTransientsFromDatabase();
+
+        foreach ($transient_keys as $transient_key) {
             $cart_data = get_transient($transient_key);
 
             if (!$cart_data || !is_array($cart_data)) {
+                $updated_index = $this->removeKeyFromIndexList($remaining_index_keys, $transient_key);
+                if ($updated_index !== $remaining_index_keys) {
+                    $remaining_index_keys = $updated_index;
+                    $index_changed = true;
+                }
                 continue;
             }
 
-            if ($cart_data['last_activity'] < $abandoned_time) {
-                $this->sendAbandonedCartEmail($cart_data);
+            $last_activity = isset($cart_data['last_activity']) ? (string) $cart_data['last_activity'] : '';
 
-                // Remove from tracking after sending email
-                delete_transient($transient_key);
+            if ($last_activity === '' || $last_activity >= $abandoned_time) {
+                continue;
+            }
+
+            $this->sendAbandonedCartEmail($cart_data);
+
+            // Remove from tracking after sending email
+            delete_transient($transient_key);
+
+            $updated_index = $this->removeKeyFromIndexList($remaining_index_keys, $transient_key);
+            if ($updated_index !== $remaining_index_keys) {
+                $remaining_index_keys = $updated_index;
+                $index_changed = true;
             }
         }
+
+        if ($index_changed) {
+            $this->saveCartIndex($remaining_index_keys);
+        }
+    }
+
+    /**
+     * Determine if WordPress is using an external object cache.
+     */
+    private function isExternalObjectCacheEnabled(): bool {
+        return function_exists('wp_using_ext_object_cache') && wp_using_ext_object_cache();
+    }
+
+    /**
+     * Retrieve the list of cart transient keys stored in the index.
+     *
+     * @return string[]
+     */
+    private function getCartIndex(): array {
+        $index = get_option(self::CART_INDEX_OPTION, []);
+
+        if (!is_array($index)) {
+            return [];
+        }
+
+        $keys = [];
+
+        foreach ($index as $key) {
+            if (!is_string($key) || $key === '') {
+                continue;
+            }
+
+            if (!array_key_exists($key, $keys)) {
+                $keys[$key] = true;
+            }
+        }
+
+        return array_keys($keys);
+    }
+
+    /**
+     * Persist the cart transient index.
+     *
+     * @param string[] $index
+     */
+    private function saveCartIndex(array $index): void {
+        $keys = [];
+
+        foreach ($index as $key) {
+            if (!is_string($key) || $key === '') {
+                continue;
+            }
+
+            if (!array_key_exists($key, $keys)) {
+                $keys[$key] = true;
+            }
+        }
+
+        update_option(self::CART_INDEX_OPTION, array_keys($keys), false);
+    }
+
+    /**
+     * Add a transient key to the abandoned cart index.
+     */
+    private function addCartToIndex(string $transient_key): void {
+        if ($transient_key === '') {
+            return;
+        }
+
+        $index = $this->getCartIndex();
+
+        if (in_array($transient_key, $index, true)) {
+            return;
+        }
+
+        $index[] = $transient_key;
+        $this->saveCartIndex($index);
+    }
+
+    /**
+     * Remove a transient key from the in-memory index list.
+     *
+     * @param string[] $index
+     * @return string[]
+     */
+    private function removeKeyFromIndexList(array $index, string $transient_key): array {
+        $position = array_search($transient_key, $index, true);
+
+        if ($position === false) {
+            return $index;
+        }
+
+        unset($index[$position]);
+
+        return array_values($index);
+    }
+
+    /**
+     * Locate abandoned cart transients stored in the database.
+     *
+     * @return string[]
+     */
+    private function getCartTransientsFromDatabase(): array {
+        global $wpdb;
+
+        if (
+            !isset($wpdb) ||
+            !is_object($wpdb) ||
+            !property_exists($wpdb, 'options') ||
+            !method_exists($wpdb, 'prepare') ||
+            !method_exists($wpdb, 'get_results')
+        ) {
+            return [];
+        }
+
+        $like_prefix = '_transient_' . self::CART_TRANSIENT_PREFIX;
+        $escaped_like = is_callable([$wpdb, 'esc_like'])
+            ? $wpdb->esc_like($like_prefix)
+            : addcslashes($like_prefix, '_%');
+
+        $query = $wpdb->prepare(
+            "\n            SELECT option_name, option_value\n            FROM {$wpdb->options}\n            WHERE option_name LIKE %s\n            AND option_value LIKE %s\n        ",
+            $escaped_like . '%',
+            '%\"last_activity\"%'
+        );
+
+        $results = $wpdb->get_results($query);
+
+        if (!is_array($results)) {
+            return [];
+        }
+
+        $keys = [];
+
+        foreach ($results as $result) {
+            if (!isset($result->option_name)) {
+                continue;
+            }
+
+            $key = str_replace('_transient_', '', (string) $result->option_name);
+
+            if ($key === '') {
+                continue;
+            }
+
+            $keys[$key] = true;
+        }
+
+        return array_keys($keys);
     }
 
     /**
