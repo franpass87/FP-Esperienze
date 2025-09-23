@@ -860,16 +860,14 @@ class AIFeaturesManager {
 
         // Get historical booking data
         $historical_data = $wpdb->get_results(
-            $wpdb->prepare(
-                "
-                SELECT DATE(booking_date) as date, COUNT(*) as bookings
-                FROM {$wpdb->prefix}fp_bookings
-                WHERE booking_date >= DATE_SUB(NOW(), INTERVAL 1 YEAR)
-                AND status IN ('confirmed', 'completed')
-                GROUP BY DATE(booking_date)
-                ORDER BY date
-                "
-            )
+            "
+            SELECT DATE(booking_date) as date, COUNT(*) as bookings
+            FROM {$wpdb->prefix}fp_bookings
+            WHERE booking_date >= DATE_SUB(NOW(), INTERVAL 1 YEAR)
+            AND status IN ('confirmed', 'completed')
+            GROUP BY DATE(booking_date)
+            ORDER BY date
+            "
         );
 
         // Simple moving average forecast
@@ -907,21 +905,19 @@ class AIFeaturesManager {
 
         // Identify customers who haven't booked in 90+ days
         $churned_customers = $wpdb->get_results(
-            $wpdb->prepare(
-                "
-                SELECT customer_id, MAX(booking_date) as last_booking,
-                       DATEDIFF(NOW(), MAX(booking_date)) as days_since_last
-                FROM {$wpdb->prefix}fp_bookings
-                WHERE status IN ('confirmed', 'completed')
-                GROUP BY customer_id
-                HAVING days_since_last >= 90
-                ORDER BY days_since_last DESC
-                "
-            )
+            "
+            SELECT customer_id, MAX(booking_date) as last_booking,
+                   DATEDIFF(NOW(), MAX(booking_date)) as days_since_last
+            FROM {$wpdb->prefix}fp_bookings
+            WHERE status IN ('confirmed', 'completed')
+            GROUP BY customer_id
+            HAVING days_since_last >= 90
+            ORDER BY days_since_last DESC
+            "
         );
 
         $total_customers = $wpdb->get_var(
-            $wpdb->prepare("SELECT COUNT(DISTINCT customer_id) FROM {$wpdb->prefix}fp_bookings")
+            "SELECT COUNT(DISTINCT customer_id) FROM {$wpdb->prefix}fp_bookings"
         );
 
         $churn_analysis = [
@@ -944,8 +940,7 @@ class AIFeaturesManager {
 
         // Get monthly revenue for the past year
         $monthly_revenue = $wpdb->get_results(
-            $wpdb->prepare(
-                "
+            "
             SELECT
                 DATE_FORMAT(booking_date, '%Y-%m') as month,
                 SUM(total_amount) as revenue
@@ -954,8 +949,7 @@ class AIFeaturesManager {
             AND status IN ('confirmed', 'completed')
             GROUP BY DATE_FORMAT(booking_date, '%Y-%m')
             ORDER BY month
-                "
-            )
+            "
         );
 
         if (count($monthly_revenue) < 3) {
@@ -1028,9 +1022,7 @@ class AIFeaturesManager {
             LIMIT 10
         ";
 
-        $trending = $wpdb->get_results(
-            $wpdb->prepare($trending_query)
-        );
+        $trending = $wpdb->get_results($trending_query);
 
         $trending_experiences = [];
         foreach ($trending as $trend) {
