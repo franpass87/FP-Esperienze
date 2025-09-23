@@ -355,6 +355,25 @@ Authorization: Bearer {mobile_token}
 - Tapping either button opens the corresponding flow without errors.
 - No warning about the 24-hour cutoff is shown because the booking is still eligible.
 
+#### Test 3.6: Offline Sync Respects Site Timezone
+**Purpose:** Ensure the offline booking feed honours the WordPress timezone even when the server/PHP timezone differs.
+
+**Setup:**
+- Note the server timezone from **Tools → Site Health → Info → Server → Default timezone**.
+- Set the WordPress timezone in **Settings → General** to a location that differs from the server (e.g., server `UTC`, site `Europe/Rome`).
+- Create bookings that cover the day before the site "today", the current local day, and eight days ahead. Include at least one booking beyond the 7-day range for validation.
+
+**Steps:**
+1. Request `GET /wp-json/fp-esperienze/v2/mobile/sync/bookings` without parameters (browser dev tools, curl, or the mobile client).
+2. Verify the response only includes bookings dated from the site's current local day through seven days later. Bookings before the local "today" or after the +7 day window should be absent.
+3. Repeat the request with explicit parameters containing whitespace, e.g. `date_from= 2024-05-01 ` and `date_to=2024-05-03 `.
+4. Confirm the second response trims the input and returns bookings strictly within the provided local date range.
+
+**Expected Results:**
+- Default requests respect the WordPress timezone: the feed starts on the site's "today" and ends seven days later regardless of the server timezone.
+- Bookings prior to the local date or after the +7 window are excluded from the default feed.
+- When explicit dates are supplied, whitespace is ignored, and the query range matches the provided local dates exactly.
+
 ### 4. AI Features Testing
 
 #### Test 4.1: Dynamic Pricing

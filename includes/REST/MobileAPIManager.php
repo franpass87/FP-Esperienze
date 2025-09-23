@@ -22,6 +22,7 @@ use FP\Esperienze\Data\StaffScheduleManager;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_Error;
+use DateInterval;
 use DateTime;
 use DateTimeImmutable;
 use Throwable;
@@ -959,24 +960,30 @@ class MobileAPIManager {
      * @return WP_REST_Response|WP_Error Response
      */
     public function getSyncBookings(WP_REST_Request $request): WP_REST_Response|WP_Error {
-        $date_from = sanitize_text_field($request->get_param('date_from')) ?: date('Y-m-d');
-        $date_to = sanitize_text_field($request->get_param('date_to')) ?: date('Y-m-d', strtotime('+7 days'));
+        $timezone = wp_timezone();
+        $now      = new DateTimeImmutable('now', $timezone);
 
-        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date_from) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $date_to)) {
-            return new WP_Error('invalid_date', __('Invalid date format. Expected YYYY-MM-DD', 'fp-esperienze'), ['status' => 400]);
+        $date_from = $this->normalizeSyncDate($request->get_param('date_from'), $timezone, $now);
+        if ($date_from instanceof WP_Error) {
+            return $date_from;
+        }
+
+        $date_to = $this->normalizeSyncDate($request->get_param('date_to'), $timezone, $now->add(new DateInterval('P7D')));
+        if ($date_to instanceof WP_Error) {
+            return $date_to;
         }
 
         global $wpdb;
-        
-        $bookings = $wpdb->get_results($wpdb->prepare("
-            SELECT b.*, u.display_name as customer_name, u.user_email as customer_email,
+
+        $bookings = $wpdb->get_results($wpdb->prepare(
+            "            SELECT b.*, u.display_name as customer_name, u.user_email as customer_email,
                    p.post_title as experience_name
             FROM {$wpdb->prefix}fp_bookings b
             LEFT JOIN {$wpdb->users} u ON b.customer_id = u.ID
             LEFT JOIN {$wpdb->posts} p ON b.product_id = p.ID
             WHERE b.booking_date BETWEEN %s AND %s
             ORDER BY b.booking_date, b.booking_time
-        ", $date_from, $date_to));
+        ", $date_from->format('Y-m-d'), $date_to->format('Y-m-d')));
 
         $sync_data = [];
 
@@ -1003,6 +1010,34 @@ class MobileAPIManager {
             'sync_timestamp' => current_time('mysql'),
             'total' => count($sync_data)
         ]);
+    }
+
+    /**
+     * Normalize sync date parameters using the site timezone.
+     *
+     * @param mixed             $value    Raw request value.
+     * @param \DateTimeZone     $timezone Site timezone.
+     * @param DateTimeImmutable $fallback Default date when no value is provided.
+     *
+     * @return DateTimeImmutable|WP_Error Normalized date object or error on invalid input.
+     */
+    private function normalizeSyncDate($value, \DateTimeZone $timezone, DateTimeImmutable $fallback): DateTimeImmutable|WP_Error {
+        if (is_string($value)) {
+            $sanitized = sanitize_text_field($value);
+
+            if ('' !== $sanitized) {
+                $date   = DateTimeImmutable::createFromFormat('Y-m-d', $sanitized, $timezone);
+                $errors = DateTimeImmutable::getLastErrors();
+
+                if (!$date || ($errors['warning_count'] ?? 0) > 0 || ($errors['error_count'] ?? 0) > 0) {
+                    return new WP_Error('invalid_date', __('Invalid date format. Expected YYYY-MM-DD', 'fp-esperienze'), ['status' => 400]);
+                }
+
+                return $date;
+            }
+        }
+
+        return $fallback;
     }
 
     /**
