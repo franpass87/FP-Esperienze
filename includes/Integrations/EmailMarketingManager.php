@@ -756,7 +756,7 @@ class EmailMarketingManager {
      * @param array $booking_data Booking data
      */
     private function scheduleReviewRequestEmail(int $booking_id, array $booking_data): void {
-        $send_time = time() + (2 * DAY_IN_SECONDS); // 2 days after completion
+        $send_time = current_time('timestamp') + (2 * DAY_IN_SECONDS); // 2 days after completion
         
         if (!wp_next_scheduled('fp_send_review_request', [$booking_id, $booking_data])) {
             wp_schedule_single_event($send_time, 'fp_send_review_request', [$booking_id, $booking_data]);
@@ -770,7 +770,7 @@ class EmailMarketingManager {
      * @param array $booking_data Booking data
      */
     private function scheduleUpsellingEmail(int $booking_id, array $booking_data): void {
-        $send_time = time() + (7 * DAY_IN_SECONDS); // 7 days after completion
+        $send_time = current_time('timestamp') + (7 * DAY_IN_SECONDS); // 7 days after completion
 
         if (!wp_next_scheduled('fp_send_upselling_email', [$booking_id, $booking_data])) {
             wp_schedule_single_event($send_time, 'fp_send_upselling_email', [$booking_id, $booking_data]);
