@@ -10,46 +10,34 @@ namespace FP\Esperienze\Core;
 defined('ABSPATH') || exit;
 
 /**
- * Logs translation errors to a file in uploads directory.
+ * Lightweight logger for translation-related events.
  */
 class TranslationLogger {
     /**
-     * Log a message to the translation log file.
+     * Prefix added to each log entry for quick identification.
+     */
+    private const PREFIX = '[FP Esperienze Translation]';
+
+    /**
+     * Log a message when debug logging is enabled.
      *
      * @param string $message Message to log.
-     * @return bool|\WP_Error True on success, WP_Error on failure.
      */
-    public static function log(string $message) {
+    public static function log(string $message): void {
+        $message = trim($message);
+
         if ('' === $message) {
-            return true;
+            return;
         }
 
-        if (!get_option('fp_lt_enable_log')) {
-            return true;
+        if (!defined('WP_DEBUG') || !WP_DEBUG) {
+            return;
         }
 
-        $uploads = wp_upload_dir();
-        if (empty($uploads['basedir'])) {
-            return true;
+        if (!defined('WP_DEBUG_LOG') || !WP_DEBUG_LOG) {
+            return;
         }
 
-        $file  = trailingslashit($uploads['basedir']) . 'fp-esperienze-translation.log';
-        $entry = sprintf('[%s] %s%s', current_time('mysql'), $message, PHP_EOL);
-
-        global $wp_filesystem;
-        require_once ABSPATH . 'wp-admin/includes/file.php';
-        if (!WP_Filesystem()) {
-            $msg = 'TranslationLogger: WP_Filesystem initialization failed.';
-            error_log($msg);
-            return new \WP_Error('fp_fs_init_failed', $msg);
-        }
-
-        if (!$wp_filesystem->put_contents($file, $entry, FS_CHMOD_FILE)) {
-            $msg = 'TranslationLogger: Failed to write log file.';
-            error_log($msg);
-            return new \WP_Error('fp_log_write_failed', $msg);
-        }
-
-        return true;
+        error_log(sprintf('%s %s', self::PREFIX, $message)); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
     }
 }
