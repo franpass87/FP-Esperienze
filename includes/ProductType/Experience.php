@@ -212,6 +212,16 @@ class Experience {
 	public function addProductDataPanels(): void {
 		global $post;
 
+		$gallery_images = get_post_meta( $post->ID, '_fp_exp_gallery_images', true );
+		if ( ! is_array( $gallery_images ) ) {
+			$gallery_images = array();
+		}
+		$gallery_images = array_values(
+			array_filter(
+				array_map( 'absint', $gallery_images )
+			)
+		);
+
 		?>
 			<div id="experience_product_data" class="panel woocommerce_options_panel">
 				<?php
@@ -273,7 +283,54 @@ class Experience {
 			);
 
 			?>
-			
+
+			<div class="options_group fp-exp-gallery-group">
+				<p class="form-field fp-exp-gallery-field__actions">
+					<label for="fp-exp-gallery-list"><?php esc_html_e( 'Experience gallery', 'fp-esperienze' ); ?></label>
+					<button type="button" class="button fp-exp-gallery-add"><?php esc_html_e( 'Add images', 'fp-esperienze' ); ?></button>
+					<button type="button" class="button-link fp-exp-gallery-clear"<?php echo empty( $gallery_images ) ? ' style="display:none;"' : ''; ?>><?php esc_html_e( 'Remove all', 'fp-esperienze' ); ?></button>
+				</p>
+				<p class="description"><?php esc_html_e( 'Select the media items that will build the gallery on the Experience page. Drag thumbnails to change their order and use Remove to delete a slide.', 'fp-esperienze' ); ?></p>
+				<div class="fp-exp-gallery-field" id="fp-exp-gallery-field">
+					<ul class="fp-exp-gallery-list" id="fp-exp-gallery-list">
+						<?php foreach ( $gallery_images as $attachment_id ) : ?>
+							<?php
+							$attachment_id = absint( $attachment_id );
+							if ( 0 === $attachment_id ) {
+								continue;
+							}
+
+							$thumbnail_url = wp_get_attachment_image_url( $attachment_id, 'thumbnail' );
+							if ( ! $thumbnail_url ) {
+								$thumbnail_url = wp_get_attachment_image_url( $attachment_id, 'medium' );
+							}
+							if ( ! $thumbnail_url ) {
+								$thumbnail_url = wp_get_attachment_image_url( $attachment_id, 'large' );
+							}
+
+							if ( ! $thumbnail_url ) {
+								continue;
+							}
+
+							$alt_text = trim( get_post_meta( $attachment_id, '_wp_attachment_image_alt', true ) );
+							if ( '' === $alt_text ) {
+								$alt_text = get_the_title( $post->ID );
+							}
+							?>
+							<li class="fp-exp-gallery-item" data-attachment-id="<?php echo esc_attr( $attachment_id ); ?>">
+								<div class="fp-exp-gallery-item__image">
+									<img src="<?php echo esc_url( $thumbnail_url ); ?>" alt="<?php echo esc_attr( $alt_text ); ?>" />
+								</div>
+								<button type="button" class="button-link-delete fp-exp-gallery-remove" aria-label="<?php esc_attr_e( 'Remove image', 'fp-esperienze' ); ?>">&times;</button>
+								<input type="hidden" name="_fp_exp_gallery_images[]" value="<?php echo esc_attr( $attachment_id ); ?>" />
+							</li>
+						<?php endforeach; ?>
+					</ul>
+					<p class="fp-exp-gallery-empty"<?php echo ! empty( $gallery_images ) ? ' style="display:none;"' : ''; ?>><?php esc_html_e( 'No gallery images selected yet. Use “Add images” to pick them from the media library.', 'fp-esperienze' ); ?></p>
+					<span class="screen-reader-text fp-exp-gallery-status" aria-live="polite"></span>
+				</div>
+			</div>
+
 			<div class="options_group">
 				<h4><?php _e( 'Cancellation Rules', 'fp-esperienze' ); ?></h4>
 				
@@ -1743,6 +1800,20 @@ class Experience {
 			}
 		}
 
+		// Save gallery images
+		if ( isset( $_POST['_fp_exp_gallery_images'] ) ) {
+			$raw_gallery = wp_unslash( (array) $_POST['_fp_exp_gallery_images'] );
+			$gallery_ids = array_values( array_unique( array_filter( array_map( 'absint', $raw_gallery ) ) ) );
+
+			if ( ! empty( $gallery_ids ) ) {
+				update_post_meta( $post_id, '_fp_exp_gallery_images', $gallery_ids );
+			} else {
+				delete_post_meta( $post_id, '_fp_exp_gallery_images' );
+			}
+		} else {
+			delete_post_meta( $post_id, '_fp_exp_gallery_images' );
+		}
+
 		// Save schedules
 		$this->saveSchedules( $post_id );
 
@@ -2900,6 +2971,9 @@ class Experience {
 			return;
 		}
 
+		wp_enqueue_media();
+		wp_enqueue_script( 'jquery-ui-sortable' );
+
 		wp_enqueue_script(
 			'fp-esperienze-product-admin',
 			FP_ESPERIENZE_PLUGIN_URL . 'assets/js/admin.js',
@@ -2942,6 +3016,15 @@ class Experience {
 			'adult_price'               => __( 'Adult Price', 'fp-esperienze' ),
 			'child_price'               => __( 'Child Price', 'fp-esperienze' ),
 			'remove'                    => __( 'Remove', 'fp-esperienze' ),
+			'gallery_add_images'       => __( 'Add images', 'fp-esperienze' ),
+			'gallery_clear_all'        => __( 'Remove all', 'fp-esperienze' ),
+			'gallery_clear_confirm'    => __( 'Remove all gallery images?', 'fp-esperienze' ),
+			'gallery_frame_title'      => __( 'Experience gallery', 'fp-esperienze' ),
+			'gallery_frame_button'     => __( 'Use these images', 'fp-esperienze' ),
+			'gallery_remove_image'     => __( 'Remove image', 'fp-esperienze' ),
+			'gallery_empty_state'      => __( 'No gallery images selected yet. Use “Add images” to pick them from the media library.', 'fp-esperienze' ),
+			'gallery_items_count'      => __( '%d gallery images selected', 'fp-esperienze' ),
+			'gallery_drag_instruction' => __( 'Drag and drop to change image order.', 'fp-esperienze' ),
 		);
 
                 // Meeting point IDs mapped to names, no placeholder option.

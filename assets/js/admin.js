@@ -119,6 +119,7 @@
             
             // Initialize enhanced features
             this.initializeEnhancements();
+            this.initExperienceGalleryField();
         },
 
         /**
@@ -268,7 +269,187 @@
             // Reset unsaved changes after automatic builder setup
             this.clearUnsavedChanges();
         },
-        
+
+        /**
+         * Initialize experience gallery field handling.
+         */
+        initExperienceGalleryField: function() {
+            const $fieldWrapper = $('#fp-exp-gallery-field');
+
+            if (!$fieldWrapper.length) {
+                return;
+            }
+
+            if (typeof wp === 'undefined' || typeof wp.media === 'undefined') {
+                console.warn('FP Esperienze: wp.media not available for gallery field.');
+                return;
+            }
+
+            const self = this;
+            const $list = $fieldWrapper.find('.fp-exp-gallery-list');
+            const $empty = $fieldWrapper.find('.fp-exp-gallery-empty');
+            const $clear = $fieldWrapper.find('.fp-exp-gallery-clear');
+            const $status = $fieldWrapper.find('.fp-exp-gallery-status');
+            const $addButton = $fieldWrapper.find('.fp-exp-gallery-add');
+            let mediaFrame = null;
+
+            if ($clear.length) {
+                $clear.attr('aria-label', self.getAdminString('gallery_clear_all', 'Remove all'));
+            }
+
+            if ($addButton.length) {
+                $addButton.attr({
+                    'aria-controls': 'fp-exp-gallery-list',
+                    'aria-label': self.getAdminString('gallery_add_images', 'Add images'),
+                    title: self.getAdminString('gallery_drag_instruction', 'Drag and drop to change image order.')
+                });
+            }
+
+            function updateEmptyState() {
+                const $items = $list.children('.fp-exp-gallery-item');
+                const hasItems = $items.length > 0;
+
+                if ($empty.length) {
+                    $empty.toggle(!hasItems);
+                }
+
+                if ($clear.length) {
+                    $clear.toggle(hasItems);
+
+                    if (hasItems) {
+                        $clear.removeAttr('aria-disabled');
+                    } else {
+                        $clear.attr('aria-disabled', 'true');
+                    }
+                }
+
+                if ($status.length) {
+                    if (hasItems) {
+                        const baseText = self.getAdminString('gallery_items_count', '%d gallery images selected');
+                        const instruction = self.getAdminString('gallery_drag_instruction', 'Drag and drop to change image order.');
+                        $status.text(sprintf(baseText, $items.length) + ' ' + instruction);
+                    } else {
+                        $status.text(self.getAdminString('gallery_empty_state', 'No gallery images selected.'));
+                    }
+                }
+            }
+
+            if (typeof $list.sortable === 'function') {
+                $list.sortable({
+                    items: '.fp-exp-gallery-item',
+                    axis: 'x',
+                    tolerance: 'pointer',
+                    stop: updateEmptyState
+                });
+            }
+
+            $fieldWrapper.on('click', '.fp-exp-gallery-add', function(event) {
+                event.preventDefault();
+
+                if (!mediaFrame) {
+                    mediaFrame = wp.media({
+                        title: self.getAdminString('gallery_frame_title', 'Experience gallery'),
+                        button: {
+                            text: self.getAdminString('gallery_frame_button', 'Use these images')
+                        },
+                        library: {
+                            type: 'image'
+                        },
+                        multiple: true
+                    });
+
+                    mediaFrame.on('select', function() {
+                        const selection = mediaFrame.state().get('selection');
+                        if (!selection) {
+                            return;
+                        }
+
+                        selection.each(function(attachment) {
+                            const data = typeof attachment.toJSON === 'function' ? attachment.toJSON() : attachment;
+                            const id = data && data.id ? data.id : attachment.id;
+
+                            if (!id) {
+                                return;
+                            }
+
+                            if ($list.find('.fp-exp-gallery-item[data-attachment-id="' + id + '"]').length) {
+                                return;
+                            }
+
+                            let thumbUrl = data && data.url ? data.url : '';
+                            if (data && data.sizes) {
+                                if (data.sizes.thumbnail) {
+                                    thumbUrl = data.sizes.thumbnail.url;
+                                } else if (data.sizes.medium) {
+                                    thumbUrl = data.sizes.medium.url;
+                                } else if (data.sizes.full) {
+                                    thumbUrl = data.sizes.full.url;
+                                }
+                            }
+
+                            const altText = data && (data.alt || data.title) ? (data.alt || data.title) : '';
+
+                            const $item = $('<li/>', {
+                                'class': 'fp-exp-gallery-item',
+                                'data-attachment-id': id
+                            });
+
+                            const $imageWrapper = $('<div/>', { 'class': 'fp-exp-gallery-item__image' });
+                            if (thumbUrl) {
+                                $('<img/>', {
+                                    src: thumbUrl,
+                                    alt: altText
+                                }).appendTo($imageWrapper);
+                            } else {
+                                $('<div/>', {
+                                    'class': 'fp-exp-gallery-item__placeholder',
+                                    text: self.getAdminString('gallery_frame_title', 'Experience gallery')
+                                }).appendTo($imageWrapper);
+                            }
+
+                            const $remove = $('<button/>', {
+                                type: 'button',
+                                'class': 'button-link-delete fp-exp-gallery-remove',
+                                'aria-label': self.getAdminString('gallery_remove_image', 'Remove image')
+                            }).text('×');
+
+                            const $hidden = $('<input/>', {
+                                type: 'hidden',
+                                name: '_fp_exp_gallery_images[]',
+                                value: id
+                            });
+
+                            $item.append($imageWrapper, $remove, $hidden);
+                            $list.append($item);
+                        });
+
+                        updateEmptyState();
+                    });
+                }
+
+                mediaFrame.open();
+            });
+
+            $fieldWrapper.on('click', '.fp-exp-gallery-remove', function(event) {
+                event.preventDefault();
+                $(this).closest('.fp-exp-gallery-item').remove();
+                updateEmptyState();
+            });
+
+            $fieldWrapper.on('click', '.fp-exp-gallery-clear', function(event) {
+                event.preventDefault();
+
+                if (!window.confirm(self.getAdminString('gallery_clear_confirm', 'Remove all gallery images?'))) {
+                    return;
+                }
+
+                $list.empty();
+                updateEmptyState();
+            });
+
+            updateEmptyState();
+        },
+
         /**
          * Initialize bookings page functionality
          */
