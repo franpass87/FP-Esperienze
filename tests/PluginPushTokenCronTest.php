@@ -13,28 +13,7 @@ namespace {
     /** @var array<string, array{timestamp: int, recurrence: string}> */
     $scheduled_events = [];
 
-    $now = \time();
-
-    /** @var array<int, array<string, mixed>> */
-    $user_meta = [
-        1 => [
-            '_push_notification_tokens' => ['valid-token', 'expired-token', 'no-expiry-token'],
-            '_push_token_expires_at'    => [
-                'valid-token'  => $now + 3600,
-                'expired-token' => $now - 3600,
-            ],
-        ],
-        2 => [
-            '_push_notification_tokens' => ['expired-only'],
-            '_push_token_expires_at'    => [
-                'expired-only' => $now - 60,
-            ],
-        ],
-        3 => [
-            '_push_notification_tokens' => ['missing-expiry'],
-            '_push_token_expires_at'    => [],
-        ],
-    ];
+    $current_time_value = strtotime('2024-06-01 12:00:00');
 
     function add_action($hook, $callback, $priority = 10, $accepted_args = 1): void
     {
@@ -96,82 +75,184 @@ namespace {
         return $value;
     }
 
-    function get_user_meta($user_id, $key, $single = false)
-    {
-        global $user_meta;
+    if (!class_exists('WP_Error')) {
+        class WP_Error
+        {
+            public function __construct(
+                public string $code = '',
+                public string $message = '',
+                public array $data = []
+            ) {
+            }
 
-        if (!isset($user_meta[$user_id][$key])) {
-            return $single ? false : [];
-        }
+            public function get_error_message(): string
+            {
+                return $this->message;
+            }
 
-        return $user_meta[$user_id][$key];
-    }
-
-    function update_user_meta($user_id, $key, $value): void
-    {
-        global $user_meta;
-
-        if (!isset($user_meta[$user_id])) {
-            $user_meta[$user_id] = [];
-        }
-
-        $user_meta[$user_id][$key] = $value;
-    }
-
-    function delete_user_meta($user_id, $key): void
-    {
-        global $user_meta;
-
-        if (isset($user_meta[$user_id][$key])) {
-            unset($user_meta[$user_id][$key]);
-
-            if (empty($user_meta[$user_id])) {
-                unset($user_meta[$user_id]);
+            public function get_error_data()
+            {
+                return $this->data;
             }
         }
     }
 
-    class WP_User_Query
+    function is_wp_error($thing): bool
     {
-        /** @var array<int, int> */
-        private $results;
+        return $thing instanceof WP_Error;
+    }
 
-        public function __construct(array $args)
+    function current_time(string $type, bool $gmt = false)
+    {
+        global $current_time_value;
+
+        if ($type === 'timestamp') {
+            return $current_time_value;
+        }
+
+        if ($type === 'mysql') {
+            return gmdate('Y-m-d H:i:s', $current_time_value);
+        }
+
+        return '';
+    }
+
+    class PushTokenWPDBStub
+    {
+        public string $prefix = 'wp_';
+
+        /** @var array<string, array{token: string, user_id: int, expires_at: ?string}> */
+        public array $tokens = [];
+
+        /** @var array<int, array{0: string, 1: array}> */
+        public array $prepare_calls = [];
+
+        /**
+         * @return array{0: string, 1: array}
+         */
+        public function prepare(string $query, ...$args): array
         {
-            global $user_meta;
+            $prepared = [$query, $args];
+            $this->prepare_calls[] = $prepared;
 
-            $all_user_ids = \array_keys($user_meta);
-            $number = isset($args['number']) ? \max(1, (int) $args['number']) : \count($all_user_ids);
-            $paged = isset($args['paged']) ? \max(1, (int) $args['paged']) : 1;
-
-            $offset = ($paged - 1) * $number;
-            $this->results = \array_slice($all_user_ids, $offset, $number);
+            return $prepared;
         }
 
         /**
-         * @return array<int, int>
+         * @param array{0: string, 1: array} $prepared
+         * @return array<int, object>
          */
-        public function get_results(): array
+        public function get_results($prepared): array
         {
-            return $this->results;
+            [$query, $args] = $prepared;
+
+            if (!str_contains($query, 'SELECT token FROM')) {
+                return [];
+            }
+
+            $cutoff = (string) ($args[0] ?? '');
+            $limit  = isset($args[1]) ? (int) $args[1] : 0;
+            $cutoff_ts = strtotime($cutoff . ' UTC');
+
+            $results = [];
+
+            foreach ($this->tokens as $token => $row) {
+                $expires_at = $row['expires_at'];
+                if ($expires_at === null || $expires_at === '') {
+                    continue;
+                }
+
+                $expiry_ts = strtotime($expires_at . ' UTC');
+                if ($expiry_ts === false) {
+                    continue;
+                }
+
+                if ($cutoff_ts !== false && $expiry_ts <= $cutoff_ts) {
+                    $results[] = (object) ['token' => $token];
+                    if ($limit > 0 && count($results) >= $limit) {
+                        break;
+                    }
+                }
+            }
+
+            return $results;
+        }
+
+        public function delete(string $table, array $where, array $formats = []): int
+        {
+            if ($table !== $this->prefix . 'fp_push_tokens') {
+                return 0;
+            }
+
+            $token = $where['token'] ?? '';
+            if ($token === '' || !isset($this->tokens[$token])) {
+                return 0;
+            }
+
+            unset($this->tokens[$token]);
+
+            return 1;
         }
     }
+
+    $wpdb = new PushTokenWPDBStub();
+    $GLOBALS['wpdb'] = $wpdb;
+
+    $wpdb->tokens = [
+        'valid-token' => [
+            'token' => 'valid-token',
+            'user_id' => 1,
+            'expires_at' => '2024-06-01 13:00:00',
+        ],
+        'expired-token' => [
+            'token' => 'expired-token',
+            'user_id' => 1,
+            'expires_at' => '2024-05-31 09:00:00',
+        ],
+        'no-expiry-token' => [
+            'token' => 'no-expiry-token',
+            'user_id' => 1,
+            'expires_at' => null,
+        ],
+        'expired-only' => [
+            'token' => 'expired-only',
+            'user_id' => 2,
+            'expires_at' => '2024-06-01 11:30:00',
+        ],
+        'missing-expiry' => [
+            'token' => 'missing-expiry',
+            'user_id' => 3,
+            'expires_at' => null,
+        ],
+    ];
 }
 
 namespace FP\Esperienze\Core {
     class CapabilityManager { public function __construct() {} }
     class I18nManager { public function __construct() {} }
     class CacheManager { public function __construct() {} }
+    class AnalyticsTracker { public function __construct() {} }
     class AssetOptimizer {
         public static function init(): void {}
         public static function getMinifiedAssetUrl($type, $handle) { return false; }
     }
     class WebhookManager { public function __construct() {} }
+    class Installer {
+        public static function ensurePushTokenStorage() { return true; }
+        public static function addPerformanceIndexes(): void {}
+    }
 }
 
 namespace FP\Esperienze\Booking {
     class Cart_Hooks { public function __construct() {} }
-    class BookingManager { public function __construct() {} }
+    class BookingManager {
+        public function __construct() {}
+
+        public static function getInstance(): self
+        {
+            return new self();
+        }
+    }
 }
 
 namespace FP\Esperienze\Data {
@@ -206,7 +287,7 @@ namespace {
 
     $init_components->invoke($plugin);
 
-    global $actions, $scheduled_events, $user_meta, $now;
+    global $actions, $scheduled_events, $wpdb;
 
     if (empty($actions['fp_cleanup_push_tokens'])) {
         echo "Push token cleanup hook was not registered\n";
@@ -238,35 +319,28 @@ namespace {
 
     do_action('fp_cleanup_push_tokens');
 
-    $user1_tokens = get_user_meta(1, '_push_notification_tokens', true);
-    if ($user1_tokens !== ['valid-token']) {
-        echo "Expected only the valid token to remain for user 1\n";
+    if (!isset($wpdb->tokens['valid-token'])) {
+        echo "Expected the valid token to remain\n";
         exit(1);
     }
 
-    $user1_expiries = get_user_meta(1, '_push_token_expires_at', true);
-    if ($user1_expiries !== ['valid-token' => $now + 3600]) {
-        echo "Expected user 1 expiries to match remaining tokens\n";
+    if (!isset($wpdb->tokens['no-expiry-token'])) {
+        echo "Token without expiry should remain\n";
         exit(1);
     }
 
-    if (get_user_meta(2, '_push_notification_tokens', true) !== false) {
-        echo "Expired tokens for user 2 should be removed\n";
+    if (!isset($wpdb->tokens['missing-expiry'])) {
+        echo "Token with missing expiry should remain\n";
         exit(1);
     }
 
-    if (get_user_meta(2, '_push_token_expires_at', true) !== false) {
-        echo "Expired token expiries for user 2 should be removed\n";
+    if (isset($wpdb->tokens['expired-token'])) {
+        echo "Expired token for user 1 should be removed\n";
         exit(1);
     }
 
-    if (get_user_meta(3, '_push_notification_tokens', true) !== false) {
-        echo "Tokens without expiries for user 3 should be removed\n";
-        exit(1);
-    }
-
-    if (get_user_meta(3, '_push_token_expires_at', true) !== false) {
-        echo "Expiry map for user 3 should be removed\n";
+    if (isset($wpdb->tokens['expired-only'])) {
+        echo "Expired token for user 2 should be removed\n";
         exit(1);
     }
 

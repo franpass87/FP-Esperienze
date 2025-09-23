@@ -244,10 +244,15 @@ class Plugin {
         
         // Initialize notification manager for ICS and staff emails
         new NotificationManager();
-        
+
+        $push_token_setup = Installer::ensurePushTokenStorage();
+        if (is_wp_error($push_token_setup) && defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('FP Esperienze: Push token storage setup failed: ' . $push_token_setup->get_error_message());
+        }
+
         // Initialize webhook manager for external integrations
         new WebhookManager();
-        
+
         // Initialize tracking manager for GA4 and Meta Pixel
         new TrackingManager();
         
@@ -891,63 +896,47 @@ class Plugin {
      * Cleanup expired push notification tokens
      */
     public function cleanupExpiredPushTokens(): void {
-        $start = microtime(true);
+        global $wpdb;
 
-        $paged = 1;
+        $start       = microtime(true);
+        $table_name  = $wpdb->prefix . 'fp_push_tokens';
+        $now         = gmdate('Y-m-d H:i:s', current_time('timestamp', true));
+        $batch_size  = 500;
+        $total_deleted = 0;
+
         do {
-            $user_query = new \WP_User_Query([
-                'meta_key' => '_push_notification_tokens',
-                'fields'   => 'ID',
-                'number'   => 200,
-                'paged'    => $paged,
-            ]);
+            $expired = $wpdb->get_results(
+                $wpdb->prepare(
+                    "SELECT token FROM {$table_name} WHERE expires_at IS NOT NULL AND expires_at <= %s LIMIT %d",
+                    $now,
+                    $batch_size
+                )
+            );
 
-            $users = $user_query->get_results();
+            if (empty($expired)) {
+                break;
+            }
 
-            $now = time();
+            foreach ($expired as $row) {
+                $token_value = isset($row->token) ? (string) $row->token : '';
 
-            foreach ($users as $user_id) {
-                $tokens   = get_user_meta($user_id, '_push_notification_tokens', true);
-                $expiries = get_user_meta($user_id, '_push_token_expires_at', true);
-
-                if (!is_array($tokens) || empty($tokens)) {
+                if ($token_value === '') {
                     continue;
                 }
 
-                if (!is_array($expiries)) {
-                    $expiries = [];
-                }
+                $deleted = $wpdb->delete($table_name, ['token' => $token_value], ['%s']);
 
-                $valid_tokens   = [];
-                $valid_expiries = [];
-
-                foreach ($tokens as $token) {
-                    $expiry = isset($expiries[$token]) ? (int) $expiries[$token] : 0;
-
-                    if ($expiry > $now) {
-                        $valid_tokens[]           = $token;
-                        $valid_expiries[$token] = $expiry;
-                    }
-                }
-
-                if ($valid_tokens !== $tokens) {
-                    if (!empty($valid_tokens)) {
-                        update_user_meta($user_id, '_push_notification_tokens', $valid_tokens);
-                        update_user_meta($user_id, '_push_token_expires_at', $valid_expiries);
-                    } else {
-                        delete_user_meta($user_id, '_push_notification_tokens');
-                        delete_user_meta($user_id, '_push_token_expires_at');
-                    }
+                if ($deleted !== false) {
+                    $total_deleted += (int) $deleted;
                 }
             }
-
-            $paged++;
-        } while (!empty($users));
+        } while (!empty($expired));
 
         if (defined('WP_DEBUG') && WP_DEBUG) {
             error_log(
                 sprintf(
-                    'FP Esperienze: Push token cleanup executed in %.4f seconds',
+                    'FP Esperienze: Push token cleanup removed %d tokens in %.4f seconds',
+                    $total_deleted,
                     microtime(true) - $start
                 )
             );
