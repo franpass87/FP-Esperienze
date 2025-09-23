@@ -12,6 +12,7 @@ namespace FP\Esperienze\REST;
 
 use chillerlan\QRCode\QRCode;
 use chillerlan\QRCode\QROptions;
+use FP\Esperienze\Booking\BookingManager;
 use FP\Esperienze\Core\CapabilityManager;
 use FP\Esperienze\Core\Installer;
 use FP\Esperienze\Core\RateLimiter;
@@ -627,7 +628,7 @@ class MobileAPIManager {
             return $validation;
         }
 
-        $booking_manager = new \FP\Esperienze\Booking\BookingManager();
+        $booking_manager = BookingManager::getInstance();
         $booking_id = $booking_manager->createCustomerBooking($user_id, $booking_data);
 
         if (is_wp_error($booking_id)) {
