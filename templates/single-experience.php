@@ -28,7 +28,74 @@ if (!$product || $product->get_type() !== 'experience') {
 $product_id = $product->get_id();
 $image_id = $product->get_image_id();
 $image_url = $image_id ? wp_get_attachment_image_url($image_id, 'large') : wc_placeholder_img_src();
-$gallery_ids = $product->get_gallery_image_ids();
+
+$gallery_meta = get_post_meta($product_id, '_fp_exp_gallery_images', true);
+if (!is_array($gallery_meta)) {
+    $gallery_meta = [];
+}
+$gallery_meta = array_values(array_unique(array_filter(array_map('absint', $gallery_meta))));
+$experience_gallery = [];
+
+foreach ($gallery_meta as $attachment_id) {
+    $full_url = wp_get_attachment_image_url($attachment_id, 'full');
+    if (!$full_url) {
+        $full_url = wp_get_attachment_image_url($attachment_id, 'large');
+    }
+
+    if (!$full_url) {
+        continue;
+    }
+
+    $thumb_url = wp_get_attachment_image_url($attachment_id, 'medium');
+    if (!$thumb_url) {
+        $thumb_url = wp_get_attachment_image_url($attachment_id, 'thumbnail');
+    }
+    if (!$thumb_url) {
+        $thumb_url = $full_url;
+    }
+
+    $alt_text = trim(get_post_meta($attachment_id, '_wp_attachment_image_alt', true));
+    if ($alt_text === '') {
+        $alt_text = get_the_title($attachment_id);
+    }
+    if ($alt_text === '') {
+        $alt_text = $product->get_name();
+    }
+
+    $experience_gallery[] = [
+        'id' => $attachment_id,
+        'full' => $full_url,
+        'thumb' => $thumb_url,
+        'alt' => $alt_text,
+    ];
+}
+
+if (empty($experience_gallery)) {
+    if ($image_id) {
+        $fallback_full = wp_get_attachment_image_url($image_id, 'full') ?: $image_url;
+        $fallback_thumb = wp_get_attachment_image_url($image_id, 'medium') ?: wp_get_attachment_image_url($image_id, 'thumbnail') ?: $fallback_full;
+        $fallback_alt = trim(get_post_meta($image_id, '_wp_attachment_image_alt', true));
+        if ($fallback_alt === '') {
+            $fallback_alt = $product->get_name();
+        }
+
+        if ($fallback_full) {
+            $experience_gallery[] = [
+                'id' => $image_id,
+                'full' => $fallback_full,
+                'thumb' => $fallback_thumb,
+                'alt' => $fallback_alt,
+            ];
+        }
+    } elseif ($image_url) {
+        $experience_gallery[] = [
+            'id' => 0,
+            'full' => $image_url,
+            'thumb' => $image_url,
+            'alt' => $product->get_name(),
+        ];
+    }
+}
 
 // Meta data derived from schedules
 $schedules = ScheduleManager::getSchedules($product_id);
@@ -105,25 +172,44 @@ jQuery(document).ready(function($) {
     <!-- Hero Section -->
     <section class="fp-experience-hero">
         <div class="fp-hero-content">
-            <?php if ($gallery_ids || $image_url) : ?>
+            <?php if (!empty($experience_gallery)) : ?>
                 <div class="fp-hero-gallery">
-                    <div class="fp-main-image">
-                        <img src="<?php echo esc_url($image_url); ?>" 
-                             alt="<?php echo esc_attr($product->get_name()); ?>" 
-                             loading="lazy" />
-                    </div>
-                    <?php if ( $gallery_ids && ! wp_is_mobile() ) : ?>
-                        <div class="fp-gallery-thumbs">
-                            <?php foreach ( array_slice( $gallery_ids, 0, 4 ) as $gallery_id ) : ?>
-                                <img src="<?php echo esc_url( wp_get_attachment_image_url( $gallery_id, 'thumbnail' ) ); ?>"
-                                     alt="<?php echo esc_attr( $product->get_name() ); ?>"
-                                     loading="lazy" />
+                    <div class="fp-experience-gallery" tabindex="0">
+                        <div class="fp-experience-gallery__stage" role="region" aria-label="<?php esc_attr_e('Experience gallery', 'fp-esperienze'); ?>">
+                            <?php foreach ($experience_gallery as $index => $item) : ?>
+                                <figure class="fp-experience-gallery__slide<?php echo $index === 0 ? ' is-active' : ''; ?>" data-gallery-index="<?php echo esc_attr($index); ?>" aria-hidden="<?php echo $index === 0 ? 'false' : 'true'; ?>">
+                                    <img src="<?php echo esc_url($item['full']); ?>"
+                                         alt="<?php echo esc_attr($item['alt']); ?>"
+                                         loading="<?php echo $index === 0 ? 'eager' : 'lazy'; ?>" />
+                                </figure>
                             <?php endforeach; ?>
                         </div>
-                    <?php endif; ?>
+
+                        <?php if (count($experience_gallery) > 1) : ?>
+                            <button type="button" class="fp-experience-gallery__control fp-experience-gallery__control--prev" aria-label="<?php esc_attr_e('Previous image', 'fp-esperienze'); ?>">
+                                <span aria-hidden="true">&lsaquo;</span>
+                            </button>
+                            <button type="button" class="fp-experience-gallery__control fp-experience-gallery__control--next" aria-label="<?php esc_attr_e('Next image', 'fp-esperienze'); ?>">
+                                <span aria-hidden="true">&rsaquo;</span>
+                            </button>
+
+                            <div class="fp-experience-gallery__thumbs" role="tablist" aria-label="<?php esc_attr_e('Experience gallery thumbnails', 'fp-esperienze'); ?>">
+                                <?php foreach ($experience_gallery as $index => $item) : ?>
+                                    <button type="button"
+                                            class="fp-experience-gallery__thumb<?php echo $index === 0 ? ' is-active' : ''; ?>"
+                                            data-gallery-target="<?php echo esc_attr($index); ?>"
+                                            aria-pressed="<?php echo $index === 0 ? 'true' : 'false'; ?>"
+                                            tabindex="<?php echo $index === 0 ? '0' : '-1'; ?>"
+                                            aria-label="<?php printf(esc_attr__('Show image %d', 'fp-esperienze'), $index + 1); ?>">
+                                        <img src="<?php echo esc_url($item['thumb']); ?>" alt="<?php echo esc_attr($item['alt']); ?>" />
+                                    </button>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
+                    </div>
                 </div>
             <?php endif; ?>
-            
+
             <div class="fp-hero-info">
                 <div class="fp-container">
                     <h1 class="fp-experience-title"><?php echo esc_html($product->get_name()); ?></h1>

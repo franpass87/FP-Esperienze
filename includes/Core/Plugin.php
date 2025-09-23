@@ -538,9 +538,24 @@ class Plugin {
         if (is_singular('product')) {
             global $post;
             $product = wc_get_product($post->ID);
-            
+
             // Only enqueue for experience products
             if ($product && $product->get_type() === 'experience') {
+                wp_enqueue_style(
+                    'fp-esperienze-experience-gallery',
+                    FP_ESPERIENZE_PLUGIN_URL . 'assets/css/experience-gallery.css',
+                    array('fp-esperienze-frontend'),
+                    FP_ESPERIENZE_VERSION
+                );
+
+                wp_enqueue_script(
+                    'fp-esperienze-experience-gallery',
+                    FP_ESPERIENZE_PLUGIN_URL . 'assets/js/experience-gallery.js',
+                    array(),
+                    FP_ESPERIENZE_VERSION,
+                    true
+                );
+
                 $booking_widget_url = AssetOptimizer::getMinifiedAssetUrl('js', 'booking-widget');
                 if (!$booking_widget_url) {
                     $booking_widget_url = FP_ESPERIENZE_PLUGIN_URL . 'assets/js/booking-widget.js';
