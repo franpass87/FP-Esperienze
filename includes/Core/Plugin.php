@@ -111,6 +111,8 @@ class Plugin {
             // This ensures it's registered before WooCommerce loads product types
             $this->initExperienceProductType();
 
+            add_action('plugins_loaded', [$this, 'loadTextDomain']);
+
             // Initialize core components with proper error handling
             add_action('init', [$this, 'initCoreComponents'], 1);
             
@@ -172,6 +174,17 @@ class Plugin {
         } catch (Throwable $e) {
             error_log('FP Esperienze: Core components initialization error: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Load plugin text domain for translations
+     */
+    public function loadTextDomain(): void {
+        load_plugin_textdomain(
+            'fp-esperienze',
+            false,
+            dirname(FP_ESPERIENZE_PLUGIN_BASENAME) . '/languages'
+        );
     }
 
     /**
