@@ -7,6 +7,8 @@
 
 namespace FP\Esperienze\Data;
 
+use DateTimeImmutable;
+use DateTimeZone;
 use Exception;
 use FP\Esperienze\PDF\Voucher_Pdf;
 use FP\Esperienze\PDF\Qr;
@@ -618,15 +620,72 @@ class VoucherManager {
      */
     public static function getVoucherById($id) {
         global $wpdb;
-        
+
         $table_name = $wpdb->prefix . 'fp_exp_vouchers';
-        
+
         return $wpdb->get_row($wpdb->prepare(
             "SELECT id, code, product_id, amount_type, amount, recipient_name, recipient_email, sender_name, message, pdf_path, expires_on, status, order_id, order_item_id, send_date, sent_at, created_at FROM $table_name WHERE id = %d",
             $id
         ), ARRAY_A);
     }
-    
+
+    /**
+     * Determine whether the voucher is expired in the site's timezone.
+     *
+     * @param array $voucher Voucher data from the database.
+     * @return bool True when the voucher is considered expired.
+     */
+    private static function hasVoucherExpired(array $voucher): bool {
+        $expires_on = $voucher['expires_on'] ?? '';
+        if (!is_string($expires_on) || $expires_on === '') {
+            return true;
+        }
+
+        $expiration = self::getVoucherExpirationDate($expires_on);
+        if (!$expiration) {
+            return true;
+        }
+
+        $now = self::getCurrentDateTime();
+
+        return $now > $expiration;
+    }
+
+    /**
+     * Convert an expires_on value into a DateTimeImmutable at the end of that local day.
+     *
+     * @param string $expires_on Expiration date stored in the database.
+     * @return DateTimeImmutable|null Date object when parsing succeeds, null otherwise.
+     */
+    private static function getVoucherExpirationDate(string $expires_on): ?DateTimeImmutable {
+        $timezone = function_exists('wp_timezone') ? wp_timezone() : new DateTimeZone('UTC');
+        $expiration = DateTimeImmutable::createFromFormat('!Y-m-d H:i:s', $expires_on . ' 23:59:59', $timezone);
+
+        if ($expiration instanceof DateTimeImmutable) {
+            return $expiration;
+        }
+
+        return null;
+    }
+
+    /**
+     * Retrieve the current time in the site's timezone.
+     *
+     * @return DateTimeImmutable Current date and time.
+     */
+    private static function getCurrentDateTime(): DateTimeImmutable {
+        if (function_exists('current_datetime')) {
+            $current = current_datetime();
+            if ($current instanceof DateTimeImmutable) {
+                return $current;
+            }
+        }
+
+        $timezone = function_exists('wp_timezone') ? wp_timezone() : new DateTimeZone('UTC');
+
+        return new DateTimeImmutable('now', $timezone);
+    }
+
     /**
      * Redeem voucher
      *
@@ -644,7 +703,7 @@ class VoucherManager {
         }
         
         // Check expiration
-        if (strtotime($voucher['expires_on']) < time()) {
+        if (self::hasVoucherExpired($voucher)) {
             $wpdb->update(
                 $table_name,
                 ['status' => 'expired'],
@@ -706,7 +765,7 @@ class VoucherManager {
         }
         
         // Check expiration
-        if (strtotime($voucher['expires_on']) < time()) {
+        if (self::hasVoucherExpired($voucher)) {
             global $wpdb;
             $table_name = $wpdb->prefix . 'fp_exp_vouchers';
             $wpdb->update(
