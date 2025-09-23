@@ -2811,21 +2811,14 @@ class MobileAPIManager {
     }
 
     private function processOfflineStatusUpdate(int $booking_id, string $status, int $staff_user_id): array {
-        global $wpdb;
-
         $valid_statuses = ['confirmed', 'completed', 'cancelled', 'no_show'];
-        
+
         if (!in_array($status, $valid_statuses)) {
             return ['success' => false, 'error' => 'Invalid status'];
         }
 
-        $result = $wpdb->update(
-            $wpdb->prefix . 'fp_bookings',
-            ['status' => $status],
-            ['id' => $booking_id],
-            ['%s'],
-            ['%d']
-        );
+        $booking_manager = BookingManager::getInstance();
+        $result = $booking_manager->updateBookingStatusById($booking_id, $status);
 
         if ($result === false) {
             return [

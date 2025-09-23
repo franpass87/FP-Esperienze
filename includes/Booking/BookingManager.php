@@ -1253,40 +1253,117 @@ class BookingManager {
         );
 
         if ($result !== false && $booking) {
-            $booking_id = isset($booking->id) ? (int) $booking->id : 0;
-
-            // Trigger cache invalidation based on status
-            if ($status === 'cancelled') {
-                do_action('fp_esperienze_booking_cancelled', $booking->product_id, $booking->booking_date);
-            } elseif ($status === 'refunded') {
-                do_action('fp_esperienze_booking_refunded', $booking->product_id, $booking->booking_date);
-            } elseif ($status === 'completed' && $booking_id > 0) {
-                $updated_booking = self::getBooking($booking_id);
-                $booking_payload = $updated_booking ? (array) $updated_booking : array_merge(
-                    (array) $booking,
-                    [
-                        'status' => $status,
-                        'updated_at' => $updated_at,
-                    ]
-                );
-
-                $order = null;
-                if (!empty($booking_payload['order_id'])) {
-                    $order_candidate = wc_get_order((int) $booking_payload['order_id']);
-                    if ($order_candidate instanceof \WC_Order) {
-                        $order = $order_candidate;
-                    }
-                }
-
-                $booking_payload = $this->buildBookingPayload($booking_id, $booking_payload, $order);
-
-                do_action('fp_booking_completed', $booking_id, $booking_payload);
-            }
+            $this->triggerBookingStatusHooks($booking, $status, $updated_at);
         }
 
         return $result !== false;
     }
-    
+
+    /**
+     * Update a booking status by primary key.
+     *
+     * @param int    $booking_id Booking ID.
+     * @param string $status     New status value.
+     *
+     * @return int|false Number of affected rows or false on failure.
+     */
+    public function updateBookingStatusById(int $booking_id, string $status): int|false
+    {
+        global $wpdb;
+
+        $table_name = $wpdb->prefix . 'fp_bookings';
+
+        $booking = $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT * FROM {$table_name} WHERE id = %d",
+                $booking_id
+            )
+        );
+
+        if (!$booking) {
+            return 0;
+        }
+
+        $updated_at = current_time('mysql');
+
+        $result = $wpdb->update(
+            $table_name,
+            ['status' => $status, 'updated_at' => $updated_at],
+            ['id' => $booking_id],
+            ['%s', '%s'],
+            ['%d']
+        );
+
+        if ($result !== false && $result > 0) {
+            $this->triggerBookingStatusHooks($booking, $status, $updated_at);
+        }
+
+        return $result;
+    }
+
+    /**
+     * Dispatch booking hooks for status changes.
+     *
+     * @param object $booking    Original booking record.
+     * @param string $status     New status value.
+     * @param string $updated_at Timestamp for the update.
+     */
+    private function triggerBookingStatusHooks(object $booking, string $status, string $updated_at): void
+    {
+        $booking_id = isset($booking->id) ? (int) $booking->id : 0;
+        $product_id = isset($booking->product_id) ? (int) $booking->product_id : 0;
+        $booking_date = isset($booking->booking_date) ? (string) $booking->booking_date : '';
+
+        if ($status === 'cancelled' && $product_id > 0 && $booking_date !== '') {
+            do_action('fp_esperienze_booking_cancelled', $product_id, $booking_date);
+        } elseif ($status === 'refunded' && $product_id > 0 && $booking_date !== '') {
+            do_action('fp_esperienze_booking_refunded', $product_id, $booking_date);
+        }
+
+        if ($booking_id <= 0) {
+            return;
+        }
+
+        if (!in_array($status, ['completed', 'confirmed'], true)) {
+            return;
+        }
+
+        $updated_booking = self::getBooking($booking_id);
+
+        if ($updated_booking) {
+            $booking_payload = (array) $updated_booking;
+        } else {
+            $booking_payload = array_merge(
+                (array) $booking,
+                [
+                    'status' => $status,
+                    'updated_at' => $updated_at,
+                ]
+            );
+        }
+
+        $booking_payload['status'] = $status;
+        if (empty($booking_payload['updated_at'])) {
+            $booking_payload['updated_at'] = $updated_at;
+        }
+
+        $order = null;
+        if (!empty($booking_payload['order_id'])) {
+            $order_candidate = wc_get_order((int) $booking_payload['order_id']);
+            if ($order_candidate instanceof \WC_Order) {
+                $order = $order_candidate;
+            }
+        }
+
+        $booking_payload = $this->buildBookingPayload($booking_id, $booking_payload, $order);
+
+        if ($status === 'completed') {
+            do_action('fp_booking_completed', $booking_id, $booking_payload);
+        } else {
+            do_action('fp_booking_confirmed', $booking_id, $booking_payload);
+        }
+    }
+
     /**
      * Get all bookings with optional filters
      *
