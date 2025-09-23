@@ -501,6 +501,35 @@ var_dump($result);
 - Timestamp and staff member recorded
 - Customer receives check-in notification
 
+#### Test 5.4: Personalized Upselling Recommendations Per Customer
+**Objective:** Validate that upselling emails surface distinct, data-driven recommendations for different customers.
+
+**Setup:**
+1. Create at least three published "experience" products (e.g., *Kayak Tour*, *Wine Estate Visit*, *Street Food Walk*).
+2. Ensure each product has stock, pricing, and a featured image.
+3. Leave one or two positive reviews on two of the products so they have a rating > 0.
+4. Create two WordPress customers (Customer A and Customer B) with unique email addresses.
+
+**Steps:**
+1. As Customer A, place and complete an order for *Kayak Tour* only.
+2. As Customer B, place and complete an order for *Wine Estate Visit* only.
+3. From `wp shell` (or using a mu-plugin), add a temporary logger:
+   ```php
+   add_filter('fp_esperienze_email_recommended_experiences', function ($recommendations, $customer_id) {
+       error_log('Upsell recommendations for customer ' . $customer_id . ': ' . wp_json_encode($recommendations));
+       return $recommendations;
+   }, 10, 2);
+   ```
+4. Trigger the upselling campaign: `do_action('fp_send_upselling_emails');`.
+5. Inspect the PHP error log (or your logging destination) and review the structured recommendation output for each customer ID/email.
+6. Remove the temporary logger once verification is complete.
+
+**Expected Results:**
+- Customer A's recommendations exclude *Kayak Tour* and prominently feature other top-rated experiences (e.g., *Wine Estate Visit*, *Street Food Walk*).
+- Customer B's recommendations exclude *Wine Estate Visit* and highlight alternative experiences they have not booked.
+- Each recommendation entry includes a name, price, description snippet, and product URL.
+- Logs show different recommendation payloads for the two customers, confirming personalized, data-driven selection.
+
 ### 6. Performance Testing
 
 #### Test 6.1: Analytics Performance
