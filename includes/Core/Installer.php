@@ -43,6 +43,13 @@ class Installer {
     private static bool $bookingExtrasVerified = false;
 
     /**
+     * Tracks whether the push tokens table has been verified in this request
+     *
+     * @var bool
+     */
+    private static bool $pushTokensVerified = false;
+
+    /**
      * Plugin activation
      *
      * @return bool|\WP_Error True on success or WP_Error on failure
@@ -50,6 +57,11 @@ class Installer {
     public static function activate() {
         try {
             $result = self::createTables();
+            if (is_wp_error($result)) {
+                return $result;
+            }
+
+            $result = self::ensurePushTokenStorage();
             if (is_wp_error($result)) {
                 return $result;
             }
@@ -568,6 +580,8 @@ class Installer {
             KEY session_date (session_id(32), created_at)
         ) $charset_collate;";
 
+        $sql_push_tokens = self::getPushTokensTableSql($charset_collate);
+
         // Staff attendance tracking table
         $sql_staff_attendance = self::getStaffAttendanceTableSql($charset_collate);
 
@@ -590,6 +604,7 @@ class Installer {
             'dynamic_pricing' => $sql_dynamic_pricing,
             'holds' => $sql_holds,
             'analytics_events' => $sql_analytics,
+            'push_tokens' => $sql_push_tokens,
             'staff_attendance' => $sql_staff_attendance,
             'booking_extras' => $sql_booking_extras
         ];
@@ -613,6 +628,52 @@ class Installer {
             }
         }
         
+        return true;
+    }
+
+    /**
+     * Ensure the push tokens table exists for upgrades and runtime checks.
+     *
+     * @return bool|\WP_Error
+     */
+    public static function maybeCreatePushTokensTable() {
+        if (self::$pushTokensVerified) {
+            return true;
+        }
+
+        global $wpdb;
+
+        $table_name = $wpdb->prefix . 'fp_push_tokens';
+        $table_exists = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $table_name));
+
+        if ($table_exists) {
+            self::$pushTokensVerified = true;
+
+            return true;
+        }
+
+        if (!function_exists('dbDelta')) {
+            require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+        }
+
+        if (!function_exists('dbDelta')) {
+            return new \WP_Error('fp_dbdelta_missing', 'WordPress dbDelta function not available');
+        }
+
+        $sql = self::getPushTokensTableSql($wpdb->get_charset_collate());
+        dbDelta($sql);
+
+        $table_exists = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $table_name));
+
+        if (!$table_exists) {
+            $message = 'FP Esperienze: Failed to create fp_push_tokens table during upgrade.';
+            error_log($message);
+
+            return new \WP_Error('fp_push_tokens_creation_failed', 'Failed to create push tokens table.');
+        }
+
+        self::$pushTokensVerified = true;
+
         return true;
     }
 
@@ -743,6 +804,230 @@ class Installer {
         self::$staffAssignmentsVerified = true;
 
         return true;
+    }
+
+    /**
+     * Ensure push token storage exists and legacy data is migrated.
+     *
+     * @return bool|\WP_Error
+     */
+    public static function ensurePushTokenStorage() {
+        $result = self::maybeCreatePushTokensTable();
+        if (is_wp_error($result)) {
+            return $result;
+        }
+
+        $result = self::migratePushTokens();
+        if (is_wp_error($result)) {
+            return $result;
+        }
+
+        return true;
+    }
+
+    /**
+     * Migrate push token data from legacy user meta to the dedicated table.
+     *
+     * @return bool|\WP_Error
+     */
+    public static function migratePushTokens() {
+        $option_key = 'fp_esperienze_push_tokens_migrated';
+        if (get_option($option_key)) {
+            return true;
+        }
+
+        global $wpdb;
+
+        $table_name = $wpdb->prefix . 'fp_push_tokens';
+        $table_exists = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $table_name));
+        if (!$table_exists) {
+            $result = self::maybeCreatePushTokensTable();
+            if (is_wp_error($result)) {
+                return $result;
+            }
+        }
+
+        $meta_table = $wpdb->usermeta;
+        $meta_rows = $wpdb->get_results(
+            "SELECT user_id, meta_key, meta_value
+             FROM {$meta_table}
+             WHERE meta_key IN ('_push_notification_tokens','_push_token_expires_at','_push_platform','_push_registered_at')
+             ORDER BY user_id ASC"
+        );
+
+        if (empty($meta_rows)) {
+            update_option($option_key, current_time('mysql'));
+
+            return true;
+        }
+
+        $grouped_meta = [];
+
+        foreach ($meta_rows as $row) {
+            $user_id = (int) $row->user_id;
+            if (!isset($grouped_meta[$user_id])) {
+                $grouped_meta[$user_id] = [];
+            }
+
+            $grouped_meta[$user_id][(string) $row->meta_key] = maybe_unserialize($row->meta_value);
+        }
+
+        $now_local = current_time('mysql');
+
+        foreach ($grouped_meta as $user_id => $meta) {
+            $tokens = $meta['_push_notification_tokens'] ?? [];
+            if (!is_array($tokens) || empty($tokens)) {
+                self::deleteLegacyPushTokenMeta((int) $user_id);
+                continue;
+            }
+
+            $expiries = $meta['_push_token_expires_at'] ?? [];
+            if (!is_array($expiries)) {
+                $expiries = [];
+            }
+
+            $platform = '';
+            if (isset($meta['_push_platform']) && is_string($meta['_push_platform'])) {
+                $platform = trim((string) $meta['_push_platform']);
+            }
+
+            $registered_at_value = $meta['_push_registered_at'] ?? null;
+            $registered_at = is_string($registered_at_value) && $registered_at_value !== ''
+                ? $registered_at_value
+                : $now_local;
+
+            foreach ($tokens as $token_value) {
+                $token_sanitized = preg_replace('/[^A-Za-z0-9:\\-._]/', '', (string) $token_value);
+
+                if ($token_sanitized === '') {
+                    continue;
+                }
+
+                $expiry_input = null;
+                if (isset($expiries[$token_sanitized])) {
+                    $expiry_input = $expiries[$token_sanitized];
+                } elseif (isset($expiries[$token_value])) {
+                    $expiry_input = $expiries[$token_value];
+                }
+
+                $expires_at = null;
+                if (is_numeric($expiry_input)) {
+                    $expires_at = gmdate('Y-m-d H:i:s', (int) $expiry_input);
+                }
+
+                $platform_value = $platform !== '' ? $platform : null;
+
+                $existing = $wpdb->get_row(
+                    $wpdb->prepare(
+                        "SELECT token FROM {$table_name} WHERE token = %s",
+                        $token_sanitized
+                    )
+                );
+
+                if ($existing) {
+                    $update_data = [
+                        'user_id' => (int) $user_id,
+                        'platform' => $platform_value,
+                        'expires_at' => $expires_at,
+                        'last_seen' => $registered_at,
+                    ];
+
+                    $updated = $wpdb->update(
+                        $table_name,
+                        $update_data,
+                        ['token' => $token_sanitized],
+                        null,
+                        ['%s']
+                    );
+
+                    if ($updated === false) {
+                        return new \WP_Error(
+                            'fp_push_tokens_update_failed',
+                            'Failed to update push token during migration: ' . $wpdb->last_error
+                        );
+                    }
+
+                    continue;
+                }
+
+                $inserted = $wpdb->insert(
+                    $table_name,
+                    [
+                        'user_id' => (int) $user_id,
+                        'token' => $token_sanitized,
+                        'platform' => $platform_value,
+                        'expires_at' => $expires_at,
+                        'last_seen' => $registered_at,
+                        'created_at' => $registered_at,
+                    ]
+                );
+
+                if ($inserted === false) {
+                    return new \WP_Error(
+                        'fp_push_tokens_insert_failed',
+                        'Failed to insert push token during migration: ' . $wpdb->last_error
+                    );
+                }
+            }
+
+            self::deleteLegacyPushTokenMeta((int) $user_id);
+        }
+
+        update_option($option_key, $now_local);
+
+        return true;
+    }
+
+    /**
+     * Remove legacy push token metadata for a migrated user.
+     */
+    private static function deleteLegacyPushTokenMeta(int $user_id): void {
+        $meta_keys = [
+            '_push_notification_tokens',
+            '_push_token_expires_at',
+            '_push_platform',
+            '_push_registered_at',
+        ];
+
+        foreach ($meta_keys as $meta_key) {
+            if (function_exists('delete_user_meta')) {
+                delete_user_meta($user_id, $meta_key);
+                continue;
+            }
+
+            global $wpdb;
+            $wpdb->delete(
+                $wpdb->usermeta,
+                [
+                    'user_id' => $user_id,
+                    'meta_key' => $meta_key,
+                ],
+                ['%d', '%s']
+            );
+        }
+    }
+
+    /**
+     * Generate SQL statement for the staff attendance table.
+     */
+    private static function getPushTokensTableSql(string $charset_collate): string {
+        global $wpdb;
+
+        $table_push_tokens = $wpdb->prefix . 'fp_push_tokens';
+
+        return "CREATE TABLE $table_push_tokens (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            user_id bigint(20) unsigned NOT NULL,
+            token varchar(255) NOT NULL,
+            platform varchar(32) DEFAULT NULL,
+            expires_at datetime DEFAULT NULL,
+            last_seen datetime DEFAULT NULL,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY token (token),
+            KEY user_id (user_id),
+            KEY expires_at (expires_at)
+        ) $charset_collate;";
     }
 
     /**

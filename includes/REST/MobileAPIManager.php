@@ -872,28 +872,70 @@ class MobileAPIManager {
             return new WP_REST_Response( [ 'error' => 'Token is required' ], 400 );
         }
 
-        // Store push token in array to support multiple devices.
-        $tokens = get_user_meta( $user_id, '_push_notification_tokens', true );
-        $expiries = get_user_meta( $user_id, '_push_token_expires_at', true );
+        global $wpdb;
 
-        if ( ! is_array( $tokens ) ) {
-            $tokens = [];
+        $table_name = $wpdb->prefix . 'fp_push_tokens';
+        $now_local  = current_time('mysql');
+        $now_gmt    = current_time('timestamp', true);
+        $expires_at = gmdate('Y-m-d H:i:s', $now_gmt + (90 * DAY_IN_SECONDS));
+
+        $platform_value = $platform !== '' ? $platform : null;
+
+        $existing = $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT token FROM {$table_name} WHERE token = %s",
+                $token
+            )
+        );
+
+        if ($existing) {
+            $updated = $wpdb->update(
+                $table_name,
+                [
+                    'user_id' => $user_id,
+                    'platform' => $platform_value,
+                    'expires_at' => $expires_at,
+                    'last_seen' => $now_local,
+                ],
+                [ 'token' => $token ],
+                null,
+                ['%s']
+            );
+
+            if ($updated === false) {
+                return new WP_Error(
+                    'push_token_update_failed',
+                    __( 'Failed to update push token', 'fp-esperienze' ),
+                    [
+                        'status' => 500,
+                        'token' => $token,
+                    ]
+                );
+            }
+        } else {
+            $inserted = $wpdb->insert(
+                $table_name,
+                [
+                    'user_id' => $user_id,
+                    'token' => $token,
+                    'platform' => $platform_value,
+                    'expires_at' => $expires_at,
+                    'last_seen' => $now_local,
+                    'created_at' => $now_local,
+                ]
+            );
+
+            if ($inserted === false) {
+                return new WP_Error(
+                    'push_token_save_failed',
+                    __( 'Failed to store push token', 'fp-esperienze' ),
+                    [
+                        'status' => 500,
+                        'token' => $token,
+                    ]
+                );
+            }
         }
-
-        if ( ! is_array( $expiries ) ) {
-            $expiries = [];
-        }
-
-        if ( ! in_array( $token, $tokens, true ) ) {
-            $tokens[] = $token;
-            update_user_meta( $user_id, '_push_notification_tokens', $tokens );
-        }
-
-        $expiries[ $token ] = time() + ( 90 * DAY_IN_SECONDS );
-        update_user_meta( $user_id, '_push_token_expires_at', $expiries );
-
-        update_user_meta( $user_id, '_push_platform', $platform );
-        update_user_meta( $user_id, '_push_registered_at', current_time( 'mysql' ) );
 
         return new WP_REST_Response(
             [
@@ -2173,10 +2215,17 @@ class MobileAPIManager {
      * @return bool|WP_Error Whether the push notification was sent, or WP_Error on failure.
      */
     private function sendPushToUser(int $user_id, string $title, string $message, array $data = [], string $priority = 'high'): bool|WP_Error {
-        $tokens   = get_user_meta( $user_id, '_push_notification_tokens', true );
-        $expiries = get_user_meta( $user_id, '_push_token_expires_at', true );
+        global $wpdb;
 
-        if ( ! is_array( $tokens ) || empty( $tokens ) ) {
+        $table_name = $wpdb->prefix . 'fp_push_tokens';
+        $token_rows = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT token, platform, expires_at FROM {$table_name} WHERE user_id = %d",
+                $user_id
+            )
+        );
+
+        if (empty($token_rows)) {
             return new WP_Error(
                 'push_no_tokens',
                 __( 'The user has no registered push notification tokens', 'fp-esperienze' ),
@@ -2185,10 +2234,6 @@ class MobileAPIManager {
                     'user_id' => $user_id,
                 ]
             );
-        }
-
-        if ( ! is_array( $expiries ) ) {
-            $expiries = [];
         }
 
         $priority        = $this->normalizeNotificationPriority( $priority );
@@ -2202,26 +2247,44 @@ class MobileAPIManager {
         ];
 
         $sent               = false;
-        $retained_tokens     = [];
-        $retained_expiries   = [];
         $errors              = [];
         $invalid_tokens      = [];
-        $now                 = time();
+        $tokens_to_delete   = [];
+        $now_gmt            = current_time('timestamp', true);
 
-        foreach ( $tokens as $token ) {
-            $expiry = isset( $expiries[ $token ] ) ? (int) $expiries[ $token ] : 0;
+        foreach ( $token_rows as $row ) {
+            $token_value = isset( $row->token ) ? (string) $row->token : '';
 
-            if ( $expiry <= $now ) {
-                $invalid_tokens[] = $token;
+            if ( '' === $token_value ) {
+                $tokens_to_delete[] = $token_value;
                 continue;
             }
 
-            $result = $this->sendPushPayload( $token, $payload );
+            $expires_at_raw = isset( $row->expires_at ) ? (string) $row->expires_at : '';
+            if ( '' !== $expires_at_raw ) {
+                $expiry_timestamp = strtotime( $expires_at_raw . ' UTC' );
+                if ( false === $expiry_timestamp ) {
+                    $expiry_timestamp = strtotime( $expires_at_raw );
+                }
+
+                if ( false !== $expiry_timestamp && $expiry_timestamp <= $now_gmt ) {
+                    $invalid_tokens[]   = $token_value;
+                    $tokens_to_delete[] = $token_value;
+                    continue;
+                }
+            }
+
+            $result = $this->sendPushPayload(
+                $token_value,
+                $payload,
+                [
+                    'user_id'  => $user_id,
+                    'platform' => isset( $row->platform ) ? (string) $row->platform : null,
+                ]
+            );
 
             if ( true === $result ) {
                 $sent                     = true;
-                $retained_tokens[]        = $token;
-                $retained_expiries[ $token ] = $expiry;
                 continue;
             }
 
@@ -2232,30 +2295,27 @@ class MobileAPIManager {
                 $remove_token = is_array( $error_data ) && ! empty( $error_data['remove_token'] );
 
                 if ( $remove_token ) {
-                    $invalid_tokens[] = $token;
+                    $invalid_tokens[]   = $token_value;
+                    $tokens_to_delete[] = $token_value;
+                    continue;
+                }
+            }
+        }
+
+        if ( ! empty( $tokens_to_delete ) ) {
+            $tokens_to_delete = array_values( array_unique( $tokens_to_delete ) );
+
+            foreach ( $tokens_to_delete as $token_to_delete ) {
+                if ( '' === $token_to_delete ) {
                     continue;
                 }
 
-                $retained_tokens[]        = $token;
-                $retained_expiries[ $token ] = $expiry;
-                continue;
+                $wpdb->delete(
+                    $table_name,
+                    [ 'token' => $token_to_delete ],
+                    [ '%s' ]
+                );
             }
-
-            $retained_tokens[]        = $token;
-            $retained_expiries[ $token ] = $expiry;
-        }
-
-        if ( ! empty( $retained_tokens ) ) {
-            if ( $tokens !== $retained_tokens ) {
-                update_user_meta( $user_id, '_push_notification_tokens', $retained_tokens );
-            }
-
-            if ( $expiries !== $retained_expiries ) {
-                update_user_meta( $user_id, '_push_token_expires_at', $retained_expiries );
-            }
-        } else {
-            delete_user_meta( $user_id, '_push_notification_tokens' );
-            delete_user_meta( $user_id, '_push_token_expires_at' );
         }
 
         $invalid_tokens = array_values( array_unique( $invalid_tokens ) );
@@ -2323,10 +2383,15 @@ class MobileAPIManager {
      *
      * @param string $token   Device token.
      * @param array  $payload Notification payload.
+     * @param array  $context Additional metadata about the token (user_id, platform).
      *
      * @return bool|WP_Error Whether the notification was sent successfully, or WP_Error on failure.
      */
-    private function sendPushPayload( string $token, array $payload ): bool|WP_Error {
+    private function sendPushPayload( string $token, array $payload, array $context = [] ): bool|WP_Error {
+        $platform = isset( $context['platform'] ) && $context['platform'] !== ''
+            ? (string) $context['platform']
+            : null;
+
         $config = get_option( 'fp_esperienze_mobile_notifications' );
 
         if ( ! is_array( $config ) ) {
@@ -2336,8 +2401,9 @@ class MobileAPIManager {
                 'push_config_missing',
                 __( 'Push notification service is not configured', 'fp-esperienze' ),
                 [
-                    'status' => 500,
-                    'token'  => $token,
+                    'status'   => 500,
+                    'token'    => $token,
+                    'platform' => $platform,
                 ]
             );
         }
@@ -2347,7 +2413,7 @@ class MobileAPIManager {
         $project_id = isset( $config['project_id'] ) ? trim( (string) $config['project_id'] ) : '';
 
         if ( '' === $server_key ) {
-            $this->logPushError( 'Missing Firebase server key in configuration.', [ 'provider' => $provider ] );
+            $this->logPushError( 'Missing Firebase server key in configuration.', [ 'provider' => $provider, 'platform' => $platform ] );
 
             return new WP_Error(
                 'push_missing_credentials',
@@ -2356,12 +2422,13 @@ class MobileAPIManager {
                     'status'   => 500,
                     'token'    => $token,
                     'provider' => $provider,
+                    'platform' => $platform,
                 ]
             );
         }
 
         if ( '' === $project_id ) {
-            $this->logPushError( 'Missing Firebase project ID in configuration.', [ 'provider' => $provider ] );
+            $this->logPushError( 'Missing Firebase project ID in configuration.', [ 'provider' => $provider, 'platform' => $platform ] );
 
             return new WP_Error(
                 'push_missing_project',
@@ -2370,12 +2437,13 @@ class MobileAPIManager {
                     'status'   => 500,
                     'token'    => $token,
                     'provider' => $provider,
+                    'platform' => $platform,
                 ]
             );
         }
 
         if ( 'fcm' !== $provider ) {
-            $this->logPushError( 'Unsupported push provider requested.', [ 'provider' => $provider ] );
+            $this->logPushError( 'Unsupported push provider requested.', [ 'provider' => $provider, 'platform' => $platform ] );
 
             return new WP_Error(
                 'push_provider_unsupported',
@@ -2384,6 +2452,7 @@ class MobileAPIManager {
                     'status'   => 500,
                     'token'    => $token,
                     'provider' => $provider,
+                    'platform' => $platform,
                 ]
             );
         }
@@ -2404,8 +2473,9 @@ class MobileAPIManager {
             $this->logPushError(
                 'Failed to encode push payload as JSON.',
                 [
-                    'token'   => $token,
-                    'payload' => $body,
+                    'token'    => $token,
+                    'payload'  => $body,
+                    'platform' => $platform,
                 ]
             );
 
@@ -2413,9 +2483,10 @@ class MobileAPIManager {
                 'push_payload_encoding_failed',
                 __( 'Unable to encode push notification payload', 'fp-esperienze' ),
                 [
-                    'status'  => 500,
-                    'token'   => $token,
-                    'payload' => $body,
+                    'status'   => 500,
+                    'token'    => $token,
+                    'payload'  => $body,
+                    'platform' => $platform,
                 ]
             );
         }
@@ -2435,9 +2506,10 @@ class MobileAPIManager {
             $this->logPushError(
                 'Push notification request failed.',
                 [
-                    'token'   => $token,
-                    'reason'  => $response->get_error_message(),
-                    'project' => $project_id,
+                    'token'    => $token,
+                    'reason'   => $response->get_error_message(),
+                    'project'  => $project_id,
+                    'platform' => $platform,
                 ]
             );
 
@@ -2449,6 +2521,7 @@ class MobileAPIManager {
                     'token'   => $token,
                     'reason'  => $response->get_error_message(),
                     'project' => $project_id,
+                    'platform' => $platform,
                 ]
             );
         }
@@ -2460,10 +2533,11 @@ class MobileAPIManager {
             $this->logPushError(
                 'Unexpected HTTP status from push provider.',
                 [
-                    'token'   => $token,
-                    'status'  => $status_code,
-                    'body'    => $body_raw,
-                    'project' => $project_id,
+                    'token'    => $token,
+                    'status'   => $status_code,
+                    'body'     => $body_raw,
+                    'project'  => $project_id,
+                    'platform' => $platform,
                 ]
             );
 
@@ -2475,6 +2549,7 @@ class MobileAPIManager {
                     'token'   => $token,
                     'body'    => $body_raw,
                     'project' => $project_id,
+                    'platform' => $platform,
                 ]
             );
         }
@@ -2485,9 +2560,10 @@ class MobileAPIManager {
             $this->logPushError(
                 'Unable to decode push provider response.',
                 [
-                    'token'   => $token,
-                    'body'    => $body_raw,
-                    'project' => $project_id,
+                    'token'    => $token,
+                    'body'     => $body_raw,
+                    'project'  => $project_id,
+                    'platform' => $platform,
                 ]
             );
 
@@ -2499,6 +2575,7 @@ class MobileAPIManager {
                     'token'   => $token,
                     'body'    => $body_raw,
                     'project' => $project_id,
+                    'platform' => $platform,
                 ]
             );
         }
@@ -2508,6 +2585,8 @@ class MobileAPIManager {
 
         foreach ( $results as $result ) {
             if ( isset( $result['message_id'] ) ) {
+                $this->markPushTokenAsSeen( $token, $context );
+
                 return true;
             }
 
@@ -2519,6 +2598,7 @@ class MobileAPIManager {
                     'error'        => $error_reason,
                     'project'      => $project_id,
                     'remove_token' => $remove_token,
+                    'platform'     => $platform,
                 ];
 
                 $this->logPushError( 'Push provider reported delivery error.', $log_context );
@@ -2534,21 +2614,25 @@ class MobileAPIManager {
                         'error'         => $error_reason,
                         'remove_token'  => $remove_token,
                         'response_body' => $decoded,
+                        'platform'      => $platform,
                     ]
                 );
             }
         }
 
         if ( $success > 0 ) {
+            $this->markPushTokenAsSeen( $token, $context );
+
             return true;
         }
 
         $this->logPushError(
             'Push provider response did not confirm delivery.',
             [
-                'token'   => $token,
-                'body'    => $decoded,
-                'project' => $project_id,
+                'token'    => $token,
+                'body'     => $decoded,
+                'project'  => $project_id,
+                'platform' => $platform,
             ]
         );
 
@@ -2559,9 +2643,34 @@ class MobileAPIManager {
                 'status'        => 500,
                 'token'         => $token,
                 'provider'      => $provider,
-                'project'       => $project_id,
                 'response_body' => $decoded,
+                'platform'      => $platform,
             ]
+        );
+    }
+
+    /**
+     * Update the last_seen timestamp for a delivered push token.
+     */
+    private function markPushTokenAsSeen(string $token, array $context): void {
+        if (empty($context['user_id'])) {
+            return;
+        }
+
+        global $wpdb;
+
+        $table_name = $wpdb->prefix . 'fp_push_tokens';
+        $user_id    = (int) $context['user_id'];
+
+        $wpdb->update(
+            $table_name,
+            [ 'last_seen' => current_time('mysql') ],
+            [
+                'user_id' => $user_id,
+                'token'   => $token,
+            ],
+            null,
+            [ '%d', '%s' ]
         );
     }
 
