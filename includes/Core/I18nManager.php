@@ -108,7 +108,14 @@ class I18nManager {
                 set_transient($cache_key, $translated, $ttl);
 
                 if ($translated === $original) {
-                    TranslationLogger::log('I18nManager translation unchanged for key ' . $key);
+                    TranslationLogger::log(
+                        'I18nManager translation unchanged',
+                        [
+                            'key'   => $key,
+                            'text'  => $original,
+                            'found' => $translated,
+                        ]
+                    );
                 }
             }
         } else {

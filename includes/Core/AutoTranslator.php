@@ -58,19 +58,42 @@ class AutoTranslator {
         ]);
 
         if (is_wp_error($response)) {
-            TranslationLogger::log('AutoTranslator request error: ' . $response->get_error_message());
+            TranslationLogger::log(
+                'AutoTranslator request error',
+                [
+                    'error'    => $response->get_error_message(),
+                    'endpoint' => $endpoint,
+                    'target'   => $target,
+                    'source'   => $source,
+                ]
+            );
             return $text;
         }
 
         $code = wp_remote_retrieve_response_code($response);
         if (200 !== $code) {
-            TranslationLogger::log('AutoTranslator HTTP status ' . $code);
+            TranslationLogger::log(
+                'AutoTranslator HTTP error',
+                [
+                    'status'   => $code,
+                    'endpoint' => $endpoint,
+                    'target'   => $target,
+                    'source'   => $source,
+                ]
+            );
             return $text;
         }
 
         $data = json_decode(wp_remote_retrieve_body($response), true);
         if (!is_array($data) || empty($data['translatedText'])) {
-            TranslationLogger::log('AutoTranslator invalid response: ' . wp_remote_retrieve_body($response));
+            TranslationLogger::log(
+                'AutoTranslator invalid response',
+                [
+                    'body'   => wp_remote_retrieve_body($response),
+                    'target' => $target,
+                    'source' => $source,
+                ]
+            );
             return $text;
         }
 
