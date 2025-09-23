@@ -336,7 +336,14 @@ class Shortcodes {
                 // Get products with availability on this date
                 $available_products = $this->getAvailableProductsForDate($date);
                 if (!empty($available_products)) {
-                    $args['post__in'] = $available_products;
+                    if (!empty($args['post__in'])) {
+                        $args['post__in'] = array_intersect($args['post__in'], $available_products);
+                        if (empty($args['post__in'])) {
+                            $args['post__in'] = [0];
+                        }
+                    } else {
+                        $args['post__in'] = $available_products;
+                    }
                 } else {
                     // No products available, return empty result
                     $args['post__in'] = [0];
