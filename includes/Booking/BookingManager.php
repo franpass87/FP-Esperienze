@@ -1520,20 +1520,24 @@ class BookingManager {
      * @return array Validation result
      */
     private static function validateCutoffTime(int $product_id, string $date, string $time): array {
-        $cutoff_minutes = get_post_meta($product_id, '_fp_exp_cutoff_minutes', true) ?: 120;
-        
-        $slot_datetime = \DateTime::createFromFormat('Y-m-d H:i:s', $date . ' ' . $time);
-        if (!$slot_datetime) {
+        $cutoff_meta = get_post_meta($product_id, '_fp_exp_cutoff_minutes', true) ?: 120;
+        $cutoff_minutes = is_numeric($cutoff_meta) ? (int) $cutoff_meta : 120;
+
+        $timezone = wp_timezone();
+
+        try {
+            $slot_datetime = new \DateTimeImmutable($date . ' ' . $time, $timezone);
+        } catch (\Exception $exception) {
             return [
                 'valid' => false,
                 'message' => __('Invalid date/time format.', 'fp-esperienze')
             ];
         }
-        
-        $cutoff_time = new \DateTime();
-        $cutoff_time->add(new \DateInterval('PT' . $cutoff_minutes . 'M'));
-        
-        if ($slot_datetime <= $cutoff_time) {
+
+        $now = new \DateTimeImmutable('now', $timezone);
+        $cutoff_time = $now->add(new \DateInterval('PT' . $cutoff_minutes . 'M'));
+
+        if ($slot_datetime->getTimestamp() <= $cutoff_time->getTimestamp()) {
             return [
                 'valid' => false,
                 'message' => sprintf(
