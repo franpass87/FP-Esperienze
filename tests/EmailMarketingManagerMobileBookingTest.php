@@ -96,6 +96,11 @@ namespace {
         return is_string($value) ? trim($value) : '';
     }
 
+    function sanitize_email($value)
+    {
+        return is_string($value) ? trim($value) : '';
+    }
+
     function sanitize_key($value)
     {
         return preg_replace('/[^a-z0-9_]/', '', strtolower((string) $value));
@@ -255,6 +260,55 @@ namespace {
         ];
 
         return true;
+    }
+
+    function wp_get_scheduled_event($hook, $args = [])
+    {
+        global $scheduled_events;
+
+        foreach ($scheduled_events as $event) {
+            if ($event['hook'] !== $hook) {
+                continue;
+            }
+
+            if (!empty($args) && $event['args'] != $args) {
+                continue;
+            }
+
+            return (object) [
+                'timestamp' => (int) $event['timestamp'],
+                'hook' => $event['hook'],
+                'args' => $event['args'],
+            ];
+        }
+
+        return false;
+    }
+
+    function wp_unschedule_event($timestamp, $hook, $args = [])
+    {
+        global $scheduled_events;
+
+        foreach ($scheduled_events as $index => $event) {
+            if ($event['hook'] !== $hook) {
+                continue;
+            }
+
+            if (!empty($args) && $event['args'] != $args) {
+                continue;
+            }
+
+            if ((int) $event['timestamp'] !== (int) $timestamp) {
+                continue;
+            }
+
+            unset($scheduled_events[$index]);
+            $scheduled_events = array_values($scheduled_events);
+
+            return true;
+        }
+
+        return false;
     }
 
     function wp_next_scheduled($hook, $args = [], $timestamp = null)
@@ -599,7 +653,8 @@ namespace {
     $prepareMethod->setAccessible(true);
     $prepared = $prepareMethod->invoke($emailManager, $bookingId, $bookingPayload);
 
-    $expectedLink = 'https://example.com/wp-json/fp-esperienze/v2/mobile/bookings/' . $bookingId;
+    $expectedPublicLink = 'https://example.com/?fp-booking=' . $bookingId;
+    $expectedInternalLink = 'https://example.com/wp-json/fp-esperienze/v2/mobile/bookings/' . $bookingId;
 
     if (!is_array($prepared)) {
         echo "Prepared data not array\n";
@@ -621,13 +676,18 @@ namespace {
         exit(1);
     }
 
-    if (($prepared['booking_details_url'] ?? '') !== $expectedLink) {
+    if (($prepared['booking_details_url'] ?? '') !== $expectedPublicLink) {
         echo "Booking link fallback mismatch\n";
         exit(1);
     }
 
-    if (($prepared['booking_link'] ?? '') !== $expectedLink) {
+    if (($prepared['booking_link'] ?? '') !== $expectedPublicLink) {
         echo "Booking link alias mismatch\n";
+        exit(1);
+    }
+
+    if (($prepared['booking_details_rest_url'] ?? '') !== $expectedInternalLink) {
+        echo "Booking internal link mismatch\n";
         exit(1);
     }
 
@@ -684,7 +744,7 @@ namespace {
         exit(1);
     }
 
-    if (strpos($preEmail['message'], $expectedLink) === false) {
+    if (strpos($preEmail['message'], $expectedPublicLink) === false) {
         echo "Booking link not present in email\n";
         exit(1);
     }

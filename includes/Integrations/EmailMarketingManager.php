@@ -900,13 +900,35 @@ class EmailMarketingManager {
         }
 
         if (empty($booking_data['booking_details_url'])) {
-            if (function_exists('rest_url')) {
-                $booking_data['booking_details_url'] = rest_url('fp-esperienze/v2/mobile/bookings/' . $booking_id);
-            } elseif (function_exists('home_url')) {
-                $booking_data['booking_details_url'] = home_url('/?fp-booking=' . $booking_id);
-            } else {
-                $booking_data['booking_details_url'] = '';
+            $public_booking_url = '';
+
+            if (function_exists('home_url')) {
+                $home_url = home_url();
+                if (is_string($home_url) && $home_url !== '') {
+                    $base_url = function_exists('trailingslashit')
+                        ? trailingslashit($home_url)
+                        : rtrim($home_url, "\\/") . '/';
+                    $public_booking_url = $base_url . '?fp-booking=' . rawurlencode((string) $booking_id);
+                }
+            } elseif (function_exists('site_url')) {
+                $site_url = site_url();
+                if (is_string($site_url) && $site_url !== '') {
+                    $base_url = function_exists('trailingslashit')
+                        ? trailingslashit($site_url)
+                        : rtrim($site_url, "\\/") . '/';
+                    $public_booking_url = $base_url . '?fp-booking=' . rawurlencode((string) $booking_id);
+                }
             }
+
+            if ($public_booking_url === '' && !empty($booking_data['experience_url'])) {
+                $public_booking_url = (string) $booking_data['experience_url'];
+            }
+
+            $booking_data['booking_details_url'] = $public_booking_url;
+        }
+
+        if (!isset($booking_data['booking_details_rest_url']) && function_exists('rest_url')) {
+            $booking_data['booking_details_rest_url'] = rest_url('fp-esperienze/v2/mobile/bookings/' . $booking_id);
         }
 
         $product_id = isset($booking_data['product_id']) ? (int) $booking_data['product_id'] : 0;
