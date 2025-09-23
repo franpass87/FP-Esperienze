@@ -135,14 +135,53 @@ class BookingManager {
         global $wpdb;
         
         $table_name = $wpdb->prefix . 'fp_bookings';
-        
-        $wpdb->update(
-            $table_name,
-            ['status' => 'cancelled', 'updated_at' => current_time('mysql')],
-            ['order_id' => $order_id],
-            ['%s', '%s'],
-            ['%d']
+
+        $bookings = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT id, product_id, booking_date, order_item_id FROM {$table_name} WHERE order_id = %d AND status != %s",
+                $order_id,
+                'cancelled'
+            )
         );
+
+        if (empty($bookings)) {
+            return;
+        }
+
+        foreach ($bookings as $booking) {
+            $order_item_id = isset($booking->order_item_id) ? (int) $booking->order_item_id : 0;
+
+            if ($order_item_id > 0) {
+                $this->updateBookingStatus($order_id, $order_item_id, 'cancelled');
+                continue;
+            }
+
+            if (!isset($booking->id)) {
+                continue;
+            }
+
+            $booking_id = (int) $booking->id;
+            $updated_at = current_time('mysql');
+
+            $result = $wpdb->update(
+                $table_name,
+                ['status' => 'cancelled', 'updated_at' => $updated_at],
+                ['id' => $booking_id],
+                ['%s', '%s'],
+                ['%d']
+            );
+
+            if ($result === false) {
+                continue;
+            }
+
+            $product_id = isset($booking->product_id) ? (int) $booking->product_id : 0;
+            $booking_date = isset($booking->booking_date) ? (string) $booking->booking_date : '';
+
+            if ($product_id > 0 && $booking_date !== '') {
+                do_action('fp_esperienze_booking_cancelled', $product_id, $booking_date);
+            }
+        }
     }
     
     /**
