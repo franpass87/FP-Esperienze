@@ -748,9 +748,9 @@ class Shortcodes {
                 </div>
                 
                 <div class="fp-experience-meta">
-                    <?php if ($adult_price) : ?>
+                    <?php if ($adult_price !== null) : ?>
                         <div class="fp-experience-price">
-                            <?php printf( esc_html__( 'From %s', 'fp-esperienze' ), wp_kses_post( wc_price( $adult_price ) ) ); ?>
+                            <?php printf( esc_html__( 'From %s', 'fp-esperienze' ), wp_kses_post( wc_price( (float) $adult_price ) ) ); ?>
                         </div>
                     <?php endif; ?>
                     
