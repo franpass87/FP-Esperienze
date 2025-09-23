@@ -374,7 +374,12 @@ class AIFeaturesManager {
      * @return float Seasonality factor (0.7 to 1.5)
      */
     private function calculateSeasonalityFactor(int $product_id): float {
-        $current_month = intval(date('n'));
+        if (function_exists('wp_date')) {
+            $current_month = (int) wp_date('n');
+        } else {
+            $site_timestamp = function_exists('current_time') ? current_time('timestamp') : time();
+            $current_month  = (int) gmdate('n', $site_timestamp);
+        }
 
         // Simple seasonality model - you would train this on historical data
         $seasonal_patterns = [
