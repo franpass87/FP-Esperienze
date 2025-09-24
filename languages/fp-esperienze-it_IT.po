@@ -5444,3 +5444,7 @@ msgstr "Vedi date"
 
 msgid "No events found."
 msgstr "Nessun evento trovato."
+
+msgid "Push token is too long. Please try again with a valid token."
+msgstr "Il token push è troppo lungo. Riprova con un token valido."
+

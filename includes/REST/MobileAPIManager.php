@@ -57,6 +57,16 @@ class MobileAPIManager {
     private bool $qrCodeLibraryAvailable = false;
 
     /**
+     * Maximum number of characters allowed in a push token.
+     *
+     * FCM and APNS tokens are typically well below this limit, but we cap the
+     * value to avoid persisting arbitrarily large payloads that could be used
+     * for denial of service attempts or exceed the column size in the
+     * `fp_push_tokens` table.
+     */
+    private const MAX_PUSH_TOKEN_LENGTH = 512;
+
+    /**
      * Constructor
      */
     public function __construct() {
@@ -884,12 +894,30 @@ class MobileAPIManager {
         }
 
         $user_id = $this->getCurrentMobileUserId( $request );
-        // Allow letters, numbers, colon, dash, dot and underscore in token.
-        $token    = preg_replace( '/[^A-Za-z0-9:\-._]/', '', wp_unslash( $request->get_param( 'token' ) ) );
-        $platform = sanitize_text_field( $request->get_param( 'platform' ) ); // ios, android
 
-        if ( empty( $token ) ) {
+        $raw_token = $request->get_param( 'token' );
+        $token     = is_string( $raw_token ) ? wp_unslash( $raw_token ) : '';
+        // Allow letters, numbers, colon, dash, dot and underscore in token.
+        $token     = trim( preg_replace( '/[^A-Za-z0-9:\-._]/', '', $token ) );
+
+        if ( $token === '' ) {
             return new WP_REST_Response( [ 'error' => 'Token is required' ], 400 );
+        }
+
+        if ( strlen( $token ) > self::MAX_PUSH_TOKEN_LENGTH ) {
+            return new WP_Error(
+                'push_token_too_long',
+                __( 'Push token is too long. Please try again with a valid token.', 'fp-esperienze' ),
+                [ 'status' => 400 ]
+            );
+        }
+
+        $raw_platform     = $request->get_param( 'platform' );
+        $platform         = is_string( $raw_platform ) ? sanitize_text_field( $raw_platform ) : '';
+        $normalized       = strtolower( $platform );
+        $allowed_platforms = [ 'ios', 'android', 'web' ];
+        if ( $platform !== '' && ! in_array( $normalized, $allowed_platforms, true ) ) {
+            $platform = '';
         }
 
         global $wpdb;

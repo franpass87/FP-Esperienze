@@ -911,6 +911,33 @@ class Plugin {
 
         $start       = microtime(true);
         $table_name  = $wpdb->prefix . 'fp_push_tokens';
+
+        $table_exists = true;
+
+        if (method_exists($wpdb, 'get_var') && method_exists($wpdb, 'prepare')) {
+            $table_exists = (bool) $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $table_name));
+
+            if (!$table_exists) {
+                $creation_result = Installer::maybeCreatePushTokensTable();
+                if (is_wp_error($creation_result)) {
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        error_log('FP Esperienze: Push token cleanup skipped - unable to create table: ' . $creation_result->get_error_message());
+                    }
+
+                    return;
+                }
+
+                $table_exists = (bool) $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $table_name));
+                if (!$table_exists) {
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        error_log('FP Esperienze: Push token cleanup skipped - table still missing after creation attempt.');
+                    }
+
+                    return;
+                }
+            }
+        }
+
         $now         = gmdate('Y-m-d H:i:s', current_time('timestamp', true));
         $batch_size  = 500;
         $total_deleted = 0;
