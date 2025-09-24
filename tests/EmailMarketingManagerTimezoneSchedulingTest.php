@@ -83,6 +83,55 @@ namespace {
         return true;
     }
 
+    function wp_get_scheduled_event($hook, $args = [])
+    {
+        global $scheduled_events;
+
+        foreach ($scheduled_events as $event) {
+            if ($event['hook'] !== $hook) {
+                continue;
+            }
+
+            if (!empty($args) && $event['args'] != $args) {
+                continue;
+            }
+
+            return (object) [
+                'hook' => $event['hook'],
+                'timestamp' => $event['timestamp'],
+                'args' => $event['args'],
+            ];
+        }
+
+        return false;
+    }
+
+    function wp_unschedule_event($timestamp, $hook, $args = [])
+    {
+        global $scheduled_events;
+
+        foreach ($scheduled_events as $index => $event) {
+            if ($event['hook'] !== $hook) {
+                continue;
+            }
+
+            if (!empty($args) && $event['args'] != $args) {
+                continue;
+            }
+
+            if ((int) $event['timestamp'] !== (int) $timestamp) {
+                continue;
+            }
+
+            unset($scheduled_events[$index]);
+            $scheduled_events = array_values($scheduled_events);
+
+            return true;
+        }
+
+        return false;
+    }
+
     function wp_next_scheduled($hook, $args = [], $timestamp = null)
     {
         global $scheduled_events;
@@ -188,12 +237,17 @@ namespace {
     $upsellDate = (new \DateTimeImmutable('@' . $upsellEvents[0]['timestamp']))->setTimezone($timezone);
     assert_same('12:45', $upsellDate->format('H:i'), 'Upselling email scheduled at wrong local hour');
 
+    $local_now = (new \DateTimeImmutable('2005-03-22 09:30:00', $timezone))->getTimestamp();
+
     $upsellMethod->invoke($manager, $booking_id, $booking_data);
     $upsellEvents = array_values(array_filter(
         $scheduled_events,
         static fn(array $event): bool => $event['hook'] === 'fp_send_upselling_email'
     ));
-    assert_same(1, count($upsellEvents), 'Upselling email scheduled multiple times despite guard');
+    assert_same(1, count($upsellEvents), 'Upselling email reschedule duplicated events');
+
+    $expected_rescheduled_timestamp = $local_now + (7 * DAY_IN_SECONDS);
+    assert_same($expected_rescheduled_timestamp, $upsellEvents[0]['timestamp'], 'Upselling reschedule timestamp mismatch');
 
     echo "EmailMarketingManager timezone scheduling test passed\n";
 }
