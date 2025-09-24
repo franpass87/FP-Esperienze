@@ -770,10 +770,39 @@ class EmailMarketingManager {
      * @param array $booking_data Booking data
      */
     private function scheduleUpsellingEmail(int $booking_id, array $booking_data): void {
-        $send_time = current_time('timestamp') + (7 * DAY_IN_SECONDS); // 7 days after completion
+        $timezone = wp_timezone();
 
-        if (!wp_next_scheduled('fp_send_upselling_email', [$booking_id, $booking_data])) {
-            wp_schedule_single_event($send_time, 'fp_send_upselling_email', [$booking_id, $booking_data]);
+        $now_timestamp = (int) current_time('timestamp');
+
+        try {
+            $current_datetime = (new \DateTimeImmutable('@' . $now_timestamp))->setTimezone($timezone);
+        } catch (\Throwable $exception) {
+            return;
+        }
+
+        $send_datetime = $current_datetime->add(new \DateInterval('P7D'));
+        $send_timestamp = $send_datetime->getTimestamp();
+
+        if ($send_timestamp <= $now_timestamp) {
+            return;
+        }
+
+        $existing_event = wp_get_scheduled_event(
+            'fp_send_upselling_email',
+            [$booking_id, $booking_data]
+        );
+
+        if ($existing_event && isset($existing_event->timestamp) && (int) $existing_event->timestamp !== $send_timestamp) {
+            wp_unschedule_event(
+                (int) $existing_event->timestamp,
+                'fp_send_upselling_email',
+                [$booking_id, $booking_data]
+            );
+            $existing_event = null;
+        }
+
+        if (!$existing_event) {
+            wp_schedule_single_event($send_timestamp, 'fp_send_upselling_email', [$booking_id, $booking_data]);
         }
     }
 
