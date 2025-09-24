@@ -146,4 +146,44 @@ if (!empty($transient_option_deletes)) {
     exit(1);
 }
 
+$availability_index = [
+    123 => ['fp_availability_123_2024-01-01'],
+];
+$deleted_options = [];
+$deleted_transients = [];
+$object_cache_enabled = false;
+$wpdb->reset();
+
+CacheManager::invalidateAvailabilityCache(123, '2024-01-01');
+
+$transient_option_deletes = array_values(array_filter(
+    $deleted_options,
+    static fn(string $name): bool => str_starts_with($name, '_transient_')
+));
+
+if (empty($transient_option_deletes)) {
+    echo "Expected transient option deletions when object cache disabled for single invalidation\n";
+    exit(1);
+}
+
+$availability_index = [
+    123 => ['fp_availability_123_2024-01-01'],
+];
+$deleted_options = [];
+$deleted_transients = [];
+$object_cache_enabled = true;
+$wpdb->reset();
+
+CacheManager::invalidateAvailabilityCache(123, '2024-01-01');
+
+$transient_option_deletes = array_values(array_filter(
+    $deleted_options,
+    static fn(string $name): bool => str_starts_with($name, '_transient_')
+));
+
+if (!empty($transient_option_deletes)) {
+    echo "Transient options deleted despite external object cache during single invalidation\n";
+    exit(1);
+}
+
 echo "CacheManager external object cache regression test passed\n";
