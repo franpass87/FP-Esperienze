@@ -53,3 +53,4 @@ verify-experience-fix.php
 vendor/
 *.php
 !tests/*.php
+!includes/Core/TranslationCompiler.php

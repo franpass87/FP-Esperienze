@@ -42,6 +42,7 @@ use FP\Esperienze\Core\SecurityEnhancer;
 use FP\Esperienze\Core\PerformanceOptimizer;
 use FP\Esperienze\Core\UXEnhancer;
 use FP\Esperienze\Core\FeatureTester;
+use FP\Esperienze\Core\TranslationCompiler;
 use Throwable;
 
 defined('ABSPATH') || exit;
@@ -180,6 +181,8 @@ class Plugin {
      * Load plugin text domain for translations
      */
     public function loadTextDomain(): void {
+        TranslationCompiler::ensureMoFiles();
+
         load_plugin_textdomain(
             'fp-esperienze',
             false,

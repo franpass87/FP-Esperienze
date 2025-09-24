@@ -9,7 +9,5 @@ parameters:
         - '#Unsafe usage of new static\(\)#'
         - '#Access to an undefined property WP_Post#'
         - '#Function wp_die invoked with 1 parameter#'
-    checkMissingIterableValueType: false
-    checkGenericClassInNonGenericObjectType: false
     bootstrapFiles:
         - phpstan-bootstrap.php
