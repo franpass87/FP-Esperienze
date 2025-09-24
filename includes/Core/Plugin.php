@@ -288,6 +288,9 @@ class Plugin {
 
         $this->initPushTokenCron();
 
+        // Ensure database performance indexes are kept up to date
+        $this->maybeAddPerformanceIndexes();
+
         // Initialize REST API
         add_action('rest_api_init', [$this, 'initREST']);
     }
@@ -950,16 +953,26 @@ class Plugin {
      * Maybe add performance indexes (only once per plugin version)
      */
     public function maybeAddPerformanceIndexes(): void {
+        if (!function_exists('get_option') || !function_exists('update_option') || !function_exists('esc_sql')) {
+            return;
+        }
+
         $indexes_version = get_option('fp_esperienze_indexes_version', '0.0.0');
         $current_version = FP_ESPERIENZE_VERSION;
-        
+
         // Only add indexes if they haven't been added for this version
         if (version_compare($indexes_version, $current_version, '<')) {
-            Installer::addPerformanceIndexes();
-            update_option('fp_esperienze_indexes_version', $current_version);
-            
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log("FP Esperienze: Performance indexes updated to version {$current_version}");
+            try {
+                Installer::addPerformanceIndexes();
+                update_option('fp_esperienze_indexes_version', $current_version);
+
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log("FP Esperienze: Performance indexes updated to version {$current_version}");
+                }
+            } catch (Throwable $e) {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('FP Esperienze: Failed to add performance indexes: ' . $e->getMessage());
+                }
             }
         }
     }
