@@ -57,6 +57,16 @@ You can customize the header preference order with the `fp_trusted_proxy_headers
 
 Only requests that originate from a trusted proxy will have their forwarding headers processed. Otherwise the plugin falls back to `$_SERVER['REMOTE_ADDR']` (or `wp_get_ip_address()` when available).
 
+### Production Readiness CLI Check
+
+When WP-CLI is available you can confirm that all required components are correctly configured before deploying to production with:
+
+```bash
+wp fp-esperienze production-check
+```
+
+Add `--format=json` if you want to consume the report in automation pipelines.
+
 ## Uninstall
 
 Removing the plugin via WordPress will drop all custom database tables beginning with `fp_` and delete any options or transients with the `fp_esperienze_` prefix. To preserve this data during uninstall, define the following constant in your `wp-config.php` before removing the plugin:
