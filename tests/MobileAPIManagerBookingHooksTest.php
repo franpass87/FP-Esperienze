@@ -217,6 +217,47 @@ namespace {
         return $default;
     }
 
+    class WP_User
+    {
+        public function __construct(
+            public int $ID,
+            public string $display_name
+        ) {
+        }
+    }
+
+    $GLOBALS['__test_users'] = [];
+
+    function fp_add_test_user(int $user_id, string $display_name = ''): void
+    {
+        if ($display_name === '') {
+            $display_name = 'User ' . $user_id;
+        }
+
+        $GLOBALS['__test_users'][$user_id] = new WP_User($user_id, $display_name);
+    }
+
+    function fp_clear_test_users(): void
+    {
+        $GLOBALS['__test_users'] = [];
+    }
+
+    function get_user_by($field, $value)
+    {
+        if ($field === 'id') {
+            $user_id = (int) $value;
+
+            return $GLOBALS['__test_users'][$user_id] ?? false;
+        }
+
+        return false;
+    }
+
+    function user_can($user, string $cap): bool
+    {
+        return true;
+    }
+
     class WP_Error
     {
         public function __construct(
@@ -272,6 +313,79 @@ namespace {
             return null;
         }
     }
+
+    class TestWpdb
+    {
+        public string $prefix = 'wp_';
+        public string $users = 'wp_users';
+
+        /** @var array<int, object> */
+        public array $bookings = [];
+
+        public bool $update_called = false;
+
+        /** @var array<int, array<string, mixed>> */
+        public array $update_log = [];
+
+        /** @var int|false */
+        public $next_update_result = 1;
+
+        /**
+         * @param string $query
+         * @param mixed  ...$args
+         * @return array<int, mixed>
+         */
+        public function prepare($query, ...$args): array
+        {
+            return $args;
+        }
+
+        /**
+         * @param array<int, mixed> $args
+         */
+        public function get_row($args)
+        {
+            $booking_id = (int) ($args[0] ?? 0);
+
+            return $this->bookings[$booking_id] ?? null;
+        }
+
+        /**
+         * @param array<string, mixed> $data
+         * @param array<string, mixed> $where
+         * @param array<int, string>  $format
+         * @param array<int, string>  $where_format
+         * @return int|false
+         */
+        public function update($table, $data, $where, $format, $where_format)
+        {
+            $this->update_called = true;
+            $this->update_log[] = compact('table', 'data', 'where', 'format', 'where_format');
+
+            return $this->next_update_result;
+        }
+
+        /**
+         * @param array<int, mixed> $args
+         * @return array<int, object>
+         */
+        public function get_results($args): array
+        {
+            return [];
+        }
+
+        /**
+         * @param array<int, mixed> $args
+         * @return array<int, mixed>
+         */
+        public function get_col($args): array
+        {
+            return [];
+        }
+    }
+
+    $wpdb = new TestWpdb();
+    $GLOBALS['wpdb'] = $wpdb;
 
     require_once __DIR__ . '/../includes/Booking/BookingManager.php';
     require_once __DIR__ . '/../includes/REST/MobileAPIManager.php';
@@ -351,4 +465,44 @@ namespace {
     }
 
     echo "Mobile booking hook registration test passed\n";
+
+    fp_clear_test_users();
+    $wpdb->bookings = [];
+    $wpdb->update_called = false;
+    $wpdb->update_log = [];
+
+    $missingBookingId = 9876;
+    $wpdb->bookings[$missingBookingId] = (object) [
+        'id' => $missingBookingId,
+        'booking_number' => 'BK-' . $missingBookingId,
+        'customer_name' => 'Deleted Staff Scenario',
+        'customer_email' => 'customer@example.com',
+        'product_id' => 55,
+        'booking_date' => '2024-06-01',
+        'participants' => 2,
+        'status' => 'confirmed',
+        'checked_in_at' => null,
+    ];
+
+    $missingStaffId = 54321;
+    $missingStaffToken = $tokenMethod->invoke($apiManager, $missingStaffId);
+
+    $checkinRequest = new WP_REST_Request(
+        ['booking_id' => $missingBookingId],
+        ['Authorization' => 'Bearer ' . $missingStaffToken]
+    );
+
+    $checkinResult = $apiManager->processQRCheckin($checkinRequest);
+
+    if (!$checkinResult instanceof WP_Error || $checkinResult->code !== 'staff_user_not_found') {
+        echo "Expected staff_user_not_found error when staff account is missing\n";
+        exit(1);
+    }
+
+    if ($wpdb->update_called) {
+        echo "Expected check-in update to be skipped when staff user is missing\n";
+        exit(1);
+    }
+
+    echo "Mobile QR check-in missing staff user test passed\n";
 }

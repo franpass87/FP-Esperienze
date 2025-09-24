@@ -823,11 +823,31 @@ class MobileAPIManager {
             return new WP_Error('already_checked_in', __('Booking already checked in', 'fp-esperienze'), ['status' => 400]);
         }
 
+        if (!$staff_user_id) {
+            if (defined('WP_DEBUG') && WP_DEBUG && defined('WP_DEBUG_LOG') && WP_DEBUG_LOG) {
+                error_log(sprintf('FP Esperienze: Missing staff user ID during QR check-in for booking %d.', $booking_id));
+            }
+
+            return new WP_Error('staff_user_not_found', __('Staff user not found', 'fp-esperienze'), ['status' => 404]);
+        }
+
+        $staff_user = get_user_by('id', $staff_user_id);
+
+        if (!$staff_user) {
+            if (defined('WP_DEBUG') && WP_DEBUG && defined('WP_DEBUG_LOG') && WP_DEBUG_LOG) {
+                error_log(sprintf('FP Esperienze: Staff user with ID %d not found during QR check-in.', $staff_user_id));
+            }
+
+            return new WP_Error('staff_user_not_found', __('Staff user not found', 'fp-esperienze'), ['status' => 404]);
+        }
+
+        $checked_in_at = current_time('mysql');
+
         // Perform check-in
         $result = $wpdb->update(
             $wpdb->prefix . 'fp_bookings',
             [
-                'checked_in_at' => current_time('mysql'),
+                'checked_in_at' => $checked_in_at,
                 'checked_in_by' => $staff_user_id
             ],
             ['id' => $booking_id],
@@ -845,8 +865,8 @@ class MobileAPIManager {
         return new WP_REST_Response([
             'success' => true,
             'message' => __('Customer checked in successfully', 'fp-esperienze'),
-            'checked_in_at' => current_time('mysql'),
-            'checked_in_by' => get_user_by('id', $staff_user_id)->display_name
+            'checked_in_at' => $checked_in_at,
+            'checked_in_by' => $staff_user->display_name
         ]);
     }
 
