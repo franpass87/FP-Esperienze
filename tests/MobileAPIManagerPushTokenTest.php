@@ -41,6 +41,11 @@ namespace {
             return $this->data;
         }
 
+        public function get_error_code(): string
+        {
+            return $this->code;
+        }
+
         public function add_data(array $data): void
         {
             $this->data = array_merge($this->data, $data);
@@ -461,6 +466,35 @@ namespace {
 
     if ($token_row['created_at'] !== $initial_created_at) {
         echo "Token creation timestamp should not change on update\n";
+        exit(1);
+    }
+
+    $long_token = str_repeat('A', 600);
+    $request = new WP_REST_Request([
+        'token' => $long_token,
+        'platform' => 'ios',
+    ], [
+        'Authorization' => 'Bearer ' . $auth_token,
+    ]);
+
+    $error_response = $manager->registerPushToken($request);
+
+    if (!is_wp_error($error_response) || $error_response->get_error_code() !== 'push_token_too_long') {
+        echo "Long tokens should be rejected with push_token_too_long error\n";
+        exit(1);
+    }
+
+    $request = new WP_REST_Request([
+        'token' => 'WeirdPlatformToken',
+        'platform' => 'BlackBerry',
+    ], [
+        'Authorization' => 'Bearer ' . $auth_token,
+    ]);
+
+    $manager->registerPushToken($request);
+
+    if (isset($wpdb->tokens['WeirdPlatformToken']['platform']) && $wpdb->tokens['WeirdPlatformToken']['platform'] !== null) {
+        echo "Invalid platform names should not be stored\n";
         exit(1);
     }
 

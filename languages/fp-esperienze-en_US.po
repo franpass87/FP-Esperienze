@@ -5302,3 +5302,7 @@ msgstr "Failed to add to cart"
 #: assets/js/frontend.js:662
 msgid "Failed to add to cart. Please try again."
 msgstr "Failed to add to cart. Please try again."
+
+msgid "Push token is too long. Please try again with a valid token."
+msgstr "Push token is too long. Please try again with a valid token."
+
