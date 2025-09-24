@@ -2,12 +2,10 @@
 node_modules/
 vendor/
 
-# Translation binaries
-languages/*.mo
-
 # Build artifacts
 /build/
 /dist/
+languages/*.mo
 
 # WordPress files
 wp-config.php

@@ -4509,7 +4509,7 @@ msgstr "\"%s\" has been added to your cart."
 msgid "No schedules available"
 msgstr "No schedules available"
 
-#: includes/REST/WidgetAPI.php:341
+#: includes/REST/WidgetAPI.php:341 templates/single-experience.php:528
 msgid "Book This Experience"
 msgstr "Book This Experience"
 
@@ -4837,10 +4837,6 @@ msgstr ""
 #: templates/single-experience.php:516
 msgid "Based on authentic reviews"
 msgstr "Based on authentic reviews"
-
-#: templates/single-experience.php:528
-msgid "Book This Experience"
-msgstr "Book This Experience"
 
 #: templates/single-experience.php:554
 msgid "Choose your preferred date"
