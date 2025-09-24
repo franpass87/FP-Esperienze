@@ -260,13 +260,25 @@ namespace {
 
         $body = $args['body'] ?? '';
         $decoded = json_decode((string) $body, true);
-        $token = $decoded['to'] ?? '';
+        $token = '';
+
+        if (is_array($decoded)) {
+            if (isset($decoded['to'])) {
+                $token = (string) $decoded['to'];
+            } elseif (isset($decoded['include_player_ids']) && is_array($decoded['include_player_ids']) && isset($decoded['include_player_ids'][0])) {
+                $token = (string) $decoded['include_player_ids'][0];
+            }
+        }
+
+        if (isset($wp_remote_responses[$url][$token])) {
+            return $wp_remote_responses[$url][$token];
+        }
 
         if (isset($wp_remote_responses[$token])) {
             return $wp_remote_responses[$token];
         }
 
-        return new WP_Error('unexpected_token', 'No stubbed response for token', ['token' => $token]);
+        return new WP_Error('unexpected_token', 'No stubbed response for token', ['token' => $token, 'url' => $url]);
     }
 
     class PushTokenWPDBStub
@@ -472,23 +484,25 @@ namespace {
     ];
 
     $wp_remote_responses = [
-        'Device_Token' => [
-            'response' => ['code' => 200],
-            'body' => json_encode([
-                'success' => 1,
-                'results' => [
-                    ['message_id' => '123'],
-                ],
-            ]),
-        ],
-        'ErrorToken' => [
-            'response' => ['code' => 200],
-            'body' => json_encode([
-                'success' => 0,
-                'results' => [
-                    ['error' => 'NotRegistered'],
-                ],
-            ]),
+        'https://fcm.googleapis.com/fcm/send' => [
+            'Device_Token' => [
+                'response' => ['code' => 200],
+                'body' => json_encode([
+                    'success' => 1,
+                    'results' => [
+                        ['message_id' => '123'],
+                    ],
+                ]),
+            ],
+            'ErrorToken' => [
+                'response' => ['code' => 200],
+                'body' => json_encode([
+                    'success' => 0,
+                    'results' => [
+                        ['error' => 'NotRegistered'],
+                    ],
+                ]),
+            ],
         ],
     ];
 
@@ -515,6 +529,220 @@ namespace {
 
     if ($wpdb->tokens['Device_Token']['last_seen'] !== gmdate('Y-m-d H:i:s', $current_time_value)) {
         echo "Token last_seen should be updated after a successful send\n";
+        exit(1);
+    }
+
+    // Configure OneSignal credentials and stub responses.
+    $options['fp_esperienze_mobile_notifications'] = [
+        'provider' => 'onesignal',
+        'app_id' => 'onesignal-app',
+        'rest_api_key' => 'rest-key',
+    ];
+
+    $wp_remote_responses = [
+        'https://onesignal.com/api/v1/notifications' => [
+            'OS_Success' => [
+                'response' => ['code' => 200],
+                'body' => json_encode([
+                    'id' => 'notif-100',
+                    'recipients' => 1,
+                ]),
+            ],
+            'OS_Invalid' => [
+                'response' => ['code' => 200],
+                'body' => json_encode([
+                    'errors' => [
+                        ['code' => 'invalid_player_id', 'message' => 'Player ID invalid'],
+                    ],
+                    'invalid_player_ids' => ['OS_Invalid'],
+                ]),
+            ],
+            'OS_RateLimited' => [
+                'response' => ['code' => 429],
+                'body' => json_encode([
+                    'errors' => [
+                        ['code' => 'rate_limit_exceeded', 'message' => 'Too many requests'],
+                    ],
+                ]),
+            ],
+        ],
+    ];
+
+    $wpdb->tokens['OS_Success'] = [
+        'token' => 'OS_Success',
+        'user_id' => 99,
+        'platform' => 'android',
+        'expires_at' => '2024-07-01 12:00:00',
+        'created_at' => '2024-06-01 00:00:00',
+        'last_seen' => null,
+    ];
+    $wpdb->tokens['OS_Invalid'] = [
+        'token' => 'OS_Invalid',
+        'user_id' => 99,
+        'platform' => 'ios',
+        'expires_at' => '2024-07-01 12:00:00',
+        'created_at' => '2024-06-01 00:00:00',
+        'last_seen' => null,
+    ];
+    $wpdb->tokens['OS_RateLimited'] = [
+        'token' => 'OS_RateLimited',
+        'user_id' => 99,
+        'platform' => 'ios',
+        'expires_at' => '2024-07-01 12:00:00',
+        'created_at' => '2024-06-01 00:00:00',
+        'last_seen' => null,
+    ];
+
+    $current_time_value = strtotime('2024-06-06 10:00:00');
+
+    $result = $send_method->invoke($manager, 99, 'OS Title', 'OS Body', ['foo' => 'bar'], 'high');
+
+    if ($result !== true) {
+        echo "Expected OneSignal push to succeed when at least one token is valid\n";
+        exit(1);
+    }
+
+    if (($wpdb->tokens['OS_Success']['last_seen'] ?? '') !== gmdate('Y-m-d H:i:s', $current_time_value)) {
+        echo "OneSignal success token should update last_seen\n";
+        exit(1);
+    }
+
+    if (isset($wpdb->tokens['OS_Invalid'])) {
+        echo "OneSignal invalid player tokens should be removed\n";
+        exit(1);
+    }
+
+    if (!isset($wpdb->tokens['OS_RateLimited'])) {
+        echo "Tokens affected by rate limits should not be pruned\n";
+        exit(1);
+    }
+
+    // Ensure OneSignal failures return informative WP_Error data.
+    $wpdb->tokens['OS_Failure'] = [
+        'token' => 'OS_Failure',
+        'user_id' => 123,
+        'platform' => 'android',
+        'expires_at' => '2024-07-01 12:00:00',
+        'created_at' => '2024-06-01 00:00:00',
+        'last_seen' => null,
+    ];
+
+    $wp_remote_responses['https://onesignal.com/api/v1/notifications']['OS_Failure'] = [
+        'response' => ['code' => 200],
+        'body' => json_encode([
+            'errors' => [
+                ['code' => 'invalid_player_id', 'message' => 'Invalid player'],
+            ],
+            'invalid_player_ids' => ['OS_Failure'],
+        ]),
+    ];
+
+    $failure_result = $send_method->invoke($manager, 123, 'Fail', 'Fail', [], 'high');
+
+    if (!$failure_result instanceof WP_Error) {
+        echo "Expected OneSignal failure to return a WP_Error\n";
+        exit(1);
+    }
+
+    if ($failure_result->code !== 'push_delivery_failed') {
+        echo "Failure WP_Error should use push_delivery_failed code\n";
+        exit(1);
+    }
+
+    $failure_data = $failure_result->get_error_data();
+    if (!in_array('OS_Failure', $failure_data['invalid_tokens'] ?? [], true)) {
+        echo "Failure data should list invalid OneSignal tokens\n";
+        exit(1);
+    }
+
+    if (empty($failure_data['errors'])) {
+        echo "Failure data should include error messages\n";
+        exit(1);
+    }
+
+    if (isset($wpdb->tokens['OS_Failure'])) {
+        echo "Invalid OneSignal tokens should be removed after failure\n";
+        exit(1);
+    }
+
+    // Directly invoke sendPushPayload for OneSignal to inspect provider-specific metadata.
+    $send_payload_method = $reflection->getMethod('sendPushPayload');
+    $send_payload_method->setAccessible(true);
+
+    $wp_remote_responses['https://onesignal.com/api/v1/notifications']['OS_Direct_Invalid'] = [
+        'response' => ['code' => 200],
+        'body' => json_encode([
+            'errors' => [
+                ['code' => 'invalid_player_id', 'message' => 'Invalid direct token'],
+            ],
+            'invalid_player_ids' => ['OS_Direct_Invalid'],
+        ]),
+    ];
+
+    $direct_result = $send_payload_method->invoke($manager, 'OS_Direct_Invalid', [
+        'title' => 'Direct',
+        'body' => 'Message',
+        'data' => ['example' => '1'],
+        'priority' => 'high',
+    ], [
+        'user_id' => 456,
+        'platform' => 'ios',
+    ]);
+
+    if (!$direct_result instanceof WP_Error) {
+        echo "Direct OneSignal invocation should return WP_Error for invalid tokens\n";
+        exit(1);
+    }
+
+    $direct_data = $direct_result->get_error_data();
+    if (($direct_data['error'] ?? '') !== 'invalid_player_id') {
+        echo "Direct OneSignal error should expose provider error code\n";
+        exit(1);
+    }
+
+    if (($direct_data['remove_token'] ?? false) !== true) {
+        echo "Direct OneSignal error should request token removal\n";
+        exit(1);
+    }
+
+    if (($direct_data['status'] ?? 0) !== 410) {
+        echo "Direct OneSignal error should mark status 410 for invalid tokens\n";
+        exit(1);
+    }
+
+    $wp_remote_responses['https://onesignal.com/api/v1/notifications']['OS_RateLimit_Direct'] = [
+        'response' => ['code' => 429],
+        'body' => json_encode([
+            'errors' => [
+                ['code' => 'rate_limit_exceeded', 'message' => 'Rate limit hit'],
+            ],
+        ]),
+    ];
+
+    $rate_result = $send_payload_method->invoke($manager, 'OS_RateLimit_Direct', [
+        'title' => 'Direct',
+        'body' => 'Message',
+        'data' => [],
+    ], []);
+
+    if (!$rate_result instanceof WP_Error) {
+        echo "Rate limited OneSignal request should return WP_Error\n";
+        exit(1);
+    }
+
+    $rate_data = $rate_result->get_error_data();
+    if (($rate_data['status'] ?? 0) !== 429) {
+        echo "Rate limited OneSignal errors should surface HTTP 429 status\n";
+        exit(1);
+    }
+
+    if (($rate_data['remove_token'] ?? false) !== false) {
+        echo "Rate limit errors should not mark tokens for deletion\n";
+        exit(1);
+    }
+
+    if (($rate_data['error'] ?? '') !== 'rate_limit_exceeded') {
+        echo "Rate limit errors should expose provider error codes\n";
         exit(1);
     }
 

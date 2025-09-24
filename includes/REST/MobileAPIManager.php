@@ -2408,9 +2408,50 @@ class MobileAPIManager {
             );
         }
 
-        $provider  = isset( $config['provider'] ) ? strtolower( (string) $config['provider'] ) : 'fcm';
+        $provider = isset( $config['provider'] ) ? strtolower( (string) $config['provider'] ) : 'fcm';
+
+        if ( 'onesignal' === $provider ) {
+            $app_id = isset( $config['app_id'] ) ? trim( (string) $config['app_id'] ) : '';
+
+            if ( '' === $app_id && isset( $config['onesignal_app_id'] ) ) {
+                $app_id = trim( (string) $config['onesignal_app_id'] );
+            }
+
+            $rest_api_key = isset( $config['rest_api_key'] ) ? trim( (string) $config['rest_api_key'] ) : '';
+
+            if ( '' === $rest_api_key && isset( $config['onesignal_rest_api_key'] ) ) {
+                $rest_api_key = trim( (string) $config['onesignal_rest_api_key'] );
+            }
+
+            return $this->sendPushPayloadViaOneSignal( $token, $payload, $context, $app_id, $rest_api_key, $platform );
+        }
+
+        if ( 'fcm' !== $provider ) {
+            $this->logPushError( 'Unsupported push provider requested.', [ 'provider' => $provider, 'platform' => $platform ] );
+
+            return new WP_Error(
+                'push_provider_unsupported',
+                __( 'Configured push notification provider is not supported', 'fp-esperienze' ),
+                [
+                    'status'   => 500,
+                    'token'    => $token,
+                    'provider' => $provider,
+                    'platform' => $platform,
+                ]
+            );
+        }
+
         $server_key = isset( $config['server_key'] ) ? trim( (string) $config['server_key'] ) : '';
         $project_id = isset( $config['project_id'] ) ? trim( (string) $config['project_id'] ) : '';
+
+        return $this->sendPushPayloadViaFcm( $token, $payload, $context, $server_key, $project_id, $platform );
+    }
+
+    /**
+     * Send a Firebase Cloud Messaging notification.
+     */
+    private function sendPushPayloadViaFcm( string $token, array $payload, array $context, string $server_key, string $project_id, ?string $platform ): bool|WP_Error {
+        $provider = 'fcm';
 
         if ( '' === $server_key ) {
             $this->logPushError( 'Missing Firebase server key in configuration.', [ 'provider' => $provider, 'platform' => $platform ] );
@@ -2433,21 +2474,6 @@ class MobileAPIManager {
             return new WP_Error(
                 'push_missing_project',
                 __( 'Push notification project ID is missing', 'fp-esperienze' ),
-                [
-                    'status'   => 500,
-                    'token'    => $token,
-                    'provider' => $provider,
-                    'platform' => $platform,
-                ]
-            );
-        }
-
-        if ( 'fcm' !== $provider ) {
-            $this->logPushError( 'Unsupported push provider requested.', [ 'provider' => $provider, 'platform' => $platform ] );
-
-            return new WP_Error(
-                'push_provider_unsupported',
-                __( 'Configured push notification provider is not supported', 'fp-esperienze' ),
                 [
                     'status'   => 500,
                     'token'    => $token,
@@ -2521,6 +2547,7 @@ class MobileAPIManager {
                     'token'   => $token,
                     'reason'  => $response->get_error_message(),
                     'project' => $project_id,
+                    'provider' => $provider,
                     'platform' => $platform,
                 ]
             );
@@ -2549,6 +2576,7 @@ class MobileAPIManager {
                     'token'   => $token,
                     'body'    => $body_raw,
                     'project' => $project_id,
+                    'provider' => $provider,
                     'platform' => $platform,
                 ]
             );
@@ -2575,6 +2603,7 @@ class MobileAPIManager {
                     'token'   => $token,
                     'body'    => $body_raw,
                     'project' => $project_id,
+                    'provider' => $provider,
                     'platform' => $platform,
                 ]
             );
@@ -2645,6 +2674,282 @@ class MobileAPIManager {
                 'provider'      => $provider,
                 'response_body' => $decoded,
                 'platform'      => $platform,
+            ]
+        );
+    }
+
+    /**
+     * Send a OneSignal notification using REST API credentials.
+     */
+    private function sendPushPayloadViaOneSignal( string $token, array $payload, array $context, string $app_id, string $rest_api_key, ?string $platform ): bool|WP_Error {
+        $provider = 'onesignal';
+
+        if ( '' === $rest_api_key ) {
+            $this->logPushError( 'Missing OneSignal REST API key in configuration.', [ 'provider' => $provider, 'platform' => $platform ] );
+
+            return new WP_Error(
+                'push_missing_credentials',
+                __( 'Push notification credentials are missing', 'fp-esperienze' ),
+                [
+                    'status'   => 500,
+                    'token'    => $token,
+                    'provider' => $provider,
+                    'platform' => $platform,
+                ]
+            );
+        }
+
+        if ( '' === $app_id ) {
+            $this->logPushError( 'Missing OneSignal App ID in configuration.', [ 'provider' => $provider, 'platform' => $platform ] );
+
+            return new WP_Error(
+                'push_missing_project',
+                __( 'Push notification project ID is missing', 'fp-esperienze' ),
+                [
+                    'status'   => 500,
+                    'token'    => $token,
+                    'provider' => $provider,
+                    'platform' => $platform,
+                ]
+            );
+        }
+
+        $title   = (string) ( $payload['title'] ?? '' );
+        $message = (string) ( $payload['body'] ?? ( $payload['message'] ?? '' ) );
+        $data    = is_array( $payload['data'] ?? null ) ? $payload['data'] : [];
+
+        $body = [
+            'app_id'             => $app_id,
+            'include_player_ids' => [ $token ],
+            'headings'           => [ 'en' => $title ],
+            'contents'           => [ 'en' => $message ],
+            'data'               => $data,
+        ];
+
+        $body_json = wp_json_encode( $body );
+
+        if ( false === $body_json ) {
+            $this->logPushError(
+                'Failed to encode push payload as JSON.',
+                [
+                    'token'    => $token,
+                    'payload'  => $body,
+                    'platform' => $platform,
+                ]
+            );
+
+            return new WP_Error(
+                'push_payload_encoding_failed',
+                __( 'Unable to encode push notification payload', 'fp-esperienze' ),
+                [
+                    'status'   => 500,
+                    'token'    => $token,
+                    'payload'  => $body,
+                    'platform' => $platform,
+                ]
+            );
+        }
+
+        $args = [
+            'timeout' => 10,
+            'headers' => [
+                'Authorization' => 'Basic ' . $rest_api_key,
+                'Content-Type'  => 'application/json; charset=utf-8',
+            ],
+            'body'    => $body_json,
+        ];
+
+        $response = wp_remote_post( 'https://onesignal.com/api/v1/notifications', $args );
+
+        if ( is_wp_error( $response ) ) {
+            $this->logPushError(
+                'Push notification request failed.',
+                [
+                    'token'    => $token,
+                    'reason'   => $response->get_error_message(),
+                    'project'  => $app_id,
+                    'platform' => $platform,
+                ]
+            );
+
+            return new WP_Error(
+                'push_http_request_failed',
+                __( 'Unable to contact the push notification service', 'fp-esperienze' ),
+                [
+                    'status'  => 500,
+                    'token'   => $token,
+                    'reason'  => $response->get_error_message(),
+                    'project' => $app_id,
+                    'app_id'  => $app_id,
+                    'provider' => $provider,
+                    'platform' => $platform,
+                ]
+            );
+        }
+
+        $status_code = wp_remote_retrieve_response_code( $response );
+        $body_raw    = wp_remote_retrieve_body( $response );
+        $decoded     = json_decode( $body_raw, true );
+
+        if ( ! is_array( $decoded ) ) {
+            $this->logPushError(
+                'Unable to decode push provider response.',
+                [
+                    'token'    => $token,
+                    'status'   => $status_code,
+                    'body'     => $body_raw,
+                    'project'  => $app_id,
+                    'platform' => $platform,
+                ]
+            );
+
+            $status_for_error = ( $status_code >= 200 && $status_code < 300 ) ? 500 : $status_code;
+
+            return new WP_Error(
+                'push_invalid_response',
+                __( 'Push notification service returned an invalid response', 'fp-esperienze' ),
+                [
+                    'status'  => $status_for_error,
+                    'token'   => $token,
+                    'body'    => $body_raw,
+                    'project' => $app_id,
+                    'app_id'  => $app_id,
+                    'provider' => $provider,
+                    'platform' => $platform,
+                ]
+            );
+        }
+
+        $recipients = isset( $decoded['recipients'] ) ? (int) $decoded['recipients'] : null;
+        $has_id     = isset( $decoded['id'] ) && '' !== $decoded['id'];
+
+        if ( $has_id && null !== $recipients && $recipients > 0 ) {
+            $this->markPushTokenAsSeen( $token, $context );
+
+            return true;
+        }
+
+        $invalid_player_ids = [];
+        if ( isset( $decoded['invalid_player_ids'] ) ) {
+            if ( is_array( $decoded['invalid_player_ids'] ) ) {
+                $invalid_player_ids = array_map( 'strval', $decoded['invalid_player_ids'] );
+            } elseif ( is_string( $decoded['invalid_player_ids'] ) && '' !== $decoded['invalid_player_ids'] ) {
+                $invalid_player_ids = [ $decoded['invalid_player_ids'] ];
+            }
+        }
+
+        $errors_field = $decoded['errors'] ?? [];
+        $errors_list  = [];
+        if ( is_string( $errors_field ) && '' !== $errors_field ) {
+            $errors_list[] = $errors_field;
+        } elseif ( is_array( $errors_field ) ) {
+            foreach ( $errors_field as $error_entry ) {
+                if ( is_string( $error_entry ) ) {
+                    $errors_list[] = $error_entry;
+                    continue;
+                }
+
+                if ( is_array( $error_entry ) ) {
+                    $message = '';
+                    if ( isset( $error_entry['message'] ) && is_string( $error_entry['message'] ) ) {
+                        $message = $error_entry['message'];
+                    } elseif ( isset( $error_entry['error'] ) && is_string( $error_entry['error'] ) ) {
+                        $message = $error_entry['error'];
+                    }
+
+                    if ( '' !== $message ) {
+                        $errors_list[] = $message;
+                    }
+                }
+            }
+        }
+
+        $primary_error_code    = '';
+        $primary_error_message = '';
+        if ( is_array( $errors_field ) ) {
+            $first = reset( $errors_field );
+            if ( is_array( $first ) ) {
+                if ( isset( $first['code'] ) && is_string( $first['code'] ) ) {
+                    $primary_error_code = $first['code'];
+                } elseif ( isset( $first['error'] ) && is_string( $first['error'] ) ) {
+                    $primary_error_code = $first['error'];
+                }
+
+                if ( isset( $first['message'] ) && is_string( $first['message'] ) ) {
+                    $primary_error_message = $first['message'];
+                }
+            } elseif ( is_string( $first ) ) {
+                $primary_error_message = $first;
+            }
+        } elseif ( is_string( $errors_field ) ) {
+            $primary_error_message = $errors_field;
+        }
+
+        $error_string = $primary_error_code !== '' ? $primary_error_code : $primary_error_message;
+
+        if ( '' === $error_string && $status_code >= 300 ) {
+            $error_string = 'http_status_' . $status_code;
+        }
+        $remove_token = false;
+        $status       = ( $status_code >= 200 && $status_code < 300 ) ? 500 : $status_code;
+
+        if ( ! empty( $invalid_player_ids ) && in_array( $token, $invalid_player_ids, true ) ) {
+            $remove_token = true;
+            if ( '' === $error_string ) {
+                $error_string = 'invalid_player_id';
+            }
+        }
+
+        $error_string_lower  = strtolower( (string) $error_string );
+        $error_message_lower = strtolower( $primary_error_message );
+
+        if ( ! $remove_token && ( str_contains( $error_string_lower, 'invalid_player' ) || str_contains( $error_string_lower, 'not_subscribed' ) ) ) {
+            $remove_token = true;
+        }
+
+        if ( ! $remove_token && ( str_contains( $error_message_lower, 'invalid player' ) || str_contains( $error_message_lower, 'not subscribed' ) ) ) {
+            $remove_token = true;
+        }
+
+        if ( $remove_token ) {
+            $status = 410;
+        } elseif ( 429 === $status_code || str_contains( $error_string_lower, 'rate' ) ) {
+            $status = 429;
+        }
+
+        $log_context = [
+            'token'        => $token,
+            'provider'     => $provider,
+            'app_id'       => $app_id,
+            'error'        => $error_string,
+            'errors'       => $errors_list,
+            'remove_token' => $remove_token,
+            'platform'     => $platform,
+            'status_code'  => $status_code,
+        ];
+
+        if ( ! empty( $invalid_player_ids ) ) {
+            $log_context['invalid_player_ids'] = $invalid_player_ids;
+        }
+
+        $this->logPushError( 'Push provider reported delivery error.', $log_context );
+
+        return new WP_Error(
+            'push_delivery_failed',
+            __( 'Push notification could not be delivered', 'fp-esperienze' ),
+            [
+                'status'        => $status,
+                'token'         => $token,
+                'provider'      => $provider,
+                'project'       => $app_id,
+                'app_id'        => $app_id,
+                'error'         => $error_string,
+                'error_message' => $primary_error_message,
+                'remove_token'  => $remove_token,
+                'response_body' => $decoded,
+                'platform'      => $platform,
+                'errors'        => $errors_list,
+                'status_code'   => $status_code,
             ]
         );
     }
