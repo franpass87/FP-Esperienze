@@ -3,6 +3,25 @@
  * PHPStan bootstrap file for WordPress
  */
 
+// Load Composer autoloader so PHPStan is aware of WordPress/WooCommerce stubs.
+$autoload_path = __DIR__ . '/vendor/autoload.php';
+if (file_exists($autoload_path)) {
+    require_once $autoload_path;
+}
+
+// Load stub files that ship with php-stubs packages so PHPStan knows about
+// WordPress and WooCommerce globals, functions and classes.
+$stub_files = [
+    __DIR__ . '/vendor/php-stubs/wordpress-stubs/wordpress-stubs.php',
+    __DIR__ . '/vendor/php-stubs/woocommerce-stubs/woocommerce-stubs.php',
+];
+
+foreach ($stub_files as $stub_file) {
+    if (file_exists($stub_file)) {
+        require_once $stub_file;
+    }
+}
+
 // Define WordPress constants if not already defined
 if (!defined('ABSPATH')) {
     define('ABSPATH', '/tmp/wordpress/');
