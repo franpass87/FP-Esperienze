@@ -8,6 +8,7 @@
 namespace FP\Esperienze\Admin;
 
 use FP\Esperienze\Core\Installer;
+use FP\Esperienze\Core\ProductionValidator;
 
 defined('ABSPATH') || exit;
 
@@ -82,7 +83,8 @@ class SystemStatus {
      * System status page
      */
     public function systemStatusPage(): void {
-        $checks = $this->runSystemChecks();
+        $checks               = $this->runSystemChecks();
+        $production_readiness = ProductionValidator::validateProductionReadiness();
 
         ?>
         <div class="wrap">
@@ -109,6 +111,7 @@ class SystemStatus {
             <div class="fp-system-status">
                 <?php $this->renderSystemInfo(); ?>
                 <?php $this->renderChecks($checks); ?>
+                <?php $this->renderProductionReadiness($production_readiness); ?>
                 <?php $this->renderDatabaseInfo(); ?>
                 <?php $this->renderIntegrationStatus(); ?>
             </div>
@@ -170,6 +173,86 @@ class SystemStatus {
                 margin-left: 10px;
             }
             </style>
+        </div>
+        <?php
+    }
+
+    /**
+     * Render production readiness report
+     */
+    private function renderProductionReadiness(array $results): void {
+        $status_map = [
+            'pass'    => [
+                'class' => 'fp-status-ok',
+                'label' => __('Ready for production', 'fp-esperienze'),
+            ],
+            'warning' => [
+                'class' => 'fp-status-warning',
+                'label' => __('Warnings detected', 'fp-esperienze'),
+            ],
+            'fail'    => [
+                'class' => 'fp-status-error',
+                'label' => __('Action required', 'fp-esperienze'),
+            ],
+        ];
+
+        $status       = $results['overall_status'] ?? 'warning';
+        $status_class = $status_map[$status]['class'] ?? 'fp-status-warning';
+        $status_label = $status_map[$status]['label'] ?? __('Warnings detected', 'fp-esperienze');
+
+        $critical = $results['critical_issues'] ?? [];
+        $warnings = $results['warnings'] ?? [];
+        $checks   = $results['checks'] ?? [];
+
+        ?>
+        <div class="fp-status-section">
+            <h2><?php esc_html_e('Production Readiness', 'fp-esperienze'); ?></h2>
+            <table class="fp-status-table">
+                <tr>
+                    <th><?php esc_html_e('Overall Status', 'fp-esperienze'); ?></th>
+                    <td>
+                        <span class="<?php echo esc_attr($status_class); ?> fp-status-icon">
+                            <?php echo esc_html($status_label); ?>
+                        </span>
+                    </td>
+                </tr>
+                <?php if (!empty($critical)) : ?>
+                    <tr>
+                        <th><?php esc_html_e('Critical Issues', 'fp-esperienze'); ?></th>
+                        <td>
+                            <ul>
+                                <?php foreach ($critical as $issue) : ?>
+                                    <li class="fp-status-error fp-status-icon"><?php echo esc_html($issue); ?></li>
+                                <?php endforeach; ?>
+                            </ul>
+                        </td>
+                    </tr>
+                <?php endif; ?>
+                <?php if (!empty($warnings)) : ?>
+                    <tr>
+                        <th><?php esc_html_e('Warnings', 'fp-esperienze'); ?></th>
+                        <td>
+                            <ul>
+                                <?php foreach ($warnings as $warning) : ?>
+                                    <li class="fp-status-warning fp-status-icon"><?php echo esc_html($warning); ?></li>
+                                <?php endforeach; ?>
+                            </ul>
+                        </td>
+                    </tr>
+                <?php endif; ?>
+                <?php if (!empty($checks)) : ?>
+                    <tr>
+                        <th><?php esc_html_e('Checks Performed', 'fp-esperienze'); ?></th>
+                        <td>
+                            <ul>
+                                <?php foreach ($checks as $check) : ?>
+                                    <li><?php echo esc_html($check); ?></li>
+                                <?php endforeach; ?>
+                            </ul>
+                        </td>
+                    </tr>
+                <?php endif; ?>
+            </table>
         </div>
         <?php
     }
