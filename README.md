@@ -23,11 +23,22 @@ A WordPress + WooCommerce plugin for experience booking management by Francesco 
    composer install --no-dev --optimize-autoloader
    ```
 
-3. **Upload to WordPress:**
+3. **Compile translation files (required before packaging):**
+   - Ensure GNU gettext utilities are installed (provides the `msgfmt` command)
+   - From the plugin root run:
+     ```bash
+     msgfmt languages/fp-esperienze-en_US.po -o languages/fp-esperienze-en_US.mo
+     msgfmt languages/fp-esperienze-it_IT.po -o languages/fp-esperienze-it_IT.mo
+     ```
+   - Repeat for any additional `.po` locales you've added so the compiled `.mo` files are available during deployment
+   - The generated `.mo` binaries are build artifacts (left untracked in git);
+     copy them into the final plugin package before distribution
+
+4. **Upload to WordPress:**
    - Copy the plugin folder to `/wp-content/plugins/`
    - Or upload as a ZIP file through WordPress admin
 
-4. **Activate the plugin:**
+5. **Activate the plugin:**
    - Go to WordPress Admin > Plugins
    - Find "FP Esperienze" and click "Activate"
 
@@ -1322,8 +1333,20 @@ find . -name "*.php" -not -path "./vendor/*" | xargs xgettext \
   --default-domain=fp-esperienze \
   --output=languages/fp-esperienze.pot \
   --add-comments=translators \
---force-po
+  --force-po
 ```
+
+3. **Before packaging**: Compile each locale's `.po` file into a `.mo` so `load_plugin_textdomain()` can load it at runtime:
+
+```bash
+msgfmt languages/fp-esperienze-en_US.po -o languages/fp-esperienze-en_US.mo
+msgfmt languages/fp-esperienze-it_IT.po -o languages/fp-esperienze-it_IT.mo
+# Repeat for any other locales in languages/
+```
+
+The compiled `.mo` files are treated as build outputs and are intentionally
+excluded from version control. Ensure you package the freshly generated
+translations when creating a release ZIP or deploying to production.
 
 ### Automatic Translation Endpoint
 
