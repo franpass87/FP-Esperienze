@@ -26,12 +26,14 @@
         "phpstan/phpstan-strict-rules": "^1.5",
         "wp-coding-standards/wpcs": "^3.0",
         "dealerdirect/phpcodesniffer-composer-installer": "^0.7",
-        "phpcompatibility/phpcompatibility-wp": "^2.1"
+        "phpcompatibility/phpcompatibility-wp": "^2.1",
+        "php-stubs/wordpress-stubs": "^6.5",
+        "php-stubs/woocommerce-stubs": "^8.0"
     },
     "scripts": {
-        "phpstan": "phpstan analyse --memory-limit=512M",
-        "phpcs": "phpcs --standard=WordPress includes/",
-        "phpcbf": "phpcbf --standard=WordPress includes/",
+        "phpstan": "phpstan analyse --memory-limit=-1",
+        "phpcs": "php -d memory_limit=512M vendor/bin/phpcs --standard=WordPress includes/",
+        "phpcbf": "php -d memory_limit=512M vendor/bin/phpcbf --standard=WordPress includes/",
         "test": [
             "@phpstan",
             "@phpcs"
@@ -42,6 +44,7 @@
         "allow-plugins": {
             "phpstan/extension-installer": true,
             "dealerdirect/phpcodesniffer-composer-installer": true
-        }
+        },
+        "process-timeout": 0
     }
 }

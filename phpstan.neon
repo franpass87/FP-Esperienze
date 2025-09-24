@@ -11,3 +11,6 @@ parameters:
         - '#Function wp_die invoked with 1 parameter#'
     bootstrapFiles:
         - phpstan-bootstrap.php
+    stubFiles:
+        - vendor/php-stubs/wordpress-stubs/wordpress-stubs.php
+        - vendor/php-stubs/woocommerce-stubs/woocommerce-stubs.php
