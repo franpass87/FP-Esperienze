@@ -86,6 +86,13 @@ if (!function_exists('__')) {
     }
 }
 
+if (!function_exists('apply_filters')) {
+    function apply_filters($tag, $value, ...$args)
+    {
+        return $value;
+    }
+}
+
 if (!function_exists('add_action')) {
     function add_action(string $hook, $callback, int $priority = 10, int $accepted_args = 1): void
     {

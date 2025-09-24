@@ -1232,7 +1232,7 @@ class BookingManager {
      */
     public function updateBookingStatus(int $order_id, int $item_id, string $status): bool {
         global $wpdb;
-        
+
         $table_name = $wpdb->prefix . 'fp_bookings';
         
         // Get booking data before update for cache invalidation
@@ -1260,28 +1260,64 @@ class BookingManager {
     }
 
     /**
+     * Retrieve the list of statuses supported by booking updates.
+     *
+     * @return array<int, string>
+     */
+    private function getSupportedBookingStatuses(): array
+    {
+        $default_statuses = ['pending', 'confirmed', 'completed', 'cancelled', 'refunded', 'no_show'];
+        $statuses = apply_filters('fp_booking_supported_statuses', $default_statuses);
+
+        if (!is_array($statuses)) {
+            return $default_statuses;
+        }
+
+        $statuses = array_map('strval', $statuses);
+        $statuses = array_filter($statuses, static function ($value): bool {
+            return $value !== '';
+        });
+
+        if (empty($statuses)) {
+            return $default_statuses;
+        }
+
+        return array_values(array_unique($statuses));
+    }
+
+    /**
      * Update a booking status by primary key.
      *
-     * @param int    $booking_id Booking ID.
-     * @param string $status     New status value.
+     * @param int            $booking_id Booking ID.
+     * @param string         $status     New status value.
+     * @param object|null    $booking    Optional booking data to reuse.
+     * @param \WC_Order|null $order      Optional order associated with the booking.
      *
-     * @return int|false Number of affected rows or false on failure.
+     * @return int|false|WP_Error Number of affected rows, error object on invalid status, or false on failure.
      */
-    public function updateBookingStatusById(int $booking_id, string $status): int|false
+    public function updateBookingStatusById(int $booking_id, string $status, ?object $booking = null, ?\WC_Order $order = null)
     {
         global $wpdb;
 
         $table_name = $wpdb->prefix . 'fp_bookings';
 
-        $booking = $wpdb->get_row(
-            $wpdb->prepare(
-                "SELECT * FROM {$table_name} WHERE id = %d",
-                $booking_id
-            )
-        );
+        if (!in_array($status, $this->getSupportedBookingStatuses(), true)) {
+            return new WP_Error('fp_booking_invalid_status', __('Invalid booking status requested.', 'fp-esperienze'));
+        }
+
+        if (!$booking) {
+            $booking = self::getBooking($booking_id);
+        }
 
         if (!$booking) {
             return 0;
+        }
+
+        if (!$order && !empty($booking->order_id)) {
+            $order_candidate = wc_get_order((int) $booking->order_id);
+            if ($order_candidate instanceof \WC_Order) {
+                $order = $order_candidate;
+            }
         }
 
         $updated_at = current_time('mysql');
@@ -1295,7 +1331,7 @@ class BookingManager {
         );
 
         if ($result !== false && $result > 0) {
-            $this->triggerBookingStatusHooks($booking, $status, $updated_at);
+            $this->triggerBookingStatusHooks($booking, $status, $updated_at, $order);
         }
 
         return $result;
@@ -1304,11 +1340,12 @@ class BookingManager {
     /**
      * Dispatch booking hooks for status changes.
      *
-     * @param object $booking    Original booking record.
-     * @param string $status     New status value.
-     * @param string $updated_at Timestamp for the update.
+     * @param object         $booking    Original booking record.
+     * @param string         $status     New status value.
+     * @param string         $updated_at Timestamp for the update.
+     * @param \WC_Order|null $order      Related order instance when available.
      */
-    private function triggerBookingStatusHooks(object $booking, string $status, string $updated_at): void
+    private function triggerBookingStatusHooks(object $booking, string $status, string $updated_at, ?\WC_Order $order = null): void
     {
         $booking_id = isset($booking->id) ? (int) $booking->id : 0;
         $product_id = isset($booking->product_id) ? (int) $booking->product_id : 0;
@@ -1347,8 +1384,7 @@ class BookingManager {
             $booking_payload['updated_at'] = $updated_at;
         }
 
-        $order = null;
-        if (!empty($booking_payload['order_id'])) {
+        if (!$order && !empty($booking_payload['order_id'])) {
             $order_candidate = wc_get_order((int) $booking_payload['order_id']);
             if ($order_candidate instanceof \WC_Order) {
                 $order = $order_candidate;

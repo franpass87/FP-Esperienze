@@ -2813,12 +2813,42 @@ class MobileAPIManager {
     private function processOfflineStatusUpdate(int $booking_id, string $status, int $staff_user_id): array {
         $valid_statuses = ['confirmed', 'completed', 'cancelled', 'no_show'];
 
-        if (!in_array($status, $valid_statuses)) {
+        if (!in_array($status, $valid_statuses, true)) {
             return ['success' => false, 'error' => 'Invalid status'];
         }
 
+        $booking = BookingManager::getBooking($booking_id);
+
+        if (!$booking) {
+            return [
+                'success' => false,
+                'booking_id' => $booking_id,
+                'action' => 'status_update',
+                'status' => $status,
+                'message' => __('Booking status was not updated. The booking may not exist or already has this status.', 'fp-esperienze'),
+            ];
+        }
+
+        $order = null;
+        if (!empty($booking->order_id)) {
+            $order_candidate = wc_get_order((int) $booking->order_id);
+            if ($order_candidate instanceof \WC_Order) {
+                $order = $order_candidate;
+            }
+        }
+
         $booking_manager = BookingManager::getInstance();
-        $result = $booking_manager->updateBookingStatusById($booking_id, $status);
+        $result = $booking_manager->updateBookingStatusById($booking_id, $status, $booking, $order);
+
+        if ($result instanceof WP_Error) {
+            return [
+                'success' => false,
+                'booking_id' => $booking_id,
+                'action' => 'status_update',
+                'status' => $status,
+                'message' => $result->get_error_message(),
+            ];
+        }
 
         if ($result === false) {
             return [
