@@ -1,10 +1,13 @@
 <?php
 /**
  * Experience Product Type - Complete Status Report
- * 
+ *
  * This script provides a comprehensive status report of the Experience product type implementation
  * Run this to get a complete overview of the current state
  */
+
+fp_esperienze_bootstrap_wordpress(__DIR__);
+fp_esperienze_assert_admin_access();
 
 echo "=== FP Esperienze - Experience Product Type Status Report ===\n";
 echo "Generated: " . date('Y-m-d H:i:s T') . "\n\n";
@@ -40,20 +43,31 @@ echo "\n🔍 PHP SYNTAX CHECK\n";
 echo str_repeat("-", 40) . "\n";
 
 $syntax_ok = true;
+$syntax_checks_available = false;
 foreach (['fp-esperienze.php', 'includes/ProductType/Experience.php', 'includes/ProductType/WC_Product_Experience.php', 'includes/Core/Plugin.php'] as $file) {
-    if (file_exists(__DIR__ . '/' . $file)) {
-        $output = [];
-        $return_code = 0;
-        exec("php -l " . escapeshellarg(__DIR__ . '/' . $file) . " 2>&1", $output, $return_code);
-        
-        if ($return_code === 0) {
+    $full_path = __DIR__ . '/' . $file;
+    if (file_exists($full_path)) {
+        $result = fp_esperienze_check_php_syntax($full_path);
+
+        if ($result['status'] === true) {
             echo "✅ $file - Syntax OK\n";
-        } else {
+            $syntax_checks_available = true;
+        } elseif ($result['status'] === false) {
             echo "❌ $file - Syntax Error\n";
-            echo "   " . implode("\n   ", $output) . "\n";
+            if (!empty($result['message'])) {
+                echo "   " . $result['message'] . "\n";
+            }
             $syntax_ok = false;
+            $syntax_checks_available = true;
+        } else {
+            $message = $result['message'] ?: 'Manual linting required (e.g. run php -l).';
+            echo "⚠️  $file - Unable to validate syntax: $message\n";
         }
     }
+}
+
+if (!$syntax_checks_available) {
+    $syntax_ok = null;
 }
 
 $status['syntax'] = $syntax_ok;
@@ -223,8 +237,22 @@ echo "\n" . str_repeat("=", 60) . "\n";
 echo "OVERALL STATUS SUMMARY\n";
 echo str_repeat("=", 60) . "\n";
 
-$total_checks = count($status);
-$passed_checks = array_sum(array_map(function($v) { return is_bool($v) ? ($v ? 1 : 0) : ($v > 0 ? 1 : 0); }, $status));
+$total_checks = 0;
+$passed_checks = 0;
+
+foreach ($status as $value) {
+    if (is_bool($value)) {
+        $total_checks++;
+        if ($value) {
+            $passed_checks++;
+        }
+    } elseif (is_int($value) || is_float($value)) {
+        $total_checks++;
+        if ($value > 0) {
+            $passed_checks++;
+        }
+    }
+}
 
 echo sprintf("Passed Checks: %d/%d\n", $passed_checks, $total_checks);
 
@@ -239,12 +267,12 @@ if ($passed_checks === $total_checks) {
     echo "\n⚠️  Some issues detected. Review the report above.\n\n";
     
     $issues = [];
-    if (!$status['files']) $issues[] = "Missing critical files";
-    if (!$status['syntax']) $issues[] = "PHP syntax errors";
-    if (!$status['filter_correct']) $issues[] = "Filter hook issues";
-    if (!$status['experience_class']) $issues[] = "Experience class problems";
-    if (!$status['wc_product_class']) $issues[] = "WC_Product_Experience class issues";
-    
+    if (($status['files'] ?? null) === false) $issues[] = "Missing critical files";
+    if (($status['syntax'] ?? null) === false) $issues[] = "PHP syntax errors";
+    if (($status['filter_correct'] ?? null) === false) $issues[] = "Filter hook issues";
+    if (($status['experience_class'] ?? null) === false) $issues[] = "Experience class problems";
+    if (($status['wc_product_class'] ?? null) === false) $issues[] = "WC_Product_Experience class issues";
+
     echo "Issues to fix:\n";
     foreach ($issues as $issue) {
         echo "- $issue\n";
@@ -252,15 +280,117 @@ if ($passed_checks === $total_checks) {
 }
 
 echo "\n📋 NEXT STEPS:\n";
-if ($status['composer_autoload'] === false) {
+if (($status['composer_autoload'] ?? null) === false) {
     echo "1. Install composer dependencies: composer install --no-dev\n";
 }
-echo "2. Activate plugin in WordPress\n";
-echo "3. Run test-experience-functionality.php in WordPress\n";
-echo "4. Manually test: WordPress Admin → Products → Add New\n";
-echo "5. Verify 'Experience' appears in Product Type dropdown\n";
+if (!$syntax_checks_available) {
+    echo "2. Enable the OPcache extension or run manual linting (php -l) for PHP files\n";
+    echo "3. Activate plugin in WordPress\n";
+    echo "4. Run test-experience-functionality.php in WordPress\n";
+    echo "5. Manually test: WordPress Admin → Products → Add New\n";
+    echo "6. Verify 'Experience' appears in Product Type dropdown\n";
+} else {
+    echo "2. Activate plugin in WordPress\n";
+    echo "3. Run test-experience-functionality.php in WordPress\n";
+    echo "4. Manually test: WordPress Admin → Products → Add New\n";
+    echo "5. Verify 'Experience' appears in Product Type dropdown\n";
+}
 
 echo "\n" . str_repeat("=", 60) . "\n";
 echo "Report complete. For help, see MANUAL_TESTING_GUIDE.md\n";
+
+if (!function_exists('fp_esperienze_bootstrap_wordpress')) {
+    function fp_esperienze_bootstrap_wordpress(string $base_dir): void
+    {
+        if (defined('ABSPATH')) {
+            return;
+        }
+
+        $directory = $base_dir;
+        for ($depth = 0; $depth < 10; $depth++) {
+            $wp_load = $directory . '/wp-load.php';
+            if (file_exists($wp_load)) {
+                require_once $wp_load;
+                break;
+            }
+
+            $parent = dirname($directory);
+            if ($parent === $directory) {
+                break;
+            }
+
+            $directory = $parent;
+        }
+
+        if (!defined('ABSPATH')) {
+            http_response_code(403);
+            exit('This tool must be executed from within a WordPress installation.');
+        }
+    }
+}
+
+if (!function_exists('fp_esperienze_assert_admin_access')) {
+    function fp_esperienze_assert_admin_access(): void
+    {
+        if (!function_exists('is_user_logged_in') || !function_exists('current_user_can')) {
+            http_response_code(403);
+            exit('WordPress authentication functions are not available.');
+        }
+
+        if (!is_user_logged_in() || !current_user_can('manage_options')) {
+            $message = __('You do not have permission to access this tool.', 'fp-esperienze');
+
+            if (function_exists('wp_die')) {
+                wp_die(esc_html($message), esc_html__('Access denied', 'fp-esperienze'), ['response' => 403]);
+            }
+
+            http_response_code(403);
+            exit($message);
+        }
+    }
+}
+
+if (!function_exists('fp_esperienze_check_php_syntax')) {
+    function fp_esperienze_check_php_syntax(string $file): array
+    {
+        if (!function_exists('opcache_compile_file')) {
+            return [
+                'status' => null,
+                'message' => 'OPcache extension not available. Run "php -l ' . $file . '" manually to lint this file.',
+            ];
+        }
+
+        $error_message = null;
+
+        set_error_handler(static function (int $severity, string $message) use (&$error_message): bool {
+            $error_message = $message;
+            return true;
+        });
+
+        $result = @opcache_compile_file($file);
+
+        restore_error_handler();
+
+        if ($result) {
+            if (function_exists('opcache_invalidate')) {
+                @opcache_invalidate($file, true);
+            }
+
+            return [
+                'status' => true,
+                'message' => '',
+            ];
+        }
+
+        if ($error_message === null) {
+            $error_message = 'Unknown parse error. Check PHP error logs for details.';
+        }
+
+        return [
+            'status' => false,
+            'message' => $error_message,
+        ];
+    }
+}
 
 ?>

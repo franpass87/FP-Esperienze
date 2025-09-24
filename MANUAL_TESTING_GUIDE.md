@@ -85,19 +85,31 @@ echo get_class($product); // Should output: FP\Esperienze\ProductType\WC_Product
 
 ## Automated Testing Scripts
 
+> **Security Requirement:** All utility scripts must run inside a WordPress context with an authenticated administrator. Use WP-CLI with the `--user=<admin>` flag or access the file from the browser while logged in as an administrator.
+
+### Status Report
+- **Location:** `wp-content/plugins/fp-esperienze/status-report.php`
+- **WP-CLI:**
+  ```bash
+  wp eval-file wp-content/plugins/fp-esperienze/status-report.php --user=<admin>
+  ```
+- **Notes:** Requires the OPcache extension to perform inline syntax linting. If OPcache is unavailable, lint critical files manually with `php -l`.
+
 ### PHP Syntax Test
-Run this to check PHP syntax without WordPress:
+- **Location:** `wp-content/plugins/fp-esperienze/test-php-syntax.php`
+- **WP-CLI:**
+  ```bash
+  wp eval-file wp-content/plugins/fp-esperienze/test-php-syntax.php --user=<admin>
+  ```
+- **Notes:** Uses OPcache to validate syntax without executing the files. When OPcache is disabled, manually lint files (e.g. `php -l wp-content/plugins/fp-esperienze/fp-esperienze.php`).
+
+### Full Functionality Test
+Run this in WordPress via WP-CLI or the browser:
 ```bash
-php test-php-syntax.php
+wp eval-file wp-content/plugins/fp-esperienze/test-experience-functionality.php --user=<admin>
 ```
 
-### Full Functionality Test  
-Run this in WordPress environment (WP-CLI or browser):
-```bash
-wp eval-file test-experience-functionality.php
-```
-
-Or access via browser: `/test-experience-functionality.php` (admin login required)
+Or access via browser: `/wp-content/plugins/fp-esperienze/test-experience-functionality.php` (admin login required).
 
 ### WordPress Diagnostic Script
 Run this for detailed diagnostics:

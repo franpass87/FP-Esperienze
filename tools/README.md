@@ -23,9 +23,12 @@ This directory contains diagnostic tools to help identify and resolve plugin act
 **Purpose**: Comprehensive command-line diagnostic tool.
 
 **Usage**:
-- Run from WordPress admin or include in scripts
-- Provides detailed analysis of all potential failure points
-- Generates detailed reports
+- Run via WP-CLI with an administrator context:
+  ```bash
+  wp eval-file wp-content/plugins/fp-esperienze/tools/activation-diagnostic.php --user=<admin>
+  ```
+- Or access the file from the browser while logged in as an administrator
+- Anonymous access is blocked for security reasons
 
 **What it tests**:
 - All environment requirements
@@ -34,6 +37,10 @@ This directory contains diagnostic tools to help identify and resolve plugin act
 - PHP extension availability
 - Plugin conflicts
 - Debug settings
+
+**Notes**:
+- OPcache is used for passive syntax checks. When OPcache is disabled, lint the reported file manually with `php -l`.
+- Additional standalone tools (`status-report.php`, `test-php-syntax.php`) live in the plugin root and follow the same administrator-only access rules.
 
 ## Common Issues and Solutions
 
