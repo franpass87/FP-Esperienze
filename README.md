@@ -23,16 +23,14 @@ A WordPress + WooCommerce plugin for experience booking management by Francesco 
    composer install --no-dev --optimize-autoloader
    ```
 
-3. **Compile translation files (required before packaging):**
-   - Ensure GNU gettext utilities are installed (provides the `msgfmt` command)
-   - From the plugin root run:
+3. **Prepare translations (required only when building a release ZIP):**
+   - The repository stores the editable `.po` sources; compiled `.mo` files are generated at runtime inside `wp-content/languages/plugins/`
+   - When producing a distributable package, run `wp i18n make-mo languages` (or the `msgfmt` commands below) and include the generated `.mo` files in the release artifact
      ```bash
      msgfmt languages/fp-esperienze-en_US.po -o languages/fp-esperienze-en_US.mo
      msgfmt languages/fp-esperienze-it_IT.po -o languages/fp-esperienze-it_IT.mo
      ```
-   - Repeat for any additional `.po` locales you've added so the compiled `.mo` files are available during deployment
-   - The generated `.mo` binaries are build artifacts (left untracked in git);
-     copy them into the final plugin package before distribution
+   - Repeat the command for any additional locales you maintain so the compiled `.mo` files ship with the packaged plugin
 
 4. **Upload to WordPress:**
    - Copy the plugin folder to `/wp-content/plugins/`
@@ -1336,7 +1334,7 @@ find . -name "*.php" -not -path "./vendor/*" | xargs xgettext \
   --force-po
 ```
 
-3. **Before packaging**: Compile each locale's `.po` file into a `.mo` so `load_plugin_textdomain()` can load it at runtime:
+3. **Before packaging**: Compile each locale's `.po` file into a `.mo` so `load_plugin_textdomain()` can load it from your distributable ZIP:
 
 ```bash
 msgfmt languages/fp-esperienze-en_US.po -o languages/fp-esperienze-en_US.mo
@@ -1344,9 +1342,11 @@ msgfmt languages/fp-esperienze-it_IT.po -o languages/fp-esperienze-it_IT.mo
 # Repeat for any other locales in languages/
 ```
 
-The compiled `.mo` files are treated as build outputs and are intentionally
-excluded from version control. Ensure you package the freshly generated
-translations when creating a release ZIP or deploying to production.
+During development the plugin automatically compiles any missing or out-of-date
+`.mo` files into `wp-content/languages/plugins/`, so translations work even when
+the repository only contains the `.po` sources. When preparing a release ZIP,
+run the commands above (or `wp i18n make-mo languages`) and include the
+generated `.mo` files in the packaged plugin.
 
 ### Automatic Translation Endpoint
 
