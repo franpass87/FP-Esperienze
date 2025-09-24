@@ -17,18 +17,20 @@ if (!defined('ABSPATH')) {
         __DIR__ . '/../../wp-load.php',
         __DIR__ . '/../wp-load.php'
     ];
-    
+
     foreach ($wp_load_candidates as $wp_load) {
         if (file_exists($wp_load)) {
             require_once $wp_load;
             break;
         }
     }
-    
+
     if (!defined('ABSPATH')) {
         die('Error: Unable to load WordPress environment. Run this script from WordPress admin or include WordPress.');
     }
 }
+
+fp_esperienze_assert_admin_access();
 
 class FPEsperienzeActivationDiagnostic {
     
@@ -199,16 +201,18 @@ class FPEsperienzeActivationDiagnostic {
         foreach ($test_classes as $class => $expected_file) {
             $full_path = $plugin_dir . $expected_file;
             if (file_exists($full_path)) {
-                // Check file syntax
-                $output = [];
-                $return_code = 0;
-                exec("php -l " . escapeshellarg($full_path), $output, $return_code);
-                
-                if ($return_code === 0) {
+                $result = fp_esperienze_check_php_syntax($full_path);
+
+                if ($result['status'] === true) {
                     self::success("Class file syntax valid: $class ✓");
-                } else {
+                } elseif ($result['status'] === false) {
                     self::error("Syntax error in class file: $class");
-                    echo "<div class='code-block'>" . implode("\n", $output) . "</div>";
+                    if (!empty($result['message'])) {
+                        echo "<div class='code-block'>" . esc_html($result['message']) . "</div>";
+                    }
+                } else {
+                    $message = $result['message'] ?: 'Manual linting required (run php -l).';
+                    self::warning("Unable to validate syntax for $class ($expected_file): " . esc_html($message));
                 }
             } else {
                 self::error("Class file missing: $class ($expected_file)");
@@ -424,4 +428,68 @@ class FPEsperienzeActivationDiagnostic {
 // Run diagnostic if called directly
 if (!defined('FP_ESPERIENZE_DIAGNOSTIC_INCLUDED')) {
     FPEsperienzeActivationDiagnostic::run();
+}
+
+if (!function_exists('fp_esperienze_assert_admin_access')) {
+    function fp_esperienze_assert_admin_access(): void
+    {
+        if (!function_exists('is_user_logged_in') || !function_exists('current_user_can')) {
+            http_response_code(403);
+            exit('WordPress authentication functions are not available.');
+        }
+
+        if (!is_user_logged_in() || !current_user_can('manage_options')) {
+            $message = __('You do not have permission to access this tool.', 'fp-esperienze');
+
+            if (function_exists('wp_die')) {
+                wp_die(esc_html($message), esc_html__('Access denied', 'fp-esperienze'), ['response' => 403]);
+            }
+
+            http_response_code(403);
+            exit($message);
+        }
+    }
+}
+
+if (!function_exists('fp_esperienze_check_php_syntax')) {
+    function fp_esperienze_check_php_syntax(string $file): array
+    {
+        if (!function_exists('opcache_compile_file')) {
+            return [
+                'status' => null,
+                'message' => 'OPcache extension not available. Run "php -l ' . $file . '" manually to lint this file.',
+            ];
+        }
+
+        $error_message = null;
+
+        set_error_handler(static function (int $severity, string $message) use (&$error_message): bool {
+            $error_message = $message;
+            return true;
+        });
+
+        $result = @opcache_compile_file($file);
+
+        restore_error_handler();
+
+        if ($result) {
+            if (function_exists('opcache_invalidate')) {
+                @opcache_invalidate($file, true);
+            }
+
+            return [
+                'status' => true,
+                'message' => '',
+            ];
+        }
+
+        if ($error_message === null) {
+            $error_message = 'Unknown parse error. Check PHP error logs for details.';
+        }
+
+        return [
+            'status' => false,
+            'message' => $error_message,
+        ];
+    }
 }
