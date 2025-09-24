@@ -275,6 +275,7 @@ function fp_esperienze_handle_notice_dismissal() {
 if (defined('WP_CLI') && WP_CLI) {
     try {
         \WP_CLI::add_command('fp-esperienze', \FP\Esperienze\CLI\TranslateCommand::class);
+        \WP_CLI::add_command('fp-esperienze production-check', \FP\Esperienze\CLI\ProductionCheckCommand::class);
     } catch (Throwable $e) {
         error_log('FP Esperienze: Failed to register WP-CLI command: ' . $e->getMessage());
     }

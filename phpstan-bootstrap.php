@@ -125,3 +125,19 @@ if (!class_exists('WP_User')) {
         public function has_cap($capability) { return true; }
     }
 }
+
+if (!class_exists('WP_CLI_Command')) {
+    class WP_CLI_Command {}
+}
+
+if (!class_exists('WP_CLI')) {
+    class WP_CLI {
+        public static function success($message): void {}
+        public static function warning($message): void {}
+        public static function error($message, $exit = true): void {}
+        public static function log($message): void {}
+        public static function error_multi_line(array $messages): void {}
+        public static function print_value($value, array $args = []): void {}
+    }
+}
+
