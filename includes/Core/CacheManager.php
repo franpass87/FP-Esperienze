@@ -364,6 +364,10 @@ class CacheManager {
      * @return array<string>
      */
     private static function collectTransientKeysFromDatabase(string $transient_prefix): array {
+        if (self::isUsingExternalObjectCache()) {
+            return [];
+        }
+
         global $wpdb;
 
         if (!isset($wpdb) || !isset($wpdb->options) || !method_exists($wpdb, 'prepare') || !method_exists($wpdb, 'get_col')) {
@@ -447,7 +451,7 @@ class CacheManager {
                 $removed = wp_cache_delete($cache_key, 'transient') || $removed;
             }
 
-            if (function_exists('delete_option')) {
+            if (!$using_object_cache && function_exists('delete_option')) {
                 $removed = delete_option('_transient_' . $cache_key) || $removed;
                 $removed = delete_option('_transient_timeout_' . $cache_key) || $removed;
             }
