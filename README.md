@@ -44,7 +44,7 @@ A WordPress + WooCommerce plugin for experience booking management by Francesco 
 
 ### Trusted Proxy Configuration
 
-If your WordPress installation sits behind a reverse proxy or load balancer, add its IP address to the list of trusted proxies so the rate limiter can read the original client address from `Client-IP`, `X-Real-IP`, `Forwarded`, `Forwarded-For`, and `X-Forwarded-*` headers.
+If your WordPress installation sits behind a reverse proxy or load balancer, add its IP address to the list of trusted proxies so the rate limiter can read the original client address from trusted headers. When a request originates from a proxy contained in this list FP Esperienze, by default, inspects the following headers in order: `CF-Connecting-IP`, `Client-IP`, `X-Cluster-Client-IP`, `X-Real-IP`, `X-Forwarded-For`, `X-Forwarded`, `Forwarded-For`, and `Forwarded`.
 
 ```php
 // In wp-config.php or a custom plugin.
@@ -52,6 +52,8 @@ add_filter( 'fp_trusted_proxies', function() {
     return [ '203.0.113.1', '198.51.100.0' ];
 } );
 ```
+
+You can customize the header preference order with the `fp_trusted_proxy_headers` filter or adjust the final resolved address with `fp_resolved_client_ip` should your infrastructure use bespoke headers.
 
 Only requests that originate from a trusted proxy will have their forwarding headers processed. Otherwise the plugin falls back to `$_SERVER['REMOTE_ADDR']` (or `wp_get_ip_address()` when available).
 
