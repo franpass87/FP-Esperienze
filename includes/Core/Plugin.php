@@ -43,6 +43,7 @@ use FP\Esperienze\Core\PerformanceOptimizer;
 use FP\Esperienze\Core\UXEnhancer;
 use FP\Esperienze\Core\FeatureTester;
 use FP\Esperienze\Core\TranslationCompiler;
+use FP\Esperienze\Core\SiteHealth;
 use Throwable;
 
 defined('ABSPATH') || exit;
@@ -171,6 +172,10 @@ class Plugin {
             // Initialize UX enhancements
             if (class_exists('FP\Esperienze\Core\UXEnhancer')) {
                 UXEnhancer::init();
+            }
+
+            if (class_exists('FP\Esperienze\Core\SiteHealth')) {
+                SiteHealth::init();
             }
         } catch (Throwable $e) {
             error_log('FP Esperienze: Core components initialization error: ' . $e->getMessage());
