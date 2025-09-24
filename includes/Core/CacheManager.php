@@ -100,7 +100,7 @@ class CacheManager {
 
         self::removeAvailabilityKeysFromIndex($product_id, [$cache_key]);
 
-        if (function_exists('delete_option')) {
+        if (!self::isUsingExternalObjectCache() && function_exists('delete_option')) {
             delete_option('_transient_' . $cache_key);
             delete_option('_transient_timeout_' . $cache_key);
         }
