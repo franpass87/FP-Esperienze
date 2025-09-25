@@ -9,22 +9,26 @@ namespace FP\Esperienze\Core;
 
 use WP_Error;
 
+use Throwable;
+use function apply_filters;
 use function current_time;
 use function error_log;
 use function function_exists;
+use function get_option;
 use function gmdate;
 use function is_bool;
+use function is_callable;
 use function is_int;
 use function is_string;
 use function is_writable;
 use function json_encode;
+use function sprintf;
 use function trailingslashit;
 use function wp_json_encode;
 use function wp_mkdir_p;
 use function wp_upload_dir;
 use function wp_is_writable;
 use function is_wp_error;
-use function sprintf;
 
 defined('ABSPATH') || exit;
 
@@ -64,6 +68,8 @@ class TranslationLogger {
      * @return bool|WP_Error True on success or WP_Error on failure.
      */
     public static function log(string $message, array $context = []) {
+        self::dispatchToCustomHandler($message, $context);
+
         if (!self::isLoggingEnabled()) {
             return true;
         }
@@ -89,6 +95,10 @@ class TranslationLogger {
      * Determine whether logging is enabled.
      */
     private static function isLoggingEnabled(): bool {
+        if (!function_exists('get_option')) {
+            return false;
+        }
+
         $enabled = get_option(self::OPTION_ENABLE, '0');
 
         if (is_bool($enabled)) {
@@ -105,6 +115,33 @@ class TranslationLogger {
         }
 
         return false;
+    }
+
+    /**
+     * Send the log message to any custom handler configured via filters.
+     *
+     * @param string               $message Log message.
+     * @param array<string, mixed> $context Context array.
+     */
+    private static function dispatchToCustomHandler(string $message, array $context): void {
+        if (!function_exists('apply_filters')) {
+            return;
+        }
+
+        $handler = apply_filters('fp_es_translation_logger_handler', null, $message, $context);
+        if (!is_callable($handler)) {
+            return;
+        }
+
+        try {
+            $handler($message, $context);
+        } catch (Throwable $throwable) {
+            self::fallbackErrorLog(
+                $message,
+                $context,
+                sprintf('Custom handler exception: %s', $throwable->getMessage())
+            );
+        }
     }
 
     /**
