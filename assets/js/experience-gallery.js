@@ -9,6 +9,9 @@
         this.prev = element.querySelector('.fp-experience-gallery__control--prev');
         this.next = element.querySelector('.fp-experience-gallery__control--next');
         this.index = 0;
+        this.autoPlayInterval = 3000;
+        this.autoPlayTimer = null;
+        this.isPaused = false;
 
         if (!this.slides.length) {
             return;
@@ -20,6 +23,7 @@
 
         this.bindEvents();
         this.goTo(0, false);
+        this.initAutoplay();
     }
 
     ExperienceGallery.prototype.bindEvents = function() {
@@ -105,6 +109,103 @@
             } catch (error) {
                 this.thumbs[this.index].focus();
             }
+        }
+
+        if (!this.isPaused) {
+            this.scheduleNextSlide();
+        }
+    };
+
+    ExperienceGallery.prototype.initAutoplay = function() {
+        if (this.slides.length <= 1) {
+            return;
+        }
+
+        var intervalAttribute = this.container.getAttribute('data-autoplay-interval');
+        if (intervalAttribute) {
+            var parsedInterval = parseInt(intervalAttribute, 10);
+            if (!isNaN(parsedInterval) && parsedInterval > 0) {
+                this.autoPlayInterval = parsedInterval;
+            }
+        }
+
+        var self = this;
+
+        this.container.addEventListener('mouseenter', function() {
+            self.setPaused(true);
+        });
+
+        this.container.addEventListener('mouseleave', function() {
+            self.setPaused(false);
+        });
+
+        this.container.addEventListener('focusin', function() {
+            self.setPaused(true);
+        });
+
+        this.container.addEventListener('focusout', function() {
+            var resume = function() {
+                if (!self.container.contains(document.activeElement)) {
+                    self.setPaused(false);
+                }
+            };
+
+            if (typeof window.requestAnimationFrame === 'function') {
+                window.requestAnimationFrame(resume);
+            } else {
+                window.setTimeout(resume, 0);
+            }
+        });
+
+        this.container.addEventListener('touchstart', function() {
+            self.setPaused(true);
+        });
+
+        this.container.addEventListener('touchend', function() {
+            self.setPaused(false);
+        });
+
+        this.scheduleNextSlide();
+    };
+
+    ExperienceGallery.prototype.setPaused = function(paused) {
+        if (this.isPaused === paused) {
+            return;
+        }
+
+        this.isPaused = paused;
+
+        if (!paused) {
+            this.scheduleNextSlide();
+        } else {
+            this.clearScheduledSlide();
+        }
+    };
+
+    ExperienceGallery.prototype.scheduleNextSlide = function() {
+        if (this.slides.length <= 1) {
+            return;
+        }
+
+        this.clearScheduledSlide();
+
+        var self = this;
+        this.autoPlayTimer = window.setTimeout(function() {
+            self.autoPlayTimer = null;
+
+            if (self.isPaused) {
+                self.scheduleNextSlide();
+                return;
+            }
+
+            self.goTo(self.index + 1, false);
+        }, this.autoPlayInterval);
+    };
+
+    ExperienceGallery.prototype.clearScheduledSlide = function() {
+        if (this.autoPlayTimer) {
+            window.clearTimeout(this.autoPlayTimer);
+            this.autoPlayTimer = null;
         }
     };
 
