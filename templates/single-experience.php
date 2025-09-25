@@ -105,20 +105,13 @@ foreach ($gallery_meta as $attachment_id) {
     ];
 }
 
-// Merge hero image with additional gallery items so the main slider always cycles through every asset.
-if (!empty($additional_gallery)) {
-    if (!empty($hero_gallery)) {
-        $hero_gallery = array_merge($hero_gallery, $additional_gallery);
-    } else {
-        $hero_gallery = $additional_gallery;
-    }
+// If there is no featured image fall back to the first gallery asset for the hero.
+if (empty($hero_gallery) && !empty($additional_gallery)) {
+    $hero_gallery[] = array_shift($additional_gallery);
 }
 
-// Build secondary gallery (omit the first slide because it already appears in the hero slider).
-$experience_gallery = [];
-if (count($hero_gallery) > 1) {
-    $experience_gallery = array_slice($hero_gallery, 1);
-}
+// The Experience Gallery section should only render additional media items.
+$experience_gallery = $additional_gallery;
 
 // Meta data derived from schedules
 $schedules = ScheduleManager::getSchedules($product_id);
@@ -496,7 +489,7 @@ jQuery(document).ready(function($) {
                     <section class="fp-experience-secondary-gallery">
                         <h2><?php _e('Experience Gallery', 'fp-esperienze'); ?></h2>
                         <div class="fp-secondary-gallery">
-                            <div class="fp-experience-gallery" tabindex="0">
+                            <div class="fp-experience-gallery" tabindex="0" data-autoplay-interval="3000">
                                 <div class="fp-experience-gallery__stage" role="region" aria-label="<?php esc_attr_e('Additional experience images', 'fp-esperienze'); ?>">
                                     <?php foreach ($experience_gallery as $index => $item) : ?>
                                         <figure class="fp-experience-gallery__slide<?php echo $index === 0 ? ' is-active' : ''; ?>" data-gallery-index="<?php echo esc_attr($index); ?>" aria-hidden="<?php echo $index === 0 ? 'false' : 'true'; ?>">

@@ -228,6 +228,7 @@
             var $overridesSection = $('#fp-overrides-section');
             var $recurringHeading = $recurringSchedules.find('.hndle span');
             var $eventHeading = $eventSchedules.find('.hndle span');
+            var $overridesHeading = $overridesSection.find('.hndle span');
 
             if (experienceType === 'event') {
                 // Show event sections, hide experience sections
@@ -239,7 +240,7 @@
 
                 // Update section descriptions
                 if ($eventHeading.length) {
-                    $eventHeading.text(fp_esperienze_admin.strings.event_schedules || 'Event Dates & Times');
+                    $eventHeading.text(fp_esperienze_admin.strings.event_schedules || 'Event dates & times');
                 }
 
             } else {
@@ -250,10 +251,14 @@
 
                 // Restore section descriptions
                 if ($recurringHeading.length) {
-                    $recurringHeading.text(fp_esperienze_admin.strings.recurring_schedules || 'Recurring Time Slots');
+                    $recurringHeading.text(fp_esperienze_admin.strings.recurring_schedules || 'Recurring schedule');
                 }
             }
-            
+
+            if ($overridesHeading.length) {
+                $overridesHeading.text(fp_esperienze_admin.strings.schedule_overrides || 'Schedule exceptions');
+            }
+
             // Add body class for CSS targeting
             $('body').removeClass('fp-experience-type-experience fp-experience-type-event')
                      .addClass('fp-experience-type-' + (experienceType || 'experience'));
