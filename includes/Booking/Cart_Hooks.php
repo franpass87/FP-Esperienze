@@ -34,6 +34,8 @@ class Cart_Hooks {
         add_filter('woocommerce_add_cart_item_data', [$this, 'addExperienceCartData'], 10, 3);
         add_filter('woocommerce_add_to_cart_validation', [$this, 'validateExperienceBooking'], 10, 6);
         add_filter('woocommerce_get_item_data', [$this, 'displayExperienceCartData'], 10, 2);
+        add_filter('woocommerce_cart_item_quantity', [$this, 'renderExperienceCartQuantity'], 10, 3);
+        add_filter('woocommerce_update_cart_validation', [$this, 'preventExperienceQuantityChange'], 10, 4);
         add_action('woocommerce_checkout_create_order_line_item', [$this, 'addExperienceOrderItemMeta'], 10, 4);
         add_action('woocommerce_checkout_create_order', [$this, 'saveSessionIdToOrder'], 10, 2);
         add_action('woocommerce_before_calculate_totals', [$this, 'calculateExperiencePrice'], 10, 1);
@@ -121,6 +123,61 @@ class Cart_Hooks {
         }
 
         return $cart_item_data;
+    }
+
+    /**
+     * Render experience cart quantity without controls.
+     *
+     * @param string $product_quantity Quantity HTML.
+     * @param string $cart_item_key Cart item key.
+     * @param array  $cart_item Cart item data.
+     * @return string
+     */
+    public function renderExperienceCartQuantity($product_quantity, $cart_item_key, $cart_item) {
+        unset($cart_item_key);
+
+        $product = $cart_item['data'] ?? null;
+
+        if (!$product instanceof \WC_Product || $product->get_type() !== 'experience') {
+            return $product_quantity;
+        }
+
+        $quantity = (int) ($cart_item['quantity'] ?? 0);
+
+        return sprintf(
+            '<span class="fp-cart-quantity" aria-label="%s">%s</span>',
+            esc_attr__('Experience quantity', 'fp-esperienze'),
+            esc_html((string) $quantity)
+        );
+    }
+
+    /**
+     * Prevent quantity modifications for experience products via cart update.
+     *
+     * @param bool   $passed Validation status.
+     * @param string $cart_item_key Cart item key.
+     * @param array  $values Cart item values.
+     * @param int    $quantity Requested quantity.
+     * @return bool
+     */
+    public function preventExperienceQuantityChange($passed, $cart_item_key, $values, $quantity) {
+        $product = $values['data'] ?? null;
+
+        if (!$product instanceof \WC_Product || $product->get_type() !== 'experience') {
+            return $passed;
+        }
+
+        $current_quantity = (int) ($values['quantity'] ?? 0);
+
+        if ($quantity > 0 && $quantity !== $current_quantity) {
+            wc_add_notice(
+                __('Experience quantities are managed during booking and cannot be changed in the cart.', 'fp-esperienze'),
+                'error'
+            );
+            return false;
+        }
+
+        return $passed;
     }
 
     /**

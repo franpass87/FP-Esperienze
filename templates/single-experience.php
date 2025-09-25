@@ -33,9 +33,45 @@ if (!is_array($gallery_meta)) {
     $gallery_meta = [];
 }
 $gallery_meta = array_values(array_unique(array_filter(array_map('absint', $gallery_meta))));
+
+// Build hero image data (featured image or placeholder fallback).
+$hero_gallery = [];
+$hero_full = $image_id ? wp_get_attachment_image_url($image_id, 'full') : $image_url;
+if (!$hero_full && $image_url) {
+    $hero_full = $image_url;
+}
+
+if ($hero_full) {
+    $hero_alt = '';
+    if ($image_id) {
+        $hero_alt = trim(get_post_meta($image_id, '_wp_attachment_image_alt', true));
+        if ($hero_alt === '') {
+            $hero_alt = get_the_title($image_id);
+        }
+    }
+    if ($hero_alt === '') {
+        $hero_alt = $product->get_name();
+    }
+
+    $hero_thumb = $image_id ? (wp_get_attachment_image_url($image_id, 'large') ?: $hero_full) : $hero_full;
+
+    $hero_gallery[] = [
+        'id' => $image_id ?: 0,
+        'full' => $hero_full,
+        'thumb' => $hero_thumb,
+        'alt' => $hero_alt,
+    ];
+}
+
+// Build supplementary gallery (extra images configured in the product settings).
 $experience_gallery = [];
 
 foreach ($gallery_meta as $attachment_id) {
+    if ($image_id && $attachment_id === (int) $image_id) {
+        // Skip featured image duplicates so extras only render in the dedicated gallery.
+        continue;
+    }
+
     $full_url = wp_get_attachment_image_url($attachment_id, 'full');
     if (!$full_url) {
         $full_url = wp_get_attachment_image_url($attachment_id, 'large');
@@ -67,33 +103,6 @@ foreach ($gallery_meta as $attachment_id) {
         'thumb' => $thumb_url,
         'alt' => $alt_text,
     ];
-}
-
-if (empty($experience_gallery)) {
-    if ($image_id) {
-        $fallback_full = wp_get_attachment_image_url($image_id, 'full') ?: $image_url;
-        $fallback_thumb = wp_get_attachment_image_url($image_id, 'medium') ?: wp_get_attachment_image_url($image_id, 'thumbnail') ?: $fallback_full;
-        $fallback_alt = trim(get_post_meta($image_id, '_wp_attachment_image_alt', true));
-        if ($fallback_alt === '') {
-            $fallback_alt = $product->get_name();
-        }
-
-        if ($fallback_full) {
-            $experience_gallery[] = [
-                'id' => $image_id,
-                'full' => $fallback_full,
-                'thumb' => $fallback_thumb,
-                'alt' => $fallback_alt,
-            ];
-        }
-    } elseif ($image_url) {
-        $experience_gallery[] = [
-            'id' => 0,
-            'full' => $image_url,
-            'thumb' => $image_url,
-            'alt' => $product->get_name(),
-        ];
-    }
 }
 
 // Meta data derived from schedules
@@ -176,11 +185,11 @@ jQuery(document).ready(function($) {
     <!-- Hero Section -->
     <section class="fp-experience-hero">
         <div class="fp-hero-content">
-            <?php if (!empty($experience_gallery)) : ?>
+            <?php if (!empty($hero_gallery)) : ?>
                 <div class="fp-hero-gallery">
                     <div class="fp-experience-gallery" tabindex="0">
                         <div class="fp-experience-gallery__stage" role="region" aria-label="<?php esc_attr_e('Experience gallery', 'fp-esperienze'); ?>">
-                            <?php foreach ($experience_gallery as $index => $item) : ?>
+                            <?php foreach ($hero_gallery as $index => $item) : ?>
                                 <figure class="fp-experience-gallery__slide<?php echo $index === 0 ? ' is-active' : ''; ?>" data-gallery-index="<?php echo esc_attr($index); ?>" aria-hidden="<?php echo $index === 0 ? 'false' : 'true'; ?>">
                                     <img src="<?php echo esc_url($item['full']); ?>"
                                          alt="<?php echo esc_attr($item['alt']); ?>"
@@ -189,7 +198,7 @@ jQuery(document).ready(function($) {
                             <?php endforeach; ?>
                         </div>
 
-                        <?php if (count($experience_gallery) > 1) : ?>
+                        <?php if (count($hero_gallery) > 1) : ?>
                             <button type="button" class="fp-experience-gallery__control fp-experience-gallery__control--prev" aria-label="<?php esc_attr_e('Previous image', 'fp-esperienze'); ?>">
                                 <span aria-hidden="true">&lsaquo;</span>
                             </button>
@@ -198,7 +207,7 @@ jQuery(document).ready(function($) {
                             </button>
 
                             <div class="fp-experience-gallery__thumbs" role="tablist" aria-label="<?php esc_attr_e('Experience gallery thumbnails', 'fp-esperienze'); ?>">
-                                <?php foreach ($experience_gallery as $index => $item) : ?>
+                                <?php foreach ($hero_gallery as $index => $item) : ?>
                                     <button type="button"
                                             class="fp-experience-gallery__thumb<?php echo $index === 0 ? ' is-active' : ''; ?>"
                                             data-gallery-target="<?php echo esc_attr($index); ?>"
@@ -254,93 +263,93 @@ jQuery(document).ready(function($) {
                         <div class="fp-trust-content">
                             <strong><?php _e('Languages', 'fp-esperienze'); ?></strong>
                             <div class="fp-language-chips">
-                                <?php 
-                                // Simple language to flag mapping using normalized keys (full names, ISO codes, common slugs)
-                                $language_flags = [
+                                <?php
+                                // Language metadata for display (flag + localized label).
+                                $language_catalog = [
                                     // Arabic
-                                    'arabic' => '🇸🇦',
-                                    'ar' => '🇸🇦',
-                                    'ar-sa' => '🇸🇦',
+                                    'arabic' => ['flag' => '🇸🇦', 'label' => __('Arabic', 'fp-esperienze')],
+                                    'ar' => ['flag' => '🇸🇦', 'label' => __('Arabic', 'fp-esperienze')],
+                                    'ar-sa' => ['flag' => '🇸🇦', 'label' => __('Arabic', 'fp-esperienze')],
 
                                     // Chinese
-                                    'chinese' => '🇨🇳',
-                                    'zh' => '🇨🇳',
-                                    'zh-cn' => '🇨🇳',
-                                    'zh-hans' => '🇨🇳',
-                                    'zh-tw' => '🇹🇼',
-                                    'zh-hant' => '🇹🇼',
-                                    'cn' => '🇨🇳',
-                                    'chinese-simplified' => '🇨🇳',
-                                    'chinese-traditional' => '🇹🇼',
+                                    'chinese' => ['flag' => '🇨🇳', 'label' => __('Chinese', 'fp-esperienze')],
+                                    'zh' => ['flag' => '🇨🇳', 'label' => __('Chinese', 'fp-esperienze')],
+                                    'zh-cn' => ['flag' => '🇨🇳', 'label' => __('Chinese (Simplified)', 'fp-esperienze')],
+                                    'zh-hans' => ['flag' => '🇨🇳', 'label' => __('Chinese (Simplified)', 'fp-esperienze')],
+                                    'zh-tw' => ['flag' => '🇹🇼', 'label' => __('Chinese (Traditional)', 'fp-esperienze')],
+                                    'zh-hant' => ['flag' => '🇹🇼', 'label' => __('Chinese (Traditional)', 'fp-esperienze')],
+                                    'cn' => ['flag' => '🇨🇳', 'label' => __('Chinese', 'fp-esperienze')],
+                                    'chinese-simplified' => ['flag' => '🇨🇳', 'label' => __('Chinese (Simplified)', 'fp-esperienze')],
+                                    'chinese-traditional' => ['flag' => '🇹🇼', 'label' => __('Chinese (Traditional)', 'fp-esperienze')],
 
                                     // Dutch
-                                    'dutch' => '🇳🇱',
-                                    'nl' => '🇳🇱',
-                                    'nl-nl' => '🇳🇱',
+                                    'dutch' => ['flag' => '🇳🇱', 'label' => __('Dutch', 'fp-esperienze')],
+                                    'nl' => ['flag' => '🇳🇱', 'label' => __('Dutch', 'fp-esperienze')],
+                                    'nl-nl' => ['flag' => '🇳🇱', 'label' => __('Dutch', 'fp-esperienze')],
 
                                     // English
-                                    'english' => '🇬🇧',
-                                    'en' => '🇬🇧',
-                                    'en-gb' => '🇬🇧',
-                                    'en-uk' => '🇬🇧',
-                                    'en-us' => '🇺🇸',
+                                    'english' => ['flag' => '🇬🇧', 'label' => __('English', 'fp-esperienze')],
+                                    'en' => ['flag' => '🇬🇧', 'label' => __('English', 'fp-esperienze')],
+                                    'en-gb' => ['flag' => '🇬🇧', 'label' => __('English (UK)', 'fp-esperienze')],
+                                    'en-uk' => ['flag' => '🇬🇧', 'label' => __('English (UK)', 'fp-esperienze')],
+                                    'en-us' => ['flag' => '🇺🇸', 'label' => __('English (US)', 'fp-esperienze')],
 
                                     // French
-                                    'french' => '🇫🇷',
-                                    'fr' => '🇫🇷',
-                                    'fr-fr' => '🇫🇷',
-                                    'francais' => '🇫🇷',
+                                    'french' => ['flag' => '🇫🇷', 'label' => __('French', 'fp-esperienze')],
+                                    'fr' => ['flag' => '🇫🇷', 'label' => __('French', 'fp-esperienze')],
+                                    'fr-fr' => ['flag' => '🇫🇷', 'label' => __('French', 'fp-esperienze')],
+                                    'francais' => ['flag' => '🇫🇷', 'label' => __('French', 'fp-esperienze')],
 
                                     // German
-                                    'german' => '🇩🇪',
-                                    'de' => '🇩🇪',
-                                    'de-de' => '🇩🇪',
-                                    'deutsch' => '🇩🇪',
+                                    'german' => ['flag' => '🇩🇪', 'label' => __('German', 'fp-esperienze')],
+                                    'de' => ['flag' => '🇩🇪', 'label' => __('German', 'fp-esperienze')],
+                                    'de-de' => ['flag' => '🇩🇪', 'label' => __('German', 'fp-esperienze')],
+                                    'deutsch' => ['flag' => '🇩🇪', 'label' => __('German', 'fp-esperienze')],
 
                                     // Italian
-                                    'italian' => '🇮🇹',
-                                    'it' => '🇮🇹',
-                                    'it-it' => '🇮🇹',
-                                    'italiano' => '🇮🇹',
+                                    'italian' => ['flag' => '🇮🇹', 'label' => __('Italian', 'fp-esperienze')],
+                                    'it' => ['flag' => '🇮🇹', 'label' => __('Italian', 'fp-esperienze')],
+                                    'it-it' => ['flag' => '🇮🇹', 'label' => __('Italian', 'fp-esperienze')],
+                                    'italiano' => ['flag' => '🇮🇹', 'label' => __('Italian', 'fp-esperienze')],
 
                                     // Japanese
-                                    'japanese' => '🇯🇵',
-                                    'ja' => '🇯🇵',
-                                    'ja-jp' => '🇯🇵',
-                                    'jp' => '🇯🇵',
+                                    'japanese' => ['flag' => '🇯🇵', 'label' => __('Japanese', 'fp-esperienze')],
+                                    'ja' => ['flag' => '🇯🇵', 'label' => __('Japanese', 'fp-esperienze')],
+                                    'ja-jp' => ['flag' => '🇯🇵', 'label' => __('Japanese', 'fp-esperienze')],
+                                    'jp' => ['flag' => '🇯🇵', 'label' => __('Japanese', 'fp-esperienze')],
 
                                     // Korean
-                                    'korean' => '🇰🇷',
-                                    'ko' => '🇰🇷',
-                                    'ko-kr' => '🇰🇷',
-                                    'kr' => '🇰🇷',
+                                    'korean' => ['flag' => '🇰🇷', 'label' => __('Korean', 'fp-esperienze')],
+                                    'ko' => ['flag' => '🇰🇷', 'label' => __('Korean', 'fp-esperienze')],
+                                    'ko-kr' => ['flag' => '🇰🇷', 'label' => __('Korean', 'fp-esperienze')],
+                                    'kr' => ['flag' => '🇰🇷', 'label' => __('Korean', 'fp-esperienze')],
 
                                     // Portuguese
-                                    'portuguese' => '🇵🇹',
-                                    'portugues' => '🇵🇹',
-                                    'pt' => '🇵🇹',
-                                    'pt-pt' => '🇵🇹',
-                                    'portuguese-brazil' => '🇧🇷',
-                                    'portuguese-brasil' => '🇧🇷',
-                                    'portugues-brasil' => '🇧🇷',
-                                    'portugues-br' => '🇧🇷',
-                                    'portuguese-br' => '🇧🇷',
-                                    'pt-br' => '🇧🇷',
+                                    'portuguese' => ['flag' => '🇵🇹', 'label' => __('Portuguese', 'fp-esperienze')],
+                                    'portugues' => ['flag' => '🇵🇹', 'label' => __('Portuguese', 'fp-esperienze')],
+                                    'pt' => ['flag' => '🇵🇹', 'label' => __('Portuguese', 'fp-esperienze')],
+                                    'pt-pt' => ['flag' => '🇵🇹', 'label' => __('Portuguese', 'fp-esperienze')],
+                                    'portuguese-brazil' => ['flag' => '🇧🇷', 'label' => __('Portuguese (Brazil)', 'fp-esperienze')],
+                                    'portuguese-brasil' => ['flag' => '🇧🇷', 'label' => __('Portuguese (Brazil)', 'fp-esperienze')],
+                                    'portugues-brasil' => ['flag' => '🇧🇷', 'label' => __('Portuguese (Brazil)', 'fp-esperienze')],
+                                    'portugues-br' => ['flag' => '🇧🇷', 'label' => __('Portuguese (Brazil)', 'fp-esperienze')],
+                                    'portuguese-br' => ['flag' => '🇧🇷', 'label' => __('Portuguese (Brazil)', 'fp-esperienze')],
+                                    'pt-br' => ['flag' => '🇧🇷', 'label' => __('Portuguese (Brazil)', 'fp-esperienze')],
 
                                     // Spanish
-                                    'spanish' => '🇪🇸',
-                                    'es' => '🇪🇸',
-                                    'es-es' => '🇪🇸',
-                                    'espanol' => '🇪🇸',
-                                    'es-mx' => '🇲🇽',
-                                    'espanol-mx' => '🇲🇽',
-                                    'spanish-mx' => '🇲🇽',
-                                    'spanish-mexico' => '🇲🇽',
+                                    'spanish' => ['flag' => '🇪🇸', 'label' => __('Spanish', 'fp-esperienze')],
+                                    'es' => ['flag' => '🇪🇸', 'label' => __('Spanish', 'fp-esperienze')],
+                                    'es-es' => ['flag' => '🇪🇸', 'label' => __('Spanish', 'fp-esperienze')],
+                                    'espanol' => ['flag' => '🇪🇸', 'label' => __('Spanish', 'fp-esperienze')],
+                                    'es-mx' => ['flag' => '🇲🇽', 'label' => __('Spanish (Mexico)', 'fp-esperienze')],
+                                    'espanol-mx' => ['flag' => '🇲🇽', 'label' => __('Spanish (Mexico)', 'fp-esperienze')],
+                                    'spanish-mx' => ['flag' => '🇲🇽', 'label' => __('Spanish (Mexico)', 'fp-esperienze')],
+                                    'spanish-mexico' => ['flag' => '🇲🇽', 'label' => __('Spanish (Mexico)', 'fp-esperienze')],
 
                                     // Russian
-                                    'russian' => '🇷🇺',
-                                    'ru' => '🇷🇺',
-                                    'ru-ru' => '🇷🇺'
+                                    'russian' => ['flag' => '🇷🇺', 'label' => __('Russian', 'fp-esperienze')],
+                                    'ru' => ['flag' => '🇷🇺', 'label' => __('Russian', 'fp-esperienze')],
+                                    'ru-ru' => ['flag' => '🇷🇺', 'label' => __('Russian', 'fp-esperienze')],
                                 ];
 
                                 foreach ($language_chips as $lang) :
@@ -350,11 +359,23 @@ jQuery(document).ready(function($) {
                                     $normalized_key = str_replace('_', '-', $normalized_key);
                                     $normalized_key = preg_replace('/[^a-z0-9-]+/', '-', $normalized_key);
                                     $normalized_key = trim(preg_replace('/-+/', '-', $normalized_key), '-');
-                                    $flag = $language_flags[$normalized_key] ?? '🌐';
+
+                                    $language_entry = $language_catalog[$normalized_key] ?? null;
+                                    $flag = $language_entry['flag'] ?? '🌐';
+
+                                    if ($language_entry) {
+                                        $label = $language_entry['label'];
+                                    } else {
+                                        $fallback_label = ucwords(str_replace('-', ' ', $normalized_key));
+                                        if ($fallback_label === '') {
+                                            $fallback_label = $trimmed_lang;
+                                        }
+                                        $label = $fallback_label;
+                                    }
                                 ?>
                                     <span class="fp-language-chip">
                                         <span class="fp-language-flag"><?php echo wp_kses_post($flag); ?></span>
-                                        <?php echo esc_html($trimmed_lang); ?>
+                                        <?php echo esc_html($label); ?>
                                     </span>
                                 <?php endforeach; ?>
                             </div>
@@ -437,6 +458,47 @@ jQuery(document).ready(function($) {
                     </div>
                 </section>
 
+                <?php if (!empty($experience_gallery)) : ?>
+                    <section class="fp-experience-secondary-gallery">
+                        <h2><?php _e('Experience Gallery', 'fp-esperienze'); ?></h2>
+                        <div class="fp-secondary-gallery">
+                            <div class="fp-experience-gallery" tabindex="0">
+                                <div class="fp-experience-gallery__stage" role="region" aria-label="<?php esc_attr_e('Additional experience images', 'fp-esperienze'); ?>">
+                                    <?php foreach ($experience_gallery as $index => $item) : ?>
+                                        <figure class="fp-experience-gallery__slide<?php echo $index === 0 ? ' is-active' : ''; ?>" data-gallery-index="<?php echo esc_attr($index); ?>" aria-hidden="<?php echo $index === 0 ? 'false' : 'true'; ?>">
+                                            <img src="<?php echo esc_url($item['full']); ?>"
+                                                 alt="<?php echo esc_attr($item['alt']); ?>"
+                                                 loading="<?php echo $index === 0 ? 'eager' : 'lazy'; ?>" />
+                                        </figure>
+                                    <?php endforeach; ?>
+                                </div>
+
+                                <?php if (count($experience_gallery) > 1) : ?>
+                                    <button type="button" class="fp-experience-gallery__control fp-experience-gallery__control--prev" aria-label="<?php esc_attr_e('Previous image', 'fp-esperienze'); ?>">
+                                        <span aria-hidden="true">&lsaquo;</span>
+                                    </button>
+                                    <button type="button" class="fp-experience-gallery__control fp-experience-gallery__control--next" aria-label="<?php esc_attr_e('Next image', 'fp-esperienze'); ?>">
+                                        <span aria-hidden="true">&rsaquo;</span>
+                                    </button>
+
+                                    <div class="fp-experience-gallery__thumbs" role="tablist" aria-label="<?php esc_attr_e('Additional gallery thumbnails', 'fp-esperienze'); ?>">
+                                        <?php foreach ($experience_gallery as $index => $item) : ?>
+                                            <button type="button"
+                                                    class="fp-experience-gallery__thumb<?php echo $index === 0 ? ' is-active' : ''; ?>"
+                                                    data-gallery-target="<?php echo esc_attr($index); ?>"
+                                                    aria-pressed="<?php echo $index === 0 ? 'true' : 'false'; ?>"
+                                                    tabindex="<?php echo $index === 0 ? '0' : '-1'; ?>"
+                                                    aria-label="<?php printf(esc_attr__('Show additional image %d', 'fp-esperienze'), $index + 1); ?>">
+                                                <img src="<?php echo esc_url($item['thumb']); ?>" alt="<?php echo esc_attr($item['alt']); ?>" />
+                                            </button>
+                                        <?php endforeach; ?>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </section>
+                <?php endif; ?>
+
                 <!-- Meeting Point -->
                 <?php if ($meeting_point) : ?>
                 <section class="fp-experience-meeting-point">
@@ -464,30 +526,6 @@ jQuery(document).ready(function($) {
                                        aria-label="<?php _e('Open meeting point in Google Maps', 'fp-esperienze'); ?>">
                                         <?php _e('Open in Google Maps', 'fp-esperienze'); ?>
                                     </a>
-                                </div>
-                            <?php endif; ?>
-                        </div>
-                        
-                        <div class="fp-meeting-point-map">
-                            <?php if ($meeting_point->lat && $meeting_point->lng) : ?>
-                                <!-- Interactive Google Maps embed using basic iframe (no API key required) -->
-                                <div class="fp-map-container" aria-label="<?php _e('Map showing meeting point location', 'fp-esperienze'); ?>">
-                                    <iframe 
-                                        src="https://maps.google.com/maps?q=<?php echo esc_url($meeting_point->lat . ',' . $meeting_point->lng); ?>&amp;z=15&amp;output=embed"
-                                        width="100%" 
-                                        height="200" 
-                                        style="border:0;" 
-                                        allowfullscreen="" 
-                                        loading="lazy" 
-                                        referrerpolicy="no-referrer-when-downgrade"
-                                        title="<?php esc_attr_e('Map showing meeting point location', 'fp-esperienze'); ?>">
-                                    </iframe>
-                                </div>
-                            <?php else : ?>
-                                <div class="fp-map-container fp-map-placeholder-container">
-                                    <div class="fp-map-placeholder fp-map-unavailable">
-                                        <span><?php _e('Map coordinates not available', 'fp-esperienze'); ?></span>
-                                    </div>
                                 </div>
                             <?php endif; ?>
                         </div>
@@ -1055,9 +1093,8 @@ jQuery(document).ready(function($) {
                             <span class="fp-from"><?php _e('From', 'fp-esperienze'); ?></span>
                             <span class="fp-amount"><?php echo wc_price($adult_price ?: 0); ?></span>
                         </div>
-                        <button type="button" 
-                                class="fp-btn fp-btn-primary fp-show-booking"
-                                onclick="document.getElementById('fp-booking-widget').scrollIntoView({behavior: 'smooth'})">
+                        <button type="button"
+                                class="fp-btn fp-btn-primary fp-show-booking">
                             <?php _e('Select Date', 'fp-esperienze'); ?>
                         </button>
                     </div>

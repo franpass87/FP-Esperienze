@@ -1808,11 +1808,11 @@ class Experience {
                         }
                 }
 
-                // Reviews section toggle - default to enabled for existing products.
+                // Reviews section toggle - default to enabled for existing products, but allow explicit disabling.
                 $existing_reviews_flag = get_post_meta( $post_id, '_fp_exp_enable_reviews', true );
                 $enable_reviews        = 'no' === $existing_reviews_flag ? 'no' : 'yes';
 
-                if ( isset( $_POST['_fp_exp_enable_reviews'] ) ) {
+                if ( array_key_exists( '_fp_exp_enable_reviews', $_POST ) ) {
                         $raw_enable_reviews = sanitize_text_field( wp_unslash( $_POST['_fp_exp_enable_reviews'] ) );
                         $enable_reviews     = ( 'yes' === $raw_enable_reviews ) ? 'yes' : 'no';
                 }
