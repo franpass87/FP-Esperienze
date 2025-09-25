@@ -1,7 +1,7 @@
 .fp-hero-gallery {
     position: relative;
     background: #f5f5f5;
-    min-height: 400px;
+    min-height: 0;
     display: flex;
 }
 
@@ -16,7 +16,7 @@
     position: relative;
     overflow: hidden;
     flex: 1 1 auto;
-    min-height: 380px;
+    height: clamp(220px, 55vh, 500px);
     background: #000;
 }
 
@@ -114,15 +114,11 @@
 
 @media (max-width: 1024px) {
     .fp-experience-gallery__stage {
-        min-height: 320px;
+        height: clamp(200px, 50vh, 420px);
     }
 }
 
 @media (max-width: 768px) {
-    .fp-hero-gallery {
-        min-height: 320px;
-    }
-
     .fp-experience-gallery__thumbs {
         justify-content: flex-start;
         overflow-x: auto;
