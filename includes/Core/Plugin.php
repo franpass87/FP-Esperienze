@@ -10,6 +10,8 @@ namespace FP\Esperienze\Core;
 use FP\Esperienze\ProductType\Experience;
 use FP\Esperienze\Admin\MenuManager;
 use FP\Esperienze\Admin\FeatureDemoPage;
+use FP\Esperienze\Admin\OnboardingDashboardWidget;
+use FP\Esperienze\Admin\OnboardingNotice;
 use FP\Esperienze\Frontend\Shortcodes;
 use FP\Esperienze\Frontend\Templates;
 use FP\Esperienze\Frontend\SEOManager;
@@ -310,7 +312,9 @@ class Plugin {
      */
     public function initAdmin(): void {
         new MenuManager();
-        
+        new OnboardingDashboardWidget();
+        new OnboardingNotice();
+
         // Initialize feature demo page (temporary for testing new features)
         if (defined('WP_DEBUG') && WP_DEBUG) {
             FeatureDemoPage::init();
@@ -486,7 +490,8 @@ class Plugin {
         new ICSAPI();
         new SecurePDFAPI();
         new \FP\Esperienze\REST\WidgetAPI();
-        
+        new \FP\Esperienze\REST\SystemStatusAPI();
+
         // Initialize mobile API manager
         new \FP\Esperienze\REST\MobileAPIManager();
     }

@@ -316,6 +316,9 @@ if (defined('WP_CLI') && WP_CLI) {
     try {
         \WP_CLI::add_command('fp-esperienze', \FP\Esperienze\CLI\TranslateCommand::class);
         \WP_CLI::add_command('fp-esperienze production-check', \FP\Esperienze\CLI\ProductionCheckCommand::class);
+        \WP_CLI::add_command('fp-esperienze onboarding', \FP\Esperienze\CLI\OnboardingCommand::class);
+        \WP_CLI::add_command('fp-esperienze operations', \FP\Esperienze\CLI\OperationsCommand::class);
+        \WP_CLI::add_command('fp-esperienze qa', \FP\Esperienze\CLI\QualityAssuranceCommand::class);
     } catch (Throwable $e) {
         error_log('FP Esperienze: Failed to register WP-CLI command: ' . $e->getMessage());
     }

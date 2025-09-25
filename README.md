@@ -67,6 +67,26 @@ wp fp-esperienze production-check
 
 Add `--format=json` if you want to consume the report in automation pipelines.
 
+### WordPress Site Health Coverage
+
+Visit **Tools → Site Health** to review automated diagnostics tailored for FP Esperienze. The plugin now contributes dedicated tests that surface:
+
+- Dependency and filesystem prerequisites (WooCommerce, Composer autoloaders, writable directories).
+- Onboarding checklist completion so operators can quickly identify pending setup tasks.
+- Operational alert posture covering digest channels, cron scheduling, and the last dispatch status.
+- Production readiness signals reused from the REST API and WP-CLI validator, including warnings for missing tables or REST endpoints.
+
+These checks complement the CLI and REST tooling by giving administrators an at-a-glance dashboard directly inside WordPress.
+
+### Guided Onboarding Toolkit
+
+- **Interactive checklist** – the setup wizard now surfaces the required configuration tasks (meeting points, experiences, schedules, payment gateways, and emails) with live completion status.
+- **Demo data seeding** – click *Create demo data* in the wizard to generate a sample meeting point, experience, and recurring schedules to explore the booking flow immediately.
+- **Guided tour overlay** – launch the built-in tour to learn where to publish experiences, manage schedules, and preview the storefront without leaving the wizard.
+- **Persistent reminders** – lightweight notices highlight outstanding onboarding tasks on FP Esperienze admin pages until everything is configured, with a “remind me later” snooze for busy operators.
+- **Operational alerts** – configure automated booking digests (email and Slack) with thresholds from the Operational Alerts admin page.
+- **Integration toolkit** – share copy-ready widget snippets (embed, auto-height script, CSS tokens) with partners directly from the new Integration Toolkit admin page.
+
 ## Uninstall
 
 Removing the plugin via WordPress will drop all custom database tables beginning with `fp_` and delete any options or transients with the `fp_esperienze_` prefix. To preserve this data during uninstall, define the following constant in your `wp-config.php` before removing the plugin:
@@ -918,6 +938,13 @@ Check availability:
 GET /wp-json/fp-exp/v1/availability?product_id=123&date=2024-12-01
 ```
 
+Monitor onboarding progress and operational alerts (requires an authenticated user with FP Esperienze management rights):
+```
+GET /wp-json/fp-exp/v1/system-status
+```
+
+The payload includes checklist completion metrics, production readiness flags, and the scheduling state of the daily digest so external monitoring tools can flag regressions instantly.
+
 ## Frontend (Single)
 
 The plugin provides a GetYourGuide-style single experience template with the following features:
@@ -1379,6 +1406,63 @@ Queue all plugin content for translation via WP-CLI:
 ```bash
 wp fp-esperienze translate
 ```
+
+### WP-CLI Onboarding Commands
+
+Automate onboarding and daily operations directly from the terminal:
+
+```bash
+# Display checklist progress in table or JSON form
+wp fp-esperienze onboarding checklist --format=table
+
+# Seed demo data (meeting point, experience product, schedules)
+wp fp-esperienze onboarding seed-data
+
+# Generate booking, participant, and revenue totals for the past week
+wp fp-esperienze onboarding daily-report --days=7
+
+# Dispatch the configured operational digest immediately
+wp fp-esperienze onboarding send-digest --channel=all
+```
+
+The commands return non-zero exit codes on errors, making them suitable for CI pipelines or scheduled cron jobs.
+
+### WP-CLI Operations Command
+
+Run quick health checks before launching campaigns or pushing to production:
+
+```bash
+# Display operational readiness as a table
+wp fp-esperienze operations health-check
+
+# Produce JSON for monitoring dashboards
+wp fp-esperienze operations health-check --format=json
+```
+
+The command validates WooCommerce availability, digest configuration, cron scheduling, and pending onboarding tasks in one pass.
+
+### WP-CLI QA Automation Command
+
+Convert the smoke tests from `MANUAL_TESTS.md` into automated gates that can
+run in CI or pre-release hooks:
+
+```bash
+# Run the full automated checklist and exit non-zero on failures
+wp fp-esperienze qa run
+
+# Focus on specific checks (comma separated IDs)
+wp fp-esperienze qa run --only=experience_product_type,rest_routes
+
+# Produce machine readable output for dashboards
+wp fp-esperienze qa run --format=json
+
+# List the available checks and their descriptions
+wp fp-esperienze qa list
+```
+
+The QA command inspects onboarding progress, demo content seeding, REST routes,
+and operational digest scheduling, returning `WARNING` when action is
+recommended and `FAIL` when release blockers are detected.
 
 ### JavaScript Localization
 

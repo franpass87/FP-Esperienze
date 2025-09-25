@@ -22,6 +22,7 @@ use FP\Esperienze\Core\I18nManager;
 use FP\Esperienze\Core\WebhookManager;
 use FP\Esperienze\Core\Log;
 use FP\Esperienze\Admin\DependencyChecker;
+use FP\Esperienze\Admin\OperationalAlerts;
 use FP\Esperienze\Admin\Settings\AutoTranslateSettings;
 use FP\Esperienze\Admin\Settings\TranslationHelp;
 use WP_Error;
@@ -49,6 +50,7 @@ class MenuManager {
         new SEOSettings();
         new AutoTranslateSettings();
         new TranslationHelp();
+        new OperationalAlerts();
         
         // Handle setup wizard redirect
         add_action('admin_init', [$this, 'handleSetupWizardRedirect']);
@@ -168,6 +170,15 @@ class MenuManager {
             'fp-esperienze-settings',
             [$this, 'settingsPage']
         );
+
+        add_submenu_page(
+            'fp-esperienze',
+            __('Integration Toolkit', 'fp-esperienze'),
+            __('Integration Toolkit', 'fp-esperienze'),
+            CapabilityManager::MANAGE_FP_ESPERIENZE,
+            'fp-esperienze-integration-toolkit',
+            [$this, 'integrationToolkitPage']
+        );
     }
 
     /**
@@ -252,6 +263,16 @@ class MenuManager {
                 'fp-admin-bookings',
                 FP_ESPERIENZE_PLUGIN_URL . 'assets/js/admin-bookings.js',
                 ['jquery', 'fullcalendar'],
+                FP_ESPERIENZE_VERSION,
+                true
+            );
+        }
+
+        if (strpos($hook, 'fp-esperienze-integration-toolkit') !== false) {
+            wp_enqueue_script(
+                'fp-integration-toolkit',
+                FP_ESPERIENZE_PLUGIN_URL . 'assets/js/integration-toolkit.js',
+                [],
                 FP_ESPERIENZE_VERSION,
                 true
             );
@@ -4747,5 +4768,189 @@ class MenuManager {
         } else {
             echo '<p style="margin-top: 12px; color: #198754; font-weight: 600;">' . esc_html__('All optional dependencies are installed. Great job!', 'fp-esperienze') . '</p>';
         }
+    }
+
+    /**
+     * Integration toolkit page with ready-to-copy snippets.
+     */
+    public function integrationToolkitPage(): void {
+        $site_url = esc_url_raw(home_url());
+        $experience_id = $this->getExampleExperienceProductId();
+        $experience_token = $experience_id !== null ? (string) $experience_id : '{{experience_id}}';
+        $widget_endpoint = trailingslashit($site_url) . 'wp-json/fp-exp/v1/widget/iframe/' . $experience_token;
+        $iframe_title = __('Book your experience', 'fp-esperienze');
+
+        $embedSnippet = <<<HTML
+<div class="fp-esperienze-widget-wrapper" style="max-width:680px;margin:0 auto;">
+    <iframe
+        src="{$widget_endpoint}?theme=light"
+        width="100%"
+        height="680"
+        loading="lazy"
+        style="border:1px solid var(--wp--preset--color--light-gray,#dcdcde);border-radius:16px;"
+        title="{$iframe_title}"
+        allow="payment"
+    ></iframe>
+</div>
+HTML;
+
+        $postMessageSnippet = <<<HTML
+<script>
+window.addEventListener('message', function(event) {
+    if (!event.data || (event.data.type !== 'fp_widget_ready' && event.data.type !== 'fp_widget_height_change')) {
+        return;
+    }
+
+    var frame = document.getElementById('fp-esperienze-widget');
+    if (frame && event.data.height) {
+        frame.style.height = event.data.height + 'px';
+    }
+});
+</script>
+
+<iframe
+    id="fp-esperienze-widget"
+    src="{$widget_endpoint}?theme=light"
+    style="width:100%;height:640px;border:0;border-radius:16px;box-shadow:0 15px 45px rgba(0,0,0,0.08);"
+    title="{$iframe_title}"
+    loading="lazy"
+></iframe>
+HTML;
+
+        $cssSnippet = <<<CSS
+:root {
+    --fp-esperienze-widget-font-family: 'Inter', sans-serif;
+    --fp-esperienze-widget-radius: 16px;
+    --fp-esperienze-widget-primary: #ff6b35;
+    --fp-esperienze-widget-primary-contrast: #ffffff;
+    --fp-esperienze-widget-surface: #ffffff;
+    --fp-esperienze-widget-surface-alt: #f5f7fa;
+}
+CSS;
+
+        ?>
+        <div class="wrap fp-esperienze-integration-toolkit">
+            <h1><?php esc_html_e('Integration Toolkit', 'fp-esperienze'); ?></h1>
+            <p class="description" style="max-width: 720px;">
+                <?php esc_html_e('Share your booking widget with partners, resellers, or microsites using the copy-ready recipes below.', 'fp-esperienze'); ?>
+            </p>
+
+            <?php if ($experience_id === null) : ?>
+                <div class="notice notice-warning">
+                    <p><?php esc_html_e('No experience products were found. Replace {{experience_id}} in the snippets with the product ID you want to promote.', 'fp-esperienze'); ?></p>
+                </div>
+            <?php else : ?>
+                <div class="notice notice-info">
+                    <p><?php printf(esc_html__('Using experience #%d as an example. Swap the ID if you prefer another product.', 'fp-esperienze'), (int) $experience_id); ?></p>
+                </div>
+            <?php endif; ?>
+
+            <h2><?php esc_html_e('Quick embed', 'fp-esperienze'); ?></h2>
+            <p>
+                <?php
+                printf(
+                    esc_html__('Paste the following HTML snippet into any CMS (WordPress, Webflow, Squarespace, HubSpot). It points to %s.', 'fp-esperienze'),
+                    esc_html($widget_endpoint)
+                );
+                ?>
+            </p>
+            <textarea readonly id="fp-integration-embed" class="large-text code" rows="10"><?php echo esc_textarea($embedSnippet); ?></textarea>
+            <p>
+                <button type="button"
+                    class="button button-secondary fp-integration-copy"
+                    data-target="fp-integration-embed"
+                    data-default-label="<?php echo esc_attr__('Copy embed code', 'fp-esperienze'); ?>"
+                    data-copied-label="<?php echo esc_attr__('Copied!', 'fp-esperienze'); ?>"
+                    data-fallback-label="<?php echo esc_attr__('Copy failed', 'fp-esperienze'); ?>"
+                ><?php esc_html_e('Copy embed code', 'fp-esperienze'); ?></button>
+            </p>
+            <p style="max-width: 720px;">
+                <?php esc_html_e('Append query parameters to adjust theming or the thank-you URL, for example ?theme=dark or ?return_url=https://partner.com/thanks.', 'fp-esperienze'); ?>
+            </p>
+
+            <hr />
+
+            <h2><?php esc_html_e('Auto-height integration', 'fp-esperienze'); ?></h2>
+            <p><?php esc_html_e('When embedding in a headless or external site, use this script to keep the iframe height in sync with the widget content.', 'fp-esperienze'); ?></p>
+            <textarea readonly id="fp-integration-autoheight" class="large-text code" rows="16"><?php echo esc_textarea($postMessageSnippet); ?></textarea>
+            <p>
+                <button type="button"
+                    class="button button-secondary fp-integration-copy"
+                    data-target="fp-integration-autoheight"
+                    data-default-label="<?php echo esc_attr__('Copy auto-height snippet', 'fp-esperienze'); ?>"
+                    data-copied-label="<?php echo esc_attr__('Copied!', 'fp-esperienze'); ?>"
+                    data-fallback-label="<?php echo esc_attr__('Copy failed', 'fp-esperienze'); ?>"
+                ><?php esc_html_e('Copy auto-height snippet', 'fp-esperienze'); ?></button>
+            </p>
+
+            <div class="fp-integration-events" style="max-width: 720px;">
+                <h3><?php esc_html_e('Widget events', 'fp-esperienze'); ?></h3>
+                <ul class="ul-disc">
+                    <li><code>fp_widget_ready</code> — <?php esc_html_e('initial dimensions available', 'fp-esperienze'); ?></li>
+                    <li><code>fp_widget_height_change</code> — <?php esc_html_e('widget height changed; update iframe height', 'fp-esperienze'); ?></li>
+                    <li><code>fp_widget_checkout</code> — <?php esc_html_e('customer moved to checkout (contains the checkout URL)', 'fp-esperienze'); ?></li>
+                    <li><code>fp_widget_booking_success</code> — <?php esc_html_e('booking completed with the WooCommerce order ID', 'fp-esperienze'); ?></li>
+                </ul>
+            </div>
+
+            <hr />
+
+            <h2><?php esc_html_e('Theme tokens', 'fp-esperienze'); ?></h2>
+            <p><?php esc_html_e('Drop these CSS variables into a global stylesheet to align the widget with your brand guidelines.', 'fp-esperienze'); ?></p>
+            <textarea readonly id="fp-integration-theme" class="large-text code" rows="10"><?php echo esc_textarea($cssSnippet); ?></textarea>
+            <p>
+                <button type="button"
+                    class="button button-secondary fp-integration-copy"
+                    data-target="fp-integration-theme"
+                    data-default-label="<?php echo esc_attr__('Copy CSS variables', 'fp-esperienze'); ?>"
+                    data-copied-label="<?php echo esc_attr__('Copied!', 'fp-esperienze'); ?>"
+                    data-fallback-label="<?php echo esc_attr__('Copy failed', 'fp-esperienze'); ?>"
+                ><?php esc_html_e('Copy CSS variables', 'fp-esperienze'); ?></button>
+            </p>
+
+            <p class="description" style="max-width: 720px;">
+                <?php
+                printf(
+                    wp_kses(
+                        /* translators: %s: link to widget integration guide */
+                        __('Need more recipes? Consult the <a href="%s" target="_blank" rel="noopener noreferrer">Widget Integration Guide</a>.', 'fp-esperienze'),
+                        [
+                            'a' => [
+                                'href' => [],
+                                'target' => [],
+                                'rel' => [],
+                            ],
+                        ]
+                    ),
+                    esc_url(plugins_url('WIDGET_INTEGRATION_GUIDE.md', FP_ESPERIENZE_PLUGIN_FILE))
+                );
+                ?>
+            </p>
+        </div>
+        <?php
+    }
+
+    /**
+     * Attempt to grab a recently created experience product for pre-filled snippets.
+     */
+    private function getExampleExperienceProductId(): ?int {
+        if (!function_exists('wc_get_products')) {
+            return null;
+        }
+
+        $products = wc_get_products([
+            'type' => 'experience',
+            'status' => ['publish', 'pending', 'draft'],
+            'limit' => 1,
+            'orderby' => 'date',
+            'order' => 'DESC',
+            'return' => 'ids',
+        ]);
+
+        if (is_array($products) && !empty($products)) {
+            return (int) $products[0];
+        }
+
+        return null;
     }
 }
