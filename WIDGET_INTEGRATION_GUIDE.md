@@ -33,9 +33,52 @@ Add these parameters to the iframe URL:
 
 ## Examples
 
+### Copy & Paste Recipes
+
+#### WordPress Gutenberg (Custom HTML block)
+
+```html
+<!-- Add inside a "Custom HTML" block -->
+<div class="fp-esperienze-widget-wrapper" style="max-width:680px;margin:0 auto;">
+    <iframe
+        src="https://yoursite.com/wp-json/fp-exp/v1/widget/iframe/123?theme=light"
+        width="100%"
+        height="680"
+        loading="lazy"
+        style="border:1px solid var(--wp--preset--color--light-gray,#dcdcde);border-radius:12px;"
+        title="Book your experience"
+        allow="payment"
+    ></iframe>
+</div>
+```
+
+#### Webflow / Squarespace embed
+
+```html
+<div data-widget="fp-esperienze" style="max-width:640px;margin:auto;">
+  <iframe
+    id="fp-esperienze-widget"
+    src="https://yoursite.com/wp-json/fp-exp/v1/widget/iframe/123?theme=dark&return_url=https://partner.com/thanks"
+    style="width:100%;height:720px;border:0;border-radius:16px;box-shadow:0 15px 45px rgba(0,0,0,0.1);"
+    title="Experience booking"
+  ></iframe>
+</div>
+<script>
+window.addEventListener('message', function(event) {
+  if (!event.data || event.data.type !== 'fp_widget_height_change') {
+    return;
+  }
+  var frame = document.getElementById('fp-esperienze-widget');
+  if (frame) {
+    frame.style.height = event.data.height + 'px';
+  }
+});
+</script>
+```
+
 ### Basic Widget
 ```html
-<iframe src="https://mysite.com/wp-json/fp-exp/v1/widget/iframe/123" 
+<iframe src="https://mysite.com/wp-json/fp-exp/v1/widget/iframe/123"
         width="100%" height="600" frameborder="0"></iframe>
 ```
 

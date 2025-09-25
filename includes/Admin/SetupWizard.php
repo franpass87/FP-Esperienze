@@ -7,6 +7,8 @@
 
 namespace FP\Esperienze\Admin;
 
+use FP\Esperienze\Admin\OnboardingHelper;
+
 defined('ABSPATH') || exit;
 
 /**
@@ -31,6 +33,8 @@ class SetupWizard {
         add_action('admin_menu', [$this, 'addSetupWizardMenu'], 15);
         add_action('admin_init', [$this, 'handleStepSubmission']);
         add_action('admin_enqueue_scripts', [$this, 'enqueueScripts']);
+        add_action('admin_notices', [$this, 'maybeRenderWizardNotice']);
+        add_action('admin_notices', [$this, 'maybeRenderChecklistNotice']);
     }
 
     /**
@@ -62,7 +66,46 @@ class SetupWizard {
         wp_enqueue_media();
         wp_enqueue_style('wp-color-picker');
         wp_enqueue_script('wp-color-picker');
-        
+
+        wp_enqueue_script(
+            'fp-setup-tour',
+            FP_ESPERIENZE_PLUGIN_URL . 'assets/js/setup-wizard-tour.js',
+            ['jquery'],
+            FP_ESPERIENZE_VERSION,
+            true
+        );
+
+        $checklist = OnboardingHelper::getChecklistItems();
+        $tour_steps = [
+            [
+                'title' => __('Create your first experience', 'fp-esperienze'),
+                'content' => __('Use WooCommerce → Products to publish an “Experience” product with imagery and highlights.', 'fp-esperienze'),
+            ],
+            [
+                'title' => __('Add schedules and capacity', 'fp-esperienze'),
+                'content' => __('Open the schedule builder inside the product editor to add recurring or one-off time slots.', 'fp-esperienze'),
+            ],
+            [
+                'title' => __('Preview the booking widget', 'fp-esperienze'),
+                'content' => __('Visit the product on the frontend to verify availability, meeting point details, and pricing.', 'fp-esperienze'),
+            ],
+        ];
+
+        wp_localize_script(
+            'fp-setup-tour',
+            'fpSetupTourData',
+            [
+                'steps' => $tour_steps,
+                'checklist' => $checklist,
+                'i18n' => [
+                    'next' => __('Next', 'fp-esperienze'),
+                    'previous' => __('Previous', 'fp-esperienze'),
+                    'finish' => __('Done', 'fp-esperienze'),
+                    'skip' => __('Skip tour', 'fp-esperienze'),
+                ],
+            ]
+        );
+
         // Add inline styles for wizard - ensure we have a style to add it to
         wp_enqueue_style('wp-admin');
         wp_add_inline_style('wp-admin', $this->getWizardStyles());
@@ -125,6 +168,80 @@ class SetupWizard {
             color: #666;
             margin-bottom: 20px;
         }
+        .fp-onboarding-checklist {
+            background: #fff;
+            border: 1px solid #c3c4c7;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 4px solid #2271b1;
+        }
+        .fp-onboarding-checklist__title {
+            margin: 0 0 10px 0;
+        }
+        .fp-onboarding-checklist__meta {
+            font-size: 13px;
+            color: #444;
+            margin-bottom: 15px;
+        }
+        .fp-onboarding-checklist__list {
+            margin: 0;
+            padding-left: 1.2em;
+        }
+        .fp-onboarding-checklist__item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 6px;
+            gap: 6px;
+        }
+        .fp-onboarding-checklist__item:last-child {
+            margin-bottom: 0;
+        }
+        .fp-onboarding-checklist__item .dashicons {
+            color: #2271b1;
+        }
+        .fp-onboarding-checklist__item.completed .dashicons {
+            color: #00a32a;
+        }
+        .fp-onboarding-checklist__item a {
+            text-decoration: none;
+        }
+        .fp-onboarding-helpers {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .fp-tour-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.65);
+            z-index: 100000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .fp-tour-overlay.is-visible {
+            display: flex;
+        }
+        .fp-tour-card {
+            background: #fff;
+            border-radius: 6px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+            max-width: 420px;
+            width: 100%;
+            padding: 25px;
+            text-align: left;
+            position: relative;
+        }
+        .fp-tour-card h3 {
+            margin-top: 0;
+        }
+        .fp-tour-actions {
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-between;
+        }
         ";
     }
 
@@ -145,6 +262,10 @@ class SetupWizard {
         $action = sanitize_text_field(isset($_POST['wizard_action']) ? wp_unslash($_POST['wizard_action']) : '');
 
         switch ($action) {
+            case 'seed_demo':
+                $notice = OnboardingHelper::seedDemoContent();
+                $this->redirectWithNotice($notice, $step);
+                return;
             case 'next':
                 $this->processStep($step);
                 break;
@@ -205,7 +326,7 @@ class SetupWizard {
         }
 
         // Update WordPress timezone if provided
-        if (!empty($_POST['timezone'])) {
+        if (isset($_POST['timezone']) && $_POST['timezone'] !== '') {
             update_option('timezone_string', sanitize_text_field(wp_unslash($_POST['timezone'])));
         }
     }
@@ -216,18 +337,18 @@ class SetupWizard {
     private function processIntegrationsSettings(): void {
         $integrations = [
             'ga4_measurement_id' => sanitize_text_field(isset($_POST['ga4_measurement_id']) ? wp_unslash($_POST['ga4_measurement_id']) : ''),
-            'ga4_ecommerce' => !empty($_POST['ga4_ecommerce']),
+            'ga4_ecommerce' => isset($_POST['ga4_ecommerce']) && (bool) $_POST['ga4_ecommerce'],
             'gads_conversion_id' => sanitize_text_field(isset($_POST['gads_conversion_id']) ? wp_unslash($_POST['gads_conversion_id']) : ''),
             'gads_purchase_label' => sanitize_text_field(isset($_POST['gads_purchase_label']) ? wp_unslash($_POST['gads_purchase_label']) : ''),
             'meta_pixel_id' => sanitize_text_field(isset($_POST['meta_pixel_id']) ? wp_unslash($_POST['meta_pixel_id']) : ''),
-            'meta_capi_enabled' => !empty($_POST['meta_capi_enabled']),
+            'meta_capi_enabled' => isset($_POST['meta_capi_enabled']) && (bool) $_POST['meta_capi_enabled'],
             'meta_access_token' => sanitize_text_field(isset($_POST['meta_access_token']) ? wp_unslash($_POST['meta_access_token']) : ''),
             'meta_dataset_id' => sanitize_text_field(isset($_POST['meta_dataset_id']) ? wp_unslash($_POST['meta_dataset_id']) : ''),
             'brevo_api_key' => sanitize_text_field(isset($_POST['brevo_api_key']) ? wp_unslash($_POST['brevo_api_key']) : ''),
             'brevo_list_id_it' => sanitize_text_field(isset($_POST['brevo_list_id_it']) ? wp_unslash($_POST['brevo_list_id_it']) : ''),
             'brevo_list_id_en' => sanitize_text_field(isset($_POST['brevo_list_id_en']) ? wp_unslash($_POST['brevo_list_id_en']) : ''),
             'gplaces_api_key' => sanitize_text_field(isset($_POST['gplaces_api_key']) ? wp_unslash($_POST['gplaces_api_key']) : ''),
-            'consent_mode_enabled' => !empty($_POST['consent_mode_enabled']),
+            'consent_mode_enabled' => isset($_POST['consent_mode_enabled']) && (bool) $_POST['consent_mode_enabled'],
             'consent_cookie_name' => sanitize_text_field(isset($_POST['consent_cookie_name']) ? wp_unslash($_POST['consent_cookie_name']) : 'marketing_consent'),
             'consent_js_function' => sanitize_text_field(isset($_POST['consent_js_function']) ? wp_unslash($_POST['consent_js_function']) : ''),
         ];
@@ -288,7 +409,9 @@ class SetupWizard {
         ?>
         <div class="wrap">
             <h1><?php _e('FP Esperienze Setup Wizard', 'fp-esperienze'); ?></h1>
-            
+
+            <?php $this->renderChecklistOverview(); ?>
+
             <div class="fp-setup-wizard">
                 <div class="fp-wizard-header">
                     <div class="fp-wizard-progress">
@@ -394,6 +517,15 @@ class SetupWizard {
         <p class="fp-step-description">
             <?php _e('Configure the basic settings for your experience booking system.', 'fp-esperienze'); ?>
         </p>
+
+        <div class="fp-onboarding-helpers">
+            <button type="submit" name="wizard_action" value="seed_demo" class="button button-secondary">
+                <?php esc_html_e('Create demo data', 'fp-esperienze'); ?>
+            </button>
+            <button type="button" id="fp-start-tour" class="button button-link">
+                <?php esc_html_e('Start guided tour', 'fp-esperienze'); ?>
+            </button>
+        </div>
 
         <table class="form-table">
             <tr>
@@ -717,5 +849,165 @@ class SetupWizard {
             </tr>
         </table>
         <?php
+    }
+
+    /**
+     * Render the onboarding checklist summary box.
+     */
+    private function renderChecklistOverview(): void {
+        $items = OnboardingHelper::getChecklistItems();
+        $summary = OnboardingHelper::getCompletionSummary();
+
+        ?>
+        <div class="fp-onboarding-checklist">
+            <h2 class="fp-onboarding-checklist__title">
+                <?php esc_html_e('Onboarding checklist', 'fp-esperienze'); ?>
+            </h2>
+            <p class="fp-onboarding-checklist__meta">
+                <?php
+                $percentage_label = number_format_i18n($summary['percentage'], 2);
+                $completed = $summary['completed'];
+                $total = $summary['total'];
+                printf(
+                    esc_html__('Progress: %1$d of %2$d tasks complete (%3$s%%).', 'fp-esperienze'),
+                    $completed,
+                    $total,
+                    esc_html($percentage_label)
+                );
+                ?>
+            </p>
+            <ul class="fp-onboarding-checklist__list">
+                <?php foreach ($items as $item) :
+                    $is_completed = isset($item['completed']) && (bool) $item['completed'];
+                    $icon = $is_completed ? 'yes' : 'info';
+                    $item_classes = 'fp-onboarding-checklist__item' . ($is_completed ? ' completed' : '');
+                    $action = isset($item['action']) && is_string($item['action']) ? $item['action'] : '';
+                    $label = isset($item['label']) && is_string($item['label']) ? $item['label'] : '';
+                    ?>
+                    <li class="<?php echo esc_attr($item_classes); ?>">
+                        <span class="dashicons dashicons-<?php echo esc_attr($icon); ?>" aria-hidden="true"></span>
+                        <?php if ($action !== '') : ?>
+                            <a href="<?php echo esc_url($action); ?>">
+                                <?php echo esc_html($label); ?>
+                            </a>
+                        <?php else : ?>
+                            <?php echo esc_html($label); ?>
+                        <?php endif; ?>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+        </div>
+        <div class="fp-tour-overlay" id="fp-tour-overlay" aria-hidden="true">
+            <div class="fp-tour-card" role="dialog" aria-modal="true" aria-labelledby="fp-tour-title">
+                <h3 id="fp-tour-title"></h3>
+                <p id="fp-tour-content"></p>
+                <div class="fp-tour-actions">
+                    <button type="button" class="button" id="fp-tour-prev"></button>
+                    <div>
+                        <button type="button" class="button button-link" id="fp-tour-skip"></button>
+                        <button type="button" class="button button-primary" id="fp-tour-next"></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <?php
+    }
+
+    /**
+     * Render notice messages generated by onboarding actions.
+     */
+    public function maybeRenderWizardNotice(): void {
+        if (!isset($_GET['page']) || $_GET['page'] !== 'fp-esperienze-setup-wizard') { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+            return;
+        }
+
+        $notice = get_transient('fp_esperienze_onboarding_notice');
+        if (!is_array($notice) || $notice === []) {
+            return;
+        }
+
+        delete_transient('fp_esperienze_onboarding_notice');
+
+        $status = $notice['status'] ?? 'info';
+        $message = $notice['message'] ?? '';
+
+        $class = match ($status) {
+            'success' => 'notice-success',
+            'warning' => 'notice-warning',
+            'error' => 'notice-error',
+            default => 'notice-info',
+        };
+
+        echo '<div class="notice ' . esc_attr($class) . '"><p>' . esc_html($message) . '</p></div>';
+    }
+
+    /**
+     * Display the onboarding progress notice across admin pages until complete.
+     */
+    public function maybeRenderChecklistNotice(): void {
+        if (!current_user_can('manage_woocommerce')) {
+            return;
+        }
+
+        $screen = function_exists('get_current_screen') ? get_current_screen() : null;
+        if (!($screen instanceof \WP_Screen) || strpos($screen->id, 'fp-esperienze') === false) {
+            return;
+        }
+
+        if (isset($_GET['page']) && $_GET['page'] === 'fp-esperienze-setup-wizard') { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+            return;
+        }
+
+        $summary = OnboardingHelper::getCompletionSummary();
+        $completed = $summary['completed'];
+        $total = $summary['total'];
+
+        if ($completed >= $total) {
+            return;
+        }
+
+        $items = OnboardingHelper::getChecklistItems();
+
+        echo '<div class="notice notice-info fp-onboarding-checklist-notice">';
+        echo '<p>' . sprintf(
+            esc_html__('FP Esperienze onboarding progress: %1$d of %2$d tasks complete.', 'fp-esperienze'),
+            $completed,
+            $total
+        ) . '</p>';
+        echo '<ul>';
+        foreach ($items as $item) {
+            if (isset($item['completed']) && (bool) $item['completed']) {
+                continue;
+            }
+            echo '<li>';
+            $action = isset($item['action']) && is_string($item['action']) ? $item['action'] : '';
+            if ($action !== '') {
+                echo '<a href="' . esc_url($action) . '">';
+            }
+            $label = isset($item['label']) && is_string($item['label']) ? $item['label'] : '';
+            echo esc_html($label);
+            if ($action !== '') {
+                echo '</a>';
+            }
+            echo '</li>';
+        }
+        echo '</ul>';
+        echo '<p><a class="button button-primary" href="' . esc_url(admin_url('admin.php?page=fp-esperienze-setup-wizard')) . '">' . esc_html__('Resume setup wizard', 'fp-esperienze') . '</a></p>';
+        echo '</div>';
+    }
+
+    /**
+     * Store a transient notice and redirect back to the current step.
+     *
+     * @param array<string,string> $notice Notice payload.
+     * @param int                  $step   Current wizard step.
+     */
+    private function redirectWithNotice(array $notice, int $step): void {
+        $expiration = defined('MINUTE_IN_SECONDS') ? (int) MINUTE_IN_SECONDS : 60;
+        set_transient('fp_esperienze_onboarding_notice', $notice, $expiration);
+
+        $target_step = max(1, min($this->total_steps, $step));
+        wp_safe_redirect(add_query_arg(['step' => $target_step], admin_url('admin.php?page=fp-esperienze-setup-wizard')));
+        exit;
     }
 }
