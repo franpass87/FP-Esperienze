@@ -112,6 +112,7 @@ class SystemStatus {
                 <?php $this->renderSystemInfo(); ?>
                 <?php $this->renderChecks($checks); ?>
                 <?php $this->renderProductionReadiness($production_readiness); ?>
+                <?php $this->renderDependencyStatus(); ?>
                 <?php $this->renderDatabaseInfo(); ?>
                 <?php $this->renderIntegrationStatus(); ?>
             </div>
@@ -173,6 +174,52 @@ class SystemStatus {
                 margin-left: 10px;
             }
             </style>
+        </div>
+        <?php
+    }
+
+    /**
+     * Render optional dependency status summary.
+     */
+    private function renderDependencyStatus(): void {
+        if (!class_exists(DependencyChecker::class)) {
+            return;
+        }
+
+        $dependencies = DependencyChecker::checkAll();
+
+        ?>
+        <div class="fp-status-section">
+            <h2><?php esc_html_e('Optional Dependencies', 'fp-esperienze'); ?></h2>
+            <table class="fp-status-table">
+                <tbody>
+                <?php foreach ($dependencies as $dependency) :
+                    $status_class = !empty($dependency['available']) ? 'fp-status-ok' : 'fp-status-warning';
+                    ?>
+                    <tr>
+                        <th><?php echo esc_html($dependency['name'] ?? ''); ?></th>
+                        <td>
+                            <span class="fp-status-icon <?php echo esc_attr($status_class); ?>">
+                                <?php echo !empty($dependency['available']) ? esc_html__('Available', 'fp-esperienze') : esc_html__('Missing', 'fp-esperienze'); ?>
+                            </span>
+                            <?php if (!empty($dependency['description'])) : ?>
+                                <div><?php echo esc_html($dependency['description']); ?></div>
+                            <?php endif; ?>
+                            <?php if (empty($dependency['available']) && !empty($dependency['impact'])) : ?>
+                                <div><em><?php echo esc_html($dependency['impact']); ?></em></div>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+
+            <?php
+            $instructions = DependencyChecker::getInstallationInstructions();
+            if (!empty($instructions)) {
+                echo wp_kses_post($instructions);
+            }
+            ?>
         </div>
         <?php
     }

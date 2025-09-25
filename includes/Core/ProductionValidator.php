@@ -7,6 +7,8 @@
 
 namespace FP\Esperienze\Core;
 
+use FP\Esperienze\Admin\DependencyChecker;
+
 defined('ABSPATH') || exit;
 
 /**
@@ -45,6 +47,9 @@ class ProductionValidator {
         // Translation checks
         $results = self::checkTranslations($results);
 
+        // Optional dependency checks
+        $results = self::checkOptionalDependencies($results);
+
         // Admin interface checks
         $results = self::checkAdminInterface($results);
 
@@ -59,6 +64,41 @@ class ProductionValidator {
             $results['overall_status'] = 'fail';
         } elseif (!empty($results['warnings'])) {
             $results['overall_status'] = 'warning';
+        }
+
+        return $results;
+    }
+
+    /**
+     * Check optional composer-powered features and report their status.
+     *
+     * @param array $results Current validation results accumulator.
+     * @return array
+     */
+    private static function checkOptionalDependencies(array $results): array {
+        if (!class_exists(DependencyChecker::class)) {
+            return $results;
+        }
+
+        $dependencies = DependencyChecker::checkAll();
+
+        foreach ($dependencies as $slug => $dependency) {
+            $name        = $dependency['name'] ?? ucfirst($slug);
+            $is_available = !empty($dependency['available']);
+            $impact      = $dependency['impact'] ?? '';
+
+            if ($is_available) {
+                $results['checks'][] = sprintf('✅ %s available', $name);
+                continue;
+            }
+
+            $message = sprintf('⚠️ %s not available', $name);
+
+            if ($impact !== '') {
+                $message .= sprintf(': %s', $impact);
+            }
+
+            $results['warnings'][] = $message;
         }
 
         return $results;
