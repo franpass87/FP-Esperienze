@@ -450,7 +450,7 @@ html {
     display: grid;
     grid-template-columns: 2fr 1fr;
     gap: 0;
-    min-height: 400px;
+    min-height: clamp(220px, 55vh, 520px);
 }
 
 .fp-hero-gallery {

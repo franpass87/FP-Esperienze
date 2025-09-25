@@ -83,8 +83,23 @@ class SystemStatus {
      * System status page
      */
     public function systemStatusPage(): void {
-        $checks               = $this->runSystemChecks();
-        $production_readiness = ProductionValidator::validateProductionReadiness();
+        $checks = $this->runSystemChecks();
+        $production_readiness = null;
+
+        if (class_exists(ProductionValidator::class) && method_exists(ProductionValidator::class, 'validateProductionReadiness')) {
+            try {
+                $production_readiness = ProductionValidator::validateProductionReadiness();
+            } catch (\Throwable $exception) {
+                $production_readiness = [
+                    'overall_status'  => 'warning',
+                    'critical_issues' => [],
+                    'warnings'        => [
+                        __('Unable to calculate production readiness. Check the error logs for more details.', 'fp-esperienze'),
+                    ],
+                    'checks'          => [],
+                ];
+            }
+        }
 
         ?>
         <div class="wrap">
@@ -111,7 +126,9 @@ class SystemStatus {
             <div class="fp-system-status">
                 <?php $this->renderSystemInfo(); ?>
                 <?php $this->renderChecks($checks); ?>
-                <?php $this->renderProductionReadiness($production_readiness); ?>
+                <?php if (!empty($production_readiness)) : ?>
+                    <?php $this->renderProductionReadiness($production_readiness); ?>
+                <?php endif; ?>
                 <?php $this->renderDependencyStatus(); ?>
                 <?php $this->renderDatabaseInfo(); ?>
                 <?php $this->renderIntegrationStatus(); ?>
@@ -182,11 +199,13 @@ class SystemStatus {
      * Render optional dependency status summary.
      */
     private function renderDependencyStatus(): void {
-        if (!class_exists(DependencyChecker::class)) {
+        $dependency_checker_class = '\\FP\\Esperienze\\Admin\\DependencyChecker';
+
+        if (!class_exists($dependency_checker_class)) {
             return;
         }
 
-        $dependencies = DependencyChecker::checkAll();
+        $dependencies = $dependency_checker_class::checkAll();
 
         ?>
         <div class="fp-status-section">
@@ -215,7 +234,9 @@ class SystemStatus {
             </table>
 
             <?php
-            $instructions = DependencyChecker::getInstallationInstructions();
+            $instructions = method_exists($dependency_checker_class, 'getInstallationInstructions')
+                ? $dependency_checker_class::getInstallationInstructions()
+                : '';
             if (!empty($instructions)) {
                 echo wp_kses_post($instructions);
             }

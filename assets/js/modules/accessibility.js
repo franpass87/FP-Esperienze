@@ -194,11 +194,11 @@
                 setTimeout(function() {
                     var $firstInput = $newCard.find('input, select').first();
                     if ($firstInput.length) {
-                        $firstInput.focus();
-                        $newCard[0].scrollIntoView({ 
-                            behavior: 'smooth', 
-                            block: 'nearest' 
-                        });
+                        try {
+                            $firstInput[0].focus({ preventScroll: true });
+                        } catch (focusError) {
+                            $firstInput.focus();
+                        }
                     }
                 }, 300);
             });

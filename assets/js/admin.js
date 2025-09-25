@@ -274,9 +274,9 @@
          * Initialize experience gallery field handling.
          */
         initExperienceGalleryField: function() {
-            const $fieldWrapper = $('#fp-exp-gallery-field');
+            const $group = $('.fp-exp-gallery-group');
 
-            if (!$fieldWrapper.length) {
+            if (!$group.length) {
                 return;
             }
 
@@ -286,12 +286,28 @@
             }
 
             const self = this;
+            const $fieldWrapper = $group.find('#fp-exp-gallery-field');
             const $list = $fieldWrapper.find('.fp-exp-gallery-list');
             const $empty = $fieldWrapper.find('.fp-exp-gallery-empty');
-            const $clear = $fieldWrapper.find('.fp-exp-gallery-clear');
+            const $clear = $group.find('.fp-exp-gallery-clear');
             const $status = $fieldWrapper.find('.fp-exp-gallery-status');
-            const $addButton = $fieldWrapper.find('.fp-exp-gallery-add');
+            const $addButton = $group.find('.fp-exp-gallery-add');
             let mediaFrame = null;
+
+            function notifyUnsavedChange() {
+                if (window.FPAdminUXEnhancer && typeof window.FPAdminUXEnhancer.flagUnsavedChange === 'function') {
+                    window.FPAdminUXEnhancer.flagUnsavedChange(true);
+                }
+
+                if (window.FPEsperienzeAdmin && typeof window.FPEsperienzeAdmin.flagUnsavedChange === 'function') {
+                    window.FPEsperienzeAdmin.flagUnsavedChange();
+                } else if (window.FPEsperienzeAdmin) {
+                    window.FPEsperienzeAdmin.hasUnsavedChanges = true;
+                    if (typeof window.FPEsperienzeAdmin.showUnsavedChangesWarning === 'function') {
+                        window.FPEsperienzeAdmin.showUnsavedChangesWarning();
+                    }
+                }
+            }
 
             if ($clear.length) {
                 $clear.attr('aria-label', self.getAdminString('gallery_clear_all', 'Remove all'));
@@ -339,11 +355,14 @@
                     items: '.fp-exp-gallery-item',
                     axis: 'x',
                     tolerance: 'pointer',
-                    stop: updateEmptyState
+                    stop: function() {
+                        updateEmptyState();
+                        notifyUnsavedChange();
+                    }
                 });
             }
 
-            $fieldWrapper.on('click', '.fp-exp-gallery-add', function(event) {
+            $group.on('click', '.fp-exp-gallery-add', function(event) {
                 event.preventDefault();
 
                 if (!mediaFrame) {
@@ -421,6 +440,7 @@
 
                             $item.append($imageWrapper, $remove, $hidden);
                             $list.append($item);
+                            notifyUnsavedChange();
                         });
 
                         updateEmptyState();
@@ -430,13 +450,14 @@
                 mediaFrame.open();
             });
 
-            $fieldWrapper.on('click', '.fp-exp-gallery-remove', function(event) {
+            $group.on('click', '.fp-exp-gallery-remove', function(event) {
                 event.preventDefault();
                 $(this).closest('.fp-exp-gallery-item').remove();
                 updateEmptyState();
+                notifyUnsavedChange();
             });
 
-            $fieldWrapper.on('click', '.fp-exp-gallery-clear', function(event) {
+            $group.on('click', '.fp-exp-gallery-clear', function(event) {
                 event.preventDefault();
 
                 if (!window.confirm(self.getAdminString('gallery_clear_confirm', 'Remove all gallery images?'))) {
@@ -445,6 +466,7 @@
 
                 $list.empty();
                 updateEmptyState();
+                notifyUnsavedChange();
             });
 
             updateEmptyState();
@@ -1046,6 +1068,14 @@
          */
         clearUnsavedChanges: function() {
             this.hasUnsavedChanges = false;
+
+            if (window.FPAdminUXEnhancer && typeof window.FPAdminUXEnhancer.refreshTrackedFormBaselines === 'function') {
+                window.FPAdminUXEnhancer.refreshTrackedFormBaselines();
+            } else if (window.FPAdminUXEnhancer && typeof window.FPAdminUXEnhancer.clearUnsavedState === 'function') {
+                window.FPAdminUXEnhancer.clearUnsavedState();
+            } else if (window.FPAdminUXEnhancer && typeof window.FPAdminUXEnhancer.setUnsavedState === 'function') {
+                window.FPAdminUXEnhancer.setUnsavedState(false);
+            }
         },
         
         /**
@@ -1967,36 +1997,34 @@
                         'transform': 'translateY(0) scale(1)'
                     });
                 });
-                
-                // Enhanced focus management with delay
+
+                // Gently focus the first time input without forcing a scroll jump
                 setTimeout(function() {
-                    var $timeInput = $newCard.find('input[type="time"]');
-                    if ($timeInput.length) {
-                        $timeInput.focus();
-                        // Smooth scroll into view
-                        $newCard[0].scrollIntoView({ 
-                            behavior: 'smooth', 
-                            block: 'nearest',
-                            inline: 'nearest'
-                        });
-                        
-                        // Add subtle highlight effect
-                        $newCard.addClass('fp-newly-added');
-                        setTimeout(function() {
-                            $newCard.removeClass('fp-newly-added');
-                        }, 2000);
+                    var timeField = $newCard.find('input[type="time"]').get(0);
+
+                    if (!timeField || typeof timeField.focus !== 'function') {
+                        return;
                     }
-                }, 400);
-                
-                // Debug logging removed for production
-                
-                // Update visual feedback and show success message
+
+                    try {
+                        timeField.focus({ preventScroll: true });
+                    } catch (focusError) {
+                        // Older browsers may not support the options bag; fall back to a silent focus.
+                        try {
+                            timeField.focus();
+                        } catch (fallbackError) {
+                            // Ignore focus failures – the field is still added without scrolling.
+                        }
+                    }
+                }, 250);
+
+                // Update visual feedback and mark as dirty
                 this.updateSlotCountFeedback();
-                this.showUserFeedback('Time slot added successfully! Configure the time and days.', 'success');
-                
+                this.markUnsavedChanges();
+
                 // Track for analytics (if needed)
                 this.trackUserAction('time_slot_added', { index: index });
-                
+
             } catch (error) {
                 console.error('FP Esperienze: Error in addTimeSlotCardClean:', error);
                 this.showUserFeedback('An unexpected error occurred while adding the time slot. Please try again.', 'error');

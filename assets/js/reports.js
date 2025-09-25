@@ -15,8 +15,11 @@ if (typeof jQuery === 'undefined') {
     var FPReports = {
         chart: null,
         currentPeriod: 'day',
+        pendingRequests: 0,
+        loadingFallbackTimer: null,
 
         init: function() {
+            this.hideLoading();
             this.bindEvents();
             this.loadChartJS();
             this.loadInitialData();
@@ -34,7 +37,6 @@ if (typeof jQuery === 'undefined') {
                 return;
             }
 
-            // Load Chart.js from CDN
             var script = document.createElement('script');
             script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
             script.onload = this.initChart.bind(this);
@@ -43,7 +45,9 @@ if (typeof jQuery === 'undefined') {
 
         initChart: function() {
             var ctx = document.getElementById('fp-revenue-chart');
-            if (!ctx) return;
+            if (!ctx) {
+                return;
+            }
 
             this.chart = new Chart(ctx, {
                 type: 'line',
@@ -69,7 +73,7 @@ if (typeof jQuery === 'undefined') {
                     responsive: true,
                     interaction: {
                         mode: 'index',
-                        intersect: false,
+                        intersect: false
                     },
                     scales: {
                         x: {
@@ -97,8 +101,8 @@ if (typeof jQuery === 'undefined') {
                                 text: 'Seats Sold'
                             },
                             grid: {
-                                drawOnChartArea: false,
-                            },
+                                drawOnChartArea: false
+                            }
                         }
                     },
                     plugins: {
@@ -115,9 +119,7 @@ if (typeof jQuery === 'undefined') {
 
         loadInitialData: function() {
             this.loadKpiData();
-            this.loadTopExperiences();
             this.loadUtmConversions();
-            this.loadLoadFactors();
         },
 
         updateReports: function(e) {
@@ -125,15 +127,14 @@ if (typeof jQuery === 'undefined') {
             this.showLoading();
             this.loadInitialData();
             this.loadChartData();
-            this.hideLoading();
         },
 
         changePeriod: function(e) {
             e.preventDefault();
-            
+
             $('.chart-period').removeClass('button-primary');
             $(e.target).addClass('button-primary');
-            
+
             this.currentPeriod = $(e.target).data('period');
             this.loadChartData();
         },
@@ -150,74 +151,104 @@ if (typeof jQuery === 'undefined') {
 
         loadKpiData: function() {
             var filters = this.getFilters();
-            
+            this.startRequest();
+
             $.post(ajaxurl, {
                 action: 'fp_get_kpi_data',
                 ...filters
-            }, function(response) {
-                if (response.success) {
-                    var data = response.data;
-                    $('#kpi-revenue').html('€' + this.formatNumber(data.total_revenue));
-                    $('#kpi-seats').html(this.formatNumber(data.total_seats));
-                    $('#kpi-bookings').html(this.formatNumber(data.total_bookings));
-                    $('#kpi-avg-value').html('€' + this.formatNumber(data.average_booking_value));
-                } else {
-                    this.showError('Failed to load KPI data');
+            }).done(function(response) {
+                try {
+                    if (response && response.success) {
+                        var data = response.data || {};
+                        var stats = data.product_stats || {};
+                        var loadFactors = Array.isArray(data.load_factors) ? data.load_factors : [];
+
+                        $('#kpi-revenue').html('€' + this.formatNumber(data.total_revenue || 0));
+                        $('#kpi-seats').html(this.formatNumber(data.total_seats || 0));
+                        $('#kpi-bookings').html(this.formatNumber(data.total_bookings || 0));
+                        $('#kpi-avg-value').html('€' + this.formatNumber(data.average_booking_value || 0));
+
+                        this.renderTopExperiences(stats);
+                        this.renderLoadFactors(loadFactors);
+                    } else {
+                        this.renderTopExperiences({});
+                        this.renderLoadFactors([]);
+                        this.showError('Failed to load KPI data');
+                    }
+                } catch (error) {
+                    console.error('FP Reports: error rendering KPI response', error);
+                    this.renderTopExperiences({});
+                    this.renderLoadFactors([]);
                 }
             }.bind(this)).fail(function() {
+                this.renderTopExperiences({});
+                this.renderLoadFactors([]);
                 this.showError('Failed to load KPI data');
-            }.bind(this));
+            }.bind(this)).always(this.finishRequest.bind(this));
         },
 
         loadChartData: function() {
-            if (!this.chart) return;
+            if (!this.chart) {
+                return;
+            }
 
             var filters = this.getFilters();
-            
+            this.startRequest();
+
             $.post(ajaxurl, {
                 action: 'fp_get_chart_data',
                 period: this.currentPeriod,
                 ...filters
-            }, function(response) {
-                if (response.success) {
-                    var data = response.data;
-                    this.chart.data.labels = data.labels;
-                    this.chart.data.datasets[0].data = data.datasets[0].data;
-                    this.chart.data.datasets[1].data = data.datasets[1].data;
-                    this.chart.update();
-                } else {
-                    this.showError('Failed to load chart data');
+            }).done(function(response) {
+                try {
+                    if (response && response.success && response.data) {
+                        var data = response.data;
+                        this.chart.data.labels = Array.isArray(data.labels) ? data.labels : [];
+
+                        if (Array.isArray(data.datasets) && data.datasets.length >= 2) {
+                            this.chart.data.datasets[0].data = Array.isArray(data.datasets[0].data) ? data.datasets[0].data : [];
+                            this.chart.data.datasets[1].data = Array.isArray(data.datasets[1].data) ? data.datasets[1].data : [];
+                        } else {
+                            this.chart.data.datasets[0].data = [];
+                            this.chart.data.datasets[1].data = [];
+                        }
+
+                        this.chart.update();
+                    } else {
+                        this.showError('Failed to load chart data');
+                    }
+                } catch (error) {
+                    console.error('FP Reports: error rendering chart response', error);
                 }
             }.bind(this)).fail(function() {
                 this.showError('Failed to load chart data');
-            }.bind(this));
-        },
-
-        loadTopExperiences: function() {
-            var filters = this.getFilters();
-            
-            $.post(ajaxurl, {
-                action: 'fp_get_kpi_data', // Will include top experiences in response
-                ...filters
-            }, function(response) {
-                if (response.success && response.data.product_stats) {
-                    this.renderTopExperiences(response.data.product_stats);
-                }
-            }.bind(this));
+            }.bind(this)).always(this.finishRequest.bind(this));
         },
 
         renderTopExperiences: function(productStats) {
             var html = '';
-            var sortedProducts = Object.entries(productStats)
-                .sort((a, b) => b[1].revenue - a[1].revenue)
-                .slice(0, 10);
+            var entries = [];
 
-            sortedProducts.forEach(function([productId, stats], index) {
-                html += '<div class="fp-top-experience-item">';
-                html += '<span>' + (index + 1) + '. Product #' + productId + '</span>';
-                html += '<span>€' + this.formatNumber(stats.revenue) + '</span>';
-                html += '</div>';
-            }.bind(this));
+            try {
+                entries = Object.entries(productStats || {});
+            } catch (error) {
+                entries = [];
+            }
+
+            entries
+                .map(function(entry) {
+                    var stats = Object.assign({ revenue: 0 }, entry[1] || {});
+                    stats.revenue = parseFloat(stats.revenue) || 0;
+                    return [entry[0], stats];
+                })
+                .sort(function(a, b) { return b[1].revenue - a[1].revenue; })
+                .slice(0, 10)
+                .forEach(function(item, index) {
+                    html += '<div class="fp-top-experience-item">';
+                    html += '<span>' + (index + 1) + '. Product #' + item[0] + '</span>';
+                    html += '<span>€' + this.formatNumber(item[1].revenue) + '</span>';
+                    html += '</div>';
+                }.bind(this));
 
             if (html === '') {
                 html = '<p>' + fp_reports_i18n.no_data + '</p>';
@@ -227,10 +258,6 @@ if (typeof jQuery === 'undefined') {
         },
 
         loadUtmConversions: function() {
-            var filters = this.getFilters();
-            
-            // This would call a separate AJAX endpoint for UTM data
-            // For now, we'll simulate with a placeholder
             var html = '<div class="fp-utm-conversion-item">';
             html += '<span>Source</span><span>Orders</span><span>Revenue</span><span>Avg Value</span>';
             html += '</div>';
@@ -243,26 +270,12 @@ if (typeof jQuery === 'undefined') {
             html += '<div class="fp-utm-conversion-item">';
             html += '<span>Facebook</span><span>18</span><span>€900</span><span>€50.00</span>';
             html += '</div>';
-            
+
             $('#fp-utm-conversions').html(html);
         },
 
-        loadLoadFactors: function() {
-            var filters = this.getFilters();
-            
-            // Load load factor data
-            $.post(ajaxurl, {
-                action: 'fp_get_kpi_data',
-                ...filters
-            }, function(response) {
-                if (response.success && response.data.load_factors) {
-                    this.renderLoadFactors(response.data.load_factors);
-                }
-            }.bind(this));
-        },
-
         renderLoadFactors: function(loadFactors) {
-            if (loadFactors.length === 0) {
+            if (!Array.isArray(loadFactors) || loadFactors.length === 0) {
                 $('#fp-load-factors-table').html('<p>' + fp_reports_i18n.no_data + '</p>');
                 return;
             }
@@ -273,20 +286,20 @@ if (typeof jQuery === 'undefined') {
             html += '</tr></thead><tbody>';
 
             loadFactors.forEach(function(factor) {
-                var loadPercentage = Math.min(factor.load_factor, 100);
-                var colorClass = loadPercentage > 80 ? 'high' : (loadPercentage > 60 ? 'medium' : 'low');
-                
+                var load = parseFloat(factor.load_factor) || 0;
+                var loadPercentage = Math.max(0, Math.min(load, 100));
+
                 html += '<tr>';
-                html += '<td>Product #' + factor.product_id + '</td>';
-                html += '<td>' + factor.date + '</td>';
-                html += '<td>' + factor.time + '</td>';
-                html += '<td>' + factor.capacity + '</td>';
-                html += '<td>' + factor.seats_sold + '</td>';
+                html += '<td>Product #' + (factor.product_id || '-') + '</td>';
+                html += '<td>' + (factor.date || '-') + '</td>';
+                html += '<td>' + (factor.time || '-') + '</td>';
+                html += '<td>' + (factor.capacity || 0) + '</td>';
+                html += '<td>' + (typeof factor.seats_sold === 'undefined' ? '' : factor.seats_sold) + '</td>';
                 html += '<td>';
                 html += '<div class="load-factor-bar">';
                 html += '<div class="load-factor-fill" style="width: ' + loadPercentage + '%"></div>';
                 html += '</div>';
-                html += '<span>' + factor.load_factor + '%</span>';
+                html += '<span>' + loadPercentage.toFixed(0) + '%</span>';
                 html += '</td>';
                 html += '</tr>';
             });
@@ -295,15 +308,14 @@ if (typeof jQuery === 'undefined') {
             $('#fp-load-factors-table').html(html);
         },
 
-        prepareExport: function(e) {
+        prepareExport: function() {
             var filters = this.getFilters();
             $('#export-date-from').val(filters.date_from);
             $('#export-date-to').val(filters.date_to);
             $('#export-product-id').val(filters.product_id);
             $('#export-meeting-point-id').val(filters.meeting_point_id);
             $('#export-language').val(filters.language);
-            
-            // Form will submit normally
+
             return true;
         },
 
@@ -312,12 +324,40 @@ if (typeof jQuery === 'undefined') {
         },
 
         hideLoading: function() {
+            if (this.loadingFallbackTimer) {
+                clearTimeout(this.loadingFallbackTimer);
+                this.loadingFallbackTimer = null;
+            }
+
             $('#fp-reports-loading').hide();
+        },
+
+        startRequest: function() {
+            this.pendingRequests += 1;
+            this.showLoading();
+            this.scheduleLoadingFallback();
+        },
+
+        finishRequest: function() {
+            this.pendingRequests = Math.max(0, this.pendingRequests - 1);
+            if (this.pendingRequests === 0) {
+                this.hideLoading();
+            }
+        },
+
+        scheduleLoadingFallback: function() {
+            if (this.loadingFallbackTimer) {
+                clearTimeout(this.loadingFallbackTimer);
+            }
+
+            this.loadingFallbackTimer = setTimeout(function() {
+                this.pendingRequests = 0;
+                this.hideLoading();
+            }.bind(this), 10000);
         },
 
         showError: function(message) {
             console.error('FP Reports Error:', message);
-            // You could show a proper notice here
         },
 
         formatNumber: function(num) {
@@ -328,19 +368,16 @@ if (typeof jQuery === 'undefined') {
         }
     };
 
-    // Initialize when document is ready
     $(document).ready(function() {
         if ($('#fp-revenue-chart').length) {
             FPReports.init();
         }
     });
 
-    // Make it globally available for debugging
     window.FPReports = FPReports;
 
 })(jQuery);
 
-// Localization object (to be populated by PHP)
 var fp_reports_i18n = fp_reports_i18n || {
     no_data: 'No data available',
     loading: 'Loading...'
