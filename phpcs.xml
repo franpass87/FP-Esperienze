@@ -10,9 +10,6 @@
         <!-- Allow multiple assignments -->
         <exclude name="Squiz.PHP.DisallowMultipleAssignments"/>
         
-        <!-- Allow ternary operators -->
-        <exclude name="WordPress.PHP.DisallowShortTernary"/>
-        
         <!-- Allow yoda conditions to be optional -->
         <exclude name="WordPress.PHP.YodaConditions"/>
     </rule>
