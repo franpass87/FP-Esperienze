@@ -7,7 +7,31 @@
 (function($) {
     'use strict';
 
-    const { __, sprintf } = wp.i18n;
+    var i18n = (typeof window !== 'undefined' && window.wp && window.wp.i18n) ? window.wp.i18n : null;
+    var __ = (i18n && typeof i18n.__ === 'function') ? i18n.__ : function(text) {
+        return text;
+    };
+    var sprintf = (i18n && typeof i18n.sprintf === 'function') ? i18n.sprintf : function(template) {
+        var args = Array.prototype.slice.call(arguments, 1);
+        var autoIndex = 0;
+
+        return template.replace(/%((\d+)\$)?[sd]/g, function(match, position, explicitIndex) {
+            var index;
+
+            if (explicitIndex) {
+                index = parseInt(explicitIndex, 10) - 1;
+            } else {
+                index = autoIndex++;
+            }
+
+            if (index < 0 || index >= args.length) {
+                return '';
+            }
+
+            var value = args[index];
+            return value === null || typeof value === 'undefined' ? '' : value;
+        });
+    };
 
     $(document).ready(function() {
         // Initialize booking widget functionality
@@ -73,6 +97,10 @@
             var $widget = $('#fp-booking-widget');
             var $stickyNotice = $('.fp-sticky-notice');
 
+            if (!$stickyNotice.length) {
+                return;
+            }
+
             // Simple debounce to improve scroll performance
             var debounce = function(func, wait) {
                 var timeout;
@@ -85,22 +113,61 @@
                 };
             };
 
-            if ($widget.length && $stickyNotice.length) {
-                var handleScroll = function() {
-                    var widgetTop = $widget.offset().top;
-                    var scrollTop = $(window).scrollTop();
-                    var windowHeight = $(window).height();
+            var isMobileView = function() {
+                return window.matchMedia('(max-width: 768px)').matches;
+            };
 
-                    // Show sticky notice on mobile when widget is not visible
-                    if (scrollTop + windowHeight < widgetTop || scrollTop > widgetTop + $widget.height()) {
-                        $stickyNotice.addClass('fp-sticky-visible');
-                    } else {
-                        $stickyNotice.removeClass('fp-sticky-visible');
+            var toggleStickyForDesktop = function() {
+                if (!$widget.length) {
+                    $stickyNotice.removeClass('fp-sticky-visible');
+                    return;
+                }
+
+                var widgetTop = $widget.offset().top;
+                var widgetBottom = widgetTop + $widget.outerHeight();
+                var scrollTop = $(window).scrollTop();
+                var windowHeight = $(window).height();
+                var viewportBottom = scrollTop + windowHeight;
+
+                if (viewportBottom < widgetTop || scrollTop > widgetBottom) {
+                    $stickyNotice.addClass('fp-sticky-visible');
+                } else {
+                    $stickyNotice.removeClass('fp-sticky-visible');
+                }
+            };
+
+            var updateStickyVisibility = function() {
+                if (isMobileView()) {
+                    $stickyNotice.addClass('fp-sticky-visible fp-sticky-mobile-active');
+                    return;
+                }
+
+                $stickyNotice.removeClass('fp-sticky-mobile-active');
+                toggleStickyForDesktop();
+            };
+
+            if ($widget.length) {
+                $(window).on('scroll', debounce(function() {
+                    if (!isMobileView()) {
+                        toggleStickyForDesktop();
                     }
-                };
-
-                $(window).on('scroll', debounce(handleScroll, 100));
+                }, 100));
             }
+
+            $(window).on('resize orientationchange', debounce(updateStickyVisibility, 150));
+
+            updateStickyVisibility();
+
+            $('.fp-show-booking').on('click', function(event) {
+                event.preventDefault();
+
+                if (!$widget.length) {
+                    return;
+                }
+
+                var targetOffset = $widget.offset().top;
+                $('html, body').animate({ scrollTop: Math.max(targetOffset - 20, 0) }, 400);
+            });
         },
 
         /**

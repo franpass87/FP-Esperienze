@@ -5,7 +5,31 @@
 (function($) {
     'use strict';
 
-    const { __, sprintf } = wp.i18n;
+    var i18n = (typeof window !== 'undefined' && window.wp && window.wp.i18n) ? window.wp.i18n : null;
+    var __ = (i18n && typeof i18n.__ === 'function') ? i18n.__ : function(text) {
+        return text;
+    };
+    var sprintf = (i18n && typeof i18n.sprintf === 'function') ? i18n.sprintf : function(template) {
+        var args = Array.prototype.slice.call(arguments, 1);
+        var autoIndex = 0;
+
+        return template.replace(/%((\d+)\$)?[sd]/g, function(match, position, explicitIndex) {
+            var index;
+
+            if (explicitIndex) {
+                index = parseInt(explicitIndex, 10) - 1;
+            } else {
+                index = autoIndex++;
+            }
+
+            if (index < 0 || index >= args.length) {
+                return '';
+            }
+
+            var value = args[index];
+            return value === null || typeof value === 'undefined' ? '' : value;
+        });
+    };
 
     if (typeof fp_esperienze_params !== 'undefined' && typeof fp_esperienze_params.banner_offset !== 'undefined') {
         document.documentElement.style.setProperty('--fp-banner-offset', fp_esperienze_params.banner_offset + 'px');

@@ -677,6 +677,46 @@ html {
     border-bottom: none;
 }
 
+/* Secondary gallery */
+.fp-experience-secondary-gallery {
+    margin-top: 48px;
+}
+
+.fp-experience-secondary-gallery h2 {
+    font-size: 1.75em;
+    margin-bottom: 20px;
+    color: #1a1a1a;
+}
+
+.fp-secondary-gallery {
+    background: #f8f9fa;
+    border-radius: 12px;
+    border: 1px solid #e9ecef;
+    padding: 24px;
+}
+
+.fp-secondary-gallery .fp-experience-gallery__stage {
+    border-radius: 10px;
+    overflow: hidden;
+    height: clamp(220px, 45vh, 440px);
+}
+
+.fp-secondary-gallery .fp-experience-gallery__thumbs {
+    background: transparent;
+    padding: 18px 0 0;
+    justify-content: flex-start;
+}
+
+.fp-secondary-gallery .fp-experience-gallery__thumb img {
+    border: 2px solid transparent;
+}
+
+.fp-secondary-gallery .fp-experience-gallery__thumb.is-active img,
+.fp-secondary-gallery .fp-experience-gallery__thumb:focus-visible img {
+    border-color: #1a73e8;
+    box-shadow: none;
+}
+
 /* Meeting Point */
 .fp-experience-meeting-point {
     background: #f8f9fa;
@@ -686,10 +726,9 @@ html {
 }
 
 .fp-meeting-point-card {
-    display: grid;
-    grid-template-columns: 1fr 300px;
-    gap: 32px;
-    align-items: start;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
 }
 
 .fp-meeting-point-info h3 {
@@ -1510,6 +1549,7 @@ body.admin-bar .fp-booking-widget {
 
 .fp-sticky-notice.fp-sticky-visible {
     transform: translateY(0);
+    display: block;
 }
 
 .fp-sticky-content {
@@ -1557,7 +1597,6 @@ body.admin-bar .fp-booking-widget {
     }
     
     .fp-meeting-point-card {
-        grid-template-columns: 1fr;
         gap: 24px;
     }
     
@@ -1598,14 +1637,22 @@ body.admin-bar .fp-booking-widget {
         position: static;
         margin-bottom: 24px;
     }
-    
+
     .fp-inclusions-grid {
         grid-template-columns: 1fr;
         gap: 24px;
     }
-    
+
+    .fp-experience-secondary-gallery {
+        margin-top: 36px;
+    }
+
+    .fp-secondary-gallery {
+        padding: 16px;
+    }
+
     .fp-meeting-point-card {
-        grid-template-columns: 1fr;
+        gap: 20px;
     }
     
     .fp-experience-meeting-point {
