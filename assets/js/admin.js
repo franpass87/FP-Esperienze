@@ -180,6 +180,7 @@
             this.handleProductTypeChange();
             this.handleExperienceTypeChange(); // Add experience type handling
             this.bindEvents();
+            this.markUnknownSavedSlots();
             this.initBookingsPage();
 
             // Initialize enhanced schedule builder features
@@ -229,9 +230,217 @@
                 return;
             }
 
-            var $productTypeFields = $experiencePanel.find('#product-type').closest('.form-field');
-            if ($productTypeFields.length > 1) {
-                $productTypeFields.slice(1).remove();
+            var $canonicalField = $('#product-type').filter(function() {
+                if (!$experiencePanel.length) {
+                    return true;
+                }
+
+                var panelElement = $experiencePanel.get(0);
+                return !$.contains(panelElement, this);
+            }).first();
+            var canonicalElement = $canonicalField.length ? $canonicalField.get(0) : null;
+            var canonicalSignature = null;
+
+            var getSelectSignature = function(selectEl) {
+                if (!selectEl || !selectEl.options) {
+                    return null;
+                }
+
+                var signatureParts = [];
+                for (var i = 0; i < selectEl.options.length; i++) {
+                    var option = selectEl.options[i];
+                    signatureParts.push([
+                        option.value,
+                        option.text
+                    ].join('::'));
+                }
+
+                return signatureParts.join('||');
+            };
+
+            if (canonicalElement) {
+                canonicalSignature = getSelectSignature(canonicalElement);
+            }
+
+            var looksLikeProductTypeToken = function(token) {
+                if (!token) {
+                    return false;
+                }
+
+                var normalized = String(token).toLowerCase().replace(/\[\]$/, '');
+
+                if (normalized === 'product-type' || normalized === 'product_type') {
+                    return true;
+                }
+
+                return /(^|[\[\]_.-])product[-_]type($|[\[\]_.-])/.test(normalized);
+            };
+
+            var isProductTypeField = function($field) {
+                if (!$field || !$field.length) {
+                    return false;
+                }
+
+                if (looksLikeProductTypeToken($field.attr('name'))) {
+                    return true;
+                }
+
+                if (looksLikeProductTypeToken($field.attr('id'))) {
+                    return true;
+                }
+
+                if (looksLikeProductTypeToken($field.data('name')) ||
+                    looksLikeProductTypeToken($field.data('field')) ||
+                    looksLikeProductTypeToken($field.data('key')) ||
+                    looksLikeProductTypeToken($field.data('handle')) ||
+                    looksLikeProductTypeToken($field.data('target'))
+                ) {
+                    return true;
+                }
+
+                var element = $field.get(0);
+                if (element && element.dataset) {
+                    for (var dataKey in element.dataset) {
+                        if (!Object.prototype.hasOwnProperty.call(element.dataset, dataKey)) {
+                            continue;
+                        }
+
+                        if (looksLikeProductTypeToken(element.dataset[dataKey])) {
+                            return true;
+                        }
+                    }
+                }
+
+                var className = $field.attr('class');
+                if (className && /(^|\s)product[-_]type(\s|$)/i.test(className)) {
+                    return true;
+                }
+
+                if (canonicalSignature) {
+                    var element = $field.get(0);
+                    if (element && element !== canonicalElement) {
+                        var signature = getSelectSignature(element);
+                        if (signature && signature === canonicalSignature) {
+                            return true;
+                        }
+                    }
+                }
+
+                return false;
+            };
+
+            var resolveFieldContainer = function($field) {
+                var wrappers = ['.form-field', '.options_group'];
+
+                for (var i = 0; i < wrappers.length; i++) {
+                    var $match = $field.closest(wrappers[i]);
+                    if ($match.length) {
+                        return $match;
+                    }
+                }
+
+                return $field;
+            };
+
+            var scrubProductTypeFields = function(context) {
+                var $scope = context ? $(context) : $experiencePanel;
+                $scope.find('select').filter(function() {
+                    return isProductTypeField($(this));
+                }).each(function() {
+                    var $field = $(this);
+                    var $container = resolveFieldContainer($field);
+                    var removeEnhancements = function() {
+                        $field.siblings('.select2').remove();
+                        $field.siblings('.select2-container').remove();
+                        $field.nextAll('.select2').first().remove();
+                        $field.nextAll('.select2-container').first().remove();
+                        $field.prevAll('.select2').first().remove();
+                        $field.prevAll('.select2-container').first().remove();
+                    };
+
+                    if (canonicalElement && $field.get(0) === canonicalElement) {
+                        return;
+                    }
+
+                    if ($container.is($field)) {
+                        var fieldId = $field.attr('id');
+                        if (fieldId) {
+                            $field.closest('div, p').find('label[for="' + fieldId + '"]').remove();
+                            $field.siblings('label[for="' + fieldId + '"]').remove();
+                        }
+
+                        $field.prev('label').filter(function() {
+                            return !$(this).attr('for') || $(this).attr('for') === fieldId;
+                        }).remove();
+
+                        $field.next('label').filter(function() {
+                            return !$(this).attr('for') || $(this).attr('for') === fieldId;
+                        }).remove();
+
+                        removeEnhancements();
+                        $field.remove();
+                    } else {
+                        removeEnhancements();
+                        $container.remove();
+                    }
+                });
+            };
+
+            scrubProductTypeFields();
+
+            if (typeof window.MutationObserver === 'function') {
+                var existingObserver = $experiencePanel.data('fpProductTypeObserver');
+                if (existingObserver && typeof existingObserver.disconnect === 'function') {
+                    existingObserver.disconnect();
+                }
+
+                var observer = new MutationObserver(function(mutations) {
+                    for (var i = 0; i < mutations.length; i++) {
+                        var mutation = mutations[i];
+                        if (mutation.type === 'childList') {
+                            var addedNodes = mutation.addedNodes || [];
+                            for (var j = 0; j < addedNodes.length; j++) {
+                                scrubProductTypeFields(addedNodes[j]);
+                            }
+                        }
+                    }
+                    scrubProductTypeFields();
+                });
+
+                observer.observe($experiencePanel.get(0), { childList: true, subtree: true });
+                $experiencePanel.data('fpProductTypeObserver', observer);
+            }
+        },
+
+        /**
+         * Highlight legacy or unknown schedule rows so they don't break the builder.
+         */
+        markUnknownSavedSlots: function(context) {
+            try {
+                var $scope = context ? $(context) : $('#fp-time-slots-container');
+                if (!$scope.length) {
+                    return;
+                }
+
+                $scope.find('.fp-time-slot-row, .fp-time-slot-card-clean').each(function() {
+                    var $slot = $(this);
+                    if ($slot.data('fpSlotChecked')) {
+                        return;
+                    }
+
+                    var hasExpectedFields =
+                        $slot.find('input[name*="[start_time]"]').length > 0 &&
+                        ($slot.find('input[name*="[days][]"]').length > 0 ||
+                         $slot.find('input[name*="[duration_min]"]').length > 0);
+
+                    if (!hasExpectedFields) {
+                        $slot.addClass('fp-slot-unknown');
+                    }
+
+                    $slot.data('fpSlotChecked', true);
+                });
+            } catch (error) {
+                console.warn('FP Esperienze: Unable to mark unknown saved slots.', error);
             }
         },
         
