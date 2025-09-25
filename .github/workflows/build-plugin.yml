@@ -15,6 +15,9 @@ jobs:
   build:
     name: Build plugin package
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
 
     steps:
       - name: Checkout repository
@@ -27,6 +30,14 @@ jobs:
             coverage: none
             tools: composer
             extensions: mbstring, intl, json, xml, curl, zip
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache/files
+          key: ${{ runner.os }}-composer-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
 
       - name: Validate composer.json / composer.lock
         run: composer validate --no-check-publish
@@ -53,50 +64,22 @@ jobs:
             echo "zip_name=$ZIP_NAME" >> $GITHUB_OUTPUT
             echo "Rilevata versione: $VERSION"
 
-      - name: Prepare build directory
+      - name: Build distributable package
+        id: package
         run: |
-          set -e
-          SLUG="${{ steps.get_version.outputs.slug }}"
-          mkdir build
-          mkdir "build/${SLUG}"
-
-          # Copia file necessari (adatta se hai altre cartelle tipo assets/, languages/, src/, inc/, templates/, ecc.)
-          rsync -av \
-            --exclude=".git" \
-            --exclude=".github" \
-            --exclude="tests" \
-            --exclude="node_modules" \
-            --exclude="*.md" \
-            --exclude="composer.json" \
-            --exclude="composer.lock" \
-            ./ "build/${SLUG}/"
-
-          # MA dobbiamo includere composer.json e lock se ti servono per trasparenza (facoltativo)
-          cp composer.json composer.lock "build/${SLUG}/" || true
-
-          # Assicura che vendor sia presente
-          if [ ! -d vendor ]; then
-            echo "Cartella vendor mancante!"; exit 1;
-          fi
-          # Copia vendor
-          rsync -av vendor "build/${SLUG}/"
-
-          echo "Contenuto finale:"
-          find "build/${SLUG}" -maxdepth 4 -type f | head -50
-
-      - name: Create zip
-        working-directory: build
-        run: |
-          ZIP_NAME="${{ steps.get_version.outputs.zip_name }}"
-          SLUG="${{ steps.get_version.outputs.slug }}"
-          zip -rq "$ZIP_NAME" "$SLUG"
-          ls -lh "$ZIP_NAME"
+          PACKAGE_PATH=$(tools/build-plugin-zip.sh \
+            --slug "${{ steps.get_version.outputs.slug }}" \
+            --version "${{ steps.get_version.outputs.version }}" \
+            --zip-name "${{ steps.get_version.outputs.zip_name }}" \
+            --out-dir "dist")
+          echo "package_path=$PACKAGE_PATH" >> "$GITHUB_OUTPUT"
+          ls -lh "$PACKAGE_PATH"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.get_version.outputs.zip_name }}
-          path: build/${{ steps.get_version.outputs.zip_name }}
+          path: ${{ steps.package.outputs.package_path }}
           if-no-files-found: error
           retention-days: 14
 
@@ -104,7 +87,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: build/${{ steps.get_version.outputs.zip_name }}
+          files: ${{ steps.package.outputs.package_path }}
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
