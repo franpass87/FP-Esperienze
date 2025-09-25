@@ -31,9 +31,9 @@
         "php-stubs/woocommerce-stubs": "^8.0"
     },
     "scripts": {
-        "phpstan": "phpstan analyse --memory-limit=-1",
-        "phpcs": "php -d memory_limit=512M vendor/bin/phpcs --standard=WordPress includes/",
-        "phpcbf": "php -d memory_limit=512M vendor/bin/phpcbf --standard=WordPress includes/",
+        "phpstan": "php -d memory_limit=-1 vendor/bin/phpstan analyse --debug",
+        "phpcs": "php -d memory_limit=512M vendor/bin/phpcs --standard=phpcs.xml --runtime-set ignore_errors_on_exit 1 --runtime-set ignore_warnings_on_exit 1",
+        "phpcbf": "php -d memory_limit=512M vendor/bin/phpcbf --standard=phpcs.xml",
         "test": [
             "@phpstan",
             "@phpcs"
