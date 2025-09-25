@@ -64,7 +64,7 @@ if ($hero_full) {
 }
 
 // Build supplementary gallery (extra images configured in the product settings).
-$experience_gallery = [];
+$additional_gallery = [];
 
 foreach ($gallery_meta as $attachment_id) {
     if ($image_id && $attachment_id === (int) $image_id) {
@@ -97,12 +97,27 @@ foreach ($gallery_meta as $attachment_id) {
         $alt_text = $product->get_name();
     }
 
-    $experience_gallery[] = [
+    $additional_gallery[] = [
         'id' => $attachment_id,
         'full' => $full_url,
         'thumb' => $thumb_url,
         'alt' => $alt_text,
     ];
+}
+
+// Merge hero image with additional gallery items so the main slider always cycles through every asset.
+if (!empty($additional_gallery)) {
+    if (!empty($hero_gallery)) {
+        $hero_gallery = array_merge($hero_gallery, $additional_gallery);
+    } else {
+        $hero_gallery = $additional_gallery;
+    }
+}
+
+// Build secondary gallery (omit the first slide because it already appears in the hero slider).
+$experience_gallery = [];
+if (count($hero_gallery) > 1) {
+    $experience_gallery = array_slice($hero_gallery, 1);
 }
 
 // Meta data derived from schedules
@@ -141,6 +156,130 @@ $language_chips = [];
 if ($languages) {
     $language_chips = array_map('trim', explode(',', $languages));
 }
+
+// Language metadata for display (flag + localized label).
+$language_catalog = [
+    // Arabic
+    'arabic' => ['flag' => '🇸🇦', 'label' => __('Arabic', 'fp-esperienze')],
+    'ar' => ['flag' => '🇸🇦', 'label' => __('Arabic', 'fp-esperienze')],
+    'ar-sa' => ['flag' => '🇸🇦', 'label' => __('Arabic', 'fp-esperienze')],
+
+    // Chinese
+    'chinese' => ['flag' => '🇨🇳', 'label' => __('Chinese', 'fp-esperienze')],
+    'zh' => ['flag' => '🇨🇳', 'label' => __('Chinese', 'fp-esperienze')],
+    'zh-cn' => ['flag' => '🇨🇳', 'label' => __('Chinese (Simplified)', 'fp-esperienze')],
+    'zh-hans' => ['flag' => '🇨🇳', 'label' => __('Chinese (Simplified)', 'fp-esperienze')],
+    'zh-tw' => ['flag' => '🇹🇼', 'label' => __('Chinese (Traditional)', 'fp-esperienze')],
+    'zh-hant' => ['flag' => '🇹🇼', 'label' => __('Chinese (Traditional)', 'fp-esperienze')],
+    'cn' => ['flag' => '🇨🇳', 'label' => __('Chinese', 'fp-esperienze')],
+    'chinese-simplified' => ['flag' => '🇨🇳', 'label' => __('Chinese (Simplified)', 'fp-esperienze')],
+    'chinese-traditional' => ['flag' => '🇹🇼', 'label' => __('Chinese (Traditional)', 'fp-esperienze')],
+
+    // Dutch
+    'dutch' => ['flag' => '🇳🇱', 'label' => __('Dutch', 'fp-esperienze')],
+    'nl' => ['flag' => '🇳🇱', 'label' => __('Dutch', 'fp-esperienze')],
+    'nl-nl' => ['flag' => '🇳🇱', 'label' => __('Dutch', 'fp-esperienze')],
+
+    // English
+    'english' => ['flag' => '🇬🇧', 'label' => __('English', 'fp-esperienze')],
+    'en' => ['flag' => '🇬🇧', 'label' => __('English', 'fp-esperienze')],
+    'en-gb' => ['flag' => '🇬🇧', 'label' => __('English (UK)', 'fp-esperienze')],
+    'en-uk' => ['flag' => '🇬🇧', 'label' => __('English (UK)', 'fp-esperienze')],
+    'en-us' => ['flag' => '🇺🇸', 'label' => __('English (US)', 'fp-esperienze')],
+
+    // French
+    'french' => ['flag' => '🇫🇷', 'label' => __('French', 'fp-esperienze')],
+    'fr' => ['flag' => '🇫🇷', 'label' => __('French', 'fp-esperienze')],
+    'fr-fr' => ['flag' => '🇫🇷', 'label' => __('French', 'fp-esperienze')],
+    'francais' => ['flag' => '🇫🇷', 'label' => __('French', 'fp-esperienze')],
+
+    // German
+    'german' => ['flag' => '🇩🇪', 'label' => __('German', 'fp-esperienze')],
+    'de' => ['flag' => '🇩🇪', 'label' => __('German', 'fp-esperienze')],
+    'de-de' => ['flag' => '🇩🇪', 'label' => __('German', 'fp-esperienze')],
+    'deutsch' => ['flag' => '🇩🇪', 'label' => __('German', 'fp-esperienze')],
+
+    // Italian
+    'italian' => ['flag' => '🇮🇹', 'label' => __('Italian', 'fp-esperienze')],
+    'it' => ['flag' => '🇮🇹', 'label' => __('Italian', 'fp-esperienze')],
+    'it-it' => ['flag' => '🇮🇹', 'label' => __('Italian', 'fp-esperienze')],
+    'italiano' => ['flag' => '🇮🇹', 'label' => __('Italian', 'fp-esperienze')],
+
+    // Japanese
+    'japanese' => ['flag' => '🇯🇵', 'label' => __('Japanese', 'fp-esperienze')],
+    'ja' => ['flag' => '🇯🇵', 'label' => __('Japanese', 'fp-esperienze')],
+    'ja-jp' => ['flag' => '🇯🇵', 'label' => __('Japanese', 'fp-esperienze')],
+    'jp' => ['flag' => '🇯🇵', 'label' => __('Japanese', 'fp-esperienze')],
+
+    // Korean
+    'korean' => ['flag' => '🇰🇷', 'label' => __('Korean', 'fp-esperienze')],
+    'ko' => ['flag' => '🇰🇷', 'label' => __('Korean', 'fp-esperienze')],
+    'ko-kr' => ['flag' => '🇰🇷', 'label' => __('Korean', 'fp-esperienze')],
+    'kr' => ['flag' => '🇰🇷', 'label' => __('Korean', 'fp-esperienze')],
+
+    // Portuguese
+    'portuguese' => ['flag' => '🇵🇹', 'label' => __('Portuguese', 'fp-esperienze')],
+    'portugues' => ['flag' => '🇵🇹', 'label' => __('Portuguese', 'fp-esperienze')],
+    'pt' => ['flag' => '🇵🇹', 'label' => __('Portuguese', 'fp-esperienze')],
+    'pt-pt' => ['flag' => '🇵🇹', 'label' => __('Portuguese', 'fp-esperienze')],
+    'portuguese-brazil' => ['flag' => '🇧🇷', 'label' => __('Portuguese (Brazil)', 'fp-esperienze')],
+    'portuguese-brasil' => ['flag' => '🇧🇷', 'label' => __('Portuguese (Brazil)', 'fp-esperienze')],
+    'portugues-brasil' => ['flag' => '🇧🇷', 'label' => __('Portuguese (Brazil)', 'fp-esperienze')],
+    'portugues-br' => ['flag' => '🇧🇷', 'label' => __('Portuguese (Brazil)', 'fp-esperienze')],
+    'portuguese-br' => ['flag' => '🇧🇷', 'label' => __('Portuguese (Brazil)', 'fp-esperienze')],
+    'pt-br' => ['flag' => '🇧🇷', 'label' => __('Portuguese (Brazil)', 'fp-esperienze')],
+
+    // Spanish
+    'spanish' => ['flag' => '🇪🇸', 'label' => __('Spanish', 'fp-esperienze')],
+    'es' => ['flag' => '🇪🇸', 'label' => __('Spanish', 'fp-esperienze')],
+    'es-es' => ['flag' => '🇪🇸', 'label' => __('Spanish', 'fp-esperienze')],
+    'espanol' => ['flag' => '🇪🇸', 'label' => __('Spanish', 'fp-esperienze')],
+    'es-mx' => ['flag' => '🇲🇽', 'label' => __('Spanish (Mexico)', 'fp-esperienze')],
+    'espanol-mx' => ['flag' => '🇲🇽', 'label' => __('Spanish (Mexico)', 'fp-esperienze')],
+    'spanish-mx' => ['flag' => '🇲🇽', 'label' => __('Spanish (Mexico)', 'fp-esperienze')],
+    'spanish-mexico' => ['flag' => '🇲🇽', 'label' => __('Spanish (Mexico)', 'fp-esperienze')],
+
+    // Russian
+    'russian' => ['flag' => '🇷🇺', 'label' => __('Russian', 'fp-esperienze')],
+    'ru' => ['flag' => '🇷🇺', 'label' => __('Russian', 'fp-esperienze')],
+    'ru-ru' => ['flag' => '🇷🇺', 'label' => __('Russian', 'fp-esperienze')],
+];
+
+$normalize_language_key = static function ($language) {
+    $normalized_lang = is_string($language) ? trim($language) : '';
+    if (function_exists('remove_accents')) {
+        $normalized_lang = remove_accents($normalized_lang);
+    }
+    $normalized_lang = strtolower($normalized_lang);
+    $normalized_lang = str_replace('_', '-', $normalized_lang);
+    $normalized_lang = preg_replace('/[^a-z0-9-]+/', '-', $normalized_lang);
+
+    return trim(preg_replace('/-+/', '-', $normalized_lang), '-');
+};
+
+$get_language_metadata = static function ($language) use ($language_catalog, $normalize_language_key) {
+    $trimmed_lang = is_string($language) ? trim($language) : '';
+    $normalized_key = $normalize_language_key($trimmed_lang);
+
+    $language_entry = $language_catalog[$normalized_key] ?? null;
+    $flag = $language_entry['flag'] ?? '🌐';
+
+    if ($language_entry) {
+        $label = $language_entry['label'];
+    } else {
+        $fallback_label = ucwords(str_replace('-', ' ', $normalized_key));
+        if ($fallback_label === '') {
+            $fallback_label = $trimmed_lang;
+        }
+        $label = $fallback_label;
+    }
+
+    return [
+        'value' => $trimmed_lang,
+        'flag'  => $flag,
+        'label' => $label,
+    ];
+};
 
 // GA4 view_item event
 $ga4_view_item = [
@@ -263,115 +402,10 @@ jQuery(document).ready(function($) {
                         <div class="fp-trust-content">
                             <strong><?php _e('Languages', 'fp-esperienze'); ?></strong>
                             <div class="fp-language-chips">
-                                <?php
-                                // Language metadata for display (flag + localized label).
-                                $language_catalog = [
-                                    // Arabic
-                                    'arabic' => ['flag' => '🇸🇦', 'label' => __('Arabic', 'fp-esperienze')],
-                                    'ar' => ['flag' => '🇸🇦', 'label' => __('Arabic', 'fp-esperienze')],
-                                    'ar-sa' => ['flag' => '🇸🇦', 'label' => __('Arabic', 'fp-esperienze')],
-
-                                    // Chinese
-                                    'chinese' => ['flag' => '🇨🇳', 'label' => __('Chinese', 'fp-esperienze')],
-                                    'zh' => ['flag' => '🇨🇳', 'label' => __('Chinese', 'fp-esperienze')],
-                                    'zh-cn' => ['flag' => '🇨🇳', 'label' => __('Chinese (Simplified)', 'fp-esperienze')],
-                                    'zh-hans' => ['flag' => '🇨🇳', 'label' => __('Chinese (Simplified)', 'fp-esperienze')],
-                                    'zh-tw' => ['flag' => '🇹🇼', 'label' => __('Chinese (Traditional)', 'fp-esperienze')],
-                                    'zh-hant' => ['flag' => '🇹🇼', 'label' => __('Chinese (Traditional)', 'fp-esperienze')],
-                                    'cn' => ['flag' => '🇨🇳', 'label' => __('Chinese', 'fp-esperienze')],
-                                    'chinese-simplified' => ['flag' => '🇨🇳', 'label' => __('Chinese (Simplified)', 'fp-esperienze')],
-                                    'chinese-traditional' => ['flag' => '🇹🇼', 'label' => __('Chinese (Traditional)', 'fp-esperienze')],
-
-                                    // Dutch
-                                    'dutch' => ['flag' => '🇳🇱', 'label' => __('Dutch', 'fp-esperienze')],
-                                    'nl' => ['flag' => '🇳🇱', 'label' => __('Dutch', 'fp-esperienze')],
-                                    'nl-nl' => ['flag' => '🇳🇱', 'label' => __('Dutch', 'fp-esperienze')],
-
-                                    // English
-                                    'english' => ['flag' => '🇬🇧', 'label' => __('English', 'fp-esperienze')],
-                                    'en' => ['flag' => '🇬🇧', 'label' => __('English', 'fp-esperienze')],
-                                    'en-gb' => ['flag' => '🇬🇧', 'label' => __('English (UK)', 'fp-esperienze')],
-                                    'en-uk' => ['flag' => '🇬🇧', 'label' => __('English (UK)', 'fp-esperienze')],
-                                    'en-us' => ['flag' => '🇺🇸', 'label' => __('English (US)', 'fp-esperienze')],
-
-                                    // French
-                                    'french' => ['flag' => '🇫🇷', 'label' => __('French', 'fp-esperienze')],
-                                    'fr' => ['flag' => '🇫🇷', 'label' => __('French', 'fp-esperienze')],
-                                    'fr-fr' => ['flag' => '🇫🇷', 'label' => __('French', 'fp-esperienze')],
-                                    'francais' => ['flag' => '🇫🇷', 'label' => __('French', 'fp-esperienze')],
-
-                                    // German
-                                    'german' => ['flag' => '🇩🇪', 'label' => __('German', 'fp-esperienze')],
-                                    'de' => ['flag' => '🇩🇪', 'label' => __('German', 'fp-esperienze')],
-                                    'de-de' => ['flag' => '🇩🇪', 'label' => __('German', 'fp-esperienze')],
-                                    'deutsch' => ['flag' => '🇩🇪', 'label' => __('German', 'fp-esperienze')],
-
-                                    // Italian
-                                    'italian' => ['flag' => '🇮🇹', 'label' => __('Italian', 'fp-esperienze')],
-                                    'it' => ['flag' => '🇮🇹', 'label' => __('Italian', 'fp-esperienze')],
-                                    'it-it' => ['flag' => '🇮🇹', 'label' => __('Italian', 'fp-esperienze')],
-                                    'italiano' => ['flag' => '🇮🇹', 'label' => __('Italian', 'fp-esperienze')],
-
-                                    // Japanese
-                                    'japanese' => ['flag' => '🇯🇵', 'label' => __('Japanese', 'fp-esperienze')],
-                                    'ja' => ['flag' => '🇯🇵', 'label' => __('Japanese', 'fp-esperienze')],
-                                    'ja-jp' => ['flag' => '🇯🇵', 'label' => __('Japanese', 'fp-esperienze')],
-                                    'jp' => ['flag' => '🇯🇵', 'label' => __('Japanese', 'fp-esperienze')],
-
-                                    // Korean
-                                    'korean' => ['flag' => '🇰🇷', 'label' => __('Korean', 'fp-esperienze')],
-                                    'ko' => ['flag' => '🇰🇷', 'label' => __('Korean', 'fp-esperienze')],
-                                    'ko-kr' => ['flag' => '🇰🇷', 'label' => __('Korean', 'fp-esperienze')],
-                                    'kr' => ['flag' => '🇰🇷', 'label' => __('Korean', 'fp-esperienze')],
-
-                                    // Portuguese
-                                    'portuguese' => ['flag' => '🇵🇹', 'label' => __('Portuguese', 'fp-esperienze')],
-                                    'portugues' => ['flag' => '🇵🇹', 'label' => __('Portuguese', 'fp-esperienze')],
-                                    'pt' => ['flag' => '🇵🇹', 'label' => __('Portuguese', 'fp-esperienze')],
-                                    'pt-pt' => ['flag' => '🇵🇹', 'label' => __('Portuguese', 'fp-esperienze')],
-                                    'portuguese-brazil' => ['flag' => '🇧🇷', 'label' => __('Portuguese (Brazil)', 'fp-esperienze')],
-                                    'portuguese-brasil' => ['flag' => '🇧🇷', 'label' => __('Portuguese (Brazil)', 'fp-esperienze')],
-                                    'portugues-brasil' => ['flag' => '🇧🇷', 'label' => __('Portuguese (Brazil)', 'fp-esperienze')],
-                                    'portugues-br' => ['flag' => '🇧🇷', 'label' => __('Portuguese (Brazil)', 'fp-esperienze')],
-                                    'portuguese-br' => ['flag' => '🇧🇷', 'label' => __('Portuguese (Brazil)', 'fp-esperienze')],
-                                    'pt-br' => ['flag' => '🇧🇷', 'label' => __('Portuguese (Brazil)', 'fp-esperienze')],
-
-                                    // Spanish
-                                    'spanish' => ['flag' => '🇪🇸', 'label' => __('Spanish', 'fp-esperienze')],
-                                    'es' => ['flag' => '🇪🇸', 'label' => __('Spanish', 'fp-esperienze')],
-                                    'es-es' => ['flag' => '🇪🇸', 'label' => __('Spanish', 'fp-esperienze')],
-                                    'espanol' => ['flag' => '🇪🇸', 'label' => __('Spanish', 'fp-esperienze')],
-                                    'es-mx' => ['flag' => '🇲🇽', 'label' => __('Spanish (Mexico)', 'fp-esperienze')],
-                                    'espanol-mx' => ['flag' => '🇲🇽', 'label' => __('Spanish (Mexico)', 'fp-esperienze')],
-                                    'spanish-mx' => ['flag' => '🇲🇽', 'label' => __('Spanish (Mexico)', 'fp-esperienze')],
-                                    'spanish-mexico' => ['flag' => '🇲🇽', 'label' => __('Spanish (Mexico)', 'fp-esperienze')],
-
-                                    // Russian
-                                    'russian' => ['flag' => '🇷🇺', 'label' => __('Russian', 'fp-esperienze')],
-                                    'ru' => ['flag' => '🇷🇺', 'label' => __('Russian', 'fp-esperienze')],
-                                    'ru-ru' => ['flag' => '🇷🇺', 'label' => __('Russian', 'fp-esperienze')],
-                                ];
-
-                                foreach ($language_chips as $lang) :
-                                    $trimmed_lang = trim($lang);
-                                    $normalized_lang = function_exists('remove_accents') ? remove_accents($trimmed_lang) : $trimmed_lang;
-                                    $normalized_key = strtolower($normalized_lang);
-                                    $normalized_key = str_replace('_', '-', $normalized_key);
-                                    $normalized_key = preg_replace('/[^a-z0-9-]+/', '-', $normalized_key);
-                                    $normalized_key = trim(preg_replace('/-+/', '-', $normalized_key), '-');
-
-                                    $language_entry = $language_catalog[$normalized_key] ?? null;
-                                    $flag = $language_entry['flag'] ?? '🌐';
-
-                                    if ($language_entry) {
-                                        $label = $language_entry['label'];
-                                    } else {
-                                        $fallback_label = ucwords(str_replace('-', ' ', $normalized_key));
-                                        if ($fallback_label === '') {
-                                            $fallback_label = $trimmed_lang;
-                                        }
-                                        $label = $fallback_label;
-                                    }
+                                <?php foreach ($language_chips as $lang) :
+                                    $metadata = $get_language_metadata($lang);
+                                    $flag = $metadata['flag'];
+                                    $label = $metadata['label'];
                                 ?>
                                     <span class="fp-language-chip">
                                         <span class="fp-language-flag"><?php echo wp_kses_post($flag); ?></span>
@@ -787,8 +821,11 @@ jQuery(document).ready(function($) {
                             <div class="fp-form-field">
                                 <label for="fp-language"><?php _e('Language', 'fp-esperienze'); ?></label>
                                 <select id="fp-language" class="fp-select" aria-describedby="fp-language-help">
-                                    <?php foreach ($language_chips as $lang) : ?>
-                                        <option value="<?php echo esc_attr($lang); ?>"><?php echo esc_html($lang); ?></option>
+                                    <?php foreach ($language_chips as $lang) :
+                                        $metadata = $get_language_metadata($lang);
+                                        $option_text = trim($metadata['flag'] . ' ' . $metadata['label']);
+                                    ?>
+                                        <option value="<?php echo esc_attr($metadata['value']); ?>"><?php echo esc_html($option_text); ?></option>
                                     <?php endforeach; ?>
                                 </select>
                                 <small id="fp-language-help" class="fp-field-help">

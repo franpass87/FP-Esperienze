@@ -226,7 +226,9 @@
             var $recurringSchedules = $('#fp-recurring-schedules');
             var $eventSchedules = $('#fp-event-schedules');
             var $overridesSection = $('#fp-overrides-section');
-            
+            var $recurringHeading = $recurringSchedules.find('.hndle span');
+            var $eventHeading = $eventSchedules.find('.hndle span');
+
             if (experienceType === 'event') {
                 // Show event sections, hide experience sections
                 $recurringSchedules.hide();
@@ -234,18 +236,22 @@
                 
                 // Hide overrides for events (events have fixed dates, no need for overrides)
                 $overridesSection.hide();
-                
+
                 // Update section descriptions
-                $eventSchedules.find('.fp-section-legend').text(fp_esperienze_admin.strings.event_schedules || 'Event Dates & Times');
-                
+                if ($eventHeading.length) {
+                    $eventHeading.text(fp_esperienze_admin.strings.event_schedules || 'Event Dates & Times');
+                }
+
             } else {
                 // Show experience sections, hide event sections
                 $recurringSchedules.show();
                 $eventSchedules.hide();
                 $overridesSection.show();
-                
+
                 // Restore section descriptions
-                $recurringSchedules.find('.fp-section-legend').text(fp_esperienze_admin.strings.recurring_schedules || 'Recurring Time Slots');
+                if ($recurringHeading.length) {
+                    $recurringHeading.text(fp_esperienze_admin.strings.recurring_schedules || 'Recurring Time Slots');
+                }
             }
             
             // Add body class for CSS targeting

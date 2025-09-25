@@ -131,12 +131,48 @@ html {
 #experience_product_data textarea,
 #experience_product_data select {
     width: 100%;
-    max-width: 300px;
+    max-width: 320px;
 }
 
 #experience_product_data textarea {
     min-height: 80px;
     resize: vertical;
+}
+
+#experience_product_data .fp-experience-metabox-holder {
+    display: grid;
+    gap: 20px;
+    grid-template-columns: 1fr;
+}
+
+@media (min-width: 960px) {
+    #experience_product_data .fp-experience-metabox-holder {
+        grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    }
+}
+
+#experience_product_data .fp-experience-metabox .inside {
+    padding: 16px 20px;
+}
+
+#experience_product_data .fp-experience-metabox .description {
+    max-width: 640px;
+}
+
+#experience_product_data .fp-exp-gallery-field__wrapper > label {
+    display: block;
+    margin-bottom: 6px;
+}
+
+#experience_product_data .fp-exp-gallery-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+#experience_product_data .fp-exp-gallery-field {
+    margin-top: 12px;
 }
 
 /* Dynamic Pricing Rules Panel Fix */
@@ -3635,17 +3671,7 @@ body.admin-bar .fp-notification {
 
 /* Event type selector */
 #_fp_experience_type {
-    background: #f9f9f9;
-    border: 2px solid #e0e0e0;
-    border-radius: 6px;
-    padding: 8px 12px;
-    transition: all 0.2s ease;
-}
-
-#_fp_experience_type:focus {
-    border-color: var(--fp-brand-primary);
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(255, 107, 53, 0.1);
+    max-width: 320px;
 }
 
 /* Event sections visibility */
