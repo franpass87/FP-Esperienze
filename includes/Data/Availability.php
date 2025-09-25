@@ -8,10 +8,14 @@
 namespace FP\Esperienze\Data;
 
 use DateTime;
-use DateTimeZone;
 use FP\Esperienze\Core\CacheManager;
+use FP\Esperienze\Helpers\TimezoneHelper;
 
 defined( 'ABSPATH' ) || exit;
+
+if (!class_exists('FP\\Esperienze\\Helpers\\TimezoneHelper')) {
+    require_once dirname(__DIR__) . '/Helpers/TimezoneHelper.php';
+}
 
 /**
  * Availability class for calculating real-time availability
@@ -43,7 +47,7 @@ class Availability {
                 }
 
 		// Get WordPress timezone
-		$wp_timezone = wp_timezone();
+                $wp_timezone = TimezoneHelper::getSiteTimezone();
 
 		// Create date object in WordPress timezone
 		$date_obj = DateTime::createFromFormat( 'Y-m-d', $date, $wp_timezone );

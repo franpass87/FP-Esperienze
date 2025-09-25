@@ -10,12 +10,17 @@ namespace FP\Esperienze\REST;
 use FP\Esperienze\Data\Availability;
 use FP\Esperienze\Core\RateLimiter;
 use FP\Esperienze\Core\CacheManager;
+use FP\Esperienze\Helpers\TimezoneHelper;
 use WP_REST_Server;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_Error;
 
 defined('ABSPATH') || exit;
+
+if (!class_exists('FP\\Esperienze\\Helpers\\TimezoneHelper')) {
+    require_once dirname(__DIR__) . '/Helpers/TimezoneHelper.php';
+}
 
 /**
  * Availability API class
@@ -96,7 +101,7 @@ class AvailabilityAPI {
         }
 
         // Validate date
-        $wp_timezone = wp_timezone();
+        $wp_timezone = TimezoneHelper::getSiteTimezone();
         $date_obj = \DateTime::createFromFormat('Y-m-d', $date, $wp_timezone);
         if (!$date_obj || $date_obj->format('Y-m-d') !== $date) {
             return new WP_Error(
@@ -107,7 +112,7 @@ class AvailabilityAPI {
         }
 
         // Check if date is in the future
-        $today = new \DateTime('now', wp_timezone());
+        $today = new \DateTime('now', TimezoneHelper::getSiteTimezone());
         $today->setTime(0, 0, 0); // Set to start of day
         
         if ($date_obj < $today) {

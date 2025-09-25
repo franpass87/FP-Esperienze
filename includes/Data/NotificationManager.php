@@ -9,9 +9,14 @@ namespace FP\Esperienze\Data;
 
 use FP\Esperienze\Data\ICSGenerator;
 use FP\Esperienze\Data\MeetingPointManager;
+use FP\Esperienze\Helpers\TimezoneHelper;
 use FP\Esperienze\REST\ICSAPI;
 
 defined('ABSPATH') || exit;
+
+if (!class_exists('FP\\Esperienze\\Helpers\\TimezoneHelper')) {
+    require_once dirname(__DIR__) . '/Helpers/TimezoneHelper.php';
+}
 
 /**
  * Notification Manager class for handling email notifications and ICS attachments
@@ -276,7 +281,10 @@ class NotificationManager {
         $primary_color = $branding_settings['primary_color'] ?? '#ff6b35';
 
         // Format booking date and time
-        $booking_datetime = new \DateTime($booking->booking_date . ' ' . $booking->booking_time, wp_timezone());
+        $booking_datetime = new \DateTime(
+            $booking->booking_date . ' ' . $booking->booking_time,
+            TimezoneHelper::getSiteTimezone()
+        );
         $formatted_date = wp_date(get_option('date_format'), $booking_datetime->getTimestamp());
         $formatted_time = wp_date(get_option('time_format'), $booking_datetime->getTimestamp());
 

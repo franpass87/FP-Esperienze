@@ -7,7 +7,13 @@
 
 namespace FP\Esperienze\Data;
 
+use FP\Esperienze\Helpers\TimezoneHelper;
+
 defined('ABSPATH') || exit;
+
+if (!class_exists('FP\\Esperienze\\Helpers\\TimezoneHelper')) {
+    require_once dirname(__DIR__) . '/Helpers/TimezoneHelper.php';
+}
 
 /**
  * ICS Generator class for creating calendar files
@@ -40,7 +46,10 @@ class ICSGenerator {
         }
         
         // Create datetime objects
-        $start_datetime = new \DateTime($booking->booking_date . ' ' . $booking->booking_time, wp_timezone());
+        $start_datetime = new \DateTime(
+            $booking->booking_date . ' ' . $booking->booking_time,
+            TimezoneHelper::getSiteTimezone()
+        );
         $end_datetime = clone $start_datetime;
         $end_datetime->add(new \DateInterval('PT' . $duration . 'M'));
         
@@ -116,7 +125,7 @@ class ICSGenerator {
         
         // Get available slots for the next X days
         $events = [];
-        $current_date = new \DateTime('now', wp_timezone());
+        $current_date = new \DateTime('now', TimezoneHelper::getSiteTimezone());
         
         for ($i = 0; $i < $days_ahead; $i++) {
             $date_str = $current_date->format('Y-m-d');
@@ -158,8 +167,9 @@ class ICSGenerator {
         
         foreach ($events as $index => $event) {
             try {
-                $start_datetime = new \DateTime($event['date'] . ' ' . $event['start_time'], wp_timezone());
-                $end_datetime = new \DateTime($event['date'] . ' ' . $event['end_time'], wp_timezone());
+                $timezone = TimezoneHelper::getSiteTimezone();
+                $start_datetime = new \DateTime($event['date'] . ' ' . $event['start_time'], $timezone);
+                $end_datetime = new \DateTime($event['date'] . ' ' . $event['end_time'], $timezone);
             } catch (\Exception $e) {
                 continue;
             }
@@ -240,7 +250,10 @@ class ICSGenerator {
                 $duration = (int) $product->get_meta('_fp_exp_default_duration');
             }
             
-            $start_datetime = new \DateTime($booking->booking_date . ' ' . $booking->booking_time, wp_timezone());
+            $start_datetime = new \DateTime(
+                $booking->booking_date . ' ' . $booking->booking_time,
+                TimezoneHelper::getSiteTimezone()
+            );
             $end_datetime = clone $start_datetime;
             $end_datetime->add(new \DateInterval('PT' . $duration . 'M'));
             

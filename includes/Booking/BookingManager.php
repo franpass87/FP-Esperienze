@@ -11,9 +11,14 @@ use FP\Esperienze\Data\HoldManager;
 use FP\Esperienze\Data\Availability;
 use FP\Esperienze\Data\MeetingPointManager;
 use FP\Esperienze\Data\ExtraManager;
+use FP\Esperienze\Helpers\TimezoneHelper;
 use WP_Error;
 
 defined('ABSPATH') || exit;
+
+if (!class_exists('FP\\Esperienze\\Helpers\\TimezoneHelper')) {
+    require_once dirname(__DIR__) . '/Helpers/TimezoneHelper.php';
+}
 
 /**
  * Booking manager class for handling experience bookings
@@ -1636,7 +1641,7 @@ class BookingManager {
         $cutoff_meta = get_post_meta($product_id, '_fp_exp_cutoff_minutes', true) ?: 120;
         $cutoff_minutes = is_numeric($cutoff_meta) ? (int) $cutoff_meta : 120;
 
-        $timezone = wp_timezone();
+        $timezone = TimezoneHelper::getSiteTimezone();
 
         try {
             $slot_datetime = new \DateTimeImmutable($date . ' ' . $time, $timezone);
@@ -1777,7 +1782,7 @@ class BookingManager {
         $free_cancel_until = get_post_meta($booking->product_id, '_fp_exp_free_cancel_until_minutes', true) ?: 1440;
         $cancel_fee_percent = get_post_meta($booking->product_id, '_fp_exp_cancel_fee_percent', true) ?: 0;
         
-        $timezone = wp_timezone();
+        $timezone = TimezoneHelper::getSiteTimezone();
 
         // Calculate booking datetime
         $booking_datetime = \DateTimeImmutable::createFromFormat(

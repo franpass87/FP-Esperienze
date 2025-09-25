@@ -11,14 +11,18 @@
 namespace FP\Esperienze\AI;
 
 use DateTimeImmutable;
-use DateTimeZone;
 use Exception;
 use FP\Esperienze\Core\CapabilityManager;
 use FP\Esperienze\Data\Availability;
 use FP\Esperienze\Data\DynamicPricingManager;
+use FP\Esperienze\Helpers\TimezoneHelper;
 use Throwable;
 
 defined('ABSPATH') || exit;
+
+if (!class_exists('FP\\Esperienze\\Helpers\\TimezoneHelper')) {
+    require_once dirname(__DIR__) . '/Helpers/TimezoneHelper.php';
+}
 
 /**
  * AI-Powered Features Manager
@@ -524,17 +528,7 @@ class AIFeaturesManager {
             return $metrics;
         }
 
-        $timezone = function_exists('wp_timezone') ? wp_timezone() : null;
-        if (!$timezone instanceof DateTimeZone) {
-            $default_timezone = @date_default_timezone_get();
-            try {
-                $timezone = new DateTimeZone($default_timezone ?: 'UTC');
-            } catch (Exception $e) {
-                $timezone = new DateTimeZone('UTC');
-            }
-        }
-
-        $current_day = new DateTimeImmutable('today', $timezone);
+        $current_day = new DateTimeImmutable('today', TimezoneHelper::getSiteTimezone());
 
         for ($offset = 0; $offset < $days; $offset++) {
             $date = $current_day->modify("+{$offset} days");

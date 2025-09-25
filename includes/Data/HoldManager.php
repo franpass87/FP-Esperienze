@@ -9,8 +9,13 @@ namespace FP\Esperienze\Data;
 
 use FP\Esperienze\Core\CacheManager;
 use FP\Esperienze\Data\Availability;
+use FP\Esperienze\Helpers\TimezoneHelper;
 
 defined('ABSPATH') || exit;
+
+if (!class_exists('FP\\Esperienze\\Helpers\\TimezoneHelper')) {
+    require_once dirname(__DIR__) . '/Helpers/TimezoneHelper.php';
+}
 
 /**
  * Hold manager class for handling capacity holds and optimistic locking
@@ -35,7 +40,7 @@ class HoldManager {
      * Get the site's configured timezone.
      */
     private static function getSiteTimezone(): \DateTimeZone {
-        return wp_timezone();
+        return TimezoneHelper::getSiteTimezone();
     }
     
     /**

@@ -8,12 +8,16 @@
 namespace FP\Esperienze\Data;
 
 use DateTimeImmutable;
-use DateTimeZone;
 use Exception;
 use FP\Esperienze\PDF\Voucher_Pdf;
 use FP\Esperienze\PDF\Qr;
+use FP\Esperienze\Helpers\TimezoneHelper;
 
 defined('ABSPATH') || exit;
+
+if (!class_exists('FP\\Esperienze\\Helpers\\TimezoneHelper')) {
+    require_once dirname(__DIR__) . '/Helpers/TimezoneHelper.php';
+}
 
 /**
  * Voucher management class
@@ -658,7 +662,7 @@ class VoucherManager {
      * @return DateTimeImmutable|null Date object when parsing succeeds, null otherwise.
      */
     private static function getVoucherExpirationDate(string $expires_on): ?DateTimeImmutable {
-        $timezone = function_exists('wp_timezone') ? wp_timezone() : new DateTimeZone('UTC');
+        $timezone = TimezoneHelper::getSiteTimezone();
         $expiration = DateTimeImmutable::createFromFormat('!Y-m-d H:i:s', $expires_on . ' 23:59:59', $timezone);
 
         if ($expiration instanceof DateTimeImmutable) {
@@ -681,9 +685,7 @@ class VoucherManager {
             }
         }
 
-        $timezone = function_exists('wp_timezone') ? wp_timezone() : new DateTimeZone('UTC');
-
-        return new DateTimeImmutable('now', $timezone);
+        return new DateTimeImmutable('now', TimezoneHelper::getSiteTimezone());
     }
 
     /**
