@@ -14,8 +14,13 @@ use FP\Esperienze\Data\HoldManager;
 use FP\Esperienze\Data\Availability;
 use FP\Esperienze\Data\ScheduleManager;
 use FP\Esperienze\Core\RateLimiter;
+use FP\Esperienze\Helpers\TimezoneHelper;
 
 defined('ABSPATH') || exit;
+
+if (!class_exists('FP\\Esperienze\\Helpers\\TimezoneHelper')) {
+    require_once dirname(__DIR__) . '/Helpers/TimezoneHelper.php';
+}
 
 /**
  * Cart hooks class for handling experience bookings
@@ -171,7 +176,7 @@ class Cart_Hooks {
         }
 
         // Validate slot format (YYYY-MM-DD HH:MM)
-        $wp_timezone = wp_timezone();
+        $wp_timezone = TimezoneHelper::getSiteTimezone();
         $slot_datetime = \DateTime::createFromFormat('Y-m-d H:i', $slot_start, $wp_timezone);
 
         if ($slot_datetime instanceof \DateTime) {

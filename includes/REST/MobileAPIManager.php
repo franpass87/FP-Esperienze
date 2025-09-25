@@ -19,6 +19,7 @@ use FP\Esperienze\Core\RateLimiter;
 use FP\Esperienze\Data\Availability;
 use FP\Esperienze\Data\MeetingPointManager;
 use FP\Esperienze\Data\StaffScheduleManager;
+use FP\Esperienze\Helpers\TimezoneHelper;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_Error;
@@ -28,6 +29,10 @@ use DateTimeImmutable;
 use Throwable;
 
 defined('ABSPATH') || exit;
+
+if (!class_exists('FP\\Esperienze\\Helpers\\TimezoneHelper')) {
+    require_once dirname(__DIR__) . '/Helpers/TimezoneHelper.php';
+}
 
 /**
  * Enhanced REST API Manager for mobile applications
@@ -1055,7 +1060,7 @@ class MobileAPIManager {
      * @return WP_REST_Response|WP_Error Response
      */
     public function getSyncBookings(WP_REST_Request $request): WP_REST_Response|WP_Error {
-        $timezone = wp_timezone();
+        $timezone = TimezoneHelper::getSiteTimezone();
         $now      = new DateTimeImmutable('now', $timezone);
 
         $date_from = $this->normalizeSyncDate($request->get_param('date_from'), $timezone, $now);
@@ -1546,27 +1551,7 @@ class MobileAPIManager {
             $lookahead_days = $max_results;
         }
 
-        $timezone = null;
-        if (function_exists('wp_timezone')) {
-            $timezone = wp_timezone();
-        }
-
-        if (!$timezone instanceof \DateTimeZone) {
-            $timezone_string = '';
-            if (function_exists('wp_timezone_string')) {
-                $timezone_string = (string) wp_timezone_string();
-            }
-
-            if ($timezone_string === '') {
-                $timezone_string = (string) date_default_timezone_get();
-            }
-
-            try {
-                $timezone = new \DateTimeZone($timezone_string !== '' ? $timezone_string : 'UTC');
-            } catch (Throwable $exception) {
-                $timezone = new \DateTimeZone('UTC');
-            }
-        }
+        $timezone = TimezoneHelper::getSiteTimezone();
 
         $start_date = null;
         if ($from_date) {
@@ -2165,7 +2150,7 @@ class MobileAPIManager {
             return false;
         }
 
-        $timezone = wp_timezone();
+        $timezone = TimezoneHelper::getSiteTimezone();
         $booking_date = trim((string) $booking->booking_date);
 
         $booking_time = '';

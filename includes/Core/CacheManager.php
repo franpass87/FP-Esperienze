@@ -9,8 +9,13 @@ namespace FP\Esperienze\Core;
 
 use FP\Esperienze\Data\Availability;
 use FP\Esperienze\Data\HoldManager;
+use FP\Esperienze\Helpers\TimezoneHelper;
 
 defined('ABSPATH') || exit;
+
+if (!class_exists('FP\\Esperienze\\Helpers\\TimezoneHelper')) {
+    require_once dirname(__DIR__) . '/Helpers/TimezoneHelper.php';
+}
 
 /**
  * Cache manager class for smart cache invalidation and pre-building
@@ -172,7 +177,7 @@ class CacheManager {
             return; // Pre-building disabled
         }
         
-        $today         = new \DateTime('now', wp_timezone());
+        $today         = new \DateTime('now', TimezoneHelper::getSiteTimezone());
         $prebuilt_count = 0;
         $page          = 1;
         $per_page      = 50;

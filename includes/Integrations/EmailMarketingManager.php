@@ -13,8 +13,13 @@ namespace FP\Esperienze\Integrations;
 use FP\Esperienze\Booking\BookingManager;
 use FP\Esperienze\Core\CapabilityManager;
 use FP\Esperienze\Data\MeetingPointManager;
+use FP\Esperienze\Helpers\TimezoneHelper;
 
 defined('ABSPATH') || exit;
+
+if (!class_exists('FP\\Esperienze\\Helpers\\TimezoneHelper')) {
+    require_once dirname(__DIR__) . '/Helpers/TimezoneHelper.php';
+}
 
 /**
  * Enhanced Email Marketing Manager
@@ -699,7 +704,7 @@ class EmailMarketingManager {
             return;
         }
 
-        $timezone = wp_timezone();
+        $timezone = TimezoneHelper::getSiteTimezone();
 
         try {
             $booking_datetime = new \DateTimeImmutable($booking_date, $timezone);
@@ -770,7 +775,7 @@ class EmailMarketingManager {
      * @param array $booking_data Booking data
      */
     private function scheduleUpsellingEmail(int $booking_id, array $booking_data): void {
-        $timezone = wp_timezone();
+        $timezone = TimezoneHelper::getSiteTimezone();
 
         $now_timestamp = (int) current_time('timestamp');
 
