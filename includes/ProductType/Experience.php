@@ -373,6 +373,9 @@ class Experience {
                         $reviews_enabled_meta = 'yes';
                 }
 
+                // Always submit an explicit value so the setting can be turned off reliably.
+                echo '<input type="hidden" name="_fp_exp_enable_reviews" value="no" />';
+
                 woocommerce_wp_checkbox(
                         array(
                                 'id'          => '_fp_exp_enable_reviews',
