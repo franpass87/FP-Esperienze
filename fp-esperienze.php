@@ -37,6 +37,122 @@ define('FP_ESPERIENZE_COMPOSER_NOTICE_KEY', 'fp_esperienze_composer_notice_dismi
 define('FP_ESPERIENZE_ENABLE_SCHEDULE_NULL_MIGRATION', false);
 
 /**
+ * Check if the composer notice has been dismissed.
+ *
+ * @return bool
+ */
+function fp_esperienze_is_composer_notice_dismissed() {
+    return (bool) get_option(FP_ESPERIENZE_COMPOSER_NOTICE_KEY, false);
+}
+
+/**
+ * Persist the dismissal of the composer notice.
+ *
+ * @return void
+ */
+function fp_esperienze_dismiss_composer_notice() {
+    if (!fp_esperienze_is_composer_notice_dismissed()) {
+        update_option(FP_ESPERIENZE_COMPOSER_NOTICE_KEY, true, false);
+    }
+}
+
+/**
+ * Handle composer notice dismissal requests.
+ *
+ * @return void
+ */
+function fp_esperienze_handle_composer_notice_dismiss() {
+    if (!current_user_can('manage_options')) {
+        return;
+    }
+
+    if (!isset($_GET['fp-esperienze-dismiss-composer'])) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+        return;
+    }
+
+    $nonce = isset($_GET['_wpnonce']) ? sanitize_text_field(wp_unslash($_GET['_wpnonce'])) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+    if (!wp_verify_nonce($nonce, 'fp-esperienze-dismiss-composer')) {
+        return;
+    }
+
+    fp_esperienze_dismiss_composer_notice();
+
+    $redirect_url = remove_query_arg(array('fp-esperienze-dismiss-composer', '_wpnonce'));
+
+    if (!headers_sent()) {
+        wp_safe_redirect($redirect_url);
+    }
+
+    exit;
+}
+
+/**
+ * Determine if the composer notice should be displayed.
+ *
+ * @return bool
+ */
+function fp_esperienze_should_show_composer_notice() {
+    if (defined('WP_CLI') && WP_CLI) {
+        return false;
+    }
+
+    if (!function_exists('is_admin') || !is_admin()) {
+        return false;
+    }
+
+    if (defined('DOING_AJAX') && DOING_AJAX) {
+        return false;
+    }
+
+    return !fp_esperienze_is_composer_notice_dismissed();
+}
+
+/**
+ * Display the admin notice when composer dependencies are missing.
+ *
+ * @return void
+ */
+function fp_esperienze_display_composer_notice() {
+    if (!current_user_can('manage_options')) {
+        return;
+    }
+
+    if (!fp_esperienze_should_show_composer_notice()) {
+        return;
+    }
+
+    $message_template = __('FP Esperienze: Some advanced features (PDF generation, QR codes) require composer dependencies. Run %s in the plugin directory to enable all features.', 'fp-esperienze');
+    $message           = sprintf($message_template, '<code>composer install --no-dev</code>');
+    $message           = wp_kses($message, array('code' => array()));
+
+    $cta_text    = esc_html__('Run "composer install --no-dev" to enable all features', 'fp-esperienze');
+    $dismiss_url = wp_nonce_url(add_query_arg('fp-esperienze-dismiss-composer', '1'), 'fp-esperienze-dismiss-composer');
+    $dismiss_txt = esc_html__('Dismiss this notice.', 'default');
+
+    echo '<div class="notice notice-warning fp-esperienze-composer-notice">';
+    echo '<p>' . $message . '</p>';
+    echo '<p><strong>' . $cta_text . '</strong></p>';
+    echo '<p><a class="button-secondary" href="' . esc_url($dismiss_url) . '">' . esc_html($dismiss_txt) . '</a></p>';
+    echo '</div>';
+}
+
+/**
+ * Register hooks for the composer notice when dependencies are missing.
+ *
+ * @return void
+ */
+function fp_esperienze_register_composer_notice_hooks() {
+    if (!fp_esperienze_should_show_composer_notice()) {
+        return;
+    }
+
+    add_action('admin_init', 'fp_esperienze_handle_composer_notice_dismiss');
+    add_action('admin_notices', 'fp_esperienze_display_composer_notice');
+    add_action('network_admin_notices', 'fp_esperienze_display_composer_notice');
+}
+
+/**
  * Safely write content to a file using WP_Filesystem.
  * Falls back to error_log if the filesystem is unavailable.
  *
@@ -191,84 +307,8 @@ if (!$autoloader_loaded) {
         }
     }, true, true); // Prepend and throw exceptions
 
-    // Show admin notice for missing dependencies only once per privileged user.
-    add_action('admin_notices', 'fp_esperienze_show_composer_notice');
-
-    // Handle notice dismissal with proper security.
-    add_action('wp_ajax_fp_esperienze_dismiss_notice', 'fp_esperienze_handle_notice_dismissal');
-}
-
-/**
- * Show composer notice if dependencies are missing
- */
-function fp_esperienze_show_composer_notice() {
-    if (!current_user_can('manage_options')) {
-        return;
-    }
-
-    $user_id = get_current_user_id();
-    if ($user_id <= 0) {
-        return;
-    }
-
-    $notice_key = FP_ESPERIENZE_COMPOSER_NOTICE_KEY;
-    if (get_user_meta($user_id, $notice_key, true)) {
-        return;
-    }
-
-    $command  = '<code>composer install --no-dev</code>';
-    $docs_url = esc_url('https://github.com/franpass87/FP-Esperienze');
-
-    echo '<div class="notice notice-warning is-dismissible fp-esperienze-composer-notice" data-notice-key="' . esc_attr($notice_key) . '"><p>' .
-        esc_html__('FP Esperienze detected that the Composer dependencies are missing. The plugin will fall back to a minimal autoloader and some features may not be available.', 'fp-esperienze') .
-        '</p><p>' .
-        sprintf(
-            /* translators: %s: composer command */
-            esc_html__('Run %s inside the plugin directory or upload the vendor folder that ships with the official release package.', 'fp-esperienze'),
-            $command
-        ) .
-        '</p><p><a class="button button-primary" href="' . $docs_url . '" target="_blank" rel="noopener noreferrer">' .
-        esc_html__('View installation instructions', 'fp-esperienze') .
-        '</a></p></div>';
-
-    $script_data = array(
-        'ajaxUrl'   => admin_url('admin-ajax.php'),
-        'nonce'     => wp_create_nonce('fp_esperienze_dismiss_notice'),
-        'noticeKey' => $notice_key,
-    );
-
-    $script = '(function(){const data=' . wp_json_encode($script_data) . ';const notice=document.querySelector(' .
-        wp_json_encode('.fp-esperienze-composer-notice') .
-        ');if(!notice){return;}let dismissed=false;const sendDismiss=function(){if(dismissed){return;}dismissed=true;const payload=new window.URLSearchParams();payload.append("action","fp_esperienze_dismiss_notice");payload.append("_ajax_nonce",data.nonce);payload.append("notice_key",data.noticeKey);window.fetch(data.ajaxUrl,{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/x-www-form-urlencoded; charset=UTF-8"},body:payload.toString()}).catch(function(){});};notice.addEventListener("click",function(event){if(event.target && event.target.classList && event.target.classList.contains("notice-dismiss")){sendDismiss();}});})();';
-
-    if (function_exists('wp_print_inline_script_tag')) {
-        wp_print_inline_script_tag($script, array('id' => 'fp-esperienze-composer-notice')); // phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedScript
-    } else {
-        echo '<script id="fp-esperienze-composer-notice">' . $script . '</script>';
-    }
-}
-
-/**
- * Handle notice dismissal with proper security
- */
-function fp_esperienze_handle_notice_dismissal() {
-    if (!current_user_can('manage_options')) {
-        wp_send_json_error(array('message' => esc_html__('You are not allowed to dismiss this notice.', 'fp-esperienze')), 403);
-    }
-
-    check_ajax_referer('fp_esperienze_dismiss_notice');
-
-    $notice_key = isset($_POST['notice_key']) ? sanitize_key(wp_unslash($_POST['notice_key'])) : '';
-    if ($notice_key !== FP_ESPERIENZE_COMPOSER_NOTICE_KEY) {
-        wp_send_json_error(array('message' => esc_html__('Invalid notice identifier.', 'fp-esperienze')), 400);
-    }
-
-    $user_id = get_current_user_id();
-    if ($user_id > 0) {
-        update_user_meta($user_id, $notice_key, time());
-    }
-
-    wp_send_json_success();
+    // Register admin notice hooks when composer dependencies are unavailable.
+    fp_esperienze_register_composer_notice_hooks();
 }
 
 // Register WP-CLI commands with error handling.
