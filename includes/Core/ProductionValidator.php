@@ -53,6 +53,9 @@ class ProductionValidator {
         // Admin interface checks
         $results = self::checkAdminInterface($results);
 
+        // Scheduled events checks
+        $results = self::checkScheduledEvents($results);
+
         // REST API checks
         $results = self::checkRESTAPI($results);
 
@@ -290,6 +293,30 @@ class ProductionValidator {
     }
 
     /**
+     * Ensure all scheduled events required by the plugin are registered.
+     */
+    private static function checkScheduledEvents(array $results): array {
+        if (!function_exists('wp_next_scheduled')) {
+            return $results;
+        }
+
+        $events = [
+            TranslationQueue::CRON_HOOK => __('Translation queue processor', 'fp-esperienze'),
+            'fp_cleanup_push_tokens'    => __('Push token cleanup task', 'fp-esperienze'),
+        ];
+
+        foreach ($events as $hook => $label) {
+            if (wp_next_scheduled($hook)) {
+                $results['checks'][] = sprintf('✅ Scheduled event %s registered', $label);
+            } else {
+                $results['warnings'][] = sprintf('⚠️ Scheduled event %s missing', $label);
+            }
+        }
+
+        return $results;
+    }
+
+    /**
      * Check REST API
      */
     private static function checkRESTAPI(array $results): array {
@@ -300,14 +327,29 @@ class ProductionValidator {
         ];
 
         foreach ($rest_classes as $class) {
+            $short_name = self::getShortClassName($class);
+
             if (class_exists($class)) {
-                $results['checks'][] = "✅ REST API class " . basename($class) . " exists";
+                $results['checks'][] = sprintf('✅ REST API class %s exists', $short_name);
             } else {
-                $results['critical_issues'][] = "❌ REST API class " . basename($class) . " missing";
+                $results['critical_issues'][] = sprintf('❌ REST API class %s missing', $short_name);
             }
         }
 
         return $results;
+    }
+
+    /**
+     * Return the short class name for display in logs and messages.
+     */
+    private static function getShortClassName(string $class): string {
+        $position = strrpos($class, '\');
+
+        if ($position === false) {
+            return $class;
+        }
+
+        return substr($class, $position + 1);
     }
 
     /**
