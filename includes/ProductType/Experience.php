@@ -254,7 +254,7 @@ class Experience {
 
                                         $this->renderExperienceMetabox(
                                                 'fp-recurring-schedules',
-                                                __( 'Recurring time slots', 'fp-esperienze' ),
+                                                __( 'Recurring schedule', 'fp-esperienze' ),
                                                 function () use ( $post ) {
                                                         $this->renderExperienceSchedulesSection( $post->ID );
                                                 },
@@ -277,7 +277,7 @@ class Experience {
 
                                         $this->renderExperienceMetabox(
                                                 'fp-overrides-section',
-                                                __( 'Date-specific overrides', 'fp-esperienze' ),
+                                                __( 'Schedule exceptions', 'fp-esperienze' ),
                                                 function () use ( $post ) {
                                                         $this->renderExperienceOverridesSection( $post->ID );
                                                 },
@@ -341,13 +341,13 @@ class Experience {
                 woocommerce_wp_select(
                         array(
                                 'id'          => '_fp_experience_type',
-                                'label'       => __( 'Type', 'fp-esperienze' ),
+                                'label'       => __( 'Scheduling mode', 'fp-esperienze' ),
                                 'options'     => array(
-                                        'experience' => __( 'Experience (Recurring Schedule)', 'fp-esperienze' ),
-                                        'event'      => __( 'Event (Fixed Date)', 'fp-esperienze' ),
+                                        'experience' => __( 'Recurring schedule', 'fp-esperienze' ),
+                                        'event'      => __( 'Fixed date event', 'fp-esperienze' ),
                                 ),
                                 'desc_tip'    => true,
-                                'description' => __( 'Choose whether this is a recurring experience or a fixed-date event', 'fp-esperienze' ),
+                                'description' => __( 'Pick how customers can book this product: a repeating weekly schedule or individual fixed dates.', 'fp-esperienze' ),
                                 'value'       => get_post_meta( $post->ID, '_fp_experience_type', true ) ?: 'experience',
                         )
                 );
@@ -532,7 +532,7 @@ class Experience {
          */
         private function renderExperienceSchedulesSection( int $product_id ): void {
                 ?>
-                <p class="description"><?php _e( 'Configure weekly recurring time slots for your experience. Each slot can run on multiple days and can have custom settings that override the default product values above.', 'fp-esperienze' ); ?></p>
+                <p class="description"><?php _e( 'Create the weekly pattern for this experience. Add the start time, days and availability for each repeating slot below.', 'fp-esperienze' ); ?></p>
 
                 <div id="fp-schedule-builder-container" class="fp-schedule-builder-wrapper">
                         <?php $this->renderScheduleBuilder( $product_id ); ?>
@@ -583,7 +583,7 @@ class Experience {
          */
         private function renderExperienceOverridesSection( int $product_id ): void {
                 ?>
-                <p class="description"><?php _e( 'Add exceptions for specific dates: close the experience, change capacity, or modify prices for particular days.', 'fp-esperienze' ); ?></p>
+                <p class="description"><?php _e( 'Handle special dates here — close sales, tweak capacity or adjust pricing for single days without touching your recurring plan.', 'fp-esperienze' ); ?></p>
 
                 <div id="fp-overrides-container">
                         <?php $this->renderOverridesSection( $product_id ); ?>
@@ -3147,8 +3147,9 @@ class Experience {
 			'loading'                   => __( 'Loading...', 'fp-esperienze' ),
 			'unsaved_changes'           => __( 'You have unsaved changes. Are you sure you want to leave?', 'fp-esperienze' ),
 			'validation_error'          => __( 'Please fix the validation errors before saving.', 'fp-esperienze' ),
-			'event_schedules'           => __( 'Event Dates & Times', 'fp-esperienze' ),
-			'recurring_schedules'       => __( 'Recurring Time Slots', 'fp-esperienze' ),
+                        'event_schedules'           => __( 'Event dates & times', 'fp-esperienze' ),
+                        'recurring_schedules'       => __( 'Recurring schedule', 'fp-esperienze' ),
+                        'schedule_overrides'        => __( 'Schedule exceptions', 'fp-esperienze' ),
 			'confirm_remove_event_date' => __( 'Are you sure you want to remove this event date and all its time slots?', 'fp-esperienze' ),
 			'event_date_exists'         => __( 'This event date already exists.', 'fp-esperienze' ),
 			'add_time_slot'             => __( 'Add Time Slot', 'fp-esperienze' ),
