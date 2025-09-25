@@ -356,7 +356,7 @@ class MenuManager {
                     <!-- Recent Bookings -->
                     <div class="fp-widget" style="background: white; padding: 20px; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                         <h3 style="margin: 0 0 20px 0; color: <?php echo esc_attr($primary_color); ?>; font-size: 18px;"><?php _e('Recent Bookings', 'fp-esperienze'); ?></h3>
-                        
+
                         <?php if (!empty($recent_bookings)) : ?>
                             <div class="fp-bookings-list">
                                 <?php foreach ($recent_bookings as $booking) : 
@@ -391,30 +391,38 @@ class MenuManager {
                         <?php endif; ?>
                     </div>
                     
-                    <!-- Quick Actions -->
-                    <div class="fp-widget" style="background: white; padding: 20px; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                        <h3 style="margin: 0 0 20px 0; color: <?php echo esc_attr($primary_color); ?>; font-size: 18px;"><?php _e('Quick Actions', 'fp-esperienze'); ?></h3>
-                        
-                        <div style="display: flex; flex-direction: column; gap: 10px;">
-                            <a href="<?php echo admin_url('post-new.php?post_type=product'); ?>" class="button button-primary" style="justify-content: center; text-align: center;">
-                                <?php _e('Add New Experience', 'fp-esperienze'); ?>
-                            </a>
-                            
-                            <a href="<?php echo admin_url('admin.php?page=fp-esperienze-bookings'); ?>" class="button">
-                                <?php _e('Manage Bookings', 'fp-esperienze'); ?>
-                            </a>
-                            
-                            <a href="<?php echo admin_url('admin.php?page=fp-esperienze-vouchers'); ?>" class="button">
-                                <?php _e('Create Voucher', 'fp-esperienze'); ?>
-                            </a>
-                            
-                            <a href="<?php echo admin_url('admin.php?page=fp-esperienze-reports'); ?>" class="button">
-                                <?php _e('View Reports', 'fp-esperienze'); ?>
-                            </a>
-                            
-                            <a href="<?php echo admin_url('admin.php?page=fp-esperienze-settings'); ?>" class="button">
-                                <?php _e('Settings', 'fp-esperienze'); ?>
-                            </a>
+                    <div class="fp-sidebar-widgets" style="display: flex; flex-direction: column; gap: 20px;">
+                        <!-- Quick Actions -->
+                        <div class="fp-widget" style="background: white; padding: 20px; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                            <h3 style="margin: 0 0 20px 0; color: <?php echo esc_attr($primary_color); ?>; font-size: 18px;"><?php _e('Quick Actions', 'fp-esperienze'); ?></h3>
+
+                            <div style="display: flex; flex-direction: column; gap: 10px;">
+                                <a href="<?php echo admin_url('post-new.php?post_type=product'); ?>" class="button button-primary" style="justify-content: center; text-align: center;">
+                                    <?php _e('Add New Experience', 'fp-esperienze'); ?>
+                                </a>
+
+                                <a href="<?php echo admin_url('admin.php?page=fp-esperienze-bookings'); ?>" class="button">
+                                    <?php _e('Manage Bookings', 'fp-esperienze'); ?>
+                                </a>
+
+                                <a href="<?php echo admin_url('admin.php?page=fp-esperienze-vouchers'); ?>" class="button">
+                                    <?php _e('Create Voucher', 'fp-esperienze'); ?>
+                                </a>
+
+                                <a href="<?php echo admin_url('admin.php?page=fp-esperienze-reports'); ?>" class="button">
+                                    <?php _e('View Reports', 'fp-esperienze'); ?>
+                                </a>
+
+                                <a href="<?php echo admin_url('admin.php?page=fp-esperienze-settings'); ?>" class="button">
+                                    <?php _e('Settings', 'fp-esperienze'); ?>
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Dependency Status -->
+                        <div class="fp-widget" style="background: white; padding: 20px; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                            <h3 style="margin: 0 0 20px 0; color: <?php echo esc_attr($primary_color); ?>; font-size: 18px;"><?php _e('Optional Dependencies', 'fp-esperienze'); ?></h3>
+                            <?php $this->renderDependencyStatusWidget(); ?>
                         </div>
                     </div>
                 </div>
@@ -4679,7 +4687,65 @@ class MenuManager {
             'completed' => '#007cba',
             'refunded' => '#6c757d',
         ];
-        
+
         return $colors[$status] ?? '#6c757d';
+    }
+
+    /**
+     * Render optional dependency status widget for the dashboard sidebar.
+     */
+    private function renderDependencyStatusWidget(): void {
+        $dependencies = DependencyChecker::checkAll();
+
+        if (empty($dependencies)) {
+            echo '<p style="margin: 0; color: #666;">' . esc_html__('No optional dependencies detected.', 'fp-esperienze') . '</p>';
+            return;
+        }
+
+        echo '<div class="fp-dependency-items" style="display: flex; flex-direction: column; gap: 12px;">';
+
+        foreach ($dependencies as $dependency) {
+            $status = $dependency['status'] ?? 'info';
+
+            switch ($status) {
+                case 'success':
+                    $status_color = '#198754';
+                    $icon_class   = 'dashicons-yes-alt';
+                    break;
+                case 'warning':
+                    $status_color = '#d97706';
+                    $icon_class   = 'dashicons-warning';
+                    break;
+                default:
+                    $status_color = '#1d4ed8';
+                    $icon_class   = 'dashicons-info';
+                    break;
+            }
+
+            echo '<div style="padding: 10px 0; border-bottom: 1px solid #eee;">';
+            echo '<strong style="display: flex; align-items: center; gap: 6px;">';
+            echo '<span class="dashicons ' . esc_attr($icon_class) . '" style="color: ' . esc_attr($status_color) . ';"></span>';
+            echo esc_html($dependency['name'] ?? '');
+            echo '</strong>';
+            echo '<small style="color: #555; display: block; margin-top: 4px;">' . esc_html($dependency['description'] ?? '') . '</small>';
+
+            if (!empty($dependency['impact'])) {
+                echo '<span style="display: block; margin-top: 6px; color: #666; font-size: 12px;">' . esc_html($dependency['impact']) . '</span>';
+            }
+
+            echo '</div>';
+        }
+
+        echo '</div>';
+
+        $missing = array_filter($dependencies, static function ($dependency) {
+            return empty($dependency['available']);
+        });
+
+        if (!empty($missing)) {
+            echo '<div style="margin-top: 12px;">' . wp_kses_post(DependencyChecker::getInstallationInstructions()) . '</div>';
+        } else {
+            echo '<p style="margin-top: 12px; color: #198754; font-weight: 600;">' . esc_html__('All optional dependencies are installed. Great job!', 'fp-esperienze') . '</p>';
+        }
     }
 }
