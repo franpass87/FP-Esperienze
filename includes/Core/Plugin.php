@@ -168,6 +168,11 @@ class Plugin {
             if (class_exists('FP\Esperienze\Core\PerformanceOptimizer')) {
                 PerformanceOptimizer::init();
             }
+
+            // Initialize query monitoring tools when running in debug environments
+            if (class_exists('FP\Esperienze\Core\QueryMonitor')) {
+                QueryMonitor::init();
+            }
             
             // Initialize UX enhancements
             if (class_exists('FP\Esperienze\Core\UXEnhancer')) {
