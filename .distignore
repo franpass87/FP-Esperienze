@@ -1,1 +1,34 @@
-tools/
+# Files and directories excluded from the distributable plugin package.
+# The packaging script reads this file and passes it to rsync's --exclude-from flag.
+
+# Version control metadata
+/.git
+/.github
+/.gitignore
+/.gitattributes
+
+# Build and tooling directories
+/build
+/dist
+/node_modules
+/tests
+/tools
+/vendor/bin
+
+# Documentation and local artifacts
+*.md
+*.MD
+*.markdown
+*.html
+MANUAL_TESTS*
+*.zip
+*.tgz
+*.log
+
+# Static analysis and development configs
+phpcs.xml
+phpstan.neon
+phpstan-bootstrap.php
+setup.sh
+composer-backup.json
+composer-dev.json
