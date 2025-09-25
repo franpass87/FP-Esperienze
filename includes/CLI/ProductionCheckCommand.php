@@ -55,21 +55,36 @@ class ProductionCheckCommand extends WP_CLI_Command {
         WP_CLI::log('== FP Esperienze Production Readiness ==');
         WP_CLI::log(sprintf('Status: %s', $this->getStatusLabel($status)));
 
-        if (isset($results['checks']) && count($results['checks']) > 0) {
-            WP_CLI::log('\nChecks:');
-            foreach ($results['checks'] as $check) {
-                WP_CLI::log(' - ' . $check);
+        if ($format === 'table') {
+            $rows = $this->buildTableRows($results);
+
+            if (!empty($rows)) {
+                WP_CLI::log('');
+                \WP_CLI\Utils\format_items('table', $rows, ['category', 'status', 'message']);
+            } else {
+                WP_CLI::log('No production readiness checks were executed.');
+            }
+        } else {
+            if (!empty($results['checks'])) {
+                WP_CLI::log('\nChecks:');
+                foreach ($results['checks'] as $check) {
+                    WP_CLI::log(' - ' . $check);
+                }
+            }
+
+            if (!empty($results['warnings'])) {
+                WP_CLI::warning('Warnings detected:');
+                foreach ($results['warnings'] as $warning) {
+                    WP_CLI::log(' - ' . $warning);
+                }
             }
         }
 
-        if (isset($results['warnings']) && count($results['warnings']) > 0) {
-            WP_CLI::warning('Warnings detected:');
-            foreach ($results['warnings'] as $warning) {
-                WP_CLI::log(' - ' . $warning);
-            }
+        if (!empty($results['warnings']) && $format === 'table') {
+            WP_CLI::warning(sprintf('%d warning(s) detected. Review the table above for details.', count($results['warnings'])));
         }
 
-        if (isset($results['critical_issues']) && count($results['critical_issues']) > 0) {
+        if (!empty($results['critical_issues'])) {
             WP_CLI::error_multi_line(array_merge(['Critical issues detected:'], $results['critical_issues']));
             $this->exitForStatus('fail');
             return;
@@ -109,6 +124,42 @@ class ProductionCheckCommand extends WP_CLI_Command {
         }
 
         WP_CLI::error('FP Esperienze is not production ready. Resolve the critical issues above.', false);
+    }
+
+    /**
+     * Build the table rows for the CLI formatter.
+     *
+     * @param array<string, mixed> $results Validator results.
+     * @return array<int, array<string, string>>
+     */
+    private function buildTableRows(array $results): array {
+        $rows = [];
+
+        foreach ($results['checks'] ?? [] as $check) {
+            $rows[] = [
+                'category' => 'Check',
+                'status'   => 'pass',
+                'message'  => $check,
+            ];
+        }
+
+        foreach ($results['warnings'] ?? [] as $warning) {
+            $rows[] = [
+                'category' => 'Warning',
+                'status'   => 'warning',
+                'message'  => $warning,
+            ];
+        }
+
+        foreach ($results['critical_issues'] ?? [] as $issue) {
+            $rows[] = [
+                'category' => 'Critical',
+                'status'   => 'fail',
+                'message'  => $issue,
+            ];
+        }
+
+        return $rows;
     }
 }
 
