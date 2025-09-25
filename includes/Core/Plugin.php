@@ -660,6 +660,53 @@ class Plugin {
         // Enqueue admin controller based on modular flag
         $use_modular = apply_filters('fp_esperienze_use_modular_admin', true);
 
+        $weekday_names  = [
+            '1' => __('Monday', 'fp-esperienze'),
+            '2' => __('Tuesday', 'fp-esperienze'),
+            '3' => __('Wednesday', 'fp-esperienze'),
+            '4' => __('Thursday', 'fp-esperienze'),
+            '5' => __('Friday', 'fp-esperienze'),
+            '6' => __('Saturday', 'fp-esperienze'),
+            '0' => __('Sunday', 'fp-esperienze'),
+        ];
+
+        $weekday_abbrev = [
+            '1' => __('Mon', 'fp-esperienze'),
+            '2' => __('Tue', 'fp-esperienze'),
+            '3' => __('Wed', 'fp-esperienze'),
+            '4' => __('Thu', 'fp-esperienze'),
+            '5' => __('Fri', 'fp-esperienze'),
+            '6' => __('Sat', 'fp-esperienze'),
+            '0' => __('Sun', 'fp-esperienze'),
+        ];
+
+        global $wp_locale;
+        if (isset($wp_locale) && $wp_locale instanceof \WP_Locale) {
+            $map = [
+                '1' => 1,
+                '2' => 2,
+                '3' => 3,
+                '4' => 4,
+                '5' => 5,
+                '6' => 6,
+                '0' => 0,
+            ];
+
+            foreach ($map as $day_key => $wp_index) {
+                $weekday_name = isset($wp_locale->weekday[$wp_index]) ? $wp_locale->weekday[$wp_index] : '';
+
+                if ('' !== $weekday_name) {
+                    $weekday_names[$day_key] = $weekday_name;
+
+                    if (isset($wp_locale->weekday_abbrev[$weekday_name])) {
+                        $weekday_abbrev[$day_key] = $wp_locale->weekday_abbrev[$weekday_name];
+                    } else {
+                        $weekday_abbrev[$day_key] = $wp_locale->get_weekday_abbrev($weekday_name);
+                    }
+                }
+            }
+        }
+
         if ($use_modular) {
             // Ensure the monolithic controller is not loaded
             wp_deregister_script('fp-esperienze-admin');
@@ -698,6 +745,8 @@ class Plugin {
                 'strings' => [
                     'confirm_remove_override' => __('Are you sure you want to remove this date override?', 'fp-esperienze'),
                     'distant_date_warning' => __('This date is very far in the future. Please verify it\'s correct.', 'fp-esperienze'),
+                    'weekday_names' => array_map('esc_html', $weekday_names),
+                    'weekday_abbrev' => array_map('esc_html', $weekday_abbrev),
                 ],
             ]);
         } else {
@@ -735,6 +784,8 @@ class Plugin {
                 'strings' => [
                     'confirm_remove_override' => __('Are you sure you want to remove this date override?', 'fp-esperienze'),
                     'distant_date_warning' => __('This date is very far in the future. Please verify it\'s correct.', 'fp-esperienze'),
+                    'weekday_names' => array_map('esc_html', $weekday_names),
+                    'weekday_abbrev' => array_map('esc_html', $weekday_abbrev),
                 ],
             ]);
         }

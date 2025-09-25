@@ -97,6 +97,76 @@
             this.showUserFeedback(__('Required localization data is missing.', 'fp-esperienze'), 'error', 8000);
             return fallback;
         },
+
+        /**
+         * Retrieve localized weekday labels.
+         *
+         * @param {string} format Either 'abbrev' or 'names'.
+         * @return {Object} Mapping of weekday numbers (Mon-Sun order) to labels.
+         */
+        getWeekdayLabels: function(format = 'abbrev') {
+            if (!this._weekdayCache) {
+                this._weekdayCache = {};
+            }
+
+            if (this._weekdayCache[format]) {
+                return this._weekdayCache[format];
+            }
+
+            var fallback;
+            if (format === 'names') {
+                fallback = {
+                    '1': 'Monday',
+                    '2': 'Tuesday',
+                    '3': 'Wednesday',
+                    '4': 'Thursday',
+                    '5': 'Friday',
+                    '6': 'Saturday',
+                    '0': 'Sunday'
+                };
+            } else {
+                fallback = {
+                    '1': 'Mon',
+                    '2': 'Tue',
+                    '3': 'Wed',
+                    '4': 'Thu',
+                    '5': 'Fri',
+                    '6': 'Sat',
+                    '0': 'Sun'
+                };
+            }
+
+            try {
+                var data = this.ensureAdminData(['strings']);
+                var strings = data && data.strings ? data.strings : null;
+                var key = format === 'names' ? 'weekday_names' : 'weekday_abbrev';
+
+                if (strings && strings[key] && typeof strings[key] === 'object') {
+                    var localized = Object.assign({}, fallback);
+                    ['1', '2', '3', '4', '5', '6', '0'].forEach(function(dayKey) {
+                        if (strings[key][dayKey]) {
+                            localized[dayKey] = strings[key][dayKey];
+                        }
+                    });
+
+                    this._weekdayCache[format] = localized;
+                    return localized;
+                }
+            } catch (error) {
+                console.warn('FP Esperienze: Unable to resolve localized weekday labels.', error);
+            }
+
+            this._weekdayCache[format] = fallback;
+            return fallback;
+        },
+
+        getWeekdayAbbreviations: function() {
+            return this.getWeekdayLabels('abbrev');
+        },
+
+        getWeekdayNames: function() {
+            return this.getWeekdayLabels('names');
+        },
         
         /**
          * Initialize
@@ -111,15 +181,16 @@
             this.handleExperienceTypeChange(); // Add experience type handling
             this.bindEvents();
             this.initBookingsPage();
-            
+
             // Initialize enhanced schedule builder features
             if ($('#fp-time-slots-container').length) {
                 this.enhanceAccessibility();
             }
-            
+
             // Initialize enhanced features
             this.initializeEnhancements();
             this.initExperienceGalleryField();
+            this.dedupeProductTypeField();
         },
 
         /**
@@ -132,6 +203,7 @@
             // Listen for product type changes
             $('#product-type').on('change', function() {
                 FPEsperienzeAdmin.toggleExperienceFields($(this).val());
+                FPEsperienzeAdmin.dedupeProductTypeField();
             });
             
             // Ensure experience product type is preserved on form submit
@@ -145,6 +217,21 @@
             // Force experience type to be recognized on page load
             if (productType === 'experience') {
                 this.forceExperienceType();
+            }
+        },
+
+        /**
+         * Remove duplicated product type dropdowns inside the experience panel.
+         */
+        dedupeProductTypeField: function() {
+            var $experiencePanel = $('#experience_product_data');
+            if (!$experiencePanel.length) {
+                return;
+            }
+
+            var $productTypeFields = $experiencePanel.find('#product-type').closest('.form-field');
+            if ($productTypeFields.length > 1) {
+                $productTypeFields.slice(1).remove();
             }
         },
         
@@ -1097,10 +1184,7 @@
             if (!summaryContainer.length) return;
             
             var slots = [];
-            var days = {
-                '1': 'Mon', '2': 'Tue', '3': 'Wed', '4': 'Thu', 
-                '5': 'Fri', '6': 'Sat', '0': 'Sun'
-            };
+            var days = this.getWeekdayAbbreviations();
             
             // Collect slot data - support both old (.fp-time-slot-row) and new (.fp-time-slot-card-clean) formats
             var selector = '#fp-time-slots-container .fp-time-slot-row, #fp-time-slots-container .fp-time-slot-card-clean';
@@ -1909,19 +1993,13 @@
             var container = $('#fp-schedules-container');
             var index = container.find('.fp-schedule-row').length;
             
-            var days = {
-                '': 'Select Day',
-                '0': 'Sunday',
-                '1': 'Monday', 
-                '2': 'Tuesday',
-                '3': 'Wednesday',
-                '4': 'Thursday',
-                '5': 'Friday',
-                '6': 'Saturday'
-            };
-            
-            var dayOptions = '';
-            $.each(days, function(value, label) {
+            var selectDayLabel = __('Select Day', 'fp-esperienze');
+            var days = this.getWeekdayNames();
+            var dayOrder = ['0', '1', '2', '3', '4', '5', '6'];
+
+            var dayOptions = '<option value="">' + selectDayLabel + '</option>';
+            dayOrder.forEach(function(value) {
+                var label = days[value] || '';
                 dayOptions += '<option value="' + value + '">' + label + '</option>';
             });
             
@@ -2071,18 +2149,17 @@
          */
         createTimeSlotCardHTMLClean: function(index) {
             try {
-                var days = {
-                    '1': 'Mon', '2': 'Tue', '3': 'Wed', '4': 'Thu', 
-                    '5': 'Fri', '6': 'Sat', '0': 'Sun'
-                };
-                
+                var days = this.getWeekdayAbbreviations();
+                var dayOrder = ['1', '2', '3', '4', '5', '6', '0'];
                 var daysHtml = '';
-                for (var dayValue in days) {
+
+                dayOrder.forEach(function(dayValue) {
+                    var label = days[dayValue] || '';
                     daysHtml += '<div class="fp-day-pill-clean">' +
                         '<input type="checkbox" id="day-' + index + '-' + dayValue + '" name="builder_slots[' + index + '][days][]" value="' + dayValue + '">' +
-                        '<label for="day-' + index + '-' + dayValue + '">' + days[dayValue] + '</label>' +
+                        '<label for="day-' + index + '-' + dayValue + '">' + label + '</label>' +
                     '</div>';
-                }
+                });
                 
                 return '<div class="fp-time-slot-card-clean" data-index="' + index + '">' +
                     '<div class="fp-time-slot-content-clean">' +

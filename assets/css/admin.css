@@ -131,7 +131,7 @@ html {
 #experience_product_data textarea,
 #experience_product_data select {
     width: 100%;
-    max-width: 320px;
+    max-width: 100%;
 }
 
 #experience_product_data textarea {
@@ -142,12 +142,12 @@ html {
 #experience_product_data .fp-experience-metabox-holder {
     display: grid;
     gap: 20px;
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
 }
 
-@media (min-width: 960px) {
+@media (min-width: 1200px) {
     #experience_product_data .fp-experience-metabox-holder {
-        grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 
