@@ -432,13 +432,14 @@ class Experience {
                 $classes = array_map( 'sanitize_html_class', array_filter( $classes ) );
                 $heading_id = $id . '-title';
 
-                $summary        = isset( $args['summary'] ) ? wp_strip_all_tags( $args['summary'] ) : '';
-                $attributes     = array(
+                $summary    = isset( $args['summary'] ) ? wp_strip_all_tags( $args['summary'] ) : '';
+                $attributes = array(
                         'id'               => $id,
                         'class'            => implode( ' ', $classes ),
                         'data-nav-section' => $id,
                         'tabindex'         => '-1',
                         'aria-labelledby'  => $heading_id,
+                        'role'             => 'region',
                 );
                 if ( $summary ) {
                         $attributes['data-section-summary'] = $summary;
@@ -453,157 +454,235 @@ class Experience {
                         $attribute_string .= sprintf( ' %s="%s"', esc_attr( $attr_key ), esc_attr( $attr_value ) );
                 }
 
-                echo '<div' . $attribute_string . '>';
-                echo '<h2 class="hndle" id="' . esc_attr( $heading_id ) . '"><span>' . esc_html( $title ) . '</span></h2>';
-                echo '<div class="inside">';
+                echo '<section' . $attribute_string . '>';
+                echo '<div class="fp-experience-section__inner">';
+                echo '<header class="fp-experience-section__header">';
+                echo '<h2 class="fp-experience-section__title hndle" id="' . esc_attr( $heading_id ) . '"><span class="fp-experience-section__title-text">' . esc_html( $title ) . '</span></h2>';
 
                 if ( $summary ) {
-                        echo '<p class="fp-experience-metabox__summary">' . esc_html( $summary ) . '</p>';
+                        echo '<p class="fp-experience-section__summary">' . esc_html( $summary ) . '</p>';
                 }
+
+                echo '</header>';
+                echo '<div class="fp-experience-section__body inside">';
 
                 call_user_func( $callback );
 
                 echo '</div>';
                 echo '</div>';
+                echo '</section>';
         }
 
         /**
          * Render basic configuration fields for the experience product.
          */
         private function renderExperienceBasicsSection( \WP_Post $post ): void {
-                woocommerce_wp_select(
-                        array(
-                                'id'          => '_fp_experience_type',
-                                'label'       => __( 'Scheduling mode', 'fp-esperienze' ),
-                                'options'     => array(
-                                        'experience' => __( 'Recurring schedule', 'fp-esperienze' ),
-                                        'event'      => __( 'Fixed date event', 'fp-esperienze' ),
-                                ),
-                                'desc_tip'    => true,
-                                'description' => __( 'Pick how customers can book this product: a repeating weekly schedule or individual fixed dates.', 'fp-esperienze' ),
-                                'value'       => get_post_meta( $post->ID, '_fp_experience_type', true ) ?: 'experience',
-                        )
-                );
+                ?>
+                <div class="fp-experience-section__grid">
+                        <section class="fp-experience-card">
+                                <header class="fp-experience-card__header">
+                                        <h3 class="fp-experience-card__title"><?php esc_html_e( 'Availability setup', 'fp-esperienze' ); ?></h3>
+                                        <p class="fp-experience-card__description"><?php esc_html_e( 'Choose how guests book and how close to departure you keep sales open.', 'fp-esperienze' ); ?></p>
+                                </header>
+                                <div class="fp-experience-card__fields">
+                                        <?php
+                                        woocommerce_wp_select(
+                                                array(
+                                                        'id'          => '_fp_experience_type',
+                                                        'label'       => __( 'Scheduling mode', 'fp-esperienze' ),
+                                                        'options'     => array(
+                                                                'experience' => __( 'Recurring schedule', 'fp-esperienze' ),
+                                                                'event'      => __( 'Fixed date event', 'fp-esperienze' ),
+                                                        ),
+                                                        'desc_tip'    => true,
+                                                        'description' => __( 'Pick how customers can book this product: a repeating weekly schedule or individual fixed dates.', 'fp-esperienze' ),
+                                                        'value'       => get_post_meta( $post->ID, '_fp_experience_type', true ) ?: 'experience',
+                                                )
+                                        );
 
-                woocommerce_wp_text_input(
-                        array(
-                                'id'                => '_fp_exp_cutoff_minutes',
-                                'label'             => __( 'Booking Cutoff (minutes)', 'fp-esperienze' ),
-                                'placeholder'       => '120',
-                                'desc_tip'          => true,
-                                'description'       => __( 'Minimum minutes before experience start time to allow bookings', 'fp-esperienze' ),
-                                'type'              => 'number',
-                                'value'             => get_post_meta( $post->ID, '_fp_exp_cutoff_minutes', true ),
-                                'custom_attributes' => array(
-                                        'step' => '1',
-                                        'min'  => '0',
-                                ),
-                        )
-                );
+                                        woocommerce_wp_text_input(
+                                                array(
+                                                        'id'                => '_fp_exp_cutoff_minutes',
+                                                        'label'             => __( 'Booking Cutoff (minutes)', 'fp-esperienze' ),
+                                                        'placeholder'       => '120',
+                                                        'desc_tip'          => true,
+                                                        'description'       => __( 'Minimum minutes before experience start time to allow bookings', 'fp-esperienze' ),
+                                                        'type'              => 'number',
+                                                        'value'             => get_post_meta( $post->ID, '_fp_exp_cutoff_minutes', true ),
+                                                        'custom_attributes' => array(
+                                                                'step' => '1',
+                                                                'min'  => '0',
+                                                        ),
+                                                )
+                                        );
+                                        ?>
+                                </div>
+                        </section>
 
-                $reviews_enabled_meta = get_post_meta( $post->ID, '_fp_exp_enable_reviews', true );
-                if ( '' === $reviews_enabled_meta ) {
-                        $reviews_enabled_meta = 'yes';
-                }
+                        <section class="fp-experience-card fp-experience-card--supporting">
+                                <header class="fp-experience-card__header">
+                                        <h3 class="fp-experience-card__title"><?php esc_html_e( 'Guest experience details', 'fp-esperienze' ); ?></h3>
+                                        <p class="fp-experience-card__description"><?php esc_html_e( 'Toggle the on-site reviews block and API exposure for this tour.', 'fp-esperienze' ); ?></p>
+                                </header>
+                                <div class="fp-experience-card__fields">
+                                        <?php
+                                        $reviews_enabled_meta = get_post_meta( $post->ID, '_fp_exp_enable_reviews', true );
+                                        if ( '' === $reviews_enabled_meta ) {
+                                                $reviews_enabled_meta = 'yes';
+                                        }
 
-                // Always submit an explicit value so the setting can be turned off reliably.
-                echo '<input type="hidden" name="_fp_exp_enable_reviews" value="no" />';
+                                        // Always submit an explicit value so the setting can be turned off reliably.
+                                        echo '<input type="hidden" name="_fp_exp_enable_reviews" value="no" />';
 
-                woocommerce_wp_checkbox(
-                        array(
-                                'id'          => '_fp_exp_enable_reviews',
-                                'label'       => __( 'Enable Reviews Section', 'fp-esperienze' ),
-                                'description' => __( 'Show the reviews section on the experience page and related APIs.', 'fp-esperienze' ),
-                                'value'       => 'no' === $reviews_enabled_meta ? 'no' : 'yes',
-                                'cbvalue'     => 'yes',
-                        )
-                );
+                                        woocommerce_wp_checkbox(
+                                                array(
+                                                        'id'          => '_fp_exp_enable_reviews',
+                                                        'label'       => __( 'Enable Reviews Section', 'fp-esperienze' ),
+                                                        'description' => __( 'Show the reviews section on the experience page and related APIs.', 'fp-esperienze' ),
+                                                        'value'       => 'no' === $reviews_enabled_meta ? 'no' : 'yes',
+                                                        'cbvalue'     => 'yes',
+                                                )
+                                        );
+                                        ?>
+                                </div>
+                        </section>
+                </div>
+                <?php
         }
 
         /**
          * Render content-related fields including the gallery selector.
          */
         private function renderExperienceContentSection( \WP_Post $post, array $gallery_images ): void {
-                woocommerce_wp_textarea_input(
-                        array(
-                                'id'          => '_fp_exp_included',
-                                'label'       => __( "What's Included", 'fp-esperienze' ),
-                                'placeholder' => __( "Professional guide\nAll activities as described\nSmall group experience", 'fp-esperienze' ),
-                                'desc_tip'    => true,
-                                'description' => __( 'List what is included in the experience (one item per line)', 'fp-esperienze' ),
-                                'rows'        => 5,
-                                'value'       => get_post_meta( $post->ID, '_fp_exp_included', true ),
-                        )
-                );
+                ?>
+                <div class="fp-experience-section__grid">
+                        <section class="fp-experience-card fp-experience-card--text">
+                                <header class="fp-experience-card__header">
+                                        <h3 class="fp-experience-card__title"><?php esc_html_e( 'Highlights & essentials', 'fp-esperienze' ); ?></h3>
+                                        <p class="fp-experience-card__description"><?php esc_html_e( 'Spell out exactly what travellers receive and what they should plan independently.', 'fp-esperienze' ); ?></p>
+                                </header>
+                                <div class="fp-experience-card__fields">
+                                        <div class="fp-form-grid fp-form-grid--two">
+                                                <div class="fp-form-grid__item">
+                                                        <?php
+                                                        woocommerce_wp_textarea_input(
+                                                                array(
+                                                                        'id'          => '_fp_exp_included',
+                                                                        'label'       => __( "What's Included", 'fp-esperienze' ),
+                                                                        'placeholder' => __( "Professional guide\nAll activities as described\nSmall group experience", 'fp-esperienze' ),
+                                                                        'desc_tip'    => true,
+                                                                        'description' => __( 'List what is included in the experience (one item per line)', 'fp-esperienze' ),
+                                                                        'rows'        => 5,
+                                                                        'value'       => get_post_meta( $post->ID, '_fp_exp_included', true ),
+                                                                )
+                                                        );
+                                                        ?>
+                                                </div>
+                                                <div class="fp-form-grid__item">
+                                                        <?php
+                                                        woocommerce_wp_textarea_input(
+                                                                array(
+                                                                        'id'          => '_fp_exp_excluded',
+                                                                        'label'       => __( "What's Not Included", 'fp-esperienze' ),
+                                                                        'placeholder' => __( "Hotel pickup and drop-off\nFood and drinks\nPersonal expenses\nGratuities", 'fp-esperienze' ),
+                                                                        'desc_tip'    => true,
+                                                                        'description' => __( 'List what is not included in the experience (one item per line)', 'fp-esperienze' ),
+                                                                        'rows'        => 5,
+                                                                        'value'       => get_post_meta( $post->ID, '_fp_exp_excluded', true ),
+                                                                )
+                                                        );
+                                                        ?>
+                                                </div>
+                                        </div>
+                                </div>
+                        </section>
 
-                woocommerce_wp_textarea_input(
-                        array(
-                                'id'          => '_fp_exp_excluded',
-                                'label'       => __( "What's Not Included", 'fp-esperienze' ),
-                                'placeholder' => __( "Hotel pickup and drop-off\nFood and drinks\nPersonal expenses\nGratuities", 'fp-esperienze' ),
-                                'desc_tip'    => true,
-                                'description' => __( 'List what is not included in the experience (one item per line)', 'fp-esperienze' ),
-                                'rows'        => 5,
-                                'value'       => get_post_meta( $post->ID, '_fp_exp_excluded', true ),
-                        )
-                );
-
-                $this->renderExperienceGalleryField( $gallery_images, $post );
+                        <section class="fp-experience-card fp-experience-card--media">
+                                <header class="fp-experience-card__header">
+                                        <h3 class="fp-experience-card__title"><?php esc_html_e( 'Media & storytelling', 'fp-esperienze' ); ?></h3>
+                                        <p class="fp-experience-card__description"><?php esc_html_e( 'Curate the hero imagery guests will see across the Experience page and widgets.', 'fp-esperienze' ); ?></p>
+                                </header>
+                                <div class="fp-experience-card__fields">
+                                        <?php $this->renderExperienceGalleryField( $gallery_images, $post ); ?>
+                                </div>
+                        </section>
+                </div>
+                <?php
         }
 
         /**
          * Render the policy fields block.
          */
         private function renderExperiencePoliciesSection( \WP_Post $post ): void {
-                echo '<p class="description">' . esc_html__( 'Define cancellation timing, fees and no-show policy for the product.', 'fp-esperienze' ) . '</p>';
-
-                woocommerce_wp_text_input(
-                        array(
-                                'id'                => '_fp_exp_free_cancel_until_minutes',
-                                'label'             => __( 'Free Cancellation Until (minutes)', 'fp-esperienze' ),
-                                'placeholder'       => '1440',
-                                'desc_tip'          => true,
-                                'description'       => __( 'Minutes before experience start when customers can cancel for free (e.g., 1440 = 24 hours)', 'fp-esperienze' ),
-                                'type'              => 'number',
-                                'value'             => get_post_meta( $post->ID, '_fp_exp_free_cancel_until_minutes', true ),
-                                'custom_attributes' => array(
-                                        'step' => '1',
-                                        'min'  => '0',
-                                ),
-                        )
-                );
-
-                woocommerce_wp_text_input(
-                        array(
-                                'id'                => '_fp_exp_cancel_fee_percent',
-                                'label'             => __( 'Cancellation Fee (%)', 'fp-esperienze' ),
-                                'placeholder'       => '20',
-                                'desc_tip'          => true,
-                                'description'       => __( 'Percentage of total price to charge as cancellation fee after free cancellation period', 'fp-esperienze' ),
-                                'type'              => 'number',
-                                'value'             => get_post_meta( $post->ID, '_fp_exp_cancel_fee_percent', true ),
-                                'custom_attributes' => array(
-                                        'step' => '0.01',
-                                        'min'  => '0',
-                                        'max'  => '100',
-                                ),
-                        )
-                );
-
-                woocommerce_wp_select(
-                        array(
-                                'id'          => '_fp_exp_no_show_policy',
-                                'label'       => __( 'No-Show Policy', 'fp-esperienze' ),
-                                'options'     => array(
-                                        'no_refund'      => __( 'No refund', 'fp-esperienze' ),
-                                        'partial_refund' => __( 'Partial refund (use cancellation fee %)', 'fp-esperienze' ),
-                                        'full_refund'    => __( 'Full refund', 'fp-esperienze' ),
-                                ),
-                                'desc_tip'    => true,
-                                'description' => __( 'Policy for customers who do not show up for their experience', 'fp-esperienze' ),
-                                'value'       => get_post_meta( $post->ID, '_fp_exp_no_show_policy', true ),
-                        )
-                );
+                ?>
+                <section class="fp-experience-card fp-experience-card--policy">
+                        <header class="fp-experience-card__header">
+                                <h3 class="fp-experience-card__title"><?php esc_html_e( 'Cancellation & policy rules', 'fp-esperienze' ); ?></h3>
+                                <p class="fp-experience-card__description"><?php esc_html_e( 'Set expectations for refunds, late cancellations, and no-shows in one place.', 'fp-esperienze' ); ?></p>
+                        </header>
+                        <div class="fp-experience-card__fields">
+                                <div class="fp-form-grid fp-form-grid--three">
+                                        <div class="fp-form-grid__item">
+                                                <?php
+                                                woocommerce_wp_text_input(
+                                                        array(
+                                                                'id'                => '_fp_exp_free_cancel_until_minutes',
+                                                                'label'             => __( 'Free Cancellation Until (minutes)', 'fp-esperienze' ),
+                                                                'placeholder'       => '1440',
+                                                                'desc_tip'          => true,
+                                                                'description'       => __( 'Minutes before experience start when customers can cancel for free (e.g., 1440 = 24 hours)', 'fp-esperienze' ),
+                                                                'type'              => 'number',
+                                                                'value'             => get_post_meta( $post->ID, '_fp_exp_free_cancel_until_minutes', true ),
+                                                                'custom_attributes' => array(
+                                                                        'step' => '1',
+                                                                        'min'  => '0',
+                                                                ),
+                                                        )
+                                                );
+                                                ?>
+                                        </div>
+                                        <div class="fp-form-grid__item">
+                                                <?php
+                                                woocommerce_wp_text_input(
+                                                        array(
+                                                                'id'                => '_fp_exp_cancel_fee_percent',
+                                                                'label'             => __( 'Cancellation Fee (%)', 'fp-esperienze' ),
+                                                                'placeholder'       => '20',
+                                                                'desc_tip'          => true,
+                                                                'description'       => __( 'Percentage of total price to charge as cancellation fee after free cancellation period', 'fp-esperienze' ),
+                                                                'type'              => 'number',
+                                                                'value'             => get_post_meta( $post->ID, '_fp_exp_cancel_fee_percent', true ),
+                                                                'custom_attributes' => array(
+                                                                        'step' => '0.01',
+                                                                        'min'  => '0',
+                                                                        'max'  => '100',
+                                                                ),
+                                                        )
+                                                );
+                                                ?>
+                                        </div>
+                                        <div class="fp-form-grid__item">
+                                                <?php
+                                                woocommerce_wp_select(
+                                                        array(
+                                                                'id'          => '_fp_exp_no_show_policy',
+                                                                'label'       => __( 'No-Show Policy', 'fp-esperienze' ),
+                                                                'options'     => array(
+                                                                        'no_refund'      => __( 'No refund', 'fp-esperienze' ),
+                                                                        'partial_refund' => __( 'Partial refund (use cancellation fee %)', 'fp-esperienze' ),
+                                                                        'full_refund'    => __( 'Full refund', 'fp-esperienze' ),
+                                                                ),
+                                                                'desc_tip'    => true,
+                                                                'description' => __( 'Policy for customers who do not show up for their experience', 'fp-esperienze' ),
+                                                                'value'       => get_post_meta( $post->ID, '_fp_exp_no_show_policy', true ),
+                                                        )
+                                                );
+                                                ?>
+                                        </div>
+                                </div>
+                        </div>
+                </section>
+                <?php
         }
 
         /**
@@ -668,31 +747,39 @@ class Experience {
          */
         private function renderExperienceSchedulesSection( int $product_id ): void {
                 ?>
-                <p class="description"><?php _e( 'Create the weekly pattern for this experience. Add the start time, days and availability for each repeating slot below.', 'fp-esperienze' ); ?></p>
-
-                <div id="fp-schedule-builder-container" class="fp-schedule-builder-wrapper">
-                        <?php $this->renderScheduleBuilder( $product_id ); ?>
-                </div>
-
-                <?php if ( apply_filters( 'fp_esperienze_enable_raw_schedules', false ) ) : ?>
-                        <div id="fp-schedule-raw-container" class="fp-schedule-raw-container fp-hidden">
-                                <h3><?php _e( 'Advanced Mode (Raw Schedules)', 'fp-esperienze' ); ?></h3>
-                                <div id="fp-schedules-container">
-                                        <?php $this->renderSchedulesSection( $product_id ); ?>
+                <section class="fp-experience-card fp-experience-card--builder">
+                        <header class="fp-experience-card__header">
+                                <h3 class="fp-experience-card__title"><?php esc_html_e( 'Recurring timetable builder', 'fp-esperienze' ); ?></h3>
+                                <p class="fp-experience-card__description"><?php esc_html_e( 'Lay out each repeating departure with its time, capacity, duration, and base price.', 'fp-esperienze' ); ?></p>
+                        </header>
+                        <div class="fp-experience-card__fields">
+                                <div id="fp-schedule-builder-container" class="fp-schedule-builder-wrapper">
+                                        <?php $this->renderScheduleBuilder( $product_id ); ?>
                                 </div>
-                                <button type="button" class="button button-secondary" id="fp-add-schedule">
-                                        <?php _e( 'Add Schedule', 'fp-esperienze' ); ?>
-                                </button>
-                        </div>
 
-                        <p class="fp-toggle-raw-mode">
-                                <label>
-                                        <input type="checkbox" id="fp-toggle-raw-mode">
-                                        <?php _e( 'Show Advanced Mode', 'fp-esperienze' ); ?>
-                                </label>
-                                <span class="description"><?php _e( 'Enable to view/edit individual schedule rows directly', 'fp-esperienze' ); ?></span>
-                        </p>
-                <?php endif; ?>
+                                <?php if ( apply_filters( 'fp_esperienze_enable_raw_schedules', false ) ) : ?>
+                                        <div class="fp-experience-card__advanced">
+                                                <div id="fp-schedule-raw-container" class="fp-schedule-raw-container fp-hidden">
+                                                        <h3><?php _e( 'Advanced Mode (Raw Schedules)', 'fp-esperienze' ); ?></h3>
+                                                        <div id="fp-schedules-container">
+                                                                <?php $this->renderSchedulesSection( $product_id ); ?>
+                                                        </div>
+                                                        <button type="button" class="button button-secondary" id="fp-add-schedule">
+                                                                <?php _e( 'Add Schedule', 'fp-esperienze' ); ?>
+                                                        </button>
+                                                </div>
+
+                                                <div class="fp-toggle-raw-mode">
+                                                        <label>
+                                                                <input type="checkbox" id="fp-toggle-raw-mode">
+                                                                <?php _e( 'Show Advanced Mode', 'fp-esperienze' ); ?>
+                                                        </label>
+                                                        <span class="description"><?php _e( 'Enable to view/edit individual schedule rows directly', 'fp-esperienze' ); ?></span>
+                                                </div>
+                                        </div>
+                                <?php endif; ?>
+                        </div>
+                </section>
                 <?php
         }
 
@@ -701,16 +788,24 @@ class Experience {
          */
         private function renderExperienceEventSchedulesSection( int $product_id ): void {
                 ?>
-                <p class="description"><?php _e( 'Configure specific dates and times for your event. Each event date can have multiple time slots with different settings.', 'fp-esperienze' ); ?></p>
+                <section class="fp-experience-card fp-experience-card--builder">
+                        <header class="fp-experience-card__header">
+                                <h3 class="fp-experience-card__title"><?php esc_html_e( 'Event-specific availability', 'fp-esperienze' ); ?></h3>
+                                <p class="fp-experience-card__description"><?php esc_html_e( 'Create one-off departures that sit outside of the recurring cadence.', 'fp-esperienze' ); ?></p>
+                        </header>
+                        <div class="fp-experience-card__fields">
+                                <div id="fp-event-schedule-container">
+                                        <?php $this->renderEventScheduleBuilder( $product_id ); ?>
+                                </div>
 
-                <div id="fp-event-schedule-container">
-                        <?php $this->renderEventScheduleBuilder( $product_id ); ?>
-                </div>
-
-                <button type="button" class="button button-primary" id="fp-add-event-schedule">
-                        <span class="dashicons dashicons-plus-alt"></span>
-                        <?php _e( 'Add Event Date', 'fp-esperienze' ); ?>
-                </button>
+                                <div class="fp-experience-card__actions">
+                                        <button type="button" class="button button-primary" id="fp-add-event-schedule">
+                                                <span class="dashicons dashicons-plus-alt"></span>
+                                                <?php _e( 'Add Event Date', 'fp-esperienze' ); ?>
+                                        </button>
+                                </div>
+                        </div>
+                </section>
                 <?php
         }
 
@@ -719,15 +814,23 @@ class Experience {
          */
         private function renderExperienceOverridesSection( int $product_id ): void {
                 ?>
-                <p class="description"><?php _e( 'Handle special dates here — close sales, tweak capacity or adjust pricing for single days without touching your recurring plan.', 'fp-esperienze' ); ?></p>
-
-                <div id="fp-overrides-container">
-                        <?php $this->renderOverridesSection( $product_id ); ?>
-                </div>
-                <button type="button" class="button button-primary fp-add-override" id="fp-add-override">
-                        <span class="dashicons dashicons-plus-alt"></span>
-                        <?php _e( 'Add Date Override', 'fp-esperienze' ); ?>
-                </button>
+                <section class="fp-experience-card fp-experience-card--builder">
+                        <header class="fp-experience-card__header">
+                                <h3 class="fp-experience-card__title"><?php esc_html_e( 'Exception management', 'fp-esperienze' ); ?></h3>
+                                <p class="fp-experience-card__description"><?php esc_html_e( 'Block dates, tweak capacity, or adjust pricing for specific departures without touching your base plan.', 'fp-esperienze' ); ?></p>
+                        </header>
+                        <div class="fp-experience-card__fields">
+                                <div id="fp-overrides-container">
+                                        <?php $this->renderOverridesSection( $product_id ); ?>
+                                </div>
+                                <div class="fp-experience-card__actions">
+                                        <button type="button" class="button button-primary fp-add-override" id="fp-add-override">
+                                                <span class="dashicons dashicons-plus-alt"></span>
+                                                <?php _e( 'Add Date Override', 'fp-esperienze' ); ?>
+                                        </button>
+                                </div>
+                        </div>
+                </section>
                 <?php
         }
 
@@ -736,9 +839,17 @@ class Experience {
          */
         private function renderExperienceExtrasSection( int $product_id ): void {
                 ?>
-                <div id="fp-extras-container">
-                        <?php $this->renderExtrasSection( $product_id ); ?>
-                </div>
+                <section class="fp-experience-card fp-experience-card--extras">
+                        <header class="fp-experience-card__header">
+                                <h3 class="fp-experience-card__title"><?php esc_html_e( 'Optional extras & upsells', 'fp-esperienze' ); ?></h3>
+                                <p class="fp-experience-card__description"><?php esc_html_e( 'Bundle equipment rentals, meals, or upgrades that travellers can attach during checkout.', 'fp-esperienze' ); ?></p>
+                        </header>
+                        <div class="fp-experience-card__fields">
+                                <div id="fp-extras-container">
+                                        <?php $this->renderExtrasSection( $product_id ); ?>
+                                </div>
+                        </div>
+                </section>
                 <?php
         }
 
