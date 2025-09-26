@@ -498,11 +498,30 @@ namespace {
         'width' => '600px',
         'height' => '720px',
         'theme' => 'light',
+    ], [
+        'Origin' => 'https://example.test',
+        'Host' => 'example.test',
     ]);
 
     $response = $api->getIframeWidget($request);
     if (!($response instanceof \WP_REST_Response)) {
         echo "Iframe endpoint did not return a REST response\n";
+        exit(1);
+    }
+
+    $headers = $response->get_headers();
+    if (($headers['Access-Control-Allow-Origin'] ?? null) !== 'https://example.test') {
+        echo "Iframe response did not return the expected CORS origin\n";
+        exit(1);
+    }
+
+    if (($headers['Content-Security-Policy'] ?? '') !== "frame-ancestors 'self' https://example.test;") {
+        echo "Iframe response CSP header was not restricted to allowed origins\n";
+        exit(1);
+    }
+
+    if (($headers['Vary'] ?? null) !== 'Origin') {
+        echo "Iframe response should vary on Origin\n";
         exit(1);
     }
 
@@ -571,6 +590,48 @@ namespace {
         || ($secondExtra['sort_order'] ?? null) !== 2
     ) {
         echo "Second extra data does not match expectations\n";
+        exit(1);
+    }
+
+    $blockedIframe = $api->getIframeWidget(new \WP_REST_Request([
+        'product_id' => 501,
+    ], [
+        'Origin' => 'https://malicious.example',
+        'Host' => 'example.test',
+    ]));
+
+    if (!($blockedIframe instanceof \WP_Error) || ($blockedIframe->data['status'] ?? null) !== 403) {
+        echo "Iframe request from unapproved origin should be rejected\n";
+        exit(1);
+    }
+
+    $dataResponse = $api->getExperienceData(new \WP_REST_Request([
+        'product_id' => 501,
+    ], [
+        'Referer' => 'https://example.test/widget',
+        'Host' => 'example.test',
+    ]));
+
+    if (!($dataResponse instanceof \WP_REST_Response)) {
+        echo "Widget data endpoint should return a REST response for trusted origins\n";
+        exit(1);
+    }
+
+    $dataHeaders = $dataResponse->get_headers();
+    if (($dataHeaders['Access-Control-Allow-Origin'] ?? null) !== 'https://example.test') {
+        echo "Widget data endpoint did not echo the trusted origin\n";
+        exit(1);
+    }
+
+    $blockedData = $api->getExperienceData(new \WP_REST_Request([
+        'product_id' => 501,
+    ], [
+        'Origin' => 'https://attacker.test',
+        'Host' => 'example.test',
+    ]));
+
+    if (!($blockedData instanceof \WP_Error) || ($blockedData->data['status'] ?? null) !== 403) {
+        echo "Widget data request from unapproved origin should be rejected\n";
         exit(1);
     }
 

@@ -62,17 +62,23 @@ The iframe widget system provides a way to embed experience booking functionalit
 ## JavaScript Integration
 
 ```javascript
+const allowedOrigins = ['https://partner.example', 'https://reseller.example'];
+
 // Listen for widget events
 window.addEventListener('message', function(event) {
+    if (!allowedOrigins.includes(event.origin)) {
+        return;
+    }
+
     if (event.data.type === 'fp_widget_ready') {
         console.log('Widget loaded successfully');
     }
-    
+
     if (event.data.type === 'fp_widget_checkout') {
         // Open checkout in popup or redirect
         window.open(event.data.url, 'checkout', 'width=800,height=600');
     }
-    
+
     if (event.data.type === 'fp_widget_booking_success') {
         alert('Booking successful! Order ID: ' + event.data.order_id);
     }
@@ -90,10 +96,26 @@ window.addEventListener('message', function(event) {
 
 ## Security
 
-- **CORS Headers**: Appropriate headers for cross-domain embedding
+- **Trusted Origin Allow-List**: Only approved origins/hostnames can load the iframe or request widget data. Configure the allow-list via the `fp_esperienze_widget_allowed_origins` filter.
+- **CORS Headers**: Responses reflect the requesting origin when it is on the allow-list, preventing hostile embeds from reusing permissive headers.
 - **Checkout Security**: All payment processing happens on main WordPress site
 - **Data Validation**: All widget parameters are sanitized and validated
 - **No Sensitive Data**: No payment information stored in iframe
+
+### Allowing Trusted Domains
+
+Add trusted partner domains to the allow-list using a small must-use plugin or your theme's `functions.php`:
+
+```php
+add_filter('fp_esperienze_widget_allowed_origins', function(array $origins): array {
+    $origins[] = 'https://partner.example';
+    $origins[] = 'https://reseller.example';
+
+    return array_unique($origins);
+});
+```
+
+Each origin should include the protocol (`https://`). Host-only values such as `partner.example` are normalised to `https://partner.example` automatically. Requests originating from domains outside of this list receive a `403` response and no permissive CORS or `frame-ancestors` headers.
 
 ## Styling
 
