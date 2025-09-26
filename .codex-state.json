@@ -1,6 +1,0 @@
-{
-  "current_phase": 1,
-  "completed": [1],
-  "last_commit": "docs: discovery mapping and initial report",
-  "notes": "Next phase: [2] Linters – configure PHPCS/PHPStan and resolve baseline issues."
-}
