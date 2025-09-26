@@ -24,6 +24,7 @@ class WidgetAPI {
 
     private const IFRAME_RESPONSE_HEADER = 'X-FP-Widget-Iframe';
     private const IFRAME_ROUTE_PREFIX = '/fp-exp/v1/widget/iframe';
+    private const ALLOWED_ORIGINS_FILTER = 'fp_esperienze_widget_allowed_origins';
 
     /**
      * Constructor
@@ -89,7 +90,7 @@ class WidgetAPI {
     /**
      * Get iframe widget HTML
      */
-    public function getIframeWidget(WP_REST_Request $request): WP_REST_Response {
+    public function getIframeWidget(WP_REST_Request $request): WP_REST_Response|WP_Error {
         $product_id = $request->get_param('product_id');
         $width = $request->get_param('width');
         $height = $request->get_param('height');
@@ -108,17 +109,26 @@ class WidgetAPI {
             return $data;
         }
 
+        $allowed_origins = $this->getAllowedOrigins();
+        $request_origin = $this->determineRequestOrigin($request);
+
+        if (!$this->isOriginAllowed($request_origin, $allowed_origins)) {
+            $error_code = $request_origin === null ? 'missing_origin' : 'forbidden_origin';
+
+            return new WP_Error(
+                $error_code,
+                __('This domain is not allowed to embed the widget.', 'fp-esperienze'),
+                ['status' => 403]
+            );
+        }
+
         // Generate iframe HTML
-        $html = $this->generateIframeHTML($data, $width, $height, $theme, $return_url);
+        $html = $this->generateIframeHTML($data, $width, $height, $theme, $return_url, $allowed_origins);
 
         $response = new WP_REST_Response($html);
         $response->header('Content-Type', 'text/html; charset=utf-8');
 
-        // Add CORS headers for iframe embedding
-        $response->header('Access-Control-Allow-Origin', '*');
-        $response->header('X-Frame-Options', 'ALLOWALL');
-        $response->header('Content-Security-Policy', "frame-ancestors *;");
-        $response->header(self::IFRAME_RESPONSE_HEADER, '1');
+        $this->applyCorsHeaders($response, $request_origin, $allowed_origins, true);
 
         return $response;
     }
@@ -167,8 +177,21 @@ class WidgetAPI {
     /**
      * Get experience data for iframe
      */
-    public function getExperienceData(WP_REST_Request $request): WP_REST_Response {
+    public function getExperienceData(WP_REST_Request $request): WP_REST_Response|WP_Error {
         $product_id = $request->get_param('product_id');
+
+        $allowed_origins = $this->getAllowedOrigins();
+        $request_origin = $this->determineRequestOrigin($request);
+
+        if (!$this->isOriginAllowed($request_origin, $allowed_origins)) {
+            $error_code = $request_origin === null ? 'missing_origin' : 'forbidden_origin';
+
+            return new WP_Error(
+                $error_code,
+                __('This domain is not allowed to access widget data.', 'fp-esperienze'),
+                ['status' => 403]
+            );
+        }
 
         $data = $this->getExperienceWidgetData($product_id);
         if (is_wp_error($data)) {
@@ -176,7 +199,8 @@ class WidgetAPI {
         }
 
         $response = new WP_REST_Response($data);
-        $response->header('Access-Control-Allow-Origin', '*');
+
+        $this->applyCorsHeaders($response, $request_origin, $allowed_origins, false);
 
         return $response;
     }
@@ -278,7 +302,14 @@ class WidgetAPI {
     /**
      * Generate iframe HTML
      */
-    private function generateIframeHTML(array $data, string $width, string $height, string $theme, ?string $return_url): string {
+    private function generateIframeHTML(
+        array $data,
+        string $width,
+        string $height,
+        string $theme,
+        ?string $return_url,
+        array $allowed_origins
+    ): string {
         $product = $data['product'];
         $pricing = $data['pricing'];
         $details = $data['details'];
@@ -302,6 +333,8 @@ class WidgetAPI {
         $theme_class = $theme === 'dark' ? 'fp-widget-dark' : 'fp-widget-light';
 
         ob_start();
+        $allowed_origins_json = wp_json_encode($allowed_origins);
+
         ?>
 <!DOCTYPE html>
 <html lang="<?php echo esc_attr(get_locale()); ?>">
@@ -529,6 +562,42 @@ class WidgetAPI {
             // Widget data
             const widgetData = <?php echo $json_data; ?>;
             const returnUrl = <?php echo $return_url ? wp_json_encode($return_url) : 'null'; ?>;
+            const allowedOrigins = <?php echo $allowed_origins_json ?: '[]'; ?>;
+
+            function resolveOrigin(value) {
+                if (!value || typeof value !== 'string') {
+                    return null;
+                }
+
+                try {
+                    return new URL(value, window.location.href).origin;
+                } catch (error) {
+                    return null;
+                }
+            }
+
+            function isAllowedOrigin(origin) {
+                if (!origin) {
+                    return false;
+                }
+
+                return allowedOrigins.indexOf(origin) !== -1;
+            }
+
+            const parentOrigin = resolveOrigin(document.referrer);
+
+            function postToParent(message) {
+                if (!window.parent || window.parent === window) {
+                    return false;
+                }
+
+                if (!isAllowedOrigin(parentOrigin)) {
+                    return false;
+                }
+
+                window.parent.postMessage(message, parentOrigin);
+                return true;
+            }
             
             // Elements
             const adultQtyInput = document.getElementById('adult-qty');
@@ -581,64 +650,68 @@ class WidgetAPI {
                 const checkoutUrl = `${widgetData.checkout_url}?${params.toString()}`;
                 
                 // Try to communicate with parent window first
-                if (window.parent && window.parent !== window) {
-                    window.parent.postMessage({
-                        type: 'fp_widget_checkout',
-                        url: checkoutUrl,
-                        data: {
-                            product_id: widgetData.product.id,
-                            adult_qty: adultQty,
-                            child_qty: childQty,
-                            return_url: returnUrl
-                        }
-                    }, '*');
-                } else {
-                    // Fallback: direct navigation
-                    window.open(checkoutUrl, '_blank');
+                if (postToParent({
+                    type: 'fp_widget_checkout',
+                    url: checkoutUrl,
+                    data: {
+                        product_id: widgetData.product.id,
+                        adult_qty: adultQty,
+                        child_qty: childQty,
+                        return_url: returnUrl
+                    }
+                })) {
+                    return;
                 }
+
+                // Fallback: direct navigation
+                window.open(checkoutUrl, '_blank');
             }
-            
+
             // Event listeners
             adultQtyInput.addEventListener('change', updateTotal);
             childQtyInput.addEventListener('change', updateTotal);
             bookNowBtn.addEventListener('click', handleBooking);
-            
+
             // Initial update
             updateTotal();
-            
+
             // Function to calculate and send height to parent
             function notifyHeightChange() {
-                if (window.parent && window.parent !== window) {
+                if (!window.parent || window.parent === window) {
+                    return;
+                }
+
+                const height = Math.max(
+                    document.body.scrollHeight,
+                    document.documentElement.scrollHeight,
+                    document.body.offsetHeight,
+                    document.documentElement.offsetHeight
+                );
+
+                postToParent({
+                    type: 'fp_widget_height_change',
+                    height: height,
+                    productId: widgetData.product.id
+                });
+            }
+
+            // Notify parent window that widget is ready
+            if (window.parent && window.parent !== window) {
+                setTimeout(() => {
                     const height = Math.max(
                         document.body.scrollHeight,
                         document.documentElement.scrollHeight,
                         document.body.offsetHeight,
                         document.documentElement.offsetHeight
                     );
-                    
-                    window.parent.postMessage({
-                        type: 'fp_widget_height_change',
+
+                    postToParent({
+                        type: 'fp_widget_ready',
                         height: height,
                         productId: widgetData.product.id
-                    }, '*');
-                }
-            }
-            
-            // Notify parent window that widget is ready
-            if (window.parent && window.parent !== window) {
-                setTimeout(() => {
-                    window.parent.postMessage({
-                        type: 'fp_widget_ready',
-                        height: Math.max(
-                            document.body.scrollHeight,
-                            document.documentElement.scrollHeight,
-                            document.body.offsetHeight,
-                            document.documentElement.offsetHeight
-                        ),
-                        productId: widgetData.product.id
-                    }, '*');
+                    });
                 }, 100);
-                
+
                 // Watch for content changes and notify parent
                 if (window.ResizeObserver) {
                     const resizeObserver = new ResizeObserver(() => {
@@ -671,5 +744,184 @@ class WidgetAPI {
 </html>
         <?php
         return ob_get_clean();
+    }
+
+    /**
+     * Retrieve the configured list of allowed origins.
+     *
+     * @return array<int, string>
+     */
+    private function getAllowedOrigins(): array {
+        $origins = [];
+
+        $site_origin = $this->normalizeOrigin(home_url());
+        if ($site_origin !== null) {
+            $origins[] = $site_origin;
+        }
+
+        $configured = apply_filters(self::ALLOWED_ORIGINS_FILTER, $origins);
+        if (!is_array($configured)) {
+            $configured = $origins;
+        }
+
+        $normalized = [];
+
+        foreach ($configured as $candidate) {
+            if (!is_string($candidate) || $candidate === '') {
+                continue;
+            }
+
+            $candidate = trim($candidate);
+
+            if (preg_match('/^[a-z0-9.-]+$/i', $candidate)) {
+                $candidate = 'https://' . $candidate;
+            }
+
+            $normalized_origin = $this->normalizeOrigin($candidate);
+
+            if ($normalized_origin !== null) {
+                $normalized[] = $normalized_origin;
+            }
+        }
+
+        if (empty($normalized) && $site_origin !== null) {
+            $normalized[] = $site_origin;
+        }
+
+        return array_values(array_unique($normalized));
+    }
+
+    private function normalizeOrigin(?string $origin): ?string {
+        if (!is_string($origin) || $origin === '') {
+            return null;
+        }
+
+        $origin = trim($origin);
+
+        $parts = function_exists('wp_parse_url') ? wp_parse_url($origin) : parse_url($origin);
+
+        if (!is_array($parts) || empty($parts['host'])) {
+            return null;
+        }
+
+        $scheme = strtolower($parts['scheme'] ?? 'https');
+        $host = strtolower($parts['host']);
+        $port = isset($parts['port']) ? ':' . (int) $parts['port'] : '';
+
+        return $scheme . '://' . $host . $port;
+    }
+
+    private function normalizeHost(?string $value): ?string {
+        if (!is_string($value) || $value === '') {
+            return null;
+        }
+
+        $value = trim($value);
+
+        if (preg_match('/^[a-z0-9.-]+$/i', $value)) {
+            return strtolower($value);
+        }
+
+        $parts = function_exists('wp_parse_url') ? wp_parse_url($value) : parse_url($value);
+
+        if (!is_array($parts) || empty($parts['host'])) {
+            return null;
+        }
+
+        return strtolower($parts['host']);
+    }
+
+    private function determineRequestOrigin(WP_REST_Request $request): ?string {
+        $origin_header = $this->normalizeOrigin($request->get_header('origin'));
+        if ($origin_header !== null) {
+            return $origin_header;
+        }
+
+        $referer_header = $this->normalizeOrigin($request->get_header('referer'));
+        if ($referer_header !== null) {
+            return $referer_header;
+        }
+
+        $site_origin = $this->normalizeOrigin(home_url());
+        $site_host = $this->normalizeHost($site_origin);
+        $request_host = $this->normalizeHost($request->get_header('host'));
+
+        if ($site_origin !== null && $site_host !== null && $site_host === $request_host) {
+            return $site_origin;
+        }
+
+        return null;
+    }
+
+    private function isOriginAllowed(?string $origin, array $allowed_origins): bool {
+        if ($origin === null) {
+            return false;
+        }
+
+        if (in_array($origin, $allowed_origins, true)) {
+            return true;
+        }
+
+        $origin_host = $this->normalizeHost($origin);
+
+        foreach ($allowed_origins as $allowed) {
+            if ($origin_host !== null && $this->normalizeHost($allowed) === $origin_host) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function applyCorsHeaders(
+        WP_REST_Response $response,
+        ?string $request_origin,
+        array $allowed_origins,
+        bool $mark_iframe
+    ): void {
+        $origin_to_use = $request_origin;
+
+        if ($origin_to_use === null && !empty($allowed_origins)) {
+            $origin_to_use = $allowed_origins[0];
+        }
+
+        if ($origin_to_use !== null) {
+            $response->header('Access-Control-Allow-Origin', $origin_to_use);
+            $response->header('Vary', 'Origin');
+        }
+
+        if (!$mark_iframe) {
+            return;
+        }
+
+        $response->header('X-Frame-Options', 'ALLOWALL');
+
+        $frame_ancestors = $this->buildFrameAncestorsValue($allowed_origins);
+
+        if ($frame_ancestors !== null) {
+            $response->header('Content-Security-Policy', 'frame-ancestors ' . $frame_ancestors . ';');
+        }
+
+        $response->header(self::IFRAME_RESPONSE_HEADER, '1');
+    }
+
+    private function buildFrameAncestorsValue(array $allowed_origins): ?string {
+        $values = ['\'self\''];
+
+        foreach ($allowed_origins as $origin) {
+            if (!is_string($origin) || $origin === '') {
+                continue;
+            }
+
+            $values[] = $origin;
+        }
+
+        $values = array_values(array_unique(array_filter($values)));
+
+        if (empty($values)) {
+            return null;
+        }
+
+        return implode(' ', $values);
     }
 }
