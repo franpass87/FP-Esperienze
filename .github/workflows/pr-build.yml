@@ -15,14 +15,44 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
+          coverage: none
+          tools: composer
+          extensions: mbstring, intl, json, xml, curl, zip
+
+      - name: Install production dependencies
+        run: composer install --no-dev --prefer-dist --optimize-autoloader
+
+      - name: Determine plugin version
+        id: get_version
+        run: |
+          if [[ ! -f "fp-esperienze.php" ]]; then
+            echo "File principale fp-esperienze.php non trovato"; exit 1;
+          fi
+          VERSION=$(grep -i "^[[:space:]]*\\*\\s*Version:" fp-esperienze.php | head -1 | sed -E 's/.*Version:[[:space:]]*//')
+          if [[ -z "$VERSION" ]]; then
+            echo "Version non trovata nell'header"; exit 1;
+          fi
+          SLUG="fp-esperienze"
+          ZIP_NAME="${SLUG}-v${VERSION}.zip"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "slug=$SLUG" >> $GITHUB_OUTPUT
+          echo "zip_name=$ZIP_NAME" >> $GITHUB_OUTPUT
+          echo "Rilevata versione: $VERSION"
 
       - name: Build zip
+        id: package
         run: |
-          bash scripts/build-plugin-zip.sh
+          PACKAGE_PATH=$(tools/build-plugin-zip.sh \
+            --slug "${{ steps.get_version.outputs.slug }}" \
+            --version "${{ steps.get_version.outputs.version }}" \
+            --zip-name "${{ steps.get_version.outputs.zip_name }}" \
+            --out-dir "dist")
+          echo "package_path=$PACKAGE_PATH" >> "$GITHUB_OUTPUT"
+          ls -lh "$PACKAGE_PATH"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: plugin-zip
-          path: dist/*.zip
+          name: ${{ steps.get_version.outputs.zip_name }}
+          path: ${{ steps.package.outputs.package_path }}
           if-no-files-found: error
