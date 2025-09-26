@@ -14,6 +14,43 @@ defined('ABSPATH') || exit;
  */
 class ExtraManager {
 
+    private const CACHE_GROUP = 'fp_esperienze_extras';
+    private const CACHE_TTL   = 600; // 10 minutes
+
+    /**
+     * Cached collections of extras keyed by context.
+     *
+     * @var array<string, array<int, object>>
+     */
+    private static array $allExtrasCache = [
+        'all'    => [],
+        'active' => [],
+    ];
+
+    /**
+     * Flags that indicate whether the in-memory cache has been populated.
+     *
+     * @var array<string, bool>
+     */
+    private static array $allExtrasPrimed = [
+        'all'    => false,
+        'active' => false,
+    ];
+
+    /**
+     * Runtime cache of extras indexed by ID.
+     *
+     * @var array<int, object>
+     */
+    private static array $extrasById = [];
+
+    /**
+     * Track which extra IDs have been cached so invalidation can clear them.
+     *
+     * @var array<int, bool>
+     */
+    private static array $cachedExtraIds = [];
+
     /**
      * Get all extras
      *
@@ -21,10 +58,26 @@ class ExtraManager {
      * @return array
      */
     public static function getAllExtras(bool $active_only = false): array {
+        $context = $active_only ? 'active' : 'all';
+
+        if (self::$allExtrasPrimed[$context]) {
+            return self::$allExtrasCache[$context];
+        }
+
+        $cache_key = $context;
+        $cached    = self::cacheGet($cache_key);
+
+        if (is_array($cached)) {
+            self::$allExtrasCache[$context]  = $cached;
+            self::$allExtrasPrimed[$context] = true;
+
+            return $cached;
+        }
+
         global $wpdb;
-        
+
         $table_name = $wpdb->prefix . 'fp_extras';
-        
+
         if ($active_only) {
             $results = $wpdb->get_results($wpdb->prepare(
                 "SELECT * FROM `{$table_name}` WHERE is_active = %d ORDER BY name ASC",
@@ -35,8 +88,14 @@ class ExtraManager {
                 "SELECT * FROM `{$table_name}` ORDER BY name ASC"
             );
         }
-        
-        return $results ?: [];
+
+        $results = $results ?: [];
+
+        self::$allExtrasCache[$context]  = $results;
+        self::$allExtrasPrimed[$context] = true;
+        self::cacheSet($cache_key, $results);
+
+        return $results;
     }
 
     /**
@@ -46,15 +105,34 @@ class ExtraManager {
      * @return object|null
      */
     public static function getExtra(int $id): ?object {
+        if (isset(self::$extrasById[$id])) {
+            return self::$extrasById[$id];
+        }
+
+        $cache_key = self::buildExtraCacheKey($id);
+        $cached    = self::cacheGet($cache_key);
+
+        if (is_object($cached)) {
+            self::rememberExtraCache($id, $cached);
+
+            return $cached;
+        }
+
         global $wpdb;
-        
+
         $table_name = $wpdb->prefix . 'fp_extras';
         $result = $wpdb->get_row($wpdb->prepare(
             "SELECT * FROM $table_name WHERE id = %d",
             $id
         ));
-        
-        return $result ?: null;
+
+        if (!$result) {
+            return null;
+        }
+
+        self::rememberExtraCache($id, $result);
+
+        return $result;
     }
 
     /**
@@ -97,8 +175,16 @@ class ExtraManager {
                 '%s', '%s', '%f', '%s', '%s', '%d', '%d', '%d'
             ]
         );
-        
-        return $result ? $wpdb->insert_id : false;
+
+        if (!$result) {
+            return false;
+        }
+
+        $insert_id = (int) $wpdb->insert_id;
+
+        self::flushAllCaches($insert_id);
+
+        return $insert_id;
     }
 
     /**
@@ -167,8 +253,14 @@ class ExtraManager {
             $format,
             ['%d']
         );
-        
-        return $result !== false;
+
+        if ($result === false) {
+            return false;
+        }
+
+        self::flushAllCaches($id);
+
+        return true;
     }
 
     /**
@@ -179,7 +271,7 @@ class ExtraManager {
      */
     public static function deleteExtra(int $id): bool {
         global $wpdb;
-        
+
         // Check if extra is associated with any products
         $table_product_extras = $wpdb->prefix . 'fp_product_extras';
         $associations = $wpdb->get_var($wpdb->prepare(
@@ -197,8 +289,118 @@ class ExtraManager {
             ['id' => $id],
             ['%d']
         );
-        
-        return $result !== false;
+
+        if ($result === false) {
+            return false;
+        }
+
+        self::flushAllCaches($id);
+
+        return true;
+    }
+
+    /**
+     * Persist a single extra object in local and object caches.
+     *
+     * @param int    $id    Extra ID.
+     * @param object $extra Extra payload.
+     * @return void
+     */
+    private static function rememberExtraCache(int $id, object $extra): void {
+        self::$extrasById[$id]      = $extra;
+        self::$cachedExtraIds[$id] = true;
+
+        self::cacheSet(self::buildExtraCacheKey($id), $extra);
+    }
+
+    /**
+     * Flush cached extras after data mutations.
+     *
+     * @param int|null $id Optional extra ID to invalidate.
+     * @return void
+     */
+    private static function flushAllCaches(?int $id = null): void {
+        foreach (['all', 'active'] as $context) {
+            self::$allExtrasCache[$context]  = [];
+            self::$allExtrasPrimed[$context] = false;
+            self::cacheDelete($context);
+        }
+
+        if ($id === null) {
+            foreach (array_keys(self::$cachedExtraIds) as $cached_id) {
+                self::cacheDelete(self::buildExtraCacheKey($cached_id));
+            }
+
+            self::$extrasById     = [];
+            self::$cachedExtraIds = [];
+
+            return;
+        }
+
+        unset(self::$extrasById[$id], self::$cachedExtraIds[$id]);
+        self::cacheDelete(self::buildExtraCacheKey($id));
+    }
+
+    /**
+     * Generate the cache key for a single extra record.
+     *
+     * @param int $id Extra ID.
+     * @return string
+     */
+    private static function buildExtraCacheKey(int $id): string {
+        return 'extra_' . $id;
+    }
+
+    /**
+     * Read a value from the persistent object cache when available.
+     *
+     * @param string $key Cache key.
+     * @return mixed|null
+     */
+    private static function cacheGet(string $key)
+    {
+        if (!function_exists('wp_cache_get')) {
+            return null;
+        }
+
+        $value = wp_cache_get($key, self::CACHE_GROUP);
+
+        if ($value === false) {
+            return null;
+        }
+
+        return $value;
+    }
+
+    /**
+     * Store a value in the persistent object cache when available.
+     *
+     * @param string $key   Cache key.
+     * @param mixed  $value Cached value.
+     * @return void
+     */
+    private static function cacheSet(string $key, $value): void
+    {
+        if (!function_exists('wp_cache_set')) {
+            return;
+        }
+
+        wp_cache_set($key, $value, self::CACHE_GROUP, self::CACHE_TTL);
+    }
+
+    /**
+     * Remove an entry from the object cache when available.
+     *
+     * @param string $key Cache key.
+     * @return void
+     */
+    private static function cacheDelete(string $key): void
+    {
+        if (!function_exists('wp_cache_delete')) {
+            return;
+        }
+
+        wp_cache_delete($key, self::CACHE_GROUP);
     }
 
     /**

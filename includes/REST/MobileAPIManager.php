@@ -17,6 +17,7 @@ use FP\Esperienze\Core\CapabilityManager;
 use FP\Esperienze\Core\Installer;
 use FP\Esperienze\Core\RateLimiter;
 use FP\Esperienze\Data\Availability;
+use FP\Esperienze\Data\ExtraManager;
 use FP\Esperienze\Data\MeetingPointManager;
 use FP\Esperienze\Data\StaffScheduleManager;
 use FP\Esperienze\Helpers\TimezoneHelper;
@@ -613,13 +614,10 @@ class MobileAPIManager {
         }
 
         $participants_param = $request->get_param('participants');
-        if (is_array($participants_param)) {
-            $participants = [
-                'adults' => isset($participants_param['adults']) ? (int) $participants_param['adults'] : 0,
-                'children' => isset($participants_param['children']) ? (int) $participants_param['children'] : 0,
-            ];
-        } else {
-            $participants = (int) $participants_param;
+        $participants_invalid = false;
+        $participants = $this->sanitizeParticipantsInput($participants_param, $participants_invalid);
+        if ($participants_invalid) {
+            return new WP_Error('invalid_participants', __('Invalid participant payload', 'fp-esperienze'), ['status' => 400]);
         }
 
         $meeting_point_param = $request->get_param('meeting_point_id');
@@ -632,7 +630,11 @@ class MobileAPIManager {
         }
 
         $extras_param = $request->get_param('extras');
-        $extras = is_array($extras_param) ? $extras_param : [];
+        $extras_invalid = false;
+        $extras = $this->sanitizeExtrasInput($extras_param, $extras_invalid);
+        if ($extras_invalid) {
+            return new WP_Error('invalid_extras', __('Invalid extras payload', 'fp-esperienze'), ['status' => 400]);
+        }
 
         $booking_data = [
             'product_id' => (int) $request->get_param('product_id'),
@@ -1918,16 +1920,166 @@ class MobileAPIManager {
         $participants_total = 0;
         $participants = $data['participants'] ?? 0;
         if (is_array($participants)) {
-            $participants_total = (int) ($participants['adults'] ?? 0) + (int) ($participants['children'] ?? 0);
+            $adults = isset($participants['adults']) ? max(0, (int) $participants['adults']) : 0;
+            $children = isset($participants['children']) ? max(0, (int) $participants['children']) : 0;
+            $participants_total = $adults + $children;
         } else {
-            $participants_total = (int) $participants;
+            $participants_total = max(0, (int) $participants);
         }
 
         if ($participants_total < 1) {
             return new WP_Error('invalid_participants', __('At least one participant required', 'fp-esperienze'), ['status' => 400]);
         }
 
+        if (!empty($data['extras'])) {
+            if (!is_array($data['extras'])) {
+                return new WP_Error('invalid_extras', __('Invalid extras payload', 'fp-esperienze'), ['status' => 400]);
+            }
+
+            $extras_check_invalid = false;
+            $this->sanitizeExtrasInput($data['extras'], $extras_check_invalid);
+            if ($extras_check_invalid) {
+                return new WP_Error('invalid_extras', __('Invalid extras payload', 'fp-esperienze'), ['status' => 400]);
+            }
+        }
+
         return true;
+    }
+
+    /**
+     * Normalize the participants payload from the mobile app request.
+     *
+     * @param mixed    $participants_param Raw participants payload.
+     * @param bool|null $had_invalid       Flagged when invalid data is detected.
+     *
+     * @return array{adults:int,children:int,total:int}
+     */
+    private function sanitizeParticipantsInput($participants_param, ?bool &$had_invalid = null): array {
+        $had_invalid = false;
+
+        $normalize_count = static function ($value) use (&$had_invalid): int {
+            if (is_numeric($value)) {
+                $count = (int) $value;
+            } elseif (is_string($value) && is_numeric(trim($value))) {
+                $count = (int) trim($value);
+            } else {
+                $count = 0;
+                if ($value !== null && $value !== '') {
+                    $had_invalid = true;
+                }
+            }
+
+            if ($count < 0) {
+                $had_invalid = true;
+                $count = 0;
+            }
+
+            return min($count, 999);
+        };
+
+        if (is_array($participants_param)) {
+            $adults = $normalize_count($participants_param['adults'] ?? 0);
+            $children = $normalize_count($participants_param['children'] ?? 0);
+        } else {
+            $total = $normalize_count($participants_param);
+            return [
+                'adults' => $total,
+                'children' => 0,
+                'total' => $total,
+            ];
+        }
+
+        return [
+            'adults' => $adults,
+            'children' => $children,
+            'total' => $adults + $children,
+        ];
+    }
+
+    /**
+     * Sanitize the extras payload ensuring only known extras with numeric quantities are accepted.
+     *
+     * @param mixed     $extras_param Raw extras payload.
+     * @param bool|null $had_invalid  Flagged when invalid entries are encountered.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function sanitizeExtrasInput($extras_param, ?bool &$had_invalid = null): array {
+        $had_invalid = false;
+
+        if (!is_array($extras_param)) {
+            if (!empty($extras_param)) {
+                $had_invalid = true;
+            }
+
+            return [];
+        }
+
+        $sanitized = [];
+        $processed = 0;
+
+        foreach ($extras_param as $key => $value) {
+            if ($processed >= 20) {
+                $had_invalid = true;
+                break;
+            }
+
+            $extra_id = 0;
+            $quantity = 0;
+
+            if (is_array($value)) {
+                if (isset($value['extra_id'])) {
+                    $extra_id = (int) $value['extra_id'];
+                } elseif (isset($value['id'])) {
+                    $extra_id = (int) $value['id'];
+                } elseif (is_numeric($key)) {
+                    $extra_id = (int) $key;
+                }
+
+                if (isset($value['quantity'])) {
+                    $quantity = (int) $value['quantity'];
+                } elseif (isset($value['qty'])) {
+                    $quantity = (int) $value['qty'];
+                }
+            } else {
+                if (is_numeric($key)) {
+                    $extra_id = (int) $key;
+                }
+                if (is_numeric($value)) {
+                    $quantity = (int) $value;
+                }
+            }
+
+            if ($extra_id <= 0 || $quantity <= 0) {
+                if ($extra_id !== 0 || $quantity !== 0) {
+                    $had_invalid = true;
+                }
+                continue;
+            }
+
+            $extra = ExtraManager::getExtra($extra_id);
+            if (!$extra) {
+                $had_invalid = true;
+                continue;
+            }
+
+            $quantity = min($quantity, 100);
+            $billing_type = isset($extra->billing_type) ? (string) $extra->billing_type : 'per_booking';
+            $price = isset($extra->price) ? (float) $extra->price : 0.0;
+            $name = isset($extra->name) ? sanitize_text_field($extra->name) : sprintf(__('Extra #%d', 'fp-esperienze'), $extra_id);
+
+            $sanitized[] = [
+                'extra_id' => (int) $extra_id,
+                'name' => $name,
+                'price' => $price,
+                'billing_type' => $billing_type,
+                'quantity' => $quantity,
+            ];
+
+            $processed++;
+        }
+
+        return $sanitized;
     }
 
     private function generateBookingQRData(int $booking_id): string {

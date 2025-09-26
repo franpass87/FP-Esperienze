@@ -1,17 +1,19 @@
+# === Build artifacts ===
+dist/
+*.zip
+
 # Dependencies
 node_modules/
 vendor/
 
-# Build artifacts
+# Build directories
 /build/
-/dist/
-languages/*.mo
 
 # WordPress files
 wp-config.php
 wp-content/uploads/
 
-# IDE files
+# IDE / Editor
 .vscode/
 .idea/
 *.sublime-*
@@ -24,10 +26,11 @@ Thumbs.db
 *.log
 error_log
 
-# Temporary files
+# Cache / temp
+.phpunit.result.cache
+.cache/
 *.tmp
 *.temp
-.cache/
 
 # Environment files
 .env
@@ -42,16 +45,19 @@ error_log
 *.min.css
 *.min.js
 
-# PHPStorm
-.phpstorm.meta.php
-
-# Test files (should be removed in production)
+# Test / sample files
+coverage/
 test-*.php
 test-*.html
 verify-experience-fix.php
-# Composer dependencies should not be committed in WordPress plugins
-vendor/
-*.php
-!tests/*.php
+
+# Miscellaneous
+phpunit.xml
+composer.lock
+package-lock.json
+
+# Allowlist for tracked sources
 !includes/**/*.php
 !templates/**/*.php
+!tests/**/*.php
+

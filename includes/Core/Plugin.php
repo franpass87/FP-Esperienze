@@ -8,6 +8,7 @@
 namespace FP\Esperienze\Core;
 
 use FP\Esperienze\ProductType\Experience;
+use FP\Esperienze\Admin\AdvancedAnalytics;
 use FP\Esperienze\Admin\MenuManager;
 use FP\Esperienze\Admin\FeatureDemoPage;
 use FP\Esperienze\Admin\OnboardingDashboardWidget;
@@ -15,6 +16,7 @@ use FP\Esperienze\Admin\OnboardingNotice;
 use FP\Esperienze\Frontend\Shortcodes;
 use FP\Esperienze\Frontend\Templates;
 use FP\Esperienze\Frontend\SEOManager;
+use FP\Esperienze\Frontend\WidgetCheckoutHandler;
 use FP\Esperienze\Blocks\ArchiveBlock;
 use FP\Esperienze\REST\AvailabilityAPI;
 use FP\Esperienze\REST\BookingsAPI;
@@ -33,6 +35,7 @@ use FP\Esperienze\Integrations\BrevoManager;
 use FP\Esperienze\Integrations\GooglePlacesManager;
 use FP\Esperienze\Integrations\MetaCAPIManager;
 use FP\Esperienze\Core\CapabilityManager;
+use FP\Esperienze\Core\Installer;
 use FP\Esperienze\Core\WebhookManager;
 use FP\Esperienze\Core\I18nManager;
 use FP\Esperienze\Core\CacheManager;
@@ -46,6 +49,10 @@ use FP\Esperienze\Core\UXEnhancer;
 use FP\Esperienze\Core\FeatureTester;
 use FP\Esperienze\Core\TranslationCompiler;
 use FP\Esperienze\Core\SiteHealth;
+use FP\Esperienze\Core\ServiceBooter;
+use FP\Esperienze\Core\RuntimeLogger;
+use FP\Esperienze\Core\UpgradeManager;
+use FP\Esperienze\AI\AIFeaturesManager;
 use Throwable;
 
 defined('ABSPATH') || exit;
@@ -78,10 +85,101 @@ class Plugin {
 
     /**
      * Tracks whether the push token cleanup hooks have been registered.
-     *
-     * @var bool
      */
-    private $push_token_cleanup_registered = false;
+    private bool $push_token_cleanup_registered = false;
+
+    /**
+     * Shared service bootstrapping helper.
+     */
+    private ServiceBooter $booter;
+
+    /**
+     * Core components that rely on static bootstrap hooks.
+     *
+     * @var array<int, array<string, mixed>>
+     */
+    private const CORE_BOOTSTRAPS = [
+        [
+            'class' => TranslationQueue::class,
+            'method' => 'init',
+        ],
+        [
+            'class' => SecurityEnhancer::class,
+            'method' => 'init',
+        ],
+        [
+            'class' => PerformanceOptimizer::class,
+            'method' => 'init',
+        ],
+        [
+            'class' => QueryMonitor::class,
+            'method' => 'init',
+        ],
+        [
+            'class' => UXEnhancer::class,
+            'method' => 'init',
+        ],
+        [
+            'class' => SiteHealth::class,
+            'method' => 'init',
+        ],
+    ];
+
+    /**
+     * Service list for the main runtime components.
+     *
+     * @var array<int, mixed>
+     */
+    private const CORE_SERVICES = [
+        CapabilityManager::class,
+        I18nManager::class,
+        CacheManager::class,
+        AnalyticsTracker::class,
+        [
+            'class' => AssetOptimizer::class,
+            'method' => 'init',
+        ],
+        Cart_Hooks::class,
+        DynamicPricingHooks::class,
+        [
+            'class' => BookingManager::class,
+            'method' => 'getInstance',
+        ],
+        VoucherManager::class,
+        NotificationManager::class,
+        WebhookManager::class,
+        TrackingManager::class,
+        MetaCAPIManager::class,
+        BrevoManager::class,
+        GooglePlacesManager::class,
+        EmailMarketingManager::class,
+        AIFeaturesManager::class,
+        WPMLHooks::class,
+    ];
+
+    /**
+     * Admin-side services that need to be bootstrapped.
+     *
+     * @var array<int, mixed>
+     */
+    private const ADMIN_SERVICES = [
+        MenuManager::class,
+        OnboardingDashboardWidget::class,
+        OnboardingNotice::class,
+        AdvancedAnalytics::class,
+    ];
+
+    /**
+     * Frontend services that need to be initialised on public requests.
+     *
+     * @var array<int, mixed>
+     */
+    private const FRONTEND_SERVICES = [
+        Shortcodes::class,
+        Templates::class,
+        SEOManager::class,
+        WidgetCheckoutHandler::class,
+    ];
 
     /**
      * Get plugin instance
@@ -99,6 +197,7 @@ class Plugin {
      * Constructor
      */
     private function __construct() {
+        $this->booter = new ServiceBooter();
         $this->init();
     }
 
@@ -106,87 +205,77 @@ class Plugin {
      * Initialize plugin
      */
     private function init(): void {
-        // Initialize components safely with error handling
         try {
-            // Initialize Gutenberg blocks so they can register on the init hook.
+            RuntimeLogger::init();
+            UpgradeManager::init();
+
             $this->initBlocks();
-
-            // Initialize the Experience product type IMMEDIATELY, not on 'init' action
-            // This ensures it's registered before WooCommerce loads product types
             $this->initExperienceProductType();
-
-            add_action('plugins_loaded', [$this, 'loadTextDomain']);
-
-            // Initialize core components with proper error handling
-            add_action('init', [$this, 'initCoreComponents'], 1);
-            
-            // Temporary debug feature to test enhancements (can be removed later)
-            if (defined('WP_DEBUG') && WP_DEBUG && is_admin()) {
-                add_action('admin_notices', [__CLASS__, 'showDebugFeatures']);
-            }
-            
-            // Initialize other components later
-            add_action('init', [$this, 'initComponents'], 20);
-            
-            // Initialize admin
-            if (is_admin()) {
-                add_action('init', [$this, 'initAdmin']);
-                add_action('admin_enqueue_scripts', [$this, 'enqueueAdminScripts']);
-                add_action('enqueue_block_editor_assets', [$this, 'enqueueBlockAssets']);
-            }
-
-            // Initialize frontend
-            if (!is_admin()) {
-                add_action('init', [$this, 'initFrontend']);
-                add_action('wp_enqueue_scripts', [$this, 'enqueueScripts']);
-            }
-            
+            $this->registerLifecycleHooks();
         } catch (Throwable $e) {
-            // Log initialization errors but don't fail completely
             error_log('FP Esperienze: Plugin initialization error: ' . $e->getMessage());
-            
-            // Store error message for admin notice
+
             self::$init_error = $e->getMessage();
-            add_action('admin_notices', [__CLASS__, 'showInitializationError']);
+            $this->hook('admin_notices', [__CLASS__, 'showInitializationError']);
         }
+    }
+
+    /**
+     * Registers lifecycle hooks for both admin and frontend contexts.
+     */
+    private function registerLifecycleHooks(): void {
+        $this->hook('plugins_loaded', [$this, 'loadTextDomain']);
+        $this->hook('init', [$this, 'initCoreComponents'], 1);
+        $this->hook('init', [$this, 'initComponents'], 20);
+
+        if ($this->isRunningInAdmin()) {
+            $this->hook('init', [$this, 'initAdmin']);
+            $this->hook('admin_enqueue_scripts', [$this, 'enqueueAdminScripts'], 10, 0);
+            $this->hook('enqueue_block_editor_assets', [$this, 'enqueueBlockAssets'], 10, 0);
+        } else {
+            $this->hook('init', [$this, 'initFrontend']);
+            $this->hook('wp_enqueue_scripts', [$this, 'enqueueScripts']);
+        }
+
+        if ($this->shouldDisplayDebugNotices()) {
+            $this->hook('admin_notices', [__CLASS__, 'showDebugFeatures']);
+        }
+    }
+
+    /**
+     * Helper wrapper for add_action to keep declarations tidy.
+     */
+    private function hook(string $hook, callable $callback, int $priority = 10, int $accepted_args = 1): void {
+        add_action($hook, $callback, $priority, $accepted_args);
+    }
+
+    /**
+     * Determine if we are currently running within the admin area.
+     */
+    private function isRunningInAdmin(): bool {
+        return function_exists('is_admin') ? is_admin() : false;
+    }
+
+    /**
+     * Whether developer-facing debug notices should be displayed.
+     */
+    private function shouldDisplayDebugNotices(): bool {
+        return defined('WP_DEBUG') && WP_DEBUG && $this->isRunningInAdmin();
+    }
+
+    /**
+     * Check if the experimental feature demo page should be exposed.
+     */
+    private function shouldExposeFeatureDemo(): bool {
+        return defined('WP_DEBUG') && WP_DEBUG;
     }
     
     /**
      * Initialize core components safely
      */
     public function initCoreComponents(): void {
-        try {
-            // Initialize translation queue
-            if (class_exists('FP\Esperienze\Core\TranslationQueue')) {
-                TranslationQueue::init();
-            }
-            
-            // Initialize security enhancements
-            if (class_exists('FP\Esperienze\Core\SecurityEnhancer')) {
-                SecurityEnhancer::init();
-            }
-            
-            // Initialize performance optimizations
-            if (class_exists('FP\Esperienze\Core\PerformanceOptimizer')) {
-                PerformanceOptimizer::init();
-            }
-
-            // Initialize query monitoring tools when running in debug environments
-            if (class_exists('FP\Esperienze\Core\QueryMonitor')) {
-                QueryMonitor::init();
-            }
-            
-            // Initialize UX enhancements
-            if (class_exists('FP\Esperienze\Core\UXEnhancer')) {
-                UXEnhancer::init();
-            }
-
-            if (class_exists('FP\Esperienze\Core\SiteHealth')) {
-                SiteHealth::init();
-            }
-        } catch (Throwable $e) {
-            error_log('FP Esperienze: Core components initialization error: ' . $e->getMessage());
-        }
+        $errors = $this->booter->boot(self::CORE_BOOTSTRAPS);
+        $this->logServiceErrors('core bootstrap', $errors);
     }
 
     /**
@@ -206,148 +295,118 @@ class Plugin {
      * Initialize experience product type early with error handling
      */
     public function initExperienceProductType(): void {
-        try {
-            // Initialize experience product type FIRST with high priority
-            // This ensures the filter is registered before WooCommerce loads product types
-            if (class_exists('FP\Esperienze\ProductType\Experience')) {
-                new Experience();
-            } else {
-                throw new \Exception('Experience product type class not found');
-            }
-        } catch (\Throwable $e) {
-            error_log('FP Esperienze: Failed to initialize Experience product type: ' . $e->getMessage());
-            
-            // Store error message for admin notice
-            self::$product_type_error = $e->getMessage();
-            add_action('admin_notices', [__CLASS__, 'showProductTypeError']);
+        $errors = $this->booter->boot([
+            [
+                'class' => Experience::class,
+                'label' => 'Experience product type',
+            ],
+        ]);
+
+        if (empty($errors)) {
+            return;
         }
+
+        $failure       = $errors[0];
+        $display_error = $failure->getPrevious() ? $failure->getPrevious()->getMessage() : $failure->getMessage();
+
+        error_log('FP Esperienze: Failed to initialize Experience product type: ' . $failure->getMessage());
+
+        self::$product_type_error = $display_error;
+        $this->hook('admin_notices', [__CLASS__, 'showProductTypeError']);
     }
 
     /**
      * Initialize components
      */
     public function initComponents(): void {
-        // Initialize capability manager first
-        new CapabilityManager();
-        
-        // Initialize i18n manager for multilingual support
-        new I18nManager();
-        
-        // Initialize cache manager for performance
-        new CacheManager();
+        $errors = $this->booter->boot(self::CORE_SERVICES);
+        $this->logServiceErrors('core services', $errors);
 
-        // Initialize analytics tracker to persist funnel events
-        new AnalyticsTracker();
-
-        // Initialize asset optimizer
-        AssetOptimizer::init();
-        
-        // Experience product type is already initialized in initExperienceProductType()
-        // Skip: new Experience();
-        
-        // Initialize cart hooks for experience bookings
-        new Cart_Hooks();
-        
-        // Initialize dynamic pricing hooks
-        new DynamicPricingHooks();
-        
-        // Initialize booking manager for order processing
-        BookingManager::getInstance();
-        
-        // Initialize voucher manager for gift vouchers
-        new VoucherManager();
-        
-        // Initialize notification manager for ICS and staff emails
-        new NotificationManager();
-
-        $push_token_setup = Installer::ensurePushTokenStorage();
-        if (is_wp_error($push_token_setup) && defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('FP Esperienze: Push token storage setup failed: ' . $push_token_setup->get_error_message());
-        }
-
-        // Initialize webhook manager for external integrations
-        new WebhookManager();
-
-        // Initialize tracking manager for GA4 and Meta Pixel
-        new TrackingManager();
-        
-        // Initialize Meta Conversions API manager for server-side tracking
-        new MetaCAPIManager();
-        
-        // Initialize Brevo manager for email marketing
-        new BrevoManager();
-        
-        // Initialize Google Places manager for meeting point reviews
-        new GooglePlacesManager();
-
-        // Initialize enhanced email marketing manager
-        new \FP\Esperienze\Integrations\EmailMarketingManager();
-
-        // Initialize AI features manager
-        new \FP\Esperienze\AI\AIFeaturesManager();
-
-        // Initialize WPML hooks for automatic translation jobs
-        new WPMLHooks();
-
-        // Initialize holds cleanup cron
+        $this->ensurePushTokenStorage();
         $this->initHoldsCron();
+        $this->registerPushTokenCleanupHook();
+        $this->initPushTokenCron();
+        $this->maybeAddPerformanceIndexes();
+        $this->hook('rest_api_init', [$this, 'initREST']);
+    }
 
-        // Register push token cleanup handler and schedule the daily event during bootstrap
-        if (!$this->push_token_cleanup_registered) {
-            add_action('fp_cleanup_push_tokens', [$this, 'cleanupExpiredPushTokens']);
-            $this->push_token_cleanup_registered = true;
+    /**
+     * Ensure the push token storage table exists and log failures in debug mode.
+     */
+    private function ensurePushTokenStorage(): void {
+        $result = Installer::ensurePushTokenStorage();
+
+        if (is_wp_error($result) && defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('FP Esperienze: Push token storage setup failed: ' . $result->get_error_message());
+        }
+    }
+
+    /**
+     * Register the push token cleanup hook once.
+     */
+    private function registerPushTokenCleanupHook(): void {
+        if ($this->push_token_cleanup_registered) {
+            return;
         }
 
-        $this->initPushTokenCron();
+        $this->hook('fp_cleanup_push_tokens', [$this, 'cleanupExpiredPushTokens'], 10, 0);
+        $this->push_token_cleanup_registered = true;
+    }
 
-        // Ensure database performance indexes are kept up to date
-        $this->maybeAddPerformanceIndexes();
+    /**
+     * Log bootstrapping errors for easier debugging.
+     *
+     * @param string              $context Contextual label.
+     * @param array<int,Throwable> $errors Collected errors.
+     */
+    private function logServiceErrors(string $context, array $errors): void {
+        if ($errors === []) {
+            return;
+        }
 
-        // Initialize REST API
-        add_action('rest_api_init', [$this, 'initREST']);
+        foreach ($errors as $error) {
+            error_log(sprintf('FP Esperienze: %s error: %s', $context, $error->getMessage()));
+        }
     }
 
     /**
      * Initialize admin
      */
     public function initAdmin(): void {
-        new MenuManager();
-        new OnboardingDashboardWidget();
-        new OnboardingNotice();
+        $errors = $this->booter->boot(self::ADMIN_SERVICES);
+        $this->logServiceErrors('admin services', $errors);
 
-        // Initialize feature demo page (temporary for testing new features)
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            FeatureDemoPage::init();
-        }
-        
-        // Initialize advanced analytics
-        new \FP\Esperienze\Admin\AdvancedAnalytics();
+        $demoErrors = $this->booter->boot([
+            [
+                'class' => FeatureDemoPage::class,
+                'method' => 'init',
+                'optional' => true,
+                'condition' => [$this, 'shouldExposeFeatureDemo'],
+                'label' => 'Feature demo page',
+            ],
+        ]);
+
+        $this->logServiceErrors('admin feature demo', $demoErrors);
     }
 
     /**
      * Initialize frontend
      */
     public function initFrontend(): void {
-        new Shortcodes();
-        new Templates();
-        new SEOManager();
-        new \FP\Esperienze\Frontend\WidgetCheckoutHandler();
+        $errors = $this->booter->boot(self::FRONTEND_SERVICES);
+        $this->logServiceErrors('frontend services', $errors);
 
-        // Hide Experience products from normal WooCommerce shop/catalog
         $this->initShopFiltering();
 
-        add_action('wp_head', [$this, 'outputBrandingCSS'], 90);
+        $this->hook('wp_head', [$this, 'outputBrandingCSS'], 90, 0);
     }
 
     /**
      * Initialize shop filtering to hide Experience products from normal WooCommerce shop
      */
     private function initShopFiltering(): void {
-        // Hide Experience products from shop, category, and tag pages
-        add_action('woocommerce_product_query', [$this, 'hideExperienceProductsFromShop']);
-        
-        // Also hide from general WordPress queries on shop-related pages
-        add_action('pre_get_posts', [$this, 'hideExperienceProductsFromQueries']);
+        $this->hook('woocommerce_product_query', [$this, 'hideExperienceProductsFromShop']);
+        $this->hook('pre_get_posts', [$this, 'hideExperienceProductsFromQueries']);
     }
 
     /**

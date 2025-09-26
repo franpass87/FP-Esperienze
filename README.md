@@ -2,6 +2,13 @@
 
 A WordPress + WooCommerce plugin for experience booking management by Francesco Passeri.
 
+## What's New in 1.1.0
+
+- **Automated upgrades** – the new upgrade manager executes pending schema and filesystem migrations, refreshes cron schedules, and surfaces errors to administrators.
+- **Runtime observability** – a development-only runtime logger captures notices and exceptions in a persistent log with an optional overlay so issues are spotted before production deployments.
+- **Hardened booking flows** – REST and mobile endpoints now normalise extras, sanitise payloads, and rely on cached metadata to reduce repeated database calls during peak usage.
+- **Continuous testing** – the repository ships with a PHPUnit suite, WordPress bootstrap shim, and GitHub Actions workflow that exercise booking, logging, and helper components.
+
 ## Installation
 
 ### Prerequisites
@@ -41,6 +48,12 @@ A WordPress + WooCommerce plugin for experience booking management by Francesco 
    - Find "FP Esperienze" and click "Activate"
 
 **Note:** If you see an error about missing dependencies, make sure you have run `composer install --no-dev` in the plugin directory.
+
+## Release Artifacts
+
+- The distributable package for this release is generated at `dist/fp-esperienze-1.1.0.zip`. Upload this ZIP to WordPress or distribute it through your deployment pipeline.
+- A SHA-256 checksum is stored alongside the archive (`dist/fp-esperienze-1.1.0.zip.sha256`). Verify the checksum after transfer to ensure the package has not been tampered with.
+- Regenerate the archive by running `./tools/build-plugin-zip.sh` or the manual steps outlined in [UPGRADE.md](UPGRADE.md) if you modify the codebase.
 
 ### Trusted Proxy Configuration
 
@@ -1558,3 +1571,8 @@ FP Esperienze follows WCAG 2.1 AA accessibility standards.
 ## License
 
 GPL v2 or later
+## Build & Release (CI)
+- Gli artefatti di build (zip) non sono versionati nel repository.
+- La CI su Pull Request crea lo zip del plugin e lo pubblica come artifact scaricabile.
+- Il push di un tag `v*` genera una GitHub Release con allegati zip e checksum SHA-256.
+- Build locale: esegui `bash scripts/build-plugin-zip.sh` e recupera l'output in `dist/`.

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         bootstrap="tests/phpunit/bootstrap.php"
+         colors="true"
+         failOnWarning="true"
+         failOnRisky="true"
+         failOnIncomplete="true"
+         failOnSkipped="true"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/9.3/phpunit.xsd">
+    <testsuites>
+        <testsuite name="FP Esperienze Test Suite">
+            <directory suffix="Test.php">tests/phpunit</directory>
+        </testsuite>
+    </testsuites>
+    <coverage processUncoveredFiles="true">
+        <include>
+            <directory suffix=".php">includes</directory>
+            <file>fp-esperienze.php</file>
+        </include>
+    </coverage>
+</phpunit>

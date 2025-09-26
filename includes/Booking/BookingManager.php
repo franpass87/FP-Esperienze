@@ -349,6 +349,8 @@ class BookingManager {
             }
         }
 
+        $extras = $this->sanitizeExtraSelections(is_array($extras) ? $extras : []);
+
         $currency_fallback = '';
         if ($order_currency === '' && function_exists('get_woocommerce_currency')) {
             $currency_fallback = (string) get_woocommerce_currency();
@@ -479,7 +481,8 @@ class BookingManager {
         $customer_phone = $user ? get_user_meta($customer_id, 'billing_phone', true) : '';
 
         $timestamp = current_time('mysql');
-        $extras = isset($booking_data['extras']) && is_array($booking_data['extras']) ? $booking_data['extras'] : [];
+        $raw_extras = isset($booking_data['extras']) && is_array($booking_data['extras']) ? $booking_data['extras'] : [];
+        $extras = $this->sanitizeExtraSelections($raw_extras);
         $total_amount = $this->calculateBookingTotal($slot, $participants, $extras);
 
         $complete_booking_data = apply_filters(
@@ -952,6 +955,37 @@ class BookingManager {
     }
 
     /**
+     * Sanitize extras payload prior to calculating totals or persistence.
+     *
+     * @param array $extras Extras payload provided by the caller.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function sanitizeExtraSelections(array $extras): array {
+        if ($extras === []) {
+            return [];
+        }
+
+        $sanitized = [];
+        $extra_cache = [];
+
+        foreach ($extras as $key => $raw_extra) {
+            if (count($sanitized) >= 20) {
+                break;
+            }
+
+            $normalized = $this->normalizeBookingExtraEntry($key, $raw_extra, $extra_cache);
+            if ($normalized === null) {
+                continue;
+            }
+
+            $sanitized[] = $normalized;
+        }
+
+        return $sanitized;
+    }
+
+    /**
      * Normalize participant data.
      *
      * @param mixed $participants Participants information.
@@ -1148,7 +1182,7 @@ class BookingManager {
         for ($attempt = 0; $attempt < 5; $attempt++) {
             $candidate = apply_filters(
                 'fp_booking_number_candidate',
-                sprintf('%s-%s-%04d', strtoupper($prefix), date_i18n('Ymd', $timestamp), wp_rand(1000, 9999)),
+                sprintf('%s-%s-%04d', strtoupper($prefix), \fp_esperienze_wp_date('Ymd', $timestamp), wp_rand(1000, 9999)),
                 $prefix,
                 $timestamp,
                 $attempt
@@ -1770,10 +1804,10 @@ class BookingManager {
         $message = sprintf(
             __('Your booking has been rescheduled:\n\nProduct: %s\nOriginal Date: %s at %s\nNew Date: %s at %s\n\nOrder: #%d\nBooking ID: %d', 'fp-esperienze'),
             $product->get_name(),
-            date_i18n(get_option('date_format'), strtotime($old_date)),
-            date_i18n(get_option('time_format'), strtotime($old_time)),
-            date_i18n(get_option('date_format'), strtotime($new_date)),
-            date_i18n(get_option('time_format'), strtotime($new_time)),
+            \fp_esperienze_wp_date(get_option('date_format'), strtotime($old_date)),
+            \fp_esperienze_wp_date(get_option('time_format'), strtotime($old_time)),
+            \fp_esperienze_wp_date(get_option('date_format'), strtotime($new_date)),
+            \fp_esperienze_wp_date(get_option('time_format'), strtotime($new_time)),
             $booking->order_id,
             $booking_id
         );

@@ -297,22 +297,30 @@ class ICSAPI {
 
         $filename = basename($request->get_param('filename'));
         $token    = (string) $request->get_param('token');
-        $base_dir = rtrim(realpath(FP_ESPERIENZE_ICS_DIR), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
-        $file_path = realpath($base_dir . $filename);
 
-        if ($file_path === false) {
-            return new \WP_Error(
-                'file_not_found',
-                __('ICS file not found.', 'fp-esperienze'),
-                ['status' => 404]
-            );
+        $base_dir = wp_normalize_path(FP_ESPERIENZE_ICS_DIR);
+        if (!is_dir($base_dir)) {
+            wp_mkdir_p($base_dir);
         }
 
-        if (strpos($file_path, $base_dir) !== 0) {
+        $base_dir = trailingslashit($base_dir);
+        $requested_path = wp_normalize_path($base_dir . $filename);
+
+        if (strpos($requested_path, $base_dir) !== 0) {
             return new \WP_Error(
                 'forbidden',
                 __('Access denied.', 'fp-esperienze'),
                 ['status' => 403]
+            );
+        }
+
+        $file_path = realpath($requested_path);
+
+        if ($file_path === false || strpos(wp_normalize_path($file_path), $base_dir) !== 0) {
+            return new \WP_Error(
+                'file_not_found',
+                __('ICS file not found.', 'fp-esperienze'),
+                ['status' => 404]
             );
         }
 

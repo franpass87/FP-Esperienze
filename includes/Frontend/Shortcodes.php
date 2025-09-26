@@ -1182,8 +1182,8 @@ class Shortcodes {
                 
                 <?php if ($next_event) : ?>
                     <div class="fp-event-date-badge">
-                        <div class="fp-event-month"><?php echo esc_html(date_i18n('M', strtotime($next_event->event_date))); ?></div>
-                        <div class="fp-event-day"><?php echo esc_html(date_i18n('j', strtotime($next_event->event_date))); ?></div>
+                        <div class="fp-event-month"><?php echo esc_html(\fp_esperienze_wp_date('M', strtotime($next_event->event_date))); ?></div>
+                        <div class="fp-event-day"><?php echo esc_html(\fp_esperienze_wp_date('j', strtotime($next_event->event_date))); ?></div>
                     </div>
                 <?php endif; ?>
                 
@@ -1207,8 +1207,8 @@ class Shortcodes {
                         <?php 
                         printf(
                             esc_html__('Next: %s at %s', 'fp-esperienze'),
-                            esc_html(date_i18n(get_option('date_format'), strtotime($next_event->event_date))),
-                            esc_html(date_i18n(get_option('time_format'), strtotime($next_event->start_time)))
+                            esc_html(\fp_esperienze_wp_date(get_option('date_format'), strtotime($next_event->event_date))),
+                            esc_html(\fp_esperienze_wp_date(get_option('time_format'), strtotime($next_event->start_time)))
                         );
                         ?>
                         <?php if (count($upcoming_events) > 1) : ?>

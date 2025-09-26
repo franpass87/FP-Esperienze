@@ -86,7 +86,7 @@ class Installer {
                 return $result;
             }
 
-            $result = self::createDefaultOptions();
+            $result = self::ensureDefaultOptions();
             if (is_wp_error($result)) {
                 return $result;
             }
@@ -121,49 +121,23 @@ class Installer {
             if (!wp_next_scheduled(TranslationQueue::CRON_HOOK)) {
                 wp_schedule_event(time() + MINUTE_IN_SECONDS, 'hourly', TranslationQueue::CRON_HOOK);
             }
-            
+
             // Initialize performance optimizations on activation
-            if (class_exists('FP\Esperienze\Core\PerformanceOptimizer')) {
-            PerformanceOptimizer::maybeAddOptimizedIndexes();
-        }
-        
-        // Set activation redirect transient (only if not already complete)
-        if (!get_option('fp_esperienze_setup_complete', false)) {
-            set_transient('fp_esperienze_activation_redirect', 1, 30);
-        }
-
-        // Ensure ICS directory exists and is protected
-        if (!file_exists(FP_ESPERIENZE_ICS_DIR)) {
-            wp_mkdir_p(FP_ESPERIENZE_ICS_DIR);
-        }
-
-        global $wp_filesystem;
-        require_once ABSPATH . 'wp-admin/includes/file.php';
-        if (!WP_Filesystem()) {
-            $msg = 'Installer: WP_Filesystem initialization failed during activation.';
-            error_log($msg);
-            return new \WP_Error('fp_fs_init_failed', $msg);
-        }
-
-        $htaccess_path = FP_ESPERIENZE_ICS_DIR . '/.htaccess';
-        if (!$wp_filesystem->exists($htaccess_path)) {
-            if (!$wp_filesystem->put_contents($htaccess_path, "Deny from all\n", FS_CHMOD_FILE)) {
-                $msg = 'Installer: Failed to create ICS .htaccess file.';
-                error_log($msg);
-                return new \WP_Error('fp_htaccess_write_failed', $msg);
+            if (class_exists('FP\\Esperienze\\Core\\PerformanceOptimizer')) {
+                PerformanceOptimizer::maybeAddOptimizedIndexes();
             }
-        }
 
-        $index_path = FP_ESPERIENZE_ICS_DIR . '/index.php';
-        if (!$wp_filesystem->exists($index_path)) {
-            if (!$wp_filesystem->put_contents($index_path, "<?php\nstatus_header(403);\nexit;\n", FS_CHMOD_FILE)) {
-                $msg = 'Installer: Failed to create ICS index.php file.';
-                error_log($msg);
-                return new \WP_Error('fp_index_write_failed', $msg);
+            // Set activation redirect transient (only if not already complete)
+            if (!get_option('fp_esperienze_setup_complete', false)) {
+                set_transient('fp_esperienze_activation_redirect', 1, 30);
             }
-        }
 
-        return true;
+            $result = self::ensurePrivateStorageDirectory();
+            if (is_wp_error($result)) {
+                return $result;
+            }
+
+            return true;
         
         } catch (Throwable $e) {
             error_log('FP Esperienze: Activation error: ' . $e->getMessage());
@@ -298,6 +272,70 @@ class Installer {
                 $msg = 'Installer: Failed to remove ICS directory.';
                 error_log($msg);
                 return new \WP_Error('fp_dir_delete_failed', $msg);
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Ensure the private ICS storage is provisioned and protected.
+     *
+     * @return bool|\WP_Error
+     */
+    public static function ensurePrivateStorageDirectory() {
+        if (!file_exists(FP_ESPERIENZE_ICS_DIR)) {
+            if (!wp_mkdir_p(FP_ESPERIENZE_ICS_DIR)) {
+                $message = 'Installer: Failed to create ICS directory.';
+                error_log($message);
+
+                return new \WP_Error('fp_ics_dir_failed', $message);
+            }
+        }
+
+        $files = [
+            [
+                'path'     => FP_ESPERIENZE_ICS_DIR . '/.htaccess',
+                'contents' => "Deny from all\n",
+            ],
+            [
+                'path'     => FP_ESPERIENZE_ICS_DIR . '/index.php',
+                'contents' => "<?php\nstatus_header(403);\nexit;\n",
+            ],
+        ];
+
+        require_once ABSPATH . 'wp-admin/includes/file.php';
+        $filesystem_ready = WP_Filesystem();
+
+        if ($filesystem_ready) {
+            global $wp_filesystem;
+
+            foreach ($files as $file) {
+                if ($wp_filesystem->exists($file['path'])) {
+                    continue;
+                }
+
+                if (!$wp_filesystem->put_contents($file['path'], $file['contents'], FS_CHMOD_FILE)) {
+                    $message = 'Installer: Failed to write ' . basename($file['path']) . ' in ICS directory.';
+                    error_log($message);
+
+                    return new \WP_Error('fp_ics_write_failed', $message);
+                }
+            }
+
+            return true;
+        }
+
+        foreach ($files as $file) {
+            if (file_exists($file['path'])) {
+                continue;
+            }
+
+            if (file_put_contents($file['path'], $file['contents'], LOCK_EX) === false) {
+                $message = 'Installer: Failed to write ' . basename($file['path']) . ' using direct filesystem access.';
+                error_log($message);
+
+                return new \WP_Error('fp_ics_direct_write_failed', $message);
             }
         }
 
@@ -1108,7 +1146,7 @@ class Installer {
      *
      * @return bool|\WP_Error
      */
-    private static function migrateBookingTable() {
+    public static function migrateBookingTable() {
         global $wpdb;
 
         $table_name = $wpdb->prefix . 'fp_bookings';
@@ -1472,8 +1510,10 @@ class Installer {
 
     /**
      * Create default options
+     *
+     * @return bool
      */
-    private static function createDefaultOptions(): void {
+    public static function ensureDefaultOptions() {
         $default_options = [
             'fp_esperienze_currency' => get_woocommerce_currency(),
             'fp_esperienze_default_duration' => 60,
@@ -1498,6 +1538,8 @@ class Installer {
                 add_option($option_name, $option_value);
             }
         }
+
+        return true;
     }
 
     /**
@@ -1514,7 +1556,7 @@ class Installer {
      * 
      * @return bool|\WP_Error True on success or WP_Error on failure
      */
-    private static function migrateForEventSupport() {
+    public static function migrateForEventSupport() {
         global $wpdb;
 
         $table_name = $wpdb->prefix . 'fp_schedules';
