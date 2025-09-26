@@ -54,3 +54,4 @@ vendor/
 *.php
 !tests/*.php
 !includes/**/*.php
+!templates/**/*.php

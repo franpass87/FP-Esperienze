@@ -18,6 +18,14 @@ use FP\Esperienze\Booking\BookingManager;
 use FP\Esperienze\PDF\Voucher_Pdf;
 use FP\Esperienze\PDF\Qr;
 use FP\Esperienze\Core\AssetOptimizer;
+use FP\Esperienze\Admin\Settings\BrandingSettingsView;
+use FP\Esperienze\Admin\Settings\Services\BrandingSettingsService;
+use FP\Esperienze\Admin\Settings\Services\BookingSettingsService;
+use FP\Esperienze\Admin\Settings\Services\GeneralSettingsService;
+use FP\Esperienze\Admin\Settings\Services\GiftSettingsService;
+use FP\Esperienze\Admin\Settings\Services\IntegrationsSettingsService;
+use FP\Esperienze\Admin\Settings\Services\NotificationsSettingsService;
+use FP\Esperienze\Admin\Settings\Services\WebhookSettingsService;
 use FP\Esperienze\Core\CapabilityManager;
 use FP\Esperienze\Core\I18nManager;
 use FP\Esperienze\Core\WebhookManager;
@@ -2642,7 +2650,7 @@ class MenuManager {
      */
     public function settingsPage(): void {
         // Handle form submissions
-        if ($_POST && CapabilityManager::canManageFPEsperienze()) {
+        if ($_POST) {
             $this->handleSettingsSubmission();
         }
         
@@ -2710,6 +2718,8 @@ class MenuManager {
         $heading_font = $branding_settings['heading_font'] ?? 'inherit';
         $primary_color = $branding_settings['primary_color'] ?? '#ff6b35';
         $secondary_color = $branding_settings['secondary_color'] ?? '#2c3e50';
+
+        $branding_view = new BrandingSettingsView();
         
         ?>
         <div class="wrap">
@@ -2811,21 +2821,7 @@ class MenuManager {
                                 <label for="primary_font"><?php _e('Primary Font', 'fp-esperienze'); ?></label>
                             </th>
                             <td>
-                                <select id="primary_font" name="primary_font" class="regular-text">
-                                    <option value="inherit" <?php selected($primary_font, 'inherit'); ?>><?php _e('Inherit from theme', 'fp-esperienze'); ?></option>
-                                    <option value="Arial, sans-serif" <?php selected($primary_font, 'Arial, sans-serif'); ?>>Arial</option>
-                                    <option value="Helvetica, Arial, sans-serif" <?php selected($primary_font, 'Helvetica, Arial, sans-serif'); ?>>Helvetica</option>
-                                    <option value="Georgia, serif" <?php selected($primary_font, 'Georgia, serif'); ?>>Georgia</option>
-                                    <option value="'Times New Roman', serif" <?php selected($primary_font, "'Times New Roman', serif"); ?>>Times New Roman</option>
-                                    <option value="Verdana, sans-serif" <?php selected($primary_font, 'Verdana, sans-serif'); ?>>Verdana</option>
-                                    <option value="'Trebuchet MS', sans-serif" <?php selected($primary_font, "'Trebuchet MS', sans-serif"); ?>>Trebuchet MS</option>
-                                    <option value="'Courier New', monospace" <?php selected($primary_font, "'Courier New', monospace"); ?>>Courier New</option>
-                                    <option value="'Open Sans', sans-serif" <?php selected($primary_font, "'Open Sans', sans-serif"); ?>>Open Sans (Google Fonts)</option>
-                                    <option value="'Roboto', sans-serif" <?php selected($primary_font, "'Roboto', sans-serif"); ?>>Roboto (Google Fonts)</option>
-                                    <option value="'Lato', sans-serif" <?php selected($primary_font, "'Lato', sans-serif"); ?>>Lato (Google Fonts)</option>
-                                    <option value="'Montserrat', sans-serif" <?php selected($primary_font, "'Montserrat', sans-serif"); ?>>Montserrat (Google Fonts)</option>
-                                    <option value="'Poppins', sans-serif" <?php selected($primary_font, "'Poppins', sans-serif"); ?>>Poppins (Google Fonts)</option>
-                                </select>
+                                <?php echo $branding_view->renderFontSelect('primary_font', $primary_font, $branding_view->getPrimaryFontOptions()); ?>
                                 <p class="description"><?php _e('Primary font used for body text in experience displays.', 'fp-esperienze'); ?></p>
                             </td>
                         </tr>
@@ -2835,23 +2831,7 @@ class MenuManager {
                                 <label for="heading_font"><?php _e('Heading Font', 'fp-esperienze'); ?></label>
                             </th>
                             <td>
-                                <select id="heading_font" name="heading_font" class="regular-text">
-                                    <option value="inherit" <?php selected($heading_font, 'inherit'); ?>><?php _e('Inherit from theme', 'fp-esperienze'); ?></option>
-                                    <option value="Arial, sans-serif" <?php selected($heading_font, 'Arial, sans-serif'); ?>>Arial</option>
-                                    <option value="Helvetica, Arial, sans-serif" <?php selected($heading_font, 'Helvetica, Arial, sans-serif'); ?>>Helvetica</option>
-                                    <option value="Georgia, serif" <?php selected($heading_font, 'Georgia, serif'); ?>>Georgia</option>
-                                    <option value="'Times New Roman', serif" <?php selected($heading_font, "'Times New Roman', serif"); ?>>Times New Roman</option>
-                                    <option value="Verdana, sans-serif" <?php selected($heading_font, 'Verdana, sans-serif'); ?>>Verdana</option>
-                                    <option value="'Trebuchet MS', sans-serif" <?php selected($heading_font, "'Trebuchet MS', sans-serif"); ?>>Trebuchet MS</option>
-                                    <option value="'Courier New', monospace" <?php selected($heading_font, "'Courier New', monospace"); ?>>Courier New</option>
-                                    <option value="'Open Sans', sans-serif" <?php selected($heading_font, "'Open Sans', sans-serif"); ?>>Open Sans (Google Fonts)</option>
-                                    <option value="'Roboto', sans-serif" <?php selected($heading_font, "'Roboto', sans-serif"); ?>>Roboto (Google Fonts)</option>
-                                    <option value="'Lato', sans-serif" <?php selected($heading_font, "'Lato', sans-serif"); ?>>Lato (Google Fonts)</option>
-                                    <option value="'Montserrat', sans-serif" <?php selected($heading_font, "'Montserrat', sans-serif"); ?>>Montserrat (Google Fonts)</option>
-                                    <option value="'Poppins', sans-serif" <?php selected($heading_font, "'Poppins', sans-serif"); ?>>Poppins (Google Fonts)</option>
-                                    <option value="'Playfair Display', serif" <?php selected($heading_font, "'Playfair Display', serif"); ?>>Playfair Display (Google Fonts)</option>
-                                    <option value="'Merriweather', serif" <?php selected($heading_font, "'Merriweather', serif"); ?>>Merriweather (Google Fonts)</option>
-                                </select>
+                                <?php echo $branding_view->renderFontSelect('heading_font', $heading_font, $branding_view->getHeadingFontOptions()); ?>
                                 <p class="description"><?php _e('Font used for headings and titles in experience displays.', 'fp-esperienze'); ?></p>
                             </td>
                         </tr>
@@ -3597,34 +3577,7 @@ class MenuManager {
                         </tr>
                     </table>
                     
-                    <h3><?php _e('ICS Calendar Endpoints', 'fp-esperienze'); ?></h3>
-                    <p><?php _e('The following REST API endpoints are available for calendar integration:', 'fp-esperienze'); ?></p>
-                    
-                    <table class="form-table">
-                        <tr>
-                            <th scope="row"><?php _e('Product Calendar', 'fp-esperienze'); ?></th>
-                            <td>
-                                <code><?php echo esc_html(rest_url('fp-esperienze/v1/ics/product/{product_id}')); ?></code>
-                                <p class="description"><?php _e('Public endpoint to get calendar of available slots for a specific experience product.', 'fp-esperienze'); ?></p>
-                            </td>
-                        </tr>
-                        
-                        <tr>
-                            <th scope="row"><?php _e('User Bookings Calendar', 'fp-esperienze'); ?></th>
-                            <td>
-                                <code><?php echo esc_html(rest_url('fp-esperienze/v1/ics/user/{user_id}')); ?></code>
-                                <p class="description"><?php _e('Private endpoint (requires authentication) to get calendar of user\'s confirmed bookings.', 'fp-esperienze'); ?></p>
-                            </td>
-                        </tr>
-                        
-                        <tr>
-                            <th scope="row"><?php _e('Single Booking Calendar', 'fp-esperienze'); ?></th>
-                            <td>
-                                <code><?php echo esc_html(rest_url('fp-esperienze/v1/ics/file/booking-{booking_id}-{product}.ics?token={token}')); ?></code>
-                                <p class="description"><?php _e('Token-protected endpoint that serves stored ICS files for individual bookings.', 'fp-esperienze'); ?></p>
-                            </td>
-                        </tr>
-                    </table>
+                    <?php include FP_ESPERIENZE_PLUGIN_DIR . 'templates/admin/settings/notifications-ics-endpoints.php'; ?>
                     
                     <?php submit_button(__('Save Notification Settings', 'fp-esperienze')); ?>
                 </div>
@@ -3945,171 +3898,64 @@ class MenuManager {
      * Handle settings form submission
      */
     private function handleSettingsSubmission(): void {
+        if (!CapabilityManager::canManageFPEsperienze()) {
+            wp_die(__('You do not have permission to perform this action.', 'fp-esperienze'));
+        }
+
         if (!wp_verify_nonce(wp_unslash($_POST['fp_settings_nonce'] ?? ''), 'fp_settings_nonce')) {
             wp_die(__('Security check failed.', 'fp-esperienze'));
         }
-        
-        $tab = sanitize_text_field(wp_unslash($_POST['settings_tab'] ?? 'general'));
-        
-        if ($tab === 'general') {
-            // Update general settings
-            update_option('fp_esperienze_archive_page_id', absint(wp_unslash($_POST['archive_page_id'] ?? 0)));
-            update_option('fp_esperienze_wpml_auto_send', !empty($_POST['wpml_auto_send']));
 
-        } elseif ($tab === 'branding') {
-            // Update branding settings
-            $branding_settings = [
-                'primary_font' => sanitize_text_field(wp_unslash($_POST['primary_font'] ?? 'inherit')),
-                'heading_font' => sanitize_text_field(wp_unslash($_POST['heading_font'] ?? 'inherit')),
-                'primary_color' => sanitize_hex_color(wp_unslash($_POST['primary_color'] ?? '#ff6b35')),
-                'secondary_color' => sanitize_hex_color(wp_unslash($_POST['secondary_color'] ?? '#2c3e50')),
-            ];
-            
-            // Validate font values - only allow specific safe fonts
-            $allowed_fonts = [
-                'inherit',
-                'Arial, sans-serif',
-                'Helvetica, Arial, sans-serif', 
-                'Georgia, serif',
-                "'Times New Roman', serif",
-                'Verdana, sans-serif',
-                "'Trebuchet MS', sans-serif",
-                "'Courier New', monospace",
-                "'Open Sans', sans-serif",
-                "'Roboto', sans-serif",
-                "'Lato', sans-serif",
-                "'Montserrat', sans-serif",
-                "'Poppins', sans-serif",
-                "'Playfair Display', serif",
-                "'Merriweather', serif"
-            ];
-            
-            if (!in_array($branding_settings['primary_font'], $allowed_fonts)) {
-                $branding_settings['primary_font'] = 'inherit';
-            }
-            
-            if (!in_array($branding_settings['heading_font'], $allowed_fonts)) {
-                $branding_settings['heading_font'] = 'inherit';
-            }
-            
-            update_option('fp_esperienze_branding', $branding_settings);
-            
-        } elseif ($tab === 'gift') {
-            // Update gift settings
-            $settings = [
-                'fp_esperienze_gift_default_exp_months' => absint(wp_unslash($_POST['gift_default_exp_months'] ?? 12)),
-                'fp_esperienze_gift_pdf_logo' => esc_url_raw(wp_unslash($_POST['gift_pdf_logo'] ?? '')),
-                'fp_esperienze_gift_pdf_brand_color' => sanitize_hex_color(wp_unslash($_POST['gift_pdf_brand_color'] ?? '#ff6b35')),
-                'fp_esperienze_gift_email_sender_name' => sanitize_text_field(wp_unslash($_POST['gift_email_sender_name'] ?? '')),
-                'fp_esperienze_gift_email_sender_email' => sanitize_email(wp_unslash($_POST['gift_email_sender_email'] ?? '')),
-                'fp_esperienze_gift_terms' => sanitize_textarea_field(wp_unslash($_POST['gift_terms'] ?? '')),
-            ];
-            
-            foreach ($settings as $key => $value) {
-                update_option($key, $value);
-            }
-            
-            // Regenerate HMAC secret if requested
-            if (!empty($_POST['regenerate_secret'])) {
-                $new_secret = bin2hex(random_bytes(32)); // 256-bit cryptographically secure key
-                update_option('fp_esperienze_gift_secret_hmac', $new_secret);
-            }
-            
-        } elseif ($tab === 'booking') {
-            // Update booking/holds settings
-            $enable_holds = !empty($_POST['enable_holds']);
-            $hold_duration = absint(wp_unslash($_POST['hold_duration'] ?? 15));
-            
-            // Validate hold duration
-            if ($hold_duration < 5) $hold_duration = 5;
-            if ($hold_duration > 60) $hold_duration = 60;
-            
-            update_option('fp_esperienze_enable_holds', $enable_holds);
-            update_option('fp_esperienze_hold_duration_minutes', $hold_duration);
-            
-        } elseif ($tab === 'integrations') {
-            // Update integrations settings
-            $integrations = [
-                'ga4_measurement_id' => sanitize_text_field(wp_unslash($_POST['ga4_measurement_id'] ?? '')),
-                'ga4_ecommerce' => !empty($_POST['ga4_ecommerce']),
-                'gads_conversion_id' => sanitize_text_field(wp_unslash($_POST['gads_conversion_id'] ?? '')),
-                'gads_purchase_label' => sanitize_text_field(wp_unslash($_POST['gads_purchase_label'] ?? '')),
-                'meta_pixel_id' => sanitize_text_field(wp_unslash($_POST['meta_pixel_id'] ?? '')),
-                'meta_capi_enabled' => !empty($_POST['meta_capi_enabled']),
-                'meta_access_token' => sanitize_text_field(wp_unslash($_POST['meta_access_token'] ?? '')),
-                'meta_dataset_id' => sanitize_text_field(wp_unslash($_POST['meta_dataset_id'] ?? '')),
-                'brevo_api_key' => sanitize_text_field(wp_unslash($_POST['brevo_api_key'] ?? '')),
-                'brevo_list_id_it' => absint(wp_unslash($_POST['brevo_list_id_it'] ?? 0)),
-                'brevo_list_id_en' => absint(wp_unslash($_POST['brevo_list_id_en'] ?? 0)),
-                'gplaces_api_key' => sanitize_text_field(wp_unslash($_POST['gplaces_api_key'] ?? '')),
-                'gplaces_reviews_enabled' => !empty($_POST['gplaces_reviews_enabled']),
-                'gplaces_reviews_limit' => max(1, min(10, absint(wp_unslash($_POST['gplaces_reviews_limit'] ?? 5)))),
-                'gplaces_cache_ttl' => max(5, min(1440, absint(wp_unslash($_POST['gplaces_cache_ttl'] ?? 60)))),
-                'gbp_client_id' => sanitize_text_field(wp_unslash($_POST['gbp_client_id'] ?? '')),
-                'gbp_client_secret' => sanitize_text_field(wp_unslash($_POST['gbp_client_secret'] ?? '')),
-                // Consent Mode v2 settings
-                'consent_mode_enabled' => !empty($_POST['consent_mode_enabled']),
-                'consent_cookie_name' => sanitize_text_field(wp_unslash($_POST['consent_cookie_name'] ?? 'marketing_consent')),
-                'consent_js_function' => sanitize_text_field(wp_unslash($_POST['consent_js_function'] ?? '')),
-            ];
-            
-            // Store all integrations in a single option
-            update_option('fp_esperienze_integrations', $integrations);
-            
-        } elseif ($tab === 'notifications') {
-            // Update notification settings
-            $notifications = [
-                'staff_notifications_enabled' => !empty($_POST['staff_notifications_enabled']),
-                'staff_emails' => sanitize_textarea_field(wp_unslash($_POST['staff_emails'] ?? '')),
-                'ics_attachment_enabled' => !empty($_POST['ics_attachment_enabled']),
-            ];
-            
-            // Validate staff emails
-            if (!empty($notifications['staff_emails'])) {
-                $email_lines = explode("\n", $notifications['staff_emails']);
-                $valid_emails = [];
-                
-                foreach ($email_lines as $email) {
-                    $email = trim($email);
-                    if (!empty($email)) {
-                        if (is_email($email)) {
-                            $valid_emails[] = $email;
-                        } else {
-                            add_action('admin_notices', function() use ($email) {
-                                echo '<div class="notice notice-error"><p>' . 
-                                     sprintf(esc_html__('Invalid email address: %s', 'fp-esperienze'), esc_html($email)) . 
-                                     '</p></div>';
-                            });
-                        }
-                    }
-                }
-                
-                $notifications['staff_emails'] = implode("\n", $valid_emails);
-            }
-            
-            // Store notification settings
-            update_option('fp_esperienze_notifications', $notifications);
-            
-        } elseif ($tab === 'webhooks') {
-            // Update webhook settings
-            $webhook_settings = [
-                'fp_esperienze_webhook_new_booking' => esc_url_raw(wp_unslash($_POST['webhook_new_booking'] ?? '')),
-                'fp_esperienze_webhook_cancellation' => esc_url_raw(wp_unslash($_POST['webhook_cancellation'] ?? '')),
-                'fp_esperienze_webhook_reschedule' => esc_url_raw(wp_unslash($_POST['webhook_reschedule'] ?? '')),
-                'fp_esperienze_webhook_secret' => sanitize_text_field(wp_unslash($_POST['webhook_secret'] ?? '')),
-                'fp_esperienze_webhook_hide_pii' => !empty($_POST['webhook_hide_pii']),
-            ];
-            
-            foreach ($webhook_settings as $key => $value) {
-                update_option($key, $value);
-            }
+        $tab = sanitize_text_field(wp_unslash($_POST['settings_tab'] ?? 'general'));
+
+        $services = [
+            'general' => new GeneralSettingsService(),
+            'branding' => new BrandingSettingsService(),
+            'gift' => new GiftSettingsService(),
+            'booking' => new BookingSettingsService(),
+            'integrations' => new IntegrationsSettingsService(),
+            'notifications' => new NotificationsSettingsService(),
+            'webhooks' => new WebhookSettingsService(),
+        ];
+
+        if (!isset($services[$tab])) {
+            return;
         }
-        
-        add_action('admin_notices', function() {
-            echo '<div class="notice notice-success is-dismissible"><p>' . 
-                 esc_html__('Settings saved successfully!', 'fp-esperienze') . 
-                 '</p></div>';
-        });
+
+        $result = $services[$tab]->handle($_POST);
+
+        foreach ($result->getErrors() as $error) {
+            add_action('admin_notices', static function () use ($error) {
+                echo '<div class="notice notice-error is-dismissible"><p>' .
+                     esc_html($error) .
+                     '</p></div>';
+            });
+        }
+
+        if ($result->isSuccess()) {
+            $messages = $result->getMessages();
+            if (empty($messages)) {
+                $messages[] = __('Settings saved successfully!', 'fp-esperienze');
+            }
+
+            foreach ($messages as $message) {
+                add_action('admin_notices', static function () use ($message) {
+                    echo '<div class="notice notice-success is-dismissible"><p>' .
+                         esc_html($message) .
+                         '</p></div>';
+                });
+            }
+
+            return;
+        }
+
+        if (empty($result->getErrors())) {
+            add_action('admin_notices', static function () {
+                echo '<div class="notice notice-error is-dismissible"><p>' .
+                     esc_html__('Unable to save settings. Please try again.', 'fp-esperienze') .
+                     '</p></div>';
+            });
+        }
     }
     
     /**
