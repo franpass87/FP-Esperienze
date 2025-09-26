@@ -328,20 +328,109 @@ class AssetOptimizer {
      * @return string|false URL or false if not available
      */
     public static function getMinifiedAssetUrl(string $asset_type, string $group) {
-        $minified_path = self::$assets_dir . "{$asset_type}/{$group}.min.{$asset_type}";
+        $asset_info = self::getAssetInfo($asset_type, $group);
+
+        if (!$asset_info['is_minified']) {
+            return false;
+        }
+
+        return $asset_info['url'];
+    }
+
+    /**
+     * Retrieve metadata for an asset, handling minified fallbacks.
+     *
+     * @param string      $asset_type             Asset type ('css' or 'js').
+     * @param string      $group                  Asset group name.
+     * @param string|null $fallback_relative_path Optional fallback relative path from plugin root.
+     * @return array{url:string,path:string,version:string,is_minified:bool}
+     */
+    public static function getAssetInfo(string $asset_type, string $group, ?string $fallback_relative_path = null): array {
+        $asset_type = $asset_type === 'css' ? 'css' : 'js';
+
+        $minified_relative = "assets/{$asset_type}/{$group}.min.{$asset_type}";
+        $minified_path     = self::buildAbsolutePath($minified_relative);
+
+        $is_minified = false;
+        $relative    = '';
+
+        if (self::fileExists($minified_path)) {
+            $relative    = $minified_relative;
+            $is_minified = true;
+        } elseif (!empty($fallback_relative_path)) {
+            $relative = ltrim($fallback_relative_path, '/');
+        }
+
+        $path    = $relative ? self::buildAbsolutePath($relative) : '';
+        $url     = $relative ? self::buildUrl($relative) : '';
+        $version = self::getFileVersion($path);
+
+        return [
+            'url'         => $url,
+            'path'        => $path,
+            'version'     => $version,
+            'is_minified' => $is_minified,
+        ];
+    }
+
+    /**
+     * Build an absolute path for a relative asset path.
+     *
+     * @param string $relative_path Relative path from the plugin root.
+     * @return string
+     */
+    private static function buildAbsolutePath(string $relative_path): string {
+        return FP_ESPERIENZE_PLUGIN_DIR . ltrim($relative_path, '/');
+    }
+
+    /**
+     * Build a plugin URL for a relative asset path.
+     *
+     * @param string $relative_path Relative path from the plugin root.
+     * @return string
+     */
+    private static function buildUrl(string $relative_path): string {
+        return FP_ESPERIENZE_PLUGIN_URL . ltrim($relative_path, '/');
+    }
+
+    /**
+     * Determine if a file exists.
+     *
+     * @param string $path Absolute path to the file.
+     * @return bool
+     */
+    private static function fileExists(string $path): bool {
+        if ('' === $path) {
+            return false;
+        }
+
+        if (file_exists($path)) {
+            return true;
+        }
 
         global $wp_filesystem;
-        require_once ABSPATH . 'wp-admin/includes/file.php';
-        if (!WP_Filesystem()) {
-            error_log('FP Assets: WP_Filesystem initialization failed.');
-            return false;
+        if ($wp_filesystem && $wp_filesystem->exists($path)) {
+            return true;
         }
 
-        if (!$wp_filesystem->exists($minified_path)) {
-            return false;
+        return false;
+    }
+
+    /**
+     * Get a version string for cache busting based on file modification time.
+     *
+     * @param string $path Absolute path to the file.
+     * @return string
+     */
+    private static function getFileVersion(string $path): string {
+        if ($path && file_exists($path)) {
+            $timestamp = filemtime($path);
+            if ($timestamp) {
+                return (string) $timestamp;
+            }
         }
 
-        return FP_ESPERIENZE_PLUGIN_URL . "assets/{$asset_type}/{$group}.min.{$asset_type}";
+        return FP_ESPERIENZE_VERSION;
     }
     
     /**

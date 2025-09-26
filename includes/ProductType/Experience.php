@@ -7,6 +7,8 @@
 
 namespace FP\Esperienze\ProductType;
 
+use FP\Esperienze\Core\AssetOptimizer;
+
 use FP\Esperienze\Data\ScheduleManager;
 use FP\Esperienze\Data\OverrideManager;
 use FP\Esperienze\Data\MeetingPointManager;
@@ -3461,13 +3463,14 @@ class Experience {
 		wp_enqueue_media();
 		wp_enqueue_script( 'jquery-ui-sortable' );
 
-		wp_enqueue_script(
-			'fp-esperienze-product-admin',
-			FP_ESPERIENZE_PLUGIN_URL . 'assets/js/admin.js',
-			array( 'jquery', 'wc-admin-product-meta-boxes' ),
-			FP_ESPERIENZE_VERSION,
-			true
-		);
+                $product_admin = AssetOptimizer::getAssetInfo( 'js', 'admin', 'assets/js/admin.js' );
+                wp_enqueue_script(
+                        'fp-esperienze-product-admin',
+                        $product_admin['url'],
+                        array( 'jquery', 'wc-admin-product-meta-boxes' ),
+                        $product_admin['version'],
+                        true
+                );
 
                 $admin_data = array(
                         'ajax_url'            => admin_url( 'admin-ajax.php' ),
