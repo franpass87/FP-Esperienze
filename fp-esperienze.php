@@ -102,242 +102,262 @@ if (!function_exists('fp_esperienze_wp_date')) {
 // Set to true to enable NULL migration for schedule override fields
 define('FP_ESPERIENZE_ENABLE_SCHEDULE_NULL_MIGRATION', false);
 
-/**
- * Check if the composer notice has been dismissed.
- *
- * @return bool
- */
-function fp_esperienze_is_composer_notice_dismissed() {
-    return (bool) get_option(FP_ESPERIENZE_COMPOSER_NOTICE_KEY, false);
-}
-
-/**
- * Persist the dismissal of the composer notice.
- *
- * @return void
- */
-function fp_esperienze_dismiss_composer_notice() {
-    if (!fp_esperienze_is_composer_notice_dismissed()) {
-        update_option(FP_ESPERIENZE_COMPOSER_NOTICE_KEY, true, false);
+if (!function_exists('fp_esperienze_is_composer_notice_dismissed')) {
+    /**
+     * Check if the composer notice has been dismissed.
+     *
+     * @return bool
+     */
+    function fp_esperienze_is_composer_notice_dismissed() {
+        return (bool) get_option(FP_ESPERIENZE_COMPOSER_NOTICE_KEY, false);
     }
 }
 
-/**
- * Handle composer notice dismissal requests.
- *
- * @return void
- */
-function fp_esperienze_handle_composer_notice_dismiss() {
-    if (!current_user_can('manage_options')) {
-        return;
-    }
-
-    if (!isset($_GET['fp-esperienze-dismiss-composer'])) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-        return;
-    }
-
-    $nonce = isset($_GET['_wpnonce']) ? sanitize_text_field(wp_unslash($_GET['_wpnonce'])) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-
-    if (!wp_verify_nonce($nonce, 'fp-esperienze-dismiss-composer')) {
-        return;
-    }
-
-    fp_esperienze_dismiss_composer_notice();
-
-    $redirect_url = remove_query_arg(array('fp-esperienze-dismiss-composer', '_wpnonce'));
-
-    if (!headers_sent()) {
-        wp_safe_redirect($redirect_url);
-    }
-
-    exit;
-}
-
-/**
- * Determine if the composer notice should be displayed.
- *
- * @return bool
- */
-function fp_esperienze_should_show_composer_notice() {
-    if (defined('WP_CLI') && WP_CLI) {
-        return false;
-    }
-
-    if (!function_exists('is_admin') || !is_admin()) {
-        return false;
-    }
-
-    if (defined('DOING_AJAX') && DOING_AJAX) {
-        return false;
-    }
-
-    return !fp_esperienze_is_composer_notice_dismissed();
-}
-
-/**
- * Display the admin notice when composer dependencies are missing.
- *
- * @return void
- */
-function fp_esperienze_display_composer_notice() {
-    if (!current_user_can('manage_options')) {
-        return;
-    }
-
-    if (!fp_esperienze_should_show_composer_notice()) {
-        return;
-    }
-
-    $message_template = __('FP Esperienze: Some advanced features (PDF generation, QR codes) require composer dependencies. Run %s in the plugin directory to enable all features.', 'fp-esperienze');
-    $message           = sprintf($message_template, '<code>composer install --no-dev</code>');
-    $message           = wp_kses($message, array('code' => array()));
-
-    $cta_text    = esc_html__('Run "composer install --no-dev" to enable all features', 'fp-esperienze');
-    $dismiss_url = wp_nonce_url(add_query_arg('fp-esperienze-dismiss-composer', '1'), 'fp-esperienze-dismiss-composer');
-    $dismiss_txt = esc_html__('Dismiss this notice.', 'default');
-
-    echo '<div class="notice notice-warning fp-esperienze-composer-notice">';
-    echo '<p>' . $message . '</p>';
-    echo '<p><strong>' . $cta_text . '</strong></p>';
-    echo '<p><a class="button-secondary" href="' . esc_url($dismiss_url) . '">' . esc_html($dismiss_txt) . '</a></p>';
-    echo '</div>';
-}
-
-/**
- * Register hooks for the composer notice when dependencies are missing.
- *
- * @return void
- */
-function fp_esperienze_register_composer_notice_hooks() {
-    if (!fp_esperienze_should_show_composer_notice()) {
-        return;
-    }
-
-    add_action('admin_init', 'fp_esperienze_handle_composer_notice_dismiss');
-    add_action('admin_notices', 'fp_esperienze_display_composer_notice');
-    add_action('network_admin_notices', 'fp_esperienze_display_composer_notice');
-}
-
-/**
- * Safely write content to a file using WP_Filesystem.
- * Falls back to error_log if the filesystem is unavailable.
- *
- * @param string $file_path Absolute path to the file.
- * @param string $content   Content to write.
- * @param bool   $append    Whether to append to existing content.
- * @return bool             True on success, false on failure.
- */
-function fp_esperienze_write_file( $file_path, $content, $append = true ) {
-    global $wp_filesystem;
-
-    if ( ! function_exists( 'WP_Filesystem' ) ) {
-        require_once ABSPATH . 'wp-admin/includes/file.php';
-    }
-
-    $wp_fs_available = false;
-
-    if ( function_exists( 'WP_Filesystem' ) ) {
-        $wp_fs_available = WP_Filesystem();
-    }
-
-    if ( ! $wp_fs_available || ! $wp_filesystem ) {
-        error_log( 'FP Esperienze: WP_Filesystem unavailable, falling back to direct write.' );
-        return fp_esperienze_write_file_fallback( $file_path, $content, $append );
-    }
-
-    $dir = dirname( $file_path );
-
-    if ( ! $wp_filesystem->exists( $dir ) ) {
-        if ( ! $wp_filesystem->mkdir( $dir ) ) {
-            error_log( 'FP Esperienze: Unable to create directory ' . $dir . ' via WP_Filesystem. Falling back to direct write.' );
-            return fp_esperienze_write_file_fallback( $file_path, $content, $append );
+if (!function_exists('fp_esperienze_dismiss_composer_notice')) {
+    /**
+     * Persist the dismissal of the composer notice.
+     *
+     * @return void
+     */
+    function fp_esperienze_dismiss_composer_notice() {
+        if (!fp_esperienze_is_composer_notice_dismissed()) {
+            update_option(FP_ESPERIENZE_COMPOSER_NOTICE_KEY, true, false);
         }
     }
-
-    if ( ! $wp_filesystem->is_writable( $dir ) ) {
-        error_log( 'FP Esperienze: Directory not writable via WP_Filesystem: ' . $dir . '. Falling back to direct write.' );
-        return fp_esperienze_write_file_fallback( $file_path, $content, $append );
-    }
-
-    if ( $append && $wp_filesystem->exists( $file_path ) ) {
-        $existing = $wp_filesystem->get_contents( $file_path );
-        if ( false === $existing ) {
-            $existing = '';
-        }
-        $content = $existing . $content;
-    }
-
-    if ( $wp_filesystem->put_contents( $file_path, $content, FS_CHMOD_FILE ) ) {
-        return true;
-    }
-
-    error_log( 'FP Esperienze: WP_Filesystem put_contents failed for ' . $file_path . '. Attempting direct write fallback.' );
-
-    return fp_esperienze_write_file_fallback( $file_path, $content, $append );
 }
 
-/**
- * Write a file using native PHP functions as a fallback when WP_Filesystem is unavailable.
- *
- * @param string $file_path Target file path.
- * @param string $content   Content to write.
- * @param bool   $append    Whether to append to the file.
- *
- * @return bool
- */
-function fp_esperienze_write_file_fallback( $file_path, $content, $append = true ) {
-    $dir = dirname( $file_path );
-
-    if ( ! is_dir( $dir ) ) {
-        $created = false;
-
-        if ( function_exists( 'wp_mkdir_p' ) ) {
-            $created = wp_mkdir_p( $dir );
+if (!function_exists('fp_esperienze_handle_composer_notice_dismiss')) {
+    /**
+     * Handle composer notice dismissal requests.
+     *
+     * @return void
+     */
+    function fp_esperienze_handle_composer_notice_dismiss() {
+        if (!current_user_can('manage_options')) {
+            return;
         }
 
-        if ( ! $created ) {
-            $created = mkdir( $dir, 0775, true ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_mkdir_mkdir
+        if (!isset($_GET['fp-esperienze-dismiss-composer'])) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+            return;
         }
 
-        if ( ! $created ) {
-            error_log( 'FP Esperienze: Fallback failed to create directory ' . $dir );
+        $nonce = isset($_GET['_wpnonce']) ? sanitize_text_field(wp_unslash($_GET['_wpnonce'])) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+        if (!wp_verify_nonce($nonce, 'fp-esperienze-dismiss-composer')) {
+            return;
+        }
+
+        fp_esperienze_dismiss_composer_notice();
+
+        $redirect_url = remove_query_arg(array('fp-esperienze-dismiss-composer', '_wpnonce'));
+
+        if (!headers_sent()) {
+            wp_safe_redirect($redirect_url);
+        }
+
+        exit;
+    }
+}
+
+if (!function_exists('fp_esperienze_should_show_composer_notice')) {
+    /**
+     * Determine if the composer notice should be displayed.
+     *
+     * @return bool
+     */
+    function fp_esperienze_should_show_composer_notice() {
+        if (defined('WP_CLI') && WP_CLI) {
             return false;
         }
+
+        if (!function_exists('is_admin') || !is_admin()) {
+            return false;
+        }
+
+        if (defined('DOING_AJAX') && DOING_AJAX) {
+            return false;
+        }
+
+        return !fp_esperienze_is_composer_notice_dismissed();
     }
-
-    $flags = LOCK_EX;
-
-    if ( $append ) {
-        $flags |= FILE_APPEND;
-    }
-
-    // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_writing_file_put_contents
-    $result = file_put_contents( $file_path, $content, $flags );
-
-    if ( false === $result ) {
-        error_log( 'FP Esperienze: Fallback failed to write file ' . $file_path );
-        return false;
-    }
-
-    return true;
 }
 
-/**
- * Show WordPress version error notice
- */
-function fp_esperienze_wp_version_notice() {
-    echo '<div class="notice notice-error"><p>' . 
-         esc_html__('FP Esperienze requires WordPress 6.5 or higher.', 'fp-esperienze') . 
-         '</p></div>';
+if (!function_exists('fp_esperienze_display_composer_notice')) {
+    /**
+     * Display the admin notice when composer dependencies are missing.
+     *
+     * @return void
+     */
+    function fp_esperienze_display_composer_notice() {
+        if (!current_user_can('manage_options')) {
+            return;
+        }
+
+        if (!fp_esperienze_should_show_composer_notice()) {
+            return;
+        }
+
+        $message_template = __('FP Esperienze: Some advanced features (PDF generation, QR codes) require composer dependencies. Run %s in the plugin directory to enable all features.', 'fp-esperienze');
+        $message           = sprintf($message_template, '<code>composer install --no-dev</code>');
+        $message           = wp_kses($message, array('code' => array()));
+
+        $cta_text    = esc_html__('Run "composer install --no-dev" to enable all features', 'fp-esperienze');
+        $dismiss_url = wp_nonce_url(add_query_arg('fp-esperienze-dismiss-composer', '1'), 'fp-esperienze-dismiss-composer');
+        $dismiss_txt = esc_html__('Dismiss this notice.', 'default');
+
+        echo '<div class="notice notice-warning fp-esperienze-composer-notice">';
+        echo '<p>' . $message . '</p>';
+        echo '<p><strong>' . $cta_text . '</strong></p>';
+        echo '<p><a class="button-secondary" href="' . esc_url($dismiss_url) . '">' . esc_html($dismiss_txt) . '</a></p>';
+        echo '</div>';
+    }
 }
 
-/**
- * Show PHP version error notice
- */
-function fp_esperienze_php_version_notice() {
-    echo '<div class="notice notice-error"><p>' . 
-         esc_html__('FP Esperienze requires PHP 8.1 or higher.', 'fp-esperienze') . 
-         '</p></div>';
+if (!function_exists('fp_esperienze_register_composer_notice_hooks')) {
+    /**
+     * Register hooks for the composer notice when dependencies are missing.
+     *
+     * @return void
+     */
+    function fp_esperienze_register_composer_notice_hooks() {
+        if (!fp_esperienze_should_show_composer_notice()) {
+            return;
+        }
+
+        add_action('admin_init', 'fp_esperienze_handle_composer_notice_dismiss');
+        add_action('admin_notices', 'fp_esperienze_display_composer_notice');
+        add_action('network_admin_notices', 'fp_esperienze_display_composer_notice');
+    }
+}
+
+if (!function_exists('fp_esperienze_write_file')) {
+    /**
+     * Safely write content to a file using WP_Filesystem.
+     * Falls back to error_log if the filesystem is unavailable.
+     *
+     * @param string $file_path Absolute path to the file.
+     * @param string $content   Content to write.
+     * @param bool   $append    Whether to append to existing content.
+     * @return bool             True on success, false on failure.
+     */
+    function fp_esperienze_write_file( $file_path, $content, $append = true ) {
+        global $wp_filesystem;
+
+        if ( ! function_exists( 'WP_Filesystem' ) ) {
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+        }
+
+        $wp_fs_available = false;
+
+        if ( function_exists( 'WP_Filesystem' ) ) {
+            $wp_fs_available = WP_Filesystem();
+        }
+
+        if ( ! $wp_fs_available || ! $wp_filesystem ) {
+            error_log( 'FP Esperienze: WP_Filesystem unavailable, falling back to direct write.' );
+            return fp_esperienze_write_file_fallback( $file_path, $content, $append );
+        }
+
+        $dir = dirname( $file_path );
+
+        if ( ! $wp_filesystem->exists( $dir ) ) {
+            if ( ! $wp_filesystem->mkdir( $dir ) ) {
+                error_log( 'FP Esperienze: Unable to create directory ' . $dir . ' via WP_Filesystem. Falling back to direct write.' );
+                return fp_esperienze_write_file_fallback( $file_path, $content, $append );
+            }
+        }
+
+        if ( ! $wp_filesystem->is_writable( $dir ) ) {
+            error_log( 'FP Esperienze: Directory not writable via WP_Filesystem: ' . $dir . '. Falling back to direct write.' );
+            return fp_esperienze_write_file_fallback( $file_path, $content, $append );
+        }
+
+        if ( $append && $wp_filesystem->exists( $file_path ) ) {
+            $existing = $wp_filesystem->get_contents( $file_path );
+            if ( false === $existing ) {
+                $existing = '';
+            }
+            $content = $existing . $content;
+        }
+
+        if ( $wp_filesystem->put_contents( $file_path, $content, FS_CHMOD_FILE ) ) {
+            return true;
+        }
+
+        error_log( 'FP Esperienze: WP_Filesystem put_contents failed for ' . $file_path . '. Attempting direct write fallback.' );
+
+        return fp_esperienze_write_file_fallback( $file_path, $content, $append );
+    }
+}
+
+if (!function_exists('fp_esperienze_write_file_fallback')) {
+    /**
+     * Write a file using native PHP functions as a fallback when WP_Filesystem is unavailable.
+     *
+     * @param string $file_path Target file path.
+     * @param string $content   Content to write.
+     * @param bool   $append    Whether to append to the file.
+     *
+     * @return bool
+     */
+    function fp_esperienze_write_file_fallback( $file_path, $content, $append = true ) {
+        $dir = dirname( $file_path );
+
+        if ( ! is_dir( $dir ) ) {
+            $created = false;
+
+            if ( function_exists( 'wp_mkdir_p' ) ) {
+                $created = wp_mkdir_p( $dir );
+            }
+
+            if ( ! $created ) {
+                $created = mkdir( $dir, 0775, true ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_mkdir_mkdir
+            }
+
+            if ( ! $created ) {
+                error_log( 'FP Esperienze: Fallback failed to create directory ' . $dir );
+                return false;
+            }
+        }
+
+        $flags = LOCK_EX;
+
+        if ( $append ) {
+            $flags |= FILE_APPEND;
+        }
+
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_writing_file_put_contents
+        $result = file_put_contents( $file_path, $content, $flags );
+
+        if ( false === $result ) {
+            error_log( 'FP Esperienze: Fallback failed to write file ' . $file_path );
+            return false;
+        }
+
+        return true;
+    }
+}
+
+if (!function_exists('fp_esperienze_wp_version_notice')) {
+    /**
+     * Show WordPress version error notice
+     */
+    function fp_esperienze_wp_version_notice() {
+        echo '<div class="notice notice-error"><p>' .
+             esc_html__('FP Esperienze requires WordPress 6.5 or higher.', 'fp-esperienze') .
+             '</p></div>';
+    }
+}
+
+if (!function_exists('fp_esperienze_php_version_notice')) {
+    /**
+     * Show PHP version error notice
+     */
+    function fp_esperienze_php_version_notice() {
+        echo '<div class="notice notice-error"><p>' .
+             esc_html__('FP Esperienze requires PHP 8.1 or higher.', 'fp-esperienze') .
+             '</p></div>';
+    }
 }
 
 // Check WordPress version
@@ -439,10 +459,11 @@ if (defined('WP_CLI') && WP_CLI) {
     }
 }
 
-/**
- * Initialize the plugin with enhanced error handling
- */
-function fp_esperienze_init() {
+if (!function_exists('fp_esperienze_init')) {
+    /**
+     * Initialize the plugin with enhanced error handling
+     */
+    function fp_esperienze_init() {
     try {
         // Check WooCommerce dependency first
         if (!class_exists('WooCommerce')) {
@@ -511,27 +532,33 @@ function fp_esperienze_init() {
         
         return;
     }
+
+    }
 }
 
 // Hook into plugins_loaded to ensure WooCommerce is loaded first
 add_action('plugins_loaded', 'fp_esperienze_init');
 
-/**
- * Show WooCommerce missing notice
- */
-function fp_esperienze_woocommerce_missing_notice() {
-    echo '<div class="notice notice-error"><p>' . 
-         esc_html__('FP Esperienze requires WooCommerce to be installed and activated.', 'fp-esperienze') . 
-         '</p></div>';
+if (!function_exists('fp_esperienze_woocommerce_missing_notice')) {
+    /**
+     * Show WooCommerce missing notice
+     */
+    function fp_esperienze_woocommerce_missing_notice() {
+        echo '<div class="notice notice-error"><p>' .
+             esc_html__('FP Esperienze requires WooCommerce to be installed and activated.', 'fp-esperienze') .
+             '</p></div>';
+    }
 }
 
-/**
- * Show WooCommerce version notice
- */
-function fp_esperienze_woocommerce_version_notice() {
-    echo '<div class="notice notice-error"><p>' . 
-         esc_html__('FP Esperienze requires WooCommerce 8.0 or higher.', 'fp-esperienze') . 
-         '</p></div>';
+if (!function_exists('fp_esperienze_woocommerce_version_notice')) {
+    /**
+     * Show WooCommerce version notice
+     */
+    function fp_esperienze_woocommerce_version_notice() {
+        echo '<div class="notice notice-error"><p>' .
+             esc_html__('FP Esperienze requires WooCommerce 8.0 or higher.', 'fp-esperienze') .
+             '</p></div>';
+    }
 }
 
 /**
@@ -539,174 +566,181 @@ function fp_esperienze_woocommerce_version_notice() {
  */
 add_action('before_woocommerce_init', 'fp_esperienze_declare_wc_compatibility');
 
-/**
- * Declare WooCommerce HPOS compatibility
- */
-function fp_esperienze_declare_wc_compatibility() {
-    // Declare HPOS compatibility
-    if (class_exists('\Automattic\WooCommerce\Utilities\FeaturesUtil')) {
-        \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility('custom_order_tables', FP_ESPERIENZE_PLUGIN_FILE, true);
+if (!function_exists('fp_esperienze_declare_wc_compatibility')) {
+    /**
+     * Declare WooCommerce HPOS compatibility
+     */
+    function fp_esperienze_declare_wc_compatibility() {
+        // Declare HPOS compatibility
+        if (class_exists('\Automattic\WooCommerce\Utilities\FeaturesUtil')) {
+            \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility('custom_order_tables', FP_ESPERIENZE_PLUGIN_FILE, true);
+        }
     }
 }
 
-/**
- * Show initialization error notice
- */
-function fp_esperienze_show_init_error() {
-    if (current_user_can('manage_options') && isset($GLOBALS['fp_esperienze_init_error'])) {
-        echo '<div class="notice notice-error"><p>' . 
-             sprintf(
-                 esc_html__('FP Esperienze: Plugin initialization failed. Error: %s', 'fp-esperienze'),
-                 esc_html($GLOBALS['fp_esperienze_init_error'])
-             ) . 
-             '</p><p><small>' .
-             esc_html__('Check wp-content/fp-esperienze-errors.log for detailed error information.', 'fp-esperienze') .
-             '</small></p></div>';
+if (!function_exists('fp_esperienze_show_init_error')) {
+    /**
+     * Show initialization error notice
+     */
+    function fp_esperienze_show_init_error() {
+        if (current_user_can('manage_options') && isset($GLOBALS['fp_esperienze_init_error'])) {
+            echo '<div class="notice notice-error"><p>' .
+                 sprintf(
+                     esc_html__('FP Esperienze: Plugin initialization failed. Error: %s', 'fp-esperienze'),
+                     esc_html($GLOBALS['fp_esperienze_init_error'])
+                 ) .
+                 '</p><p><small>' .
+                 esc_html__('Check wp-content/fp-esperienze-errors.log for detailed error information.', 'fp-esperienze') .
+                 '</small></p></div>';
+        }
     }
 }
 
 /**
  * Activation hook with enhanced validation
  */
-/**
- * Plugin activation function
- */
-function fp_esperienze_activate_plugin() {
-    try {
-        // Ensure composer dependencies are installed.
-        if (!file_exists(FP_ESPERIENZE_PLUGIN_DIR . 'vendor/autoload.php')) {
-            wp_die(
-                sprintf(
-                    esc_html__('FP Esperienze cannot be activated because composer dependencies are missing. Run %s in the plugin directory.', 'fp-esperienze'),
-                    '<code>composer install --no-dev</code>'
-                ),
-                esc_html__('Plugin Activation Error', 'fp-esperienze'),
-                array('response' => 200, 'back_link' => true)
-            );
-        }
-
-        // Check WooCommerce is available during activation
-        if (!class_exists('WooCommerce')) {
-            wp_die(
-                esc_html__('FP Esperienze requires WooCommerce to be installed and activated.', 'fp-esperienze'),
-                esc_html__('Plugin Activation Error', 'fp-esperienze'),
-                array('response' => 200, 'back_link' => true)
-            );
-        }
-        
-        // Check WooCommerce version during activation
-        if (defined('WC_VERSION') && version_compare(WC_VERSION, '8.0', '<')) {
-            wp_die(
-                esc_html__('FP Esperienze requires WooCommerce 8.0 or higher.', 'fp-esperienze'),
-                esc_html__('Plugin Activation Error', 'fp-esperienze'),
-                array('response' => 200, 'back_link' => true)
-            );
-        }
-        
-        // Verify critical directories are writable
-        $critical_dirs = [
-            WP_CONTENT_DIR . '/fp-private' => 'FP Private directory',
-            FP_ESPERIENZE_ICS_DIR => 'ICS files directory'
-        ];
-        
-        foreach ($critical_dirs as $dir => $description) {
-            if (!wp_mkdir_p($dir)) {
+if (!function_exists('fp_esperienze_activate_plugin')) {
+    /**
+     * Plugin activation function
+     */
+    function fp_esperienze_activate_plugin() {
+        try {
+            // Ensure composer dependencies are installed.
+            if (!file_exists(FP_ESPERIENZE_PLUGIN_DIR . 'vendor/autoload.php')) {
                 wp_die(
                     sprintf(
-                        esc_html__('FP Esperienze cannot create required directory: %s (%s). Please check file permissions.', 'fp-esperienze'),
-                        esc_html($description),
-                        esc_html($dir)
+                        esc_html__('FP Esperienze cannot be activated because composer dependencies are missing. Run %s in the plugin directory.', 'fp-esperienze'),
+                        '<code>composer install --no-dev</code>'
                     ),
                     esc_html__('Plugin Activation Error', 'fp-esperienze'),
                     array('response' => 200, 'back_link' => true)
                 );
             }
-        }
-        
-        // Ensure installer class is available
-        if (!class_exists('FP\Esperienze\Core\Installer')) {
+
+            // Check WooCommerce is available during activation
+            if (!class_exists('WooCommerce')) {
+                wp_die(
+                    esc_html__('FP Esperienze requires WooCommerce to be installed and activated.', 'fp-esperienze'),
+                    esc_html__('Plugin Activation Error', 'fp-esperienze'),
+                    array('response' => 200, 'back_link' => true)
+                );
+            }
+            
+            // Check WooCommerce version during activation
+            if (defined('WC_VERSION') && version_compare(WC_VERSION, '8.0', '<')) {
+                wp_die(
+                    esc_html__('FP Esperienze requires WooCommerce 8.0 or higher.', 'fp-esperienze'),
+                    esc_html__('Plugin Activation Error', 'fp-esperienze'),
+                    array('response' => 200, 'back_link' => true)
+                );
+            }
+            
+            // Verify critical directories are writable
+            $critical_dirs = [
+                WP_CONTENT_DIR . '/fp-private' => 'FP Private directory',
+                FP_ESPERIENZE_ICS_DIR => 'ICS files directory'
+            ];
+            
+            foreach ($critical_dirs as $dir => $description) {
+                if (!wp_mkdir_p($dir)) {
+                    wp_die(
+                        sprintf(
+                            esc_html__('FP Esperienze cannot create required directory: %s (%s). Please check file permissions.', 'fp-esperienze'),
+                            esc_html($description),
+                            esc_html($dir)
+                        ),
+                        esc_html__('Plugin Activation Error', 'fp-esperienze'),
+                        array('response' => 200, 'back_link' => true)
+                    );
+                }
+            }
+            
+            // Ensure installer class is available
+            if (!class_exists('FP\Esperienze\Core\Installer')) {
+                wp_die(
+                    esc_html__('FP Esperienze installer class not found. Check autoloader configuration.', 'fp-esperienze'),
+                    esc_html__('Plugin Activation Error', 'fp-esperienze'),
+                    array('response' => 200, 'back_link' => true)
+                );
+            }
+            
+            // Run installer
+            $result = FP\Esperienze\Core\Installer::activate();
+            if (is_wp_error($result)) {
+                wp_die(
+                    $result->get_error_message(),
+                    esc_html__('Plugin Activation Error', 'fp-esperienze'),
+                    array('response' => 200, 'back_link' => true)
+                );
+            }
+            
+            // Set activation flag for welcome message
+            update_option('fp_esperienze_just_activated', true);
+            
+        } catch (Throwable $e) {
+            // Enhanced activation error logging
+            $error_details = [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+                'wp_version' => get_bloginfo('version'),
+                'php_version' => PHP_VERSION,
+                'wc_version' => defined('WC_VERSION') ? WC_VERSION : 'Not Available',
+                'memory_limit' => ini_get('memory_limit'),
+                'plugins_loaded' => did_action('plugins_loaded'),
+                'woocommerce_loaded' => class_exists('WooCommerce'),
+                'composer_autoloader' => file_exists(FP_ESPERIENZE_PLUGIN_DIR . 'vendor/autoload.php') ? 'Available' : 'Missing'
+            ];
+            
+            // Log the activation error with full context
+            error_log('FP Esperienze activation error: ' . wp_json_encode($error_details));
+            
+            // Try to write to dedicated error log
+            if (defined('WP_CONTENT_DIR')) {
+                $error_log_file = WP_CONTENT_DIR . '/fp-esperienze-activation-errors.log';
+                $timestamp = current_time('mysql');
+                $log_entry = "[$timestamp] ACTIVATION ERROR: " . wp_json_encode($error_details) . PHP_EOL;
+                fp_esperienze_write_file( $error_log_file, $log_entry );
+            }
+            
+            // Create a recovery info file
+            $recovery_info = [
+                'error' => $e->getMessage(),
+                'timestamp' => current_time('mysql'),
+                'diagnostic_url' => admin_url('admin.php?page=fp-esperienze-diagnostic'),
+                'steps' => [
+                    '1. Check server error logs',
+                    '2. Verify file permissions on wp-content/',
+                    '3. Ensure WooCommerce is active and up to date',
+                    '4. Run diagnostic: ' . plugin_dir_url(__FILE__) . 'tools/activation-diagnostic.php',
+                    '5. Consider running composer install --no-dev'
+                ]
+            ];
+            
+            if (defined('WP_CONTENT_DIR')) {
+                $recovery_file = WP_CONTENT_DIR . '/fp-esperienze-recovery-info.json';
+                fp_esperienze_write_file( $recovery_file, wp_json_encode( $recovery_info, JSON_PRETTY_PRINT ), false );
+            }
+            
             wp_die(
-                esc_html__('FP Esperienze installer class not found. Check autoloader configuration.', 'fp-esperienze'),
+                sprintf(
+                    esc_html__('FP Esperienze activation failed: %s', 'fp-esperienze'),
+                    esc_html($e->getMessage())
+                ) . '<br><br>' .
+                '<strong>' . esc_html__('Troubleshooting Information:', 'fp-esperienze') . '</strong><br>' .
+                '• ' . esc_html__('Error details logged to wp-content/fp-esperienze-activation-errors.log', 'fp-esperienze') . '<br>' .
+                '• ' . esc_html__('Recovery info saved to wp-content/fp-esperienze-recovery-info.json', 'fp-esperienze') . '<br>' .
+                '• ' . sprintf(
+                    esc_html__('Run diagnostic tool: %s', 'fp-esperienze'),
+                    '<a href="' . esc_url(plugin_dir_url(__FILE__) . 'tools/activation-diagnostic.php') . '" target="_blank">Diagnostic Tool</a>'
+                ),
                 esc_html__('Plugin Activation Error', 'fp-esperienze'),
                 array('response' => 200, 'back_link' => true)
             );
         }
-        
-        // Run installer
-        $result = FP\Esperienze\Core\Installer::activate();
-        if (is_wp_error($result)) {
-            wp_die(
-                $result->get_error_message(),
-                esc_html__('Plugin Activation Error', 'fp-esperienze'),
-                array('response' => 200, 'back_link' => true)
-            );
-        }
-        
-        // Set activation flag for welcome message
-        update_option('fp_esperienze_just_activated', true);
-        
-    } catch (Throwable $e) {
-        // Enhanced activation error logging
-        $error_details = [
-            'message' => $e->getMessage(),
-            'file' => $e->getFile(),
-            'line' => $e->getLine(),
-            'trace' => $e->getTraceAsString(),
-            'wp_version' => get_bloginfo('version'),
-            'php_version' => PHP_VERSION,
-            'wc_version' => defined('WC_VERSION') ? WC_VERSION : 'Not Available',
-            'memory_limit' => ini_get('memory_limit'),
-            'plugins_loaded' => did_action('plugins_loaded'),
-            'woocommerce_loaded' => class_exists('WooCommerce'),
-            'composer_autoloader' => file_exists(FP_ESPERIENZE_PLUGIN_DIR . 'vendor/autoload.php') ? 'Available' : 'Missing'
-        ];
-        
-        // Log the activation error with full context
-        error_log('FP Esperienze activation error: ' . wp_json_encode($error_details));
-        
-        // Try to write to dedicated error log
-        if (defined('WP_CONTENT_DIR')) {
-            $error_log_file = WP_CONTENT_DIR . '/fp-esperienze-activation-errors.log';
-            $timestamp = current_time('mysql');
-            $log_entry = "[$timestamp] ACTIVATION ERROR: " . wp_json_encode($error_details) . PHP_EOL;
-            fp_esperienze_write_file( $error_log_file, $log_entry );
-        }
-        
-        // Create a recovery info file
-        $recovery_info = [
-            'error' => $e->getMessage(),
-            'timestamp' => current_time('mysql'),
-            'diagnostic_url' => admin_url('admin.php?page=fp-esperienze-diagnostic'),
-            'steps' => [
-                '1. Check server error logs',
-                '2. Verify file permissions on wp-content/',
-                '3. Ensure WooCommerce is active and up to date',
-                '4. Run diagnostic: ' . plugin_dir_url(__FILE__) . 'tools/activation-diagnostic.php',
-                '5. Consider running composer install --no-dev'
-            ]
-        ];
-        
-        if (defined('WP_CONTENT_DIR')) {
-            $recovery_file = WP_CONTENT_DIR . '/fp-esperienze-recovery-info.json';
-            fp_esperienze_write_file( $recovery_file, wp_json_encode( $recovery_info, JSON_PRETTY_PRINT ), false );
-        }
-        
-        wp_die(
-            sprintf(
-                esc_html__('FP Esperienze activation failed: %s', 'fp-esperienze'),
-                esc_html($e->getMessage())
-            ) . '<br><br>' .
-            '<strong>' . esc_html__('Troubleshooting Information:', 'fp-esperienze') . '</strong><br>' .
-            '• ' . esc_html__('Error details logged to wp-content/fp-esperienze-activation-errors.log', 'fp-esperienze') . '<br>' .
-            '• ' . esc_html__('Recovery info saved to wp-content/fp-esperienze-recovery-info.json', 'fp-esperienze') . '<br>' .
-            '• ' . sprintf(
-                esc_html__('Run diagnostic tool: %s', 'fp-esperienze'),
-                '<a href="' . esc_url(plugin_dir_url(__FILE__) . 'tools/activation-diagnostic.php') . '" target="_blank">Diagnostic Tool</a>'
-            ),
-            esc_html__('Plugin Activation Error', 'fp-esperienze'),
-            array('response' => 200, 'back_link' => true)
-        );
     }
+
 }
 
 register_activation_hook(__FILE__, 'fp_esperienze_activate_plugin');
@@ -716,27 +750,30 @@ register_activation_hook(__FILE__, 'fp_esperienze_activate_plugin');
  * Performs targeted cleanup of plugin transients and temporary options
  * without flushing the global cache.
  */
-/**
- * Plugin deactivation function
- */
-function fp_esperienze_deactivate_plugin() {
-    try {
-        if (class_exists('FP\Esperienze\Core\Installer')) {
-            FP\Esperienze\Core\Installer::deactivate();
-        }
-        
-        // Clean up only plugin-specific transients and temporary options
-        // to avoid flushing unrelated cache data.
-        delete_option('fp_esperienze_just_activated');
-        delete_transient('fp_esperienze_activation_redirect');
+if (!function_exists('fp_esperienze_deactivate_plugin')) {
+    /**
+     * Plugin deactivation function
+     */
+    function fp_esperienze_deactivate_plugin() {
+        try {
+            if (class_exists('FP\Esperienze\Core\Installer')) {
+                FP\Esperienze\Core\Installer::deactivate();
+            }
+            
+            // Clean up only plugin-specific transients and temporary options
+            // to avoid flushing unrelated cache data.
+            delete_option('fp_esperienze_just_activated');
+            delete_transient('fp_esperienze_activation_redirect');
 
-        if (class_exists('FP\Esperienze\Core\CacheManager')) {
-            \FP\Esperienze\Core\CacheManager::clearAllCaches();
+            if (class_exists('FP\Esperienze\Core\CacheManager')) {
+                \FP\Esperienze\Core\CacheManager::clearAllCaches();
+            }
+            
+        } catch (Throwable $e) {
+            error_log('FP Esperienze deactivation error: ' . $e->getMessage());
         }
-        
-    } catch (Throwable $e) {
-        error_log('FP Esperienze deactivation error: ' . $e->getMessage());
     }
+
 }
 
 register_deactivation_hook(__FILE__, 'fp_esperienze_deactivate_plugin');
@@ -746,15 +783,17 @@ register_deactivation_hook(__FILE__, 'fp_esperienze_deactivate_plugin');
  */
 register_uninstall_hook(__FILE__, 'fp_esperienze_uninstall_plugin');
 
-/**
- * Plugin uninstall function
- */
-function fp_esperienze_uninstall_plugin() {
-    try {
-        if (class_exists('FP\Esperienze\Core\Installer')) {
-            FP\Esperienze\Core\Installer::uninstall();
+if (!function_exists('fp_esperienze_uninstall_plugin')) {
+    /**
+     * Plugin uninstall function
+     */
+    function fp_esperienze_uninstall_plugin() {
+        try {
+            if (class_exists('FP\Esperienze\Core\Installer')) {
+                FP\Esperienze\Core\Installer::uninstall();
+            }
+        } catch (Throwable $e) {
+            error_log('FP Esperienze uninstall error: ' . $e->getMessage());
         }
-    } catch (Throwable $e) {
-        error_log('FP Esperienze uninstall error: ' . $e->getMessage());
     }
 }
