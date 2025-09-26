@@ -351,15 +351,15 @@ class Experience {
                                         <nav class="fp-experience-nav" aria-label="<?php esc_attr_e( 'Experience product sections', 'fp-esperienze' ); ?>">
                                                 <h2 class="fp-experience-nav__title"><?php esc_html_e( 'Quick navigation', 'fp-esperienze' ); ?></h2>
                                                 <ol class="fp-experience-nav__list">
-                                                        <?php foreach ( $sections as $section ) : ?>
-                                                                <?php
+                                                        <?php
+                                                        foreach ( $sections as $section ) :
                                                                 $nav_classes = array_merge(
                                                                         array( 'fp-experience-nav__item' ),
                                                                         $section['nav_classes']
                                                                 );
                                                                 $nav_classes = array_map( 'sanitize_html_class', array_filter( $nav_classes ) );
+                                                                $section_summary = isset( $section['args']['summary'] ) ? wp_strip_all_tags( $section['args']['summary'] ) : '';
                                                                 ?>
-                                                                <?php $section_summary = $section['args']['summary'] ?? ''; ?>
                                                                 <li class="<?php echo esc_attr( implode( ' ', $nav_classes ) ); ?>" data-section="<?php echo esc_attr( $section['id'] ); ?>">
                                                                         <a class="fp-experience-nav__link" data-section-target="<?php echo esc_attr( $section['id'] ); ?>" href="#<?php echo esc_attr( $section['id'] ); ?>" title="<?php echo esc_attr( trim( $section_summary ) ? $section['title'] . ' — ' . $section_summary : $section['title'] ); ?>">
                                                                                 <span class="fp-experience-nav__label">
@@ -368,8 +368,9 @@ class Experience {
                                                                                                 <span class="fp-experience-nav__hint"><?php echo esc_html( $section_summary ); ?></span>
                                                                                         <?php endif; ?>
                                                                                 </span>
-                                                                                <?php if ( ! empty( $section['nav_badge'] ) ) :
-                                                                                        $badge = $section['nav_badge'];
+                                                                                <?php
+                                                                                if ( ! empty( $section['nav_badge'] ) ) :
+                                                                                        $badge            = $section['nav_badge'];
                                                                                         $badge_attributes = array(
                                                                                                 'class="fp-experience-nav__badge"',
                                                                                                 'aria-hidden="true"',
@@ -431,20 +432,39 @@ class Experience {
                 $classes = array_map( 'sanitize_html_class', array_filter( $classes ) );
                 $heading_id = $id . '-title';
 
-                ?>
-                $summary = isset( $args['summary'] ) ? wp_strip_all_tags( $args['summary'] ) : '';
+                $summary        = isset( $args['summary'] ) ? wp_strip_all_tags( $args['summary'] ) : '';
+                $attributes     = array(
+                        'id'               => $id,
+                        'class'            => implode( ' ', $classes ),
+                        'data-nav-section' => $id,
+                        'tabindex'         => '-1',
+                        'aria-labelledby'  => $heading_id,
+                );
+                if ( $summary ) {
+                        $attributes['data-section-summary'] = $summary;
+                }
 
-                ?>
-                <div id="<?php echo esc_attr( $id ); ?>" class="<?php echo esc_attr( implode( ' ', $classes ) ); ?>" data-nav-section="<?php echo esc_attr( $id ); ?>" tabindex="-1" aria-labelledby="<?php echo esc_attr( $heading_id ); ?>"<?php echo $summary ? ' data-section-summary="' . esc_attr( $summary ) . '"' : ''; ?>>
-                        <h2 class="hndle" id="<?php echo esc_attr( $heading_id ); ?>"><span><?php echo esc_html( $title ); ?></span></h2>
-                        <div class="inside">
-                                <?php if ( $summary ) : ?>
-                                        <p class="fp-experience-metabox__summary"><?php echo esc_html( $summary ); ?></p>
-                                <?php endif; ?>
-                                <?php call_user_func( $callback ); ?>
-                        </div>
-                </div>
-                <?php
+                $attribute_string = '';
+                foreach ( $attributes as $attr_key => $attr_value ) {
+                        if ( '' === $attr_value ) {
+                                continue;
+                        }
+
+                        $attribute_string .= sprintf( ' %s="%s"', esc_attr( $attr_key ), esc_attr( $attr_value ) );
+                }
+
+                echo '<div' . $attribute_string . '>';
+                echo '<h2 class="hndle" id="' . esc_attr( $heading_id ) . '"><span>' . esc_html( $title ) . '</span></h2>';
+                echo '<div class="inside">';
+
+                if ( $summary ) {
+                        echo '<p class="fp-experience-metabox__summary">' . esc_html( $summary ) . '</p>';
+                }
+
+                call_user_func( $callback );
+
+                echo '</div>';
+                echo '</div>';
         }
 
         /**
