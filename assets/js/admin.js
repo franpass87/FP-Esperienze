@@ -916,13 +916,16 @@
                 return sanitized.endsWith('/') ? sanitized : sanitized + '/';
             };
 
-            var namespace = normalizeNamespace(adminData.rest_namespace) || 'fp-exp/v1/';
+            var namespace = normalizeNamespace(adminData.rest_namespace);
             var experienceRestBase = '';
 
-            if (adminData.experience_rest_url) {
+            if (adminData.rest_url) {
+                experienceRestBase = ensureTrailingSlash(adminData.rest_url);
+                if (namespace && experienceRestBase.indexOf(namespace) === -1) {
+                    experienceRestBase += namespace;
+                }
+            } else if (adminData.experience_rest_url) {
                 experienceRestBase = ensureTrailingSlash(adminData.experience_rest_url);
-            } else if (adminData.rest_url) {
-                experienceRestBase = ensureTrailingSlash(adminData.rest_url) + namespace;
             }
 
             if (!experienceRestBase) {
@@ -930,6 +933,99 @@
                 this.showUserFeedback(__('Required localization data is missing.', 'fp-esperienze'), 'error', 8000);
                 return;
             }
+
+            var eventsEndpoint = 'events';
+            if (experienceRestBase.indexOf('fp-exp/v1') !== -1) {
+                eventsEndpoint = 'bookings/calendar';
+            }
+
+            var perPage = parseInt(adminData.calendar_page_size, 10);
+            if (isNaN(perPage) || perPage <= 0) {
+                perPage = 50;
+            }
+            perPage = Math.min(Math.max(perPage, 1), 200);
+
+            var maxPages = parseInt(adminData.calendar_max_pages, 10);
+            if (isNaN(maxPages) || maxPages <= 0) {
+                maxPages = 20;
+            }
+
+            var fetchPaginatedEvents = function(fetchInfo, successCallback, failureCallback) {
+                var aggregatedEvents = [];
+
+                var loadPage = function(pageToLoad) {
+                    if (pageToLoad > maxPages) {
+                        successCallback(aggregatedEvents);
+                        return;
+                    }
+
+                    var requestData = {
+                        start: fetchInfo.startStr ? fetchInfo.startStr.substring(0, 10) : '',
+                        end: fetchInfo.endStr ? fetchInfo.endStr.substring(0, 10) : '',
+                        page: pageToLoad,
+                        per_page: perPage
+                    };
+
+                    $.ajax({
+                        url: experienceRestBase + eventsEndpoint,
+                        type: 'GET',
+                        dataType: 'json',
+                        data: requestData,
+                        beforeSend: function(xhr) {
+                            if (adminData.nonce) {
+                                xhr.setRequestHeader('X-WP-Nonce', adminData.nonce);
+                            }
+                        },
+                        success: function(response) {
+                            if (response && response.events && Array.isArray(response.events)) {
+                                aggregatedEvents = aggregatedEvents.concat(response.events);
+                            }
+
+                            var meta = response && response.meta ? response.meta : null;
+                            var hasMore = false;
+                            var totalPages = 1;
+
+                            if (meta) {
+                                totalPages = parseInt(meta.total_pages, 10);
+                                if (isNaN(totalPages) || totalPages < 1) {
+                                    totalPages = 1;
+                                }
+                                hasMore = !!meta.has_more && pageToLoad < totalPages;
+                            } else if (typeof response.total === 'number') {
+                                totalPages = Math.max(1, Math.ceil(response.total / perPage));
+                                hasMore = pageToLoad < totalPages;
+                            } else if (response && response.events && Array.isArray(response.events)) {
+                                hasMore = response.events.length === perPage;
+                            }
+
+                            if (hasMore) {
+                                loadPage(pageToLoad + 1);
+                            } else {
+                                successCallback(aggregatedEvents);
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            console.error('FP Esperienze: Error fetching calendar events', {
+                                status: status,
+                                error: error,
+                                response: xhr ? xhr.responseText : null
+                            });
+
+                            if (typeof failureCallback === 'function') {
+                                failureCallback(error || status || 'error');
+                            }
+
+                            if (typeof adminData.i18n !== 'undefined') {
+                                alert(adminData.i18n.errorFetchingEvents);
+                            } else {
+                                alert(__('There was an error while fetching events!', 'fp-esperienze'));
+                            }
+                        }
+                    });
+                };
+
+                loadPage(1);
+            };
 
             var calendar = new FullCalendar.Calendar(calendarEl, {
                 initialView: 'dayGridMonth',
@@ -939,17 +1035,8 @@
                     right: 'dayGridMonth,timeGridWeek,timeGridDay'
                 },
                 height: 600,
-                events: {
-                    url: experienceRestBase + 'bookings/calendar',
-                    method: 'GET',
-                    extraParams: function() {
-                        return {
-                            // Add any filters here if needed
-                        };
-                    },
-                    failure: function() {
-                        alert(__('There was an error while fetching events!', 'fp-esperienze'));
-                    }
+                events: function(fetchInfo, successCallback, failureCallback) {
+                    fetchPaginatedEvents(fetchInfo, successCallback, failureCallback);
                 },
                 eventClick: function(info) {
                     var booking = info.event.extendedProps;

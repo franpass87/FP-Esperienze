@@ -327,7 +327,9 @@ class MenuManager {
             ],
             'ajax_url' => admin_url('admin-ajax.php'),
             'rest_url' => rest_url('fp-esperienze/v1/'),
-            'nonce' => wp_create_nonce('fp_esperienze_admin')
+            'nonce' => wp_create_nonce('fp_esperienze_admin'),
+            'calendar_page_size' => 50,
+            'calendar_max_pages' => 20,
         ]);
     }
 

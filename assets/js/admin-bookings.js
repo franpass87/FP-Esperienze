@@ -37,19 +37,103 @@ if (typeof jQuery === 'undefined') {
             return sanitized.endsWith('/') ? sanitized : sanitized + '/';
         };
 
-        var restNamespace = normalizeNamespace(adminData.rest_namespace) || 'fp-exp/v1/';
+        var restNamespace = normalizeNamespace(adminData.rest_namespace);
         var experienceRestBase = '';
 
-        if (adminData.experience_rest_url) {
+        if (adminData.rest_url) {
+            experienceRestBase = ensureTrailingSlash(adminData.rest_url);
+            if (restNamespace && experienceRestBase.indexOf(restNamespace) === -1) {
+                experienceRestBase += restNamespace;
+            }
+        } else if (adminData.experience_rest_url) {
             experienceRestBase = ensureTrailingSlash(adminData.experience_rest_url);
-        } else if (adminData.rest_url) {
-            experienceRestBase = ensureTrailingSlash(adminData.rest_url) + restNamespace;
         }
 
         if (!experienceRestBase) {
             console.error('FP Esperienze: REST base URL missing; cannot load calendar events.');
             return;
         }
+
+        var eventsEndpoint = 'events';
+        if (experienceRestBase.indexOf('fp-exp/v1') !== -1) {
+            eventsEndpoint = 'bookings/calendar';
+        }
+
+        var perPage = parseInt(adminData.calendar_page_size, 10);
+        if (isNaN(perPage) || perPage <= 0) {
+            perPage = 50;
+        }
+        perPage = Math.min(Math.max(perPage, 1), 200);
+
+        var maxPages = parseInt(adminData.calendar_max_pages, 10);
+        if (isNaN(maxPages) || maxPages <= 0) {
+            maxPages = 20;
+        }
+
+        var fetchPaginatedEvents = function(startDate, endDate, callback, errorCallback) {
+            var aggregatedEvents = [];
+            var currentPage = 1;
+
+            var loadPage = function(pageToLoad) {
+                if (pageToLoad > maxPages) {
+                    callback(aggregatedEvents);
+                    return;
+                }
+
+                var requestData = {
+                    start: startDate,
+                    end: endDate,
+                    page: pageToLoad,
+                    per_page: perPage
+                };
+
+                $.ajax({
+                    url: experienceRestBase + eventsEndpoint,
+                    type: 'GET',
+                    dataType: 'json',
+                    data: requestData,
+                    beforeSend: function(xhr) {
+                        if (adminData.nonce) {
+                            xhr.setRequestHeader('X-WP-Nonce', adminData.nonce);
+                        }
+                    },
+                    success: function(response) {
+                        if (response && response.events && Array.isArray(response.events)) {
+                            aggregatedEvents = aggregatedEvents.concat(response.events);
+                        }
+
+                        var meta = response && response.meta ? response.meta : null;
+                        var hasMore = false;
+                        var totalPages = 1;
+
+                        if (meta) {
+                            totalPages = parseInt(meta.total_pages, 10);
+                            if (isNaN(totalPages) || totalPages < 1) {
+                                totalPages = 1;
+                            }
+                            hasMore = !!meta.has_more && pageToLoad < totalPages;
+                        } else if (typeof response.total === 'number') {
+                            totalPages = Math.max(1, Math.ceil(response.total / perPage));
+                            hasMore = pageToLoad < totalPages;
+                        } else if (response && response.events && Array.isArray(response.events)) {
+                            hasMore = response.events.length === perPage;
+                        }
+
+                        if (hasMore) {
+                            loadPage(pageToLoad + 1);
+                        } else {
+                            callback(aggregatedEvents);
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        errorCallback(xhr, status, error);
+                        callback(aggregatedEvents);
+                    }
+                });
+            };
+
+            loadPage(currentPage);
+        };
 
         // Initialize FullCalendar
         $('#fp-calendar').fullCalendar({
@@ -72,43 +156,22 @@ if (typeof jQuery === 'undefined') {
                 }
             },
             events: function(start, end, timezone, callback) {
-                // Use our new REST endpoint
-                $.ajax({
-                    url: experienceRestBase + 'bookings/calendar',
-                    type: 'GET',
-                    dataType: 'json',
-                    data: {
-                        start: start.format('YYYY-MM-DD'),
-                        end: end.format('YYYY-MM-DD')
-                    },
-                    beforeSend: function(xhr) {
-                        if (adminData.nonce) {
-                            xhr.setRequestHeader('X-WP-Nonce', adminData.nonce);
-                        }
-                    },
-                    success: function(response) {
-                        if (response && response.events) {
-                            callback(response.events);
-                        } else {
-                            console.warn('FP Esperienze: Invalid events response', response);
-                            callback([]);
-                        }
-                    },
-                    error: function(xhr, status, error) {
-                        console.error('FP Esperienze: Error fetching events', {
-                            status: status,
-                            error: error,
-                            response: xhr.responseText
-                        });
+                var startDate = start.format('YYYY-MM-DD');
+                var endDate = end.format('YYYY-MM-DD');
 
-                        // Show user-friendly error message
-                        if (typeof adminData.i18n !== 'undefined') {
-                            alert(adminData.i18n.errorFetchingEvents);
-                        } else {
-                            alert('There was an error while fetching events. Please try again.');
-                        }
+                fetchPaginatedEvents(startDate, endDate, function(events) {
+                    callback(events);
+                }, function(xhr, status, error) {
+                    console.error('FP Esperienze: Error fetching events', {
+                        status: status,
+                        error: error,
+                        response: xhr ? xhr.responseText : null
+                    });
 
-                        callback([]);
+                    if (typeof adminData.i18n !== 'undefined') {
+                        alert(adminData.i18n.errorFetchingEvents);
+                    } else {
+                        alert('There was an error while fetching events. Please try again.');
                     }
                 });
             },

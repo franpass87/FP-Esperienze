@@ -7,7 +7,7 @@
 
 namespace FP\Esperienze\REST;
 
-use FP\Esperienze\Data\BookingManager;
+use FP\Esperienze\Booking\BookingManager;
 use FP\Esperienze\Core\CapabilityManager;
 use FP\Esperienze\Core\Log;
 use FP\Esperienze\Data\ScheduleManager;
@@ -18,6 +18,11 @@ defined('ABSPATH') || exit;
  * Bookings REST API Controller
  */
 class BookingsController {
+
+    private const DEFAULT_DAY_SPAN = 30;
+    private const MAX_DAY_SPAN = 90;
+    private const DEFAULT_PER_PAGE = 50;
+    private const MAX_PER_PAGE = 200;
 
     /**
      * Constructor
@@ -46,6 +51,18 @@ class BookingsController {
                     'default' => '',
                     'validate_callback' => function($param) {
                         return empty($param) || preg_match('/^\d{4}-\d{2}-\d{2}$/', $param);
+                    }
+                ],
+                'page' => [
+                    'default' => 1,
+                    'validate_callback' => function($param) {
+                        return is_numeric($param) && (int) $param >= 1;
+                    }
+                ],
+                'per_page' => [
+                    'default' => self::DEFAULT_PER_PAGE,
+                    'validate_callback' => function($param) {
+                        return is_numeric($param) && (int) $param >= 1;
                     }
                 ]
             ]
@@ -78,13 +95,35 @@ class BookingsController {
      */
     public function getEvents(\WP_REST_Request $request) {
         $start_time = microtime(true);
-        
+        $start_date = null;
+        $end_date = null;
+        $per_page = self::DEFAULT_PER_PAGE;
+        $page = 1;
+
         try {
-            $start_date = $request->get_param('start') ?: date('Y-m-d');
-            $end_date = $request->get_param('end') ?: date('Y-m-d', strtotime('+30 days'));
+            $start_date = $this->sanitizeDate($request->get_param('start')) ?: date('Y-m-d');
+            $end_date = $this->sanitizeDate($request->get_param('end'));
+
+            if (!$end_date) {
+                $end_date = date('Y-m-d', strtotime($start_date . sprintf(' +%d days', self::DEFAULT_DAY_SPAN)));
+            }
+
+            if (strtotime($end_date) < strtotime($start_date)) {
+                $end_date = date('Y-m-d', strtotime($start_date . sprintf(' +%d days', self::DEFAULT_DAY_SPAN)));
+            }
+
+            $max_end = date('Y-m-d', strtotime($start_date . sprintf(' +%d days', self::MAX_DAY_SPAN)));
+            if (strtotime($end_date) > strtotime($max_end)) {
+                $end_date = $max_end;
+            }
+
+            $per_page = $this->sanitizePerPage($request->get_param('per_page'));
+            $page = $this->sanitizePage($request->get_param('page'));
+            $offset = ($page - 1) * $per_page;
 
             // Get bookings for the date range
-            $bookings = BookingManager::getBookingsByDateRange($start_date, $end_date);
+            $bookings = BookingManager::getBookingsByDateRange($start_date, $end_date, $per_page, $offset);
+            $total_bookings = BookingManager::countBookingsByDateRange($start_date, $end_date);
 
             // Gather unique product and order IDs
             $product_ids = [];
@@ -99,22 +138,12 @@ class BookingsController {
             // Prefetch products and orders
             $products_map = [];
             if (!empty($product_ids)) {
-                foreach (wc_get_products([
-                    'include' => $product_ids,
-                    'limit'   => -1,
-                ]) as $product) {
-                    $products_map[$product->get_id()] = $product;
-                }
+                $products_map = $this->getCachedProducts($product_ids, $page, $per_page);
             }
 
             $orders_map = [];
             if (!empty($order_ids)) {
-                foreach (wc_get_orders([
-                    'include' => $order_ids,
-                    'limit'   => -1,
-                ]) as $order) {
-                    $orders_map[$order->get_id()] = $order;
-                }
+                $orders_map = $this->getCachedOrders($order_ids, $page, $per_page);
             }
 
             $events = [];
@@ -165,23 +194,174 @@ class BookingsController {
             
             Log::performance('Bookings Events API', $start_time);
             
+            $total_pages = max(1, (int) ceil($total_bookings / $per_page));
+
             return rest_ensure_response([
                 'events' => $events,
-                'total' => count($events)
+                'meta' => [
+                    'total' => $total_bookings,
+                    'page' => $page,
+                    'per_page' => $per_page,
+                    'total_pages' => $total_pages,
+                    'has_more' => $page < $total_pages,
+                    'window' => [
+                        'start' => $start_date,
+                        'end' => $end_date,
+                    ],
+                ],
             ]);
-            
+
         } catch (\Exception $e) {
             Log::error('Events API error: ' . $e->getMessage(), [
                 'start_date' => $start_date ?? '',
-                'end_date' => $end_date ?? ''
+                'end_date' => $end_date ?? '',
+                'page' => $page ?? null,
+                'per_page' => $per_page ?? null,
             ]);
-            
+
             return new \WP_Error(
                 'events_fetch_failed',
                 __('Failed to fetch booking events. Please try again.', 'fp-esperienze'),
                 ['status' => 500]
             );
         }
+    }
+
+    /**
+     * Sanitize incoming date strings.
+     */
+    private function sanitizeDate($value): ?string {
+        if (empty($value)) {
+            return null;
+        }
+
+        $value = substr((string) $value, 0, 10);
+        $date = \DateTime::createFromFormat('Y-m-d', $value);
+
+        if ($date instanceof \DateTime && $date->format('Y-m-d') === $value) {
+            return $value;
+        }
+
+        return null;
+    }
+
+    /**
+     * Normalize per-page request values.
+     */
+    private function sanitizePerPage($per_page): int {
+        $per_page = (int) $per_page;
+
+        if ($per_page <= 0) {
+            $per_page = self::DEFAULT_PER_PAGE;
+        }
+
+        return min($per_page, self::MAX_PER_PAGE);
+    }
+
+    /**
+     * Normalize page request values.
+     */
+    private function sanitizePage($page): int {
+        $page = (int) $page;
+
+        if ($page <= 0) {
+            $page = 1;
+        }
+
+        return $page;
+    }
+
+    /**
+     * Build a cache key for query payloads.
+     */
+    private function buildCacheKey(array $ids, int $page, int $per_page, string $prefix): string {
+        sort($ids, SORT_NUMERIC);
+
+        $json_ids = function_exists('wp_json_encode') ? wp_json_encode($ids) : json_encode($ids);
+
+        return $prefix . '_' . md5((string) $json_ids . "|{$page}|{$per_page}");
+    }
+
+    /**
+     * Retrieve products with caching keyed to the current request window.
+     *
+     * @param array<int> $product_ids Product IDs to preload
+     * @param int $page Current page number
+     * @param int $per_page Items per page
+     * @return array<int, \WC_Product>
+     */
+    private function getCachedProducts(array $product_ids, int $page, int $per_page): array {
+        if (empty($product_ids)) {
+            return [];
+        }
+
+        $cache_group = 'fp_esperienze_events';
+        $cache_key = $this->buildCacheKey($product_ids, $page, $per_page, 'products');
+
+        if (function_exists('wp_cache_get')) {
+            $cached = wp_cache_get($cache_key, $cache_group);
+            if (false !== $cached && is_array($cached)) {
+                return $cached;
+            }
+        }
+
+        $products_map = [];
+        $products = wc_get_products([
+            'include' => $product_ids,
+            'limit' => count($product_ids),
+        ]);
+
+        foreach ($products as $product) {
+            $products_map[$product->get_id()] = $product;
+        }
+
+        if (function_exists('wp_cache_set')) {
+            $expiration = defined('HOUR_IN_SECONDS') ? HOUR_IN_SECONDS : 3600;
+            wp_cache_set($cache_key, $products_map, $cache_group, $expiration);
+        }
+
+        return $products_map;
+    }
+
+    /**
+     * Retrieve orders with caching keyed to the current request window.
+     *
+     * @param array<int> $order_ids Order IDs to preload
+     * @param int $page Current page number
+     * @param int $per_page Items per page
+     * @return array<int, \WC_Order>
+     */
+    private function getCachedOrders(array $order_ids, int $page, int $per_page): array {
+        if (empty($order_ids)) {
+            return [];
+        }
+
+        $cache_group = 'fp_esperienze_events';
+        $cache_key = $this->buildCacheKey($order_ids, $page, $per_page, 'orders');
+
+        if (function_exists('wp_cache_get')) {
+            $cached = wp_cache_get($cache_key, $cache_group);
+            if (false !== $cached && is_array($cached)) {
+                return $cached;
+            }
+        }
+
+        $orders_map = [];
+        $orders = wc_get_orders([
+            'include' => $order_ids,
+            'limit' => count($order_ids),
+        ]);
+
+        foreach ($orders as $order) {
+            $orders_map[$order->get_id()] = $order;
+        }
+
+        if (function_exists('wp_cache_set')) {
+            $expiration = defined('HOUR_IN_SECONDS') ? HOUR_IN_SECONDS : 3600;
+            wp_cache_set($cache_key, $orders_map, $cache_group, $expiration);
+        }
+
+        return $orders_map;
     }
 
     /**
