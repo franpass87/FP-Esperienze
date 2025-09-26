@@ -190,6 +190,7 @@
 
             // Initialize enhanced features
             this.initializeEnhancements();
+            this.initExperienceNavigation();
             this.initExperienceGalleryField();
             this.dedupeProductTypeField();
         },
@@ -2837,7 +2838,7 @@
          */
         showFieldError: function($field, message) {
             try {
-                var $errorMsg = $('<div class="fp-field-error-message" style="color: #dc3545; font-size: 12px; margin-top: 4px;">' + message + '</div>');
+                var $errorMsg = $('<div class="fp-field-error-message">' + message + '</div>');
                 $field.after($errorMsg);
                 
                 // Auto-remove on focus/change
@@ -3169,6 +3170,261 @@
                 console.error('FP Esperienze: Error handling override closed:', error);
                 this.showUserFeedback(__('Error updating closed status. Please try again.', 'fp-esperienze'), 'error');
             }
+        },
+
+        /**
+         * Enhance the quick navigation sidebar with active state tracking and smooth scrolling.
+         */
+        initExperienceNavigation: function() {
+            const nav = document.querySelector('.fp-experience-nav');
+            if (!nav) {
+                return;
+            }
+
+            const links = Array.from(nav.querySelectorAll('.fp-experience-nav__link'));
+            if (!links.length) {
+                return;
+            }
+
+            const sections = new Map();
+            const adminData = window.fp_esperienze_admin || {};
+            const bannerOffset = adminData.banner_offset ? parseInt(adminData.banner_offset, 10) : 20;
+            const adminBarOffset = document.body.classList.contains('admin-bar') ? 32 : 0;
+            const scrollOffset = bannerOffset + adminBarOffset + 16;
+
+            links.forEach((link) => {
+                const targetId = link.dataset.sectionTarget || link.getAttribute('href').replace('#', '');
+                if (!targetId) {
+                    return;
+                }
+
+                const section = document.getElementById(targetId);
+                if (!section) {
+                    return;
+                }
+
+                link.dataset.sectionTarget = targetId;
+                sections.set(section, link);
+            });
+
+            if (!sections.size) {
+                return;
+            }
+
+            const badgeElements = Array.from(nav.querySelectorAll('.fp-experience-nav__badge'));
+            const badgeConfigs = badgeElements.map((badge) => {
+                const config = {
+                    node: badge,
+                    srTarget: badge.parentElement ? badge.parentElement.querySelector('.fp-experience-nav__badge-sr') : null,
+                    type: badge.dataset.badgeType || 'count',
+                    selector: badge.dataset.targetSelector || '',
+                    watchTarget: badge.dataset.watchTarget || '',
+                    singularLabel: badge.dataset.labelSingular || '',
+                    pluralLabel: badge.dataset.labelPlural || '',
+                    emptyLabel: badge.dataset.emptyLabel || '',
+                    emptyVisible: badge.dataset.emptyVisible || '–'
+                };
+
+                return config;
+            }).filter((config) => !!config.selector);
+
+            const resolveContainer = (config) => {
+                if (!config.watchTarget) {
+                    return document;
+                }
+
+                return document.querySelector(config.watchTarget);
+            };
+
+            const updateBadge = (config) => {
+                try {
+                    const container = resolveContainer(config);
+                    if (!container) {
+                        config.node.textContent = config.emptyVisible;
+                        config.node.classList.add('is-empty');
+                        if (config.srTarget) {
+                            config.srTarget.textContent = config.emptyLabel ? ' — ' + config.emptyLabel : '';
+                        }
+                        config.node.setAttribute('aria-label', config.emptyLabel || config.emptyVisible);
+                        config.node.setAttribute('title', config.emptyLabel || config.emptyVisible);
+                        return;
+                    }
+
+                    let count = 0;
+                    if (config.type === 'checked') {
+                        count = container.querySelectorAll(config.selector).length;
+                    } else {
+                        count = container.querySelectorAll(config.selector).length;
+                    }
+
+                    const isEmpty = count === 0;
+                    const visibleText = isEmpty ? config.emptyVisible : String(count);
+                    config.node.textContent = visibleText;
+                    config.node.classList.toggle('is-empty', isEmpty);
+
+                    let accessibleText = '';
+                    if (isEmpty) {
+                        accessibleText = config.emptyLabel || config.emptyVisible;
+                    } else if (count === 1 && config.singularLabel) {
+                        accessibleText = sprintf('%d %s', count, config.singularLabel);
+                    } else if (count !== 1 && config.pluralLabel) {
+                        accessibleText = sprintf('%d %s', count, config.pluralLabel);
+                    } else {
+                        accessibleText = String(count);
+                    }
+
+                    config.node.setAttribute('aria-label', accessibleText);
+                    config.node.setAttribute('title', accessibleText);
+
+                    if (config.srTarget) {
+                        config.srTarget.textContent = accessibleText ? ' — ' + accessibleText : '';
+                    }
+                } catch (badgeError) {
+                    console.warn('FP Esperienze: Unable to update navigation badge', badgeError);
+                }
+            };
+
+            if (badgeConfigs.length) {
+                const updateAllBadges = () => {
+                    badgeConfigs.forEach((config) => updateBadge(config));
+                };
+
+                updateAllBadges();
+
+                const watchedTargets = new Map();
+
+                badgeConfigs.forEach((config) => {
+                    const container = resolveContainer(config);
+                    if (!container) {
+                        return;
+                    }
+
+                    let record = watchedTargets.get(container);
+                    if (!record) {
+                        record = { configs: [] };
+                        const observer = new MutationObserver(() => {
+                            record.configs.forEach((itemConfig) => updateBadge(itemConfig));
+                        });
+                        observer.observe(container, { childList: true, subtree: true });
+                        record.observer = observer;
+                        record.handlers = [];
+                        watchedTargets.set(container, record);
+                    }
+
+                    record.configs.push(config);
+
+                    if (config.type === 'checked') {
+                        const handler = () => updateBadge(config);
+                        container.addEventListener('change', handler);
+                        record.handlers.push({ handler });
+                    }
+                });
+
+                setTimeout(updateAllBadges, 250);
+            }
+
+            const updateActiveLink = (activeLink) => {
+                links.forEach((link) => {
+                    link.removeAttribute('aria-current');
+                    const item = link.closest('.fp-experience-nav__item');
+                    if (item) {
+                        item.classList.remove('is-active');
+                    }
+                });
+
+                if (!activeLink) {
+                    return;
+                }
+
+                activeLink.setAttribute('aria-current', 'step');
+                const activeItem = activeLink.closest('.fp-experience-nav__item');
+                if (activeItem) {
+                    activeItem.classList.add('is-active');
+                }
+            };
+
+            updateActiveLink(links[0]);
+
+            if ('IntersectionObserver' in window) {
+                const observer = new IntersectionObserver((entries) => {
+                    const visibleEntry = entries
+                        .filter((entry) => entry.isIntersecting)
+                        .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+
+                    if (visibleEntry && sections.has(visibleEntry.target)) {
+                        updateActiveLink(sections.get(visibleEntry.target));
+                    }
+                }, {
+                    rootMargin: `-${scrollOffset}px 0px -40% 0px`,
+                    threshold: [0.1, 0.25, 0.5, 0.75]
+                });
+
+                sections.forEach((_link, section) => observer.observe(section));
+            } else {
+                const throttle = (window._ && _.throttle) ? _.throttle : function(fn, wait) {
+                    let timeout = null;
+                    return function() {
+                        if (timeout) {
+                            return;
+                        }
+                        timeout = setTimeout(() => {
+                            fn();
+                            timeout = null;
+                        }, wait);
+                    };
+                };
+
+                const handleScroll = () => {
+                    let activeLink = null;
+                    sections.forEach((link, section) => {
+                        const rect = section.getBoundingClientRect();
+                        if (rect.top <= scrollOffset && rect.bottom > scrollOffset) {
+                            activeLink = link;
+                        }
+                    });
+
+                    if (activeLink) {
+                        updateActiveLink(activeLink);
+                    }
+                };
+
+                window.addEventListener('scroll', throttle(handleScroll, 150));
+                handleScroll();
+            }
+
+            nav.addEventListener('click', (event) => {
+                const link = event.target.closest('.fp-experience-nav__link');
+                if (!link) {
+                    return;
+                }
+
+                const targetId = link.dataset.sectionTarget;
+                if (!targetId) {
+                    return;
+                }
+
+                const section = document.getElementById(targetId);
+                if (!section) {
+                    return;
+                }
+
+                event.preventDefault();
+
+                const targetTop = section.getBoundingClientRect().top + window.pageYOffset;
+                const behavior = 'scrollBehavior' in document.documentElement.style ? 'smooth' : 'auto';
+
+                window.scrollTo({
+                    top: targetTop - scrollOffset,
+                    left: 0,
+                    behavior
+                });
+
+                if (typeof section.focus === 'function') {
+                    setTimeout(() => {
+                        section.focus({ preventScroll: true });
+                    }, behavior === 'smooth' ? 400 : 0);
+                }
+            });
         },
 
         /**
