@@ -226,78 +226,189 @@ class Experience {
                         <div id="experience_product_data" class="panel woocommerce_options_panel">
                                 <?php wp_nonce_field( 'fp_esperienze_save', 'fp_esperienze_nonce' ); ?>
 
-                                <div class="metabox-holder fp-experience-metabox-holder">
-                                        <?php
-                                        $this->renderExperienceMetabox(
-                                                'fp-experience-basics',
-                                                __( 'Experience basics', 'fp-esperienze' ),
-                                                function () use ( $post ) {
+                                <?php
+                                $sections = array(
+                                        array(
+                                                'id'          => 'fp-experience-basics',
+                                                'title'       => __( 'Experience basics', 'fp-esperienze' ),
+                                                'nav_classes' => array(),
+                                                'callback'    => function () use ( $post ) {
                                                         $this->renderExperienceBasicsSection( $post );
-                                                }
-                                        );
-
-                                        $this->renderExperienceMetabox(
-                                                'fp-experience-content',
-                                                __( 'Content & media', 'fp-esperienze' ),
-                                                function () use ( $post, $gallery_images ) {
+                                                },
+                                                'args'        => array(
+                                                        'summary' => __( 'Capture the core product details, defaults, and marketplace settings for your tour.', 'fp-esperienze' ),
+                                                ),
+                                        ),
+                                        array(
+                                                'id'          => 'fp-experience-content',
+                                                'title'       => __( 'Content & media', 'fp-esperienze' ),
+                                                'nav_classes' => array(),
+                                                'callback'    => function () use ( $post, $gallery_images ) {
                                                         $this->renderExperienceContentSection( $post, $gallery_images );
-                                                }
-                                        );
-
-                                        $this->renderExperienceMetabox(
-                                                'fp-experience-policies',
-                                                __( 'Policies', 'fp-esperienze' ),
-                                                function () use ( $post ) {
+                                                },
+                                                'args'        => array(
+                                                        'summary' => __( 'Add compelling descriptions, highlights, and gallery imagery to inspire bookings.', 'fp-esperienze' ),
+                                                ),
+                                        ),
+                                        array(
+                                                'id'          => 'fp-experience-policies',
+                                                'title'       => __( 'Policies', 'fp-esperienze' ),
+                                                'nav_classes' => array(),
+                                                'callback'    => function () use ( $post ) {
                                                         $this->renderExperiencePoliciesSection( $post );
-                                                }
-                                        );
-
-                                        $this->renderExperienceMetabox(
-                                                'fp-recurring-schedules',
-                                                __( 'Recurring schedule', 'fp-esperienze' ),
-                                                function () use ( $post ) {
+                                                },
+                                                'args'        => array(
+                                                        'summary' => __( 'Define cancellation rules, requirements, and important notices for guests.', 'fp-esperienze' ),
+                                                ),
+                                        ),
+                                        array(
+                                                'id'          => 'fp-recurring-schedules',
+                                                'title'       => __( 'Recurring schedule', 'fp-esperienze' ),
+                                                'nav_classes' => array( 'fp-experience-nav__item--recurring-only' ),
+                                                'nav_badge'   => array(
+                                                        'type'           => 'count',
+                                                        'selector'       => '.fp-time-slot-card-clean, .fp-time-slot-row',
+                                                        'watch'          => '#fp-time-slots-container',
+                                                        'singular_label' => __( 'slot configured', 'fp-esperienze' ),
+                                                        'plural_label'   => __( 'slots configured', 'fp-esperienze' ),
+                                                        'empty_label'    => __( 'No slots configured yet', 'fp-esperienze' ),
+                                                        'empty_visible'  => '–',
+                                                ),
+                                                'callback'    => function () use ( $post ) {
                                                         $this->renderExperienceSchedulesSection( $post->ID );
                                                 },
-                                                array(
+                                                'args'        => array(
                                                         'classes' => array( 'fp-schedules-section' ),
-                                                )
-                                        );
-
-                                        $this->renderExperienceMetabox(
-                                                'fp-event-schedules',
-                                                __( 'Event dates & times', 'fp-esperienze' ),
-                                                function () use ( $post ) {
+                                                        'summary' => __( 'Create repeating departures with capacities, durations, and base pricing.', 'fp-esperienze' ),
+                                                ),
+                                        ),
+                                        array(
+                                                'id'          => 'fp-event-schedules',
+                                                'title'       => __( 'Event dates & times', 'fp-esperienze' ),
+                                                'nav_classes' => array( 'fp-experience-nav__item--event-only' ),
+                                                'nav_badge'   => array(
+                                                        'type'           => 'count',
+                                                        'selector'       => '.fp-event-date-card',
+                                                        'watch'          => '#fp-event-schedule-builder',
+                                                        'singular_label' => __( 'event date', 'fp-esperienze' ),
+                                                        'plural_label'   => __( 'event dates', 'fp-esperienze' ),
+                                                        'empty_label'    => __( 'No event dates yet', 'fp-esperienze' ),
+                                                        'empty_visible'  => '–',
+                                                ),
+                                                'callback'    => function () use ( $post ) {
                                                         $this->renderExperienceEventSchedulesSection( $post->ID );
                                                 },
-                                                array(
-                                                        'classes' => array( 'fp-event-schedules-section' ),
-                                                        'style'   => 'display:none;',
-                                                )
-                                        );
-
-                                        $this->renderExperienceMetabox(
-                                                'fp-overrides-section',
-                                                __( 'Schedule exceptions', 'fp-esperienze' ),
-                                                function () use ( $post ) {
+                                                'args'        => array(
+                                                        'classes' => array( 'fp-event-schedules-section', 'fp-hidden' ),
+                                                        'summary' => __( 'Plan one-off events with bespoke availability outside of the recurring cadence.', 'fp-esperienze' ),
+                                                ),
+                                        ),
+                                        array(
+                                                'id'          => 'fp-overrides-section',
+                                                'title'       => __( 'Schedule exceptions', 'fp-esperienze' ),
+                                                'nav_classes' => array( 'fp-experience-nav__item--recurring-only' ),
+                                                'nav_badge'   => array(
+                                                        'type'           => 'count',
+                                                        'selector'       => '.fp-override-row',
+                                                        'watch'          => '#fp-overrides-container',
+                                                        'singular_label' => __( 'override', 'fp-esperienze' ),
+                                                        'plural_label'   => __( 'overrides', 'fp-esperienze' ),
+                                                        'empty_label'    => __( 'No overrides yet', 'fp-esperienze' ),
+                                                        'empty_visible'  => '–',
+                                                ),
+                                                'callback'    => function () use ( $post ) {
                                                         $this->renderExperienceOverridesSection( $post->ID );
                                                 },
-                                                array(
+                                                'args'        => array(
                                                         'classes' => array( 'fp-overrides-section-wrapper' ),
-                                                )
-                                        );
-
-                                        $this->renderExperienceMetabox(
-                                                'fp-experience-extras',
-                                                __( 'Extras', 'fp-esperienze' ),
-                                                function () use ( $post ) {
+                                                        'summary' => __( 'Block dates, adjust capacities, or tweak pricing for specific departures.', 'fp-esperienze' ),
+                                                ),
+                                        ),
+                                        array(
+                                                'id'          => 'fp-experience-extras',
+                                                'title'       => __( 'Extras', 'fp-esperienze' ),
+                                                'nav_classes' => array(),
+                                                'nav_badge'   => array(
+                                                        'type'           => 'checked',
+                                                        'selector'       => 'input[name="fp_product_extras[]"]:checked',
+                                                        'watch'          => '#fp-extras-container',
+                                                        'singular_label' => __( 'extra selected', 'fp-esperienze' ),
+                                                        'plural_label'   => __( 'extras selected', 'fp-esperienze' ),
+                                                        'empty_label'    => __( 'No extras selected', 'fp-esperienze' ),
+                                                        'empty_visible'  => '–',
+                                                ),
+                                                'callback'    => function () use ( $post ) {
                                                         $this->renderExperienceExtrasSection( $post->ID );
-                                                }
-                                        );
-                                        ?>
+                                                },
+                                                'args'        => array(
+                                                        'summary' => __( 'Offer optional add-ons with flexible pricing and availability rules.', 'fp-esperienze' ),
+                                                ),
+                                        ),
+                                );
+                                ?>
+
+                                <div class="fp-experience-layout">
+                                        <nav class="fp-experience-nav" aria-label="<?php esc_attr_e( 'Experience product sections', 'fp-esperienze' ); ?>">
+                                                <h2 class="fp-experience-nav__title"><?php esc_html_e( 'Quick navigation', 'fp-esperienze' ); ?></h2>
+                                                <ol class="fp-experience-nav__list">
+                                                        <?php foreach ( $sections as $section ) : ?>
+                                                                <?php
+                                                                $nav_classes = array_merge(
+                                                                        array( 'fp-experience-nav__item' ),
+                                                                        $section['nav_classes']
+                                                                );
+                                                                $nav_classes = array_map( 'sanitize_html_class', array_filter( $nav_classes ) );
+                                                                ?>
+                                                                <?php $section_summary = $section['args']['summary'] ?? ''; ?>
+                                                                <li class="<?php echo esc_attr( implode( ' ', $nav_classes ) ); ?>" data-section="<?php echo esc_attr( $section['id'] ); ?>">
+                                                                        <a class="fp-experience-nav__link" data-section-target="<?php echo esc_attr( $section['id'] ); ?>" href="#<?php echo esc_attr( $section['id'] ); ?>" title="<?php echo esc_attr( trim( $section_summary ) ? $section['title'] . ' — ' . $section_summary : $section['title'] ); ?>">
+                                                                                <span class="fp-experience-nav__label">
+                                                                                        <span class="fp-experience-nav__label-text"><?php echo esc_html( $section['title'] ); ?></span>
+                                                                                        <?php if ( ! empty( $section_summary ) ) : ?>
+                                                                                                <span class="fp-experience-nav__hint"><?php echo esc_html( $section_summary ); ?></span>
+                                                                                        <?php endif; ?>
+                                                                                </span>
+                                                                                <?php if ( ! empty( $section['nav_badge'] ) ) :
+                                                                                        $badge = $section['nav_badge'];
+                                                                                        $badge_attributes = array(
+                                                                                                'class="fp-experience-nav__badge"',
+                                                                                                'aria-hidden="true"',
+                                                                                                'data-badge-type="' . esc_attr( $badge['type'] ) . '"',
+                                                                                                'data-target-selector="' . esc_attr( $badge['selector'] ) . '"',
+                                                                                                ! empty( $badge['watch'] ) ? 'data-watch-target="' . esc_attr( $badge['watch'] ) . '"' : '',
+                                                                                                ! empty( $badge['singular_label'] ) ? 'data-label-singular="' . esc_attr( $badge['singular_label'] ) . '"' : '',
+                                                                                                ! empty( $badge['plural_label'] ) ? 'data-label-plural="' . esc_attr( $badge['plural_label'] ) . '"' : '',
+                                                                                                ! empty( $badge['empty_label'] ) ? 'data-empty-label="' . esc_attr( $badge['empty_label'] ) . '"' : '',
+                                                                                                isset( $badge['empty_visible'] ) ? 'data-empty-visible="' . esc_attr( $badge['empty_visible'] ) . '"' : '',
+                                                                                        );
+                                                                                        ?>
+                                                                                        <span <?php echo implode( ' ', array_filter( $badge_attributes ) ); ?>></span>
+                                                                                        <span class="screen-reader-text fp-experience-nav__badge-sr"></span>
+                                                                                <?php endif; ?>
+                                                                        </a>
+                                                                </li>
+                                                        <?php endforeach; ?>
+                                                </ol>
+                                        </nav>
+
+                                        <div class="fp-experience-sections">
+                                                <div class="metabox-holder fp-experience-metabox-holder">
+                                                        <?php
+                                                        foreach ( $sections as $section ) {
+                                                                $this->renderExperienceMetabox(
+                                                                        $section['id'],
+                                                                        $section['title'],
+                                                                        $section['callback'],
+                                                                        $section['args'] ?? array()
+                                                                );
+                                                        }
+                                                        ?>
+                                                </div>
+                                        </div>
                                 </div>
                         </div>
 
-                        <div id="dynamic_pricing_product_data" class="panel woocommerce_options_panel">
+                        <div id="dynamic_pricing_product_data" class="panel woocommerce_options_panel fp-pricing-panel">
                                 <?php $this->renderDynamicPricingPanel( $post->ID ); ?>
                         </div>
                 <?php
@@ -318,16 +429,18 @@ class Experience {
                 );
 
                 $classes = array_map( 'sanitize_html_class', array_filter( $classes ) );
-                $style   = '';
-
-                if ( isset( $args['style'] ) && '' !== trim( (string) $args['style'] ) ) {
-                        $style = ' style="' . esc_attr( $args['style'] ) . '"';
-                }
+                $heading_id = $id . '-title';
 
                 ?>
-                <div id="<?php echo esc_attr( $id ); ?>" class="<?php echo esc_attr( implode( ' ', $classes ) ); ?>"<?php echo $style; ?>>
-                        <h2 class="hndle"><span><?php echo esc_html( $title ); ?></span></h2>
+                $summary = isset( $args['summary'] ) ? wp_strip_all_tags( $args['summary'] ) : '';
+
+                ?>
+                <div id="<?php echo esc_attr( $id ); ?>" class="<?php echo esc_attr( implode( ' ', $classes ) ); ?>" data-nav-section="<?php echo esc_attr( $id ); ?>" tabindex="-1" aria-labelledby="<?php echo esc_attr( $heading_id ); ?>"<?php echo $summary ? ' data-section-summary="' . esc_attr( $summary ) . '"' : ''; ?>>
+                        <h2 class="hndle" id="<?php echo esc_attr( $heading_id ); ?>"><span><?php echo esc_html( $title ); ?></span></h2>
                         <div class="inside">
+                                <?php if ( $summary ) : ?>
+                                        <p class="fp-experience-metabox__summary"><?php echo esc_html( $summary ); ?></p>
+                                <?php endif; ?>
                                 <?php call_user_func( $callback ); ?>
                         </div>
                 </div>
@@ -485,7 +598,7 @@ class Experience {
                         <label for="fp-exp-gallery-list"><?php esc_html_e( 'Experience gallery', 'fp-esperienze' ); ?></label>
                         <div class="fp-exp-gallery-actions wp-clearfix">
                                 <button type="button" class="button button-secondary fp-exp-gallery-add"><?php esc_html_e( 'Add images', 'fp-esperienze' ); ?></button>
-                                <button type="button" class="button-link fp-exp-gallery-clear"<?php echo empty( $gallery_images ) ? ' style="display:none;"' : ''; ?>><?php esc_html_e( 'Remove all', 'fp-esperienze' ); ?></button>
+                                <button type="button" class="button-link fp-exp-gallery-clear<?php echo empty( $gallery_images ) ? ' fp-hidden' : ''; ?>"><?php esc_html_e( 'Remove all', 'fp-esperienze' ); ?></button>
                         </div>
                         <p class="description"><?php esc_html_e( 'Select the media items that will build the gallery on the Experience page. Drag thumbnails to change their order and use Remove to delete a slide.', 'fp-esperienze' ); ?></p>
                         <div class="fp-exp-gallery-field" id="fp-exp-gallery-field">
@@ -523,7 +636,7 @@ class Experience {
                                                 </li>
                                         <?php endforeach; ?>
                                 </ul>
-                                <p class="fp-exp-gallery-empty"<?php echo ! empty( $gallery_images ) ? ' style="display:none;"' : ''; ?>><?php esc_html_e( 'No gallery images selected yet. Use “Add images” to pick them from the media library.', 'fp-esperienze' ); ?></p>
+                                <p class="fp-exp-gallery-empty<?php echo ! empty( $gallery_images ) ? ' fp-hidden' : ''; ?>"><?php esc_html_e( 'No gallery images selected yet. Use “Add images” to pick them from the media library.', 'fp-esperienze' ); ?></p>
                                 <span class="screen-reader-text fp-exp-gallery-status" aria-live="polite"></span>
                         </div>
                 </div>
@@ -542,7 +655,7 @@ class Experience {
                 </div>
 
                 <?php if ( apply_filters( 'fp_esperienze_enable_raw_schedules', false ) ) : ?>
-                        <div id="fp-schedule-raw-container" class="fp-schedule-raw-container" style="display: none;">
+                        <div id="fp-schedule-raw-container" class="fp-schedule-raw-container fp-hidden">
                                 <h3><?php _e( 'Advanced Mode (Raw Schedules)', 'fp-esperienze' ); ?></h3>
                                 <div id="fp-schedules-container">
                                         <?php $this->renderSchedulesSection( $product_id ); ?>
@@ -641,138 +754,157 @@ class Experience {
 			6 => __( 'Saturday', 'fp-esperienze' ),
 		);
 
-		?>
-		<div class="fp-schedule-row" data-index="<?php echo esc_attr( $index ); ?>" style="border: 1px solid #ddd; padding: 15px; margin-bottom: 10px; background: #f9f9f9; border-radius: 4px;">
-			<input type="hidden" name="schedules[<?php echo esc_attr( $index ); ?>][id]" value="<?php echo esc_attr( $schedule->id ?? '' ); ?>">
-			
-			<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 10px;">
-				<div>
-					<label style="font-weight: bold; display: block; margin-bottom: 5px;">
-						<?php _e( 'Day of Week', 'fp-esperienze' ); ?> <span style="color: red;">*</span>
-						<span class="dashicons dashicons-info" title="<?php esc_attr_e( 'Which day of the week this schedule applies to', 'fp-esperienze' ); ?>" style="font-size: 14px; color: #666;"></span>
-					</label>
-					<select name="schedules[<?php echo esc_attr( $index ); ?>][day_of_week]" required style="width: 100%;">
-						<option value=""><?php _e( 'Select Day', 'fp-esperienze' ); ?></option>
-						<?php foreach ( $days as $value => $label ) : ?>
-							<option value="<?php echo esc_attr( $value ); ?>" <?php selected( $schedule->day_of_week ?? '', $value ); ?>>
-								<?php echo esc_html( $label ); ?>
-							</option>
-						<?php endforeach; ?>
-					</select>
-				</div>
-				
-				<div>
-					<label style="font-weight: bold; display: block; margin-bottom: 5px;">
-						<?php _e( 'Start Time', 'fp-esperienze' ); ?> <span style="color: red;">*</span>
-						<span class="dashicons dashicons-info" title="<?php esc_attr_e( 'When the experience starts (24-hour format)', 'fp-esperienze' ); ?>" style="font-size: 14px; color: #666;"></span>
-					</label>
-					<input type="time" 
-							name="schedules[<?php echo esc_attr( $index ); ?>][start_time]" 
-							value="<?php echo esc_attr( $schedule->start_time ?? '' ); ?>" 
-							required 
-							style="width: 100%;"
-							title="<?php esc_attr_e( 'Experience start time', 'fp-esperienze' ); ?>">
-				</div>
-				
-				<div>
-					<label style="font-weight: bold; display: block; margin-bottom: 5px;">
-						<?php _e( 'Duration (minutes)', 'fp-esperienze' ); ?> <span style="color: red;">*</span>
-						<span class="dashicons dashicons-info" title="<?php esc_attr_e( 'How long the experience lasts in minutes', 'fp-esperienze' ); ?>" style="font-size: 14px; color: #666;"></span>
-					</label>
-					<input type="number"
-							name="schedules[<?php echo esc_attr( $index ); ?>][duration_min]"
-							value="<?php echo esc_attr( $schedule->duration_min ?? 60 ); ?>"
-							min="1"
-							step="1"
-							required
-							style="width: 100%;"
-							title="<?php esc_attr_e( 'Duration in minutes (minimum 1)', 'fp-esperienze' ); ?>">
-				</div>
-				
-				<div>
-					<label style="font-weight: bold; display: block; margin-bottom: 5px;">
-						<?php _e( 'Max Capacity', 'fp-esperienze' ); ?> <span style="color: red;">*</span>
-						<span class="dashicons dashicons-info" title="<?php esc_attr_e( 'Maximum number of participants for this schedule', 'fp-esperienze' ); ?>" style="font-size: 14px; color: #666;"></span>
-					</label>
-					<input type="number"
-							name="schedules[<?php echo esc_attr( $index ); ?>][capacity]"
-							value="<?php echo esc_attr( $schedule->capacity ?? 10 ); ?>"
-							min="1"
-							step="1"
-							required
-							style="width: 100%;"
-							title="<?php esc_attr_e( 'Maximum participants (minimum 1)', 'fp-esperienze' ); ?>">
-				</div>
-			</div>
-			
-			<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 10px;">
-				<div>
-					<label style="font-weight: bold; display: block; margin-bottom: 5px;">
-						<?php _e( 'Language', 'fp-esperienze' ); ?>
-						<span class="dashicons dashicons-info" title="<?php esc_attr_e( 'Experience language code (e.g., en, it, es)', 'fp-esperienze' ); ?>" style="font-size: 14px; color: #666;"></span>
-					</label>
-					<input type="text"
-							name="schedules[<?php echo esc_attr( $index ); ?>][lang]"
-							value="<?php echo esc_attr( $schedule->lang ?? 'en' ); ?>"
-							maxlength="10"
-							style="width: 100%;"
-							required
-							title="<?php esc_attr_e( 'Language code (ISO format preferred)', 'fp-esperienze' ); ?>">
-				</div>
-				
-				<div>
-					<label style="font-weight: bold; display: block; margin-bottom: 5px;">
-						<?php _e( 'Meeting Point', 'fp-esperienze' ); ?>
-						<span class="dashicons dashicons-info" title="<?php esc_attr_e( 'Where participants should meet for this experience', 'fp-esperienze' ); ?>" style="font-size: 14px; color: #666;"></span>
-					</label>
-					<select name="schedules[<?php echo esc_attr( $index ); ?>][meeting_point_id]" style="width: 100%;" required>
-						<?php foreach ( $meeting_points as $value => $label ) : ?>
-							<option value="<?php echo esc_attr( $value ); ?>" <?php selected( $schedule->meeting_point_id ?? '', $value ); ?>>
-								<?php echo esc_html( $label ); ?>
-							</option>
-						<?php endforeach; ?>
-					</select>
-				</div>
-				
-				<div>
-					<label style="font-weight: bold; display: block; margin-bottom: 5px;">
-						<?php _e( 'Adult Price', 'fp-esperienze' ); ?>
-						<span class="dashicons dashicons-info" title="<?php esc_attr_e( 'Price per adult participant', 'fp-esperienze' ); ?>" style="font-size: 14px; color: #666;"></span>
-					</label>
-					<input type="number"
-							name="schedules[<?php echo esc_attr( $index ); ?>][price_adult]"
-							value="<?php echo esc_attr( $schedule->price_adult ?? '' ); ?>"
-							min="0"
-							step="0.01"
-							style="width: 100%;"
-							required
-							title="<?php esc_attr_e( 'Adult price', 'fp-esperienze' ); ?>">
-				</div>
-				
-				<div>
-					<label style="font-weight: bold; display: block; margin-bottom: 5px;">
-						<?php _e( 'Child Price', 'fp-esperienze' ); ?>
-						<span class="dashicons dashicons-info" title="<?php esc_attr_e( 'Price per child participant', 'fp-esperienze' ); ?>" style="font-size: 14px; color: #666;"></span>
-					</label>
-					<input type="number"
-							name="schedules[<?php echo esc_attr( $index ); ?>][price_child]"
-							value="<?php echo esc_attr( $schedule->price_child ?? '' ); ?>"
-							min="0"
-							step="0.01"
-							style="width: 100%;"
-							required
-							title="<?php esc_attr_e( 'Child price', 'fp-esperienze' ); ?>">
-				</div>
-			</div>
-			
-                        <div style="text-align: right;">
+                ?>
+                <div class="fp-schedule-row" data-index="<?php echo esc_attr( $index ); ?>">
+                        <input type="hidden" name="schedules[<?php echo esc_attr( $index ); ?>][id]" value="<?php echo esc_attr( $schedule->id ?? '' ); ?>">
+
+                        <div class="fp-schedule-row__grid">
+                                <div class="fp-schedule-row__field form-field">
+                                        <label>
+                                                <span class="fp-field-label-text">
+                                                        <?php _e( 'Day of Week', 'fp-esperienze' ); ?>
+                                                        <span class="fp-required-indicator">*</span>
+                                                </span>
+                                                <span class="woocommerce-help-tip" data-tip="<?php echo esc_attr__( 'Which day of the week this schedule applies to', 'fp-esperienze' ); ?>"></span>
+                                        </label>
+                                        <select name="schedules[<?php echo esc_attr( $index ); ?>][day_of_week]" required>
+                                                <option value=""><?php _e( 'Select Day', 'fp-esperienze' ); ?></option>
+                                                <?php foreach ( $days as $value => $label ) : ?>
+                                                        <option value="<?php echo esc_attr( $value ); ?>" <?php selected( $schedule->day_of_week ?? '', $value ); ?>>
+                                                                <?php echo esc_html( $label ); ?>
+                                                        </option>
+                                                <?php endforeach; ?>
+                                        </select>
+                                </div>
+
+                                <div class="fp-schedule-row__field form-field">
+                                        <label>
+                                                <span class="fp-field-label-text">
+                                                        <?php _e( 'Start Time', 'fp-esperienze' ); ?>
+                                                        <span class="fp-required-indicator">*</span>
+                                                </span>
+                                                <span class="woocommerce-help-tip" data-tip="<?php echo esc_attr__( 'When the experience starts (24-hour format)', 'fp-esperienze' ); ?>"></span>
+                                        </label>
+                                        <input type="time"
+                                                        name="schedules[<?php echo esc_attr( $index ); ?>][start_time]"
+                                                        value="<?php echo esc_attr( $schedule->start_time ?? '' ); ?>"
+                                                        required
+                                                        title="<?php esc_attr_e( 'Experience start time', 'fp-esperienze' ); ?>">
+                                </div>
+
+                                <div class="fp-schedule-row__field form-field">
+                                        <label>
+                                                <span class="fp-field-label-text">
+                                                        <?php _e( 'Duration (minutes)', 'fp-esperienze' ); ?>
+                                                        <span class="fp-required-indicator">*</span>
+                                                </span>
+                                                <span class="woocommerce-help-tip" data-tip="<?php echo esc_attr__( 'How long the experience lasts in minutes', 'fp-esperienze' ); ?>"></span>
+                                        </label>
+                                        <input type="number"
+                                                        name="schedules[<?php echo esc_attr( $index ); ?>][duration_min]"
+                                                        value="<?php echo esc_attr( $schedule->duration_min ?? 60 ); ?>"
+                                                        min="1"
+                                                        step="1"
+                                                        required
+                                                        title="<?php esc_attr_e( 'Duration in minutes (minimum 1)', 'fp-esperienze' ); ?>">
+                                </div>
+
+                                <div class="fp-schedule-row__field form-field">
+                                        <label>
+                                                <span class="fp-field-label-text">
+                                                        <?php _e( 'Max Capacity', 'fp-esperienze' ); ?>
+                                                        <span class="fp-required-indicator">*</span>
+                                                </span>
+                                                <span class="woocommerce-help-tip" data-tip="<?php echo esc_attr__( 'Maximum number of participants for this schedule', 'fp-esperienze' ); ?>"></span>
+                                        </label>
+                                        <input type="number"
+                                                        name="schedules[<?php echo esc_attr( $index ); ?>][capacity]"
+                                                        value="<?php echo esc_attr( $schedule->capacity ?? 10 ); ?>"
+                                                        min="1"
+                                                        step="1"
+                                                        required
+                                                        title="<?php esc_attr_e( 'Maximum participants (minimum 1)', 'fp-esperienze' ); ?>">
+                                </div>
+                        </div>
+
+                        <div class="fp-schedule-row__grid">
+                                <div class="fp-schedule-row__field form-field">
+                                        <label>
+                                                <span class="fp-field-label-text">
+                                                        <?php _e( 'Language', 'fp-esperienze' ); ?>
+                                                        <span class="fp-required-indicator">*</span>
+                                                </span>
+                                                <span class="woocommerce-help-tip" data-tip="<?php echo esc_attr__( 'Experience language code (e.g., en, it, es)', 'fp-esperienze' ); ?>"></span>
+                                        </label>
+                                        <input type="text"
+                                                        name="schedules[<?php echo esc_attr( $index ); ?>][lang]"
+                                                        value="<?php echo esc_attr( $schedule->lang ?? 'en' ); ?>"
+                                                        maxlength="10"
+                                                        required
+                                                        title="<?php esc_attr_e( 'Language code (ISO format preferred)', 'fp-esperienze' ); ?>">
+                                </div>
+
+                                <div class="fp-schedule-row__field form-field">
+                                        <label>
+                                                <span class="fp-field-label-text">
+                                                        <?php _e( 'Meeting Point', 'fp-esperienze' ); ?>
+                                                        <span class="fp-required-indicator">*</span>
+                                                </span>
+                                                <span class="woocommerce-help-tip" data-tip="<?php echo esc_attr__( 'Where participants should meet for this experience', 'fp-esperienze' ); ?>"></span>
+                                        </label>
+                                        <select name="schedules[<?php echo esc_attr( $index ); ?>][meeting_point_id]" required>
+                                                <option value=""><?php _e( 'Select meeting point', 'fp-esperienze' ); ?></option>
+                                                <?php foreach ( $meeting_points as $value => $label ) : ?>
+                                                        <option value="<?php echo esc_attr( $value ); ?>" <?php selected( $schedule->meeting_point_id ?? '', $value ); ?>>
+                                                                <?php echo esc_html( $label ); ?>
+                                                        </option>
+                                                <?php endforeach; ?>
+                                        </select>
+                                </div>
+
+                                <div class="fp-schedule-row__field form-field">
+                                        <label>
+                                                <span class="fp-field-label-text">
+                                                        <?php _e( 'Adult Price', 'fp-esperienze' ); ?>
+                                                        <span class="fp-required-indicator">*</span>
+                                                </span>
+                                                <span class="woocommerce-help-tip" data-tip="<?php echo esc_attr__( 'Price per adult participant', 'fp-esperienze' ); ?>"></span>
+                                        </label>
+                                        <input type="number"
+                                                        name="schedules[<?php echo esc_attr( $index ); ?>][price_adult]"
+                                                        value="<?php echo esc_attr( $schedule->price_adult ?? '' ); ?>"
+                                                        min="0"
+                                                        step="0.01"
+                                                        required
+                                                        title="<?php esc_attr_e( 'Adult price', 'fp-esperienze' ); ?>">
+                                </div>
+
+                                <div class="fp-schedule-row__field form-field">
+                                        <label>
+                                                <span class="fp-field-label-text">
+                                                        <?php _e( 'Child Price', 'fp-esperienze' ); ?>
+                                                        <span class="fp-required-indicator">*</span>
+                                                </span>
+                                                <span class="woocommerce-help-tip" data-tip="<?php echo esc_attr__( 'Price per child participant', 'fp-esperienze' ); ?>"></span>
+                                        </label>
+                                        <input type="number"
+                                                        name="schedules[<?php echo esc_attr( $index ); ?>][price_child]"
+                                                        value="<?php echo esc_attr( $schedule->price_child ?? '' ); ?>"
+                                                        min="0"
+                                                        step="0.01"
+                                                        required
+                                                        title="<?php esc_attr_e( 'Child price', 'fp-esperienze' ); ?>">
+                                </div>
+                        </div>
+
+                        <div class="fp-schedule-row__actions">
                                 <button type="button" class="button button-link-delete fp-remove-schedule">
-                                        <span class="dashicons dashicons-trash" style="vertical-align: middle;"></span>
+                                        <span class="dashicons dashicons-trash"></span>
                                         <?php _e( 'Remove Schedule', 'fp-esperienze' ); ?>
                                 </button>
-			</div>
-		</div>
-		<?php
+                        </div>
+                </div>
+                <?php
 	}
 
 	/**
@@ -832,23 +964,81 @@ class Experience {
 		</div>
 		
 		<!-- Hidden container for generated schedule inputs -->
-		<div id="fp-generated-schedules" style="display: none;"></div>
+                <div id="fp-generated-schedules" class="fp-hidden"></div>
 		<?php
 	}
 
 	/**
 	 * Render a clean time slot card - REFACTORED VERSION
 	 */
-	private function renderTimeSlotCardClean( $slot, $index, $days, $meeting_points, $default_duration, $default_capacity, $default_language, $default_meeting_point, $default_price_adult, $default_price_child, $product_id ): void {
-		?>
-		<div class="fp-time-slot-content-clean">
-			<!-- Time slot header -->
-			<div class="fp-time-slot-header-clean">
-				<div class="fp-time-field-clean">
-					<label for="time-<?php echo esc_attr( $index ); ?>">
-						<span class="dashicons dashicons-clock"></span>
-						<?php _e( 'Start Time', 'fp-esperienze' ); ?> <span class="required">*</span>
-					</label>
+        private function renderTimeSlotCardClean( $slot, $index, $days, $meeting_points, $default_duration, $default_capacity, $default_language, $default_meeting_point, $default_price_adult, $default_price_child, $product_id ): void {
+                $start_time        = isset( $slot['start_time'] ) ? trim( (string) $slot['start_time'] ) : '';
+                $day_count         = count( $slot['days'] ?? array() );
+                $schedule_id_count = count( $slot['schedule_ids'] ?? array() );
+                $meeting_point_id  = $slot['meeting_point_id'] ?? $default_meeting_point;
+                $has_missing_fields = '' === $start_time || 0 === $day_count || '' === (string) $meeting_point_id;
+
+                $status_badges = array();
+
+                if ( $has_missing_fields ) {
+                        $status_badges[] = array(
+                                'label' => __( 'Needs details', 'fp-esperienze' ),
+                                'icon'  => 'warning',
+                                'class' => 'is-warning',
+                        );
+                }
+
+                if ( $schedule_id_count > 0 ) {
+                        $status_badges[] = array(
+                                'label' => sprintf(
+                                        _n( '%d active slot', '%d active slots', $schedule_id_count, 'fp-esperienze' ),
+                                        $schedule_id_count
+                                ),
+                                'icon'  => 'yes',
+                                'class' => 'is-success',
+                        );
+                } else {
+                        $status_badges[] = array(
+                                'label' => __( 'Draft slot', 'fp-esperienze' ),
+                                'icon'  => 'clock',
+                                'class' => 'is-info',
+                        );
+                }
+
+                if ( $day_count > 0 ) {
+                        $status_badges[] = array(
+                                'label' => sprintf(
+                                        _n( '%d day selected', '%d days selected', $day_count, 'fp-esperienze' ),
+                                        $day_count
+                                ),
+                                'icon'  => 'calendar-alt',
+                                'class' => 'is-info',
+                        );
+                }
+
+                ?>
+                <div class="fp-time-slot-content-clean">
+                        <div class="fp-slot-status-badges">
+                                <?php foreach ( $status_badges as $badge ) :
+                                        $badge_classes = array(
+                                                'fp-slot-status-badge',
+                                                sanitize_html_class( $badge['class'] )
+                                        );
+                                        ?>
+                                        <span class="<?php echo esc_attr( implode( ' ', $badge_classes ) ); ?>">
+                                                <span class="dashicons dashicons-<?php echo esc_attr( $badge['icon'] ); ?>" aria-hidden="true"></span>
+                                                <?php echo esc_html( $badge['label'] ); ?>
+                                        </span>
+                                <?php endforeach; ?>
+                        </div>
+
+                        <!-- Time slot header -->
+                        <div class="fp-time-slot-header-clean">
+                                <div class="fp-time-field-clean form-field fp-field fp-field--time">
+                                        <label for="time-<?php echo esc_attr( $index ); ?>">
+                                                <span class="dashicons dashicons-clock"></span>
+                                                <?php _e( 'Start Time', 'fp-esperienze' ); ?> <span class="required">*</span>
+                                        </label>
 					<input type="time" 
 							id="time-<?php echo esc_attr( $index ); ?>"
 							name="builder_slots[<?php echo esc_attr( $index ); ?>][start_time]" 
@@ -856,11 +1046,11 @@ class Experience {
 							required>
 				</div>
 				
-				<div class="fp-days-field-clean">
-					<label>
-						<span class="dashicons dashicons-calendar-alt"></span>
-						<?php _e( 'Days of Week', 'fp-esperienze' ); ?> <span class="required">*</span>
-					</label>
+                                <div class="fp-days-field-clean form-field fp-field fp-field--days">
+                                        <label>
+                                                <span class="dashicons dashicons-calendar-alt"></span>
+                                                <?php _e( 'Days of Week', 'fp-esperienze' ); ?> <span class="required">*</span>
+                                        </label>
 					<div class="fp-days-pills-clean">
 						<?php foreach ( $days as $day_value => $day_label ) : ?>
 							<div class="fp-day-pill-clean">
@@ -878,11 +1068,11 @@ class Experience {
 				</div>
 				
                                 <div class="fp-slot-actions-clean">
-                                        <button type="button" class="button button-link-delete fp-remove-time-slot-clean">
-                                                <span class="dashicons dashicons-trash"></span>
-                                                <?php _e( 'Remove', 'fp-esperienze' ); ?>
+                                        <button type="button" class="button button-link-delete fp-remove-time-slot-clean" data-index="<?php echo esc_attr( $index ); ?>" aria-label="<?php esc_attr_e( 'Remove time slot', 'fp-esperienze' ); ?>">
+                                                <span class="dashicons dashicons-trash" aria-hidden="true"></span>
+                                                <?php _e( 'Remove slot', 'fp-esperienze' ); ?>
                                         </button>
-				</div>
+                                </div>
 			</div>
 			
 			<!-- Slot settings -->
@@ -964,12 +1154,12 @@ class Experience {
 	private function renderTimeSlot( $slot, $index, $days, $meeting_points, $default_duration, $default_capacity, $default_language, $default_meeting_point, $default_price_adult, $default_price_child, $product_id ): void {
 		?>
 		<div class="fp-time-slot-row">
-			<div class="fp-time-slot-header">
-				<div class="fp-time-field">
-					<label>
-						<span class="dashicons dashicons-clock"></span>
-						<?php _e( 'Start Time', 'fp-esperienze' ); ?> <span style="color: red;">*</span>
-					</label>
+                        <div class="fp-time-slot-header">
+                                <div class="fp-time-field form-field fp-field fp-field--time">
+                                        <label>
+                                                <span class="dashicons dashicons-clock"></span>
+                                                <?php _e( 'Start Time', 'fp-esperienze' ); ?> <span class="fp-required-indicator">*</span>
+                                        </label>
 					<input type="time" 
 							name="builder_slots[<?php echo esc_attr( $index ); ?>][start_time]" 
 							value="<?php echo esc_attr( $slot['start_time'] ?? '' ); ?>" 
@@ -980,11 +1170,11 @@ class Experience {
 					</div>
 				</div>
 				
-				<div class="fp-days-field">
-					<label>
-						<span class="dashicons dashicons-calendar-alt"></span>
-						<?php _e( 'Days of Week', 'fp-esperienze' ); ?> <span style="color: red;">*</span>
-					</label>
+                                <div class="fp-days-field form-field fp-field fp-field--days">
+                                        <label>
+                                                <span class="dashicons dashicons-calendar-alt"></span>
+                                                <?php _e( 'Days of Week', 'fp-esperienze' ); ?> <span class="fp-required-indicator">*</span>
+                                        </label>
 					<div class="fp-days-selector" aria-describedby="fp-days-help-<?php echo esc_attr( $index ); ?>">
 						<div class="fp-days-pills">
 							<?php foreach ( $days as $day_value => $day_label ) : ?>
@@ -1007,11 +1197,11 @@ class Experience {
 				</div>
 				
                                 <div>
-                                        <button type="button" class="button button-link-delete fp-remove-time-slot">
+                                        <button type="button" class="button button-link-delete fp-remove-time-slot" aria-label="<?php esc_attr_e( 'Remove time slot', 'fp-esperienze' ); ?>">
                                                 <span class="dashicons dashicons-trash"></span>
                                                 <?php _e( 'Remove', 'fp-esperienze' ); ?>
                                         </button>
-				</div>
+                                </div>
 			</div>
 			
 			<div class="fp-overrides-section">
@@ -1222,7 +1412,7 @@ class Experience {
 		</div>
 		
 		<!-- Hidden container for generated event schedule inputs -->
-		<div id="fp-generated-event-schedules" style="display: none;"></div>
+                <div id="fp-generated-event-schedules" class="fp-hidden"></div>
 		<?php
 	}
 
@@ -1623,8 +1813,8 @@ class Experience {
 					<?php _e( 'This date is very far in the future. Please verify it\'s correct.', 'fp-esperienze' ); ?>
 				</div>
 			<?php endif; ?>
-			<?php if ( $is_past ) : ?>
-				<div class="fp-date-warning show" style="border-color: #8c8f94; color: #646970;">
+                        <?php if ( $is_past ) : ?>
+                                <div class="fp-date-warning show is-info">
 					<span class="dashicons dashicons-info"></span>
 					<?php _e( 'This date is in the past.', 'fp-esperienze' ); ?>
 				</div>
@@ -1806,44 +1996,72 @@ class Experience {
 		$product_extras     = ExtraManager::getProductExtras( $product_id, false ); // Include inactive for editing
 		$selected_extra_ids = array_column( $product_extras, 'id' );
 
-		?>
-		<div class="fp-extras-selection">
-			<p><?php _e( 'Select which extras are available for this experience:', 'fp-esperienze' ); ?></p>
-			
-			<?php if ( empty( $all_extras ) ) : ?>
-				<p class="description">
-					<?php
-					printf(
-						__( 'No extras available. <a href="%s">Create some extras</a> first.', 'fp-esperienze' ),
-						admin_url( 'admin.php?page=fp-esperienze-extras' )
-					);
-					?>
-				</p>
-			<?php else : ?>
-				<div class="fp-available-extras">
-					<?php foreach ( $all_extras as $extra ) : ?>
-						<label class="fp-extra-checkbox">
-							<input type="checkbox" 
-									name="fp_product_extras[]" 
-									value="<?php echo esc_attr( $extra->id ); ?>"
-									<?php checked( in_array( $extra->id, $selected_extra_ids ) ); ?>>
-							<strong><?php echo esc_html( $extra->name ); ?></strong>
-							<?php if ( function_exists( 'wc_price' ) ) : ?>
-								(<?php echo wc_price( $extra->price ); ?> 
-							<?php else : ?>
-								(<?php echo '$' . number_format( $extra->price, 2 ); ?> 
-							<?php endif; ?>
-							<?php echo esc_html( $extra->billing_type === 'per_person' ? __( 'per person', 'fp-esperienze' ) : __( 'per booking', 'fp-esperienze' ) ); ?>)
-							<?php if ( $extra->description ) : ?>
-								<br><span class="description"><?php echo esc_html( $extra->description ); ?></span>
-							<?php endif; ?>
-						</label>
-					<?php endforeach; ?>
-				</div>
-			<?php endif; ?>
-		</div>
-		<?php
-	}
+                ?>
+                <div class="fp-extras-selection">
+                        <fieldset class="fp-extras-fieldset">
+                                <legend><?php esc_html_e( 'Available extras', 'fp-esperienze' ); ?></legend>
+                                <p class="fp-extras-intro description"><?php esc_html_e( 'Select the add-ons that customers can purchase alongside this experience.', 'fp-esperienze' ); ?></p>
+
+                                <?php if ( empty( $all_extras ) ) : ?>
+                                        <div class="fp-extras-empty notice notice-info inline">
+                                                <p><?php esc_html_e( 'You have not created any extras yet. Extras let you upsell add-ons such as equipment rental or tastings.', 'fp-esperienze' ); ?></p>
+                                                <p>
+                                                        <a class="button button-secondary" href="<?php echo esc_url( admin_url( 'admin.php?page=fp-esperienze-extras' ) ); ?>">
+                                                                <?php esc_html_e( 'Create your first extra', 'fp-esperienze' ); ?>
+                                                        </a>
+                                                </p>
+                                        </div>
+                                <?php else : ?>
+                                        <ul class="fp-extras-list">
+                                                <?php foreach ( $all_extras as $extra ) :
+                                                        $is_selected     = in_array( $extra->id, $selected_extra_ids, true );
+                                                        $description     = trim( (string) ( $extra->description ?? '' ) );
+                                                        $description_id  = $description ? 'fp-extra-desc-' . absint( $extra->id ) : '';
+                                                        $billing_label   = 'per_person' === $extra->billing_type ? __( 'Per person', 'fp-esperienze' ) : __( 'Per booking', 'fp-esperienze' );
+                                                        $price_display   = '';
+
+                                                        if ( function_exists( 'wc_price' ) ) {
+                                                                $price_display = wc_price( (float) $extra->price );
+                                                        } else {
+                                                                $currency_symbol = function_exists( 'get_woocommerce_currency_symbol' ) ? get_woocommerce_currency_symbol() : '$';
+                                                                $price_display   = sprintf( '%s%s', $currency_symbol, number_format_i18n( (float) $extra->price, 2 ) );
+                                                        }
+                                                        ?>
+                                                        <li class="fp-extras-list__item">
+                                                                <label class="fp-extra-card">
+                                                                        <input type="checkbox"
+                                                                                name="fp_product_extras[]"
+                                                                                value="<?php echo esc_attr( $extra->id ); ?>"
+                                                                                <?php
+                                                                                if ( $description_id ) {
+                                                                                        printf( ' aria-describedby="%s"', esc_attr( $description_id ) );
+                                                                                }
+                                                                                ?>
+                                                                                <?php checked( $is_selected ); ?>>
+                                                                        <span class="fp-extra-card__inner">
+                                                                                <span class="fp-extra-card__header">
+                                                                                        <span class="fp-extra-card__name"><?php echo esc_html( $extra->name ); ?></span>
+                                                                                        <span class="fp-extra-card__meta">
+                                                                                                <span class="fp-extra-card__price"><?php echo wp_kses_post( $price_display ); ?></span>
+                                                                                                <span class="fp-extra-card__billing"><?php echo esc_html( $billing_label ); ?></span>
+                                                                                        </span>
+                                                                                </span>
+                                                                                <?php if ( $description ) : ?>
+                                                                                        <span class="fp-extra-card__description" id="<?php echo esc_attr( $description_id ); ?>"><?php echo esc_html( $description ); ?></span>
+                                                                                <?php endif; ?>
+                                                                        </span>
+                                                                        <span class="fp-extra-card__status" aria-hidden="true">
+                                                                                <span class="dashicons dashicons-yes-alt"></span>
+                                                                        </span>
+                                                                </label>
+                                                        </li>
+                                                <?php endforeach; ?>
+                                        </ul>
+                                <?php endif; ?>
+                        </fieldset>
+                </div>
+                <?php
+        }
 
 	/**
 	 * Save product data
@@ -2679,69 +2897,87 @@ class Experience {
 		wp_nonce_field( 'fp_pricing_nonce', 'fp_pricing_nonce' );
 		?>
 		
-		<div class="options_group">
-			<h4><?php _e( 'Dynamic Pricing Rules', 'fp-esperienze' ); ?></h4>
-			
-			<div id="fp-pricing-rules-container">
-				<?php
-				foreach ( $rules as $index => $rule ) {
-					$this->renderPricingRuleRow( $rule, $index );
-				}
-				?>
-			</div>
-			
-			<button type="button" id="fp-add-pricing-rule" class="button">
-				<?php _e( 'Add Pricing Rule', 'fp-esperienze' ); ?>
-			</button>
-		</div>
-		
-		<div class="options_group">
-			<h4><?php _e( 'Pricing Preview', 'fp-esperienze' ); ?></h4>
-			
-			<div class="fp-pricing-preview">
-				<div class="fp-preview-inputs">
-					<div>
-						<label><?php _e( 'Booking Date', 'fp-esperienze' ); ?></label>
-						<input type="date" id="fp-preview-booking-date" value="<?php echo date( 'Y-m-d' ); ?>">
-					</div>
-					<div>
-						<label><?php _e( 'Purchase Date', 'fp-esperienze' ); ?></label>
-						<input type="date" id="fp-preview-purchase-date" value="<?php echo date( 'Y-m-d' ); ?>">
-					</div>
-					<div>
-						<label><?php _e( 'Adults', 'fp-esperienze' ); ?></label>
-						<input type="number" id="fp-preview-qty-adult" value="2" min="0">
-					</div>
-					<div>
-						<label><?php _e( 'Children', 'fp-esperienze' ); ?></label>
-						<input type="number" id="fp-preview-qty-child" value="0" min="0">
-					</div>
-					<div>
-						<button type="button" id="fp-preview-calculate" class="button">
-							<?php _e( 'Calculate', 'fp-esperienze' ); ?>
-						</button>
-					</div>
-				</div>
-				
-				<div id="fp-preview-results" style="margin-top: 15px;"></div>
-			</div>
-		</div>
-		
-		<script type="text/javascript">
-			jQuery(document).ready(function($) {
-				var ruleIndex = <?php echo count( $rules ); ?>;
-				
-				// Add pricing rule
-				$('#fp-add-pricing-rule').click(function() {
-					var html = buildPricingRuleTemplate(ruleIndex);
-					$('#fp-pricing-rules-container').append(html);
-					ruleIndex++;
-				});
-				
-				// Remove pricing rule
-				$(document).on('click', '.fp-remove-pricing-rule', function() {
-					$(this).closest('.fp-pricing-rule-row').remove();
-				});
+                <div class="options_group fp-pricing-options-group">
+                        <h4 class="fp-pricing-group__title"><?php _e( 'Dynamic Pricing Rules', 'fp-esperienze' ); ?></h4>
+                        <p class="fp-pricing-group__description"><?php _e( 'Combine booking windows, group sizes, and customer types to automatically adjust prices.', 'fp-esperienze' ); ?></p>
+
+                        <div id="fp-pricing-rules-container">
+                                <?php
+                                foreach ( $rules as $index => $rule ) {
+                                        $this->renderPricingRuleRow( $rule, $index );
+                                }
+                                ?>
+                        </div>
+
+                        <template id="fp-pricing-rule-template">
+                                <?php echo $this->getPricingRuleRowTemplate( '__INDEX__' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+                        </template>
+
+                        <button type="button" id="fp-add-pricing-rule" class="button button-secondary fp-pricing-add-rule">
+                                <?php _e( 'Add Pricing Rule', 'fp-esperienze' ); ?>
+                        </button>
+                </div>
+
+                <div class="options_group fp-pricing-options-group fp-pricing-options-group--preview">
+                        <h4 class="fp-pricing-group__title"><?php _e( 'Pricing Preview', 'fp-esperienze' ); ?></h4>
+                        <p class="fp-pricing-group__description"><?php _e( 'Test the rules above by simulating bookings before publishing your changes.', 'fp-esperienze' ); ?></p>
+
+                        <div class="fp-pricing-preview">
+                                <div class="fp-preview-inputs">
+                                        <div class="form-field fp-field">
+                                                <label for="fp-preview-booking-date"><?php _e( 'Booking Date', 'fp-esperienze' ); ?></label>
+                                                <input type="date" id="fp-preview-booking-date" value="<?php echo esc_attr( date( 'Y-m-d' ) ); ?>">
+                                        </div>
+                                        <div class="form-field fp-field">
+                                                <label for="fp-preview-purchase-date"><?php _e( 'Purchase Date', 'fp-esperienze' ); ?></label>
+                                                <input type="date" id="fp-preview-purchase-date" value="<?php echo esc_attr( date( 'Y-m-d' ) ); ?>">
+                                        </div>
+                                        <div class="form-field fp-field">
+                                                <label for="fp-preview-qty-adult"><?php _e( 'Adults', 'fp-esperienze' ); ?></label>
+                                                <input type="number" id="fp-preview-qty-adult" value="2" min="0">
+                                        </div>
+                                        <div class="form-field fp-field">
+                                                <label for="fp-preview-qty-child"><?php _e( 'Children', 'fp-esperienze' ); ?></label>
+                                                <input type="number" id="fp-preview-qty-child" value="0" min="0">
+                                        </div>
+                                        <div class="form-field fp-field fp-preview-submit">
+                                                <label class="screen-reader-text" for="fp-preview-calculate"><?php _e( 'Calculate pricing preview', 'fp-esperienze' ); ?></label>
+                                                <button type="button" id="fp-preview-calculate" class="button button-primary fp-pricing-preview__button">
+                                                        <?php _e( 'Calculate', 'fp-esperienze' ); ?>
+                                                </button>
+                                        </div>
+                                </div>
+
+                                <div id="fp-preview-results" class="fp-preview-results" role="region" aria-live="polite"></div>
+                        </div>
+                </div>
+
+                <script type="text/javascript">
+                        jQuery(document).ready(function($) {
+                                var ruleIndex = <?php echo count( $rules ); ?>;
+                                var $rulesContainer = $('#fp-pricing-rules-container');
+                                var ruleTemplate = document.getElementById('fp-pricing-rule-template');
+
+                                // Add pricing rule
+                                $('#fp-add-pricing-rule').on('click', function() {
+                                        if (!ruleTemplate) {
+                                                return;
+                                        }
+
+                                        var templateHtml = ruleTemplate.innerHTML.replace(/__INDEX__/g, ruleIndex);
+                                        var $newRule = $(templateHtml.trim());
+
+                                        $rulesContainer.append($newRule);
+                                        $newRule.find('.fp-rule-type').trigger('change');
+                                        $(document.body).trigger('init_tooltips');
+
+                                        ruleIndex++;
+                                });
+
+                                // Remove pricing rule
+                                $(document).on('click', '.fp-remove-pricing-rule', function() {
+                                        $(this).closest('.fp-pricing-rule-row').remove();
+                                });
 				
 				// Preview calculation
 				$('#fp-preview-calculate').click(function() {
@@ -2807,84 +3043,12 @@ class Experience {
 				});
 				
 				// Trigger change event for existing rules
-				$('.fp-rule-type').trigger('change');
-				
-				// Build pricing rule template
-				function buildPricingRuleTemplate(index) {
-					return '<div class="fp-pricing-rule-row" data-index="' + index + '" style="border: 1px solid #ccc; padding: 15px; margin-bottom: 10px;">' +
-						'<input type="hidden" name="pricing_rules[' + index + '][id]" value="">' +
-						'<div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">' +
-							'<div>' +
-								'<label><?php _e( 'Rule Name', 'fp-esperienze' ); ?></label>' +
-								'<input type="text" name="pricing_rules[' + index + '][rule_name]" value="" placeholder="<?php _e( 'Rule Name', 'fp-esperienze' ); ?>" required style="width: 200px;">' +
-							'</div>' +
-							'<div>' +
-								'<label><?php _e( 'Type', 'fp-esperienze' ); ?></label>' +
-								'<select name="pricing_rules[' + index + '][rule_type]" class="fp-rule-type" required>' +
-									'<option value=""><?php _e( 'Select Type', 'fp-esperienze' ); ?></option>' +
-									'<option value="seasonal"><?php _e( 'Seasonal', 'fp-esperienze' ); ?></option>' +
-									'<option value="weekend_weekday"><?php _e( 'Weekend/Weekday', 'fp-esperienze' ); ?></option>' +
-									'<option value="early_bird"><?php _e( 'Early Bird', 'fp-esperienze' ); ?></option>' +
-									'<option value="group"><?php _e( 'Group Discount', 'fp-esperienze' ); ?></option>' +
-								'</select>' +
-							'</div>' +
-							'<div>' +
-								'<label><?php _e( 'Priority', 'fp-esperienze' ); ?></label>' +
-								'<input type="number" name="pricing_rules[' + index + '][priority]" value="0" min="0" step="1" style="width: 80px;">' +
-							'</div>' +
-							'<div>' +
-								'<label>' +
-									'<input type="checkbox" name="pricing_rules[' + index + '][is_active]" value="1" checked>' +
-									'<?php _e( 'Active', 'fp-esperienze' ); ?>' +
-								'</label>' +
-							'</div>' +
-							'<button type="button" class="button fp-remove-pricing-rule"><?php _e( 'Remove', 'fp-esperienze' ); ?></button>' +
-						'</div>' +
-						'<div class="fp-rule-field fp-field-dates" style="display: none; margin-bottom: 10px;">' +
-							'<label><?php _e( 'Date Range', 'fp-esperienze' ); ?></label>' +
-							'<input type="date" name="pricing_rules[' + index + '][date_start]" value="" placeholder="<?php _e( 'Start Date', 'fp-esperienze' ); ?>">' +
-							'<input type="date" name="pricing_rules[' + index + '][date_end]" value="" placeholder="<?php _e( 'End Date', 'fp-esperienze' ); ?>">' +
-						'</div>' +
-						'<div class="fp-rule-field fp-field-applies-to" style="display: none; margin-bottom: 10px;">' +
-							'<label><?php _e( 'Applies To', 'fp-esperienze' ); ?></label>' +
-							'<select name="pricing_rules[' + index + '][applies_to]">' +
-								'<option value=""><?php _e( 'Select...', 'fp-esperienze' ); ?></option>' +
-								'<option value="weekend"><?php _e( 'Weekend', 'fp-esperienze' ); ?></option>' +
-								'<option value="weekday"><?php _e( 'Weekday', 'fp-esperienze' ); ?></option>' +
-							'</select>' +
-						'</div>' +
-						'<div class="fp-rule-field fp-field-days-before" style="display: none; margin-bottom: 10px;">' +
-							'<label><?php _e( 'Days Before', 'fp-esperienze' ); ?></label>' +
-							'<input type="number" name="pricing_rules[' + index + '][days_before]" value="" placeholder="<?php _e( 'Days', 'fp-esperienze' ); ?>" min="1">' +
-						'</div>' +
-						'<div class="fp-rule-field fp-field-min-participants" style="display: none; margin-bottom: 10px;">' +
-							'<label><?php _e( 'Minimum Participants', 'fp-esperienze' ); ?></label>' +
-							'<input type="number" name="pricing_rules[' + index + '][min_participants]" value="" placeholder="<?php _e( 'Min Participants', 'fp-esperienze' ); ?>" min="1">' +
-						'</div>' +
-						'<div style="display: flex; gap: 10px; align-items: center;">' +
-							'<div>' +
-								'<label><?php _e( 'Adjustment Type', 'fp-esperienze' ); ?></label>' +
-								'<select name="pricing_rules[' + index + '][adjustment_type]">' +
-									'<option value="percentage"><?php _e( 'Percentage (%)', 'fp-esperienze' ); ?></option>' +
-									'<option value="fixed_amount"><?php _e( 'Fixed Amount', 'fp-esperienze' ); ?></option>' +
-								'</select>' +
-							'</div>' +
-							'<div>' +
-								'<label><?php _e( 'Adult Adjustment', 'fp-esperienze' ); ?></label>' +
-								'<input type="number" name="pricing_rules[' + index + '][adult_adjustment]" value="0" step="0.01" style="width: 100px;">' +
-							'</div>' +
-							'<div>' +
-								'<label><?php _e( 'Child Adjustment', 'fp-esperienze' ); ?></label>' +
-								'<input type="number" name="pricing_rules[' + index + '][child_adjustment]" value="0" step="0.01" style="width: 100px;">' +
-							'</div>' +
-						'</div>' +
-					'</div>';
-				}
-			});
-		</script>
-		
-		<?php
-	}
+                                $('.fp-rule-type').trigger('change');
+                        });
+                </script>
+
+                <?php
+        }
 
 	/**
 	 * Render a single pricing rule row
@@ -2905,107 +3069,151 @@ class Experience {
 	 */
 	private function getPricingRuleRowTemplate( mixed $index, ?object $rule = null ): string {
 		ob_start();
-		?>
-		<div class="fp-pricing-rule-row" data-index="<?php echo esc_attr( $index ); ?>" style="border: 1px solid #ccc; padding: 15px; margin-bottom: 10px;">
-			<input type="hidden" name="pricing_rules[<?php echo esc_attr( $index ); ?>][id]" value="<?php echo esc_attr( $rule->id ?? '' ); ?>">
-			
-			<div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
-				<div>
-					<label><?php _e( 'Rule Name', 'fp-esperienze' ); ?></label>
-					<input type="text" name="pricing_rules[<?php echo esc_attr( $index ); ?>][rule_name]" 
-							value="<?php echo esc_attr( $rule->rule_name ?? '' ); ?>" 
-							placeholder="<?php _e( 'Rule Name', 'fp-esperienze' ); ?>" required style="width: 200px;">
-				</div>
-				
-				<div>
-					<label><?php _e( 'Type', 'fp-esperienze' ); ?></label>
-					<select name="pricing_rules[<?php echo esc_attr( $index ); ?>][rule_type]" class="fp-rule-type" required>
-						<option value=""><?php _e( 'Select Type', 'fp-esperienze' ); ?></option>
-						<option value="seasonal" <?php selected( $rule->rule_type ?? '', 'seasonal' ); ?>><?php _e( 'Seasonal', 'fp-esperienze' ); ?></option>
-						<option value="weekend_weekday" <?php selected( $rule->rule_type ?? '', 'weekend_weekday' ); ?>><?php _e( 'Weekend/Weekday', 'fp-esperienze' ); ?></option>
-						<option value="early_bird" <?php selected( $rule->rule_type ?? '', 'early_bird' ); ?>><?php _e( 'Early Bird', 'fp-esperienze' ); ?></option>
-						<option value="group" <?php selected( $rule->rule_type ?? '', 'group' ); ?>><?php _e( 'Group Discount', 'fp-esperienze' ); ?></option>
-					</select>
-				</div>
-				
-				<div>
-					<label><?php _e( 'Priority', 'fp-esperienze' ); ?></label>
-					<input type="number" name="pricing_rules[<?php echo esc_attr( $index ); ?>][priority]" 
-							value="<?php echo esc_attr( $rule->priority ?? 0 ); ?>" 
-							min="0" step="1" style="width: 80px;">
-				</div>
-				
-				<div>
-					<label>
-						<input type="checkbox" name="pricing_rules[<?php echo esc_attr( $index ); ?>][is_active]" 
-								value="1" <?php checked( $rule->is_active ?? 1, 1 ); ?>>
-						<?php _e( 'Active', 'fp-esperienze' ); ?>
-					</label>
-				</div>
-				
-				<button type="button" class="button fp-remove-pricing-rule"><?php _e( 'Remove', 'fp-esperienze' ); ?></button>
-			</div>
-			
-			<!-- Rule-specific fields -->
-			<div class="fp-rule-field fp-field-dates" style="display: none; margin-bottom: 10px;">
-				<label><?php _e( 'Date Range', 'fp-esperienze' ); ?></label>
-				<input type="date" name="pricing_rules[<?php echo esc_attr( $index ); ?>][date_start]" 
-						value="<?php echo esc_attr( $rule->date_start ?? '' ); ?>" placeholder="<?php _e( 'Start Date', 'fp-esperienze' ); ?>">
-				<input type="date" name="pricing_rules[<?php echo esc_attr( $index ); ?>][date_end]" 
-						value="<?php echo esc_attr( $rule->date_end ?? '' ); ?>" placeholder="<?php _e( 'End Date', 'fp-esperienze' ); ?>">
-			</div>
-			
-			<div class="fp-rule-field fp-field-applies-to" style="display: none; margin-bottom: 10px;">
-				<label><?php _e( 'Applies To', 'fp-esperienze' ); ?></label>
-				<select name="pricing_rules[<?php echo esc_attr( $index ); ?>][applies_to]">
-					<option value=""><?php _e( 'Select...', 'fp-esperienze' ); ?></option>
-					<option value="weekend" <?php selected( $rule->applies_to ?? '', 'weekend' ); ?>><?php _e( 'Weekend', 'fp-esperienze' ); ?></option>
-					<option value="weekday" <?php selected( $rule->applies_to ?? '', 'weekday' ); ?>><?php _e( 'Weekday', 'fp-esperienze' ); ?></option>
-				</select>
-			</div>
-			
-			<div class="fp-rule-field fp-field-days-before" style="display: none; margin-bottom: 10px;">
-				<label><?php _e( 'Days Before', 'fp-esperienze' ); ?></label>
-				<input type="number" name="pricing_rules[<?php echo esc_attr( $index ); ?>][days_before]" 
-						value="<?php echo esc_attr( $rule->days_before ?? '' ); ?>" 
-						placeholder="<?php _e( 'Days', 'fp-esperienze' ); ?>" min="1">
-			</div>
-			
-			<div class="fp-rule-field fp-field-min-participants" style="display: none; margin-bottom: 10px;">
-				<label><?php _e( 'Minimum Participants', 'fp-esperienze' ); ?></label>
-				<input type="number" name="pricing_rules[<?php echo esc_attr( $index ); ?>][min_participants]" 
-						value="<?php echo esc_attr( $rule->min_participants ?? '' ); ?>" 
-						placeholder="<?php _e( 'Min Participants', 'fp-esperienze' ); ?>" min="1">
-			</div>
-			
-			<!-- Adjustment fields -->
-			<div style="display: flex; gap: 10px; align-items: center;">
-				<div>
-					<label><?php _e( 'Adjustment Type', 'fp-esperienze' ); ?></label>
-					<select name="pricing_rules[<?php echo esc_attr( $index ); ?>][adjustment_type]">
-						<option value="percentage" <?php selected( $rule->adjustment_type ?? 'percentage', 'percentage' ); ?>><?php _e( 'Percentage (%)', 'fp-esperienze' ); ?></option>
-						<option value="fixed_amount" <?php selected( $rule->adjustment_type ?? 'percentage', 'fixed_amount' ); ?>><?php _e( 'Fixed Amount', 'fp-esperienze' ); ?></option>
-					</select>
-				</div>
-				
-				<div>
-					<label><?php _e( 'Adult Adjustment', 'fp-esperienze' ); ?></label>
-					<input type="number" name="pricing_rules[<?php echo esc_attr( $index ); ?>][adult_adjustment]" 
-							value="<?php echo esc_attr( $rule->adult_adjustment ?? 0 ); ?>" 
-							step="0.01" style="width: 100px;">
-				</div>
-				
-				<div>
-					<label><?php _e( 'Child Adjustment', 'fp-esperienze' ); ?></label>
-					<input type="number" name="pricing_rules[<?php echo esc_attr( $index ); ?>][child_adjustment]" 
-							value="<?php echo esc_attr( $rule->child_adjustment ?? 0 ); ?>" 
-							step="0.01" style="width: 100px;">
-				</div>
-			</div>
-		</div>
-		<?php
-		return ob_get_clean();
-	}
+                ?>
+                <?php
+                $rule_name_tip      = function_exists( 'wc_help_tip' ) ? wc_help_tip( __( 'Only administrators can see this name. Keep it short and descriptive to identify the rule later.', 'fp-esperienze' ) ) : '';
+                $rule_type_tip      = function_exists( 'wc_help_tip' ) ? wc_help_tip( __( 'The selected type controls which conditional fields appear below.', 'fp-esperienze' ) ) : '';
+                $rule_priority_tip  = function_exists( 'wc_help_tip' ) ? wc_help_tip( __( 'Lower numbers run first when multiple rules are eligible.', 'fp-esperienze' ) ) : '';
+                ?>
+                <div class="fp-pricing-rule-row" data-index="<?php echo esc_attr( $index ); ?>">
+                        <input type="hidden" name="pricing_rules[<?php echo esc_attr( $index ); ?>][id]" value="<?php echo esc_attr( $rule->id ?? '' ); ?>">
+
+                        <div class="fp-pricing-rule-row__header">
+                                <div class="form-field fp-field fp-field--rule-name">
+                                        <label for="fp-pricing-rule-name-<?php echo esc_attr( $index ); ?>"><?php _e( 'Rule Name', 'fp-esperienze' ); ?></label>
+                                        <?php echo wp_kses_post( $rule_name_tip ); ?>
+                                        <input id="fp-pricing-rule-name-<?php echo esc_attr( $index ); ?>"
+                                                type="text"
+                                                name="pricing_rules[<?php echo esc_attr( $index ); ?>][rule_name]"
+                                                value="<?php echo esc_attr( $rule->rule_name ?? '' ); ?>"
+                                                placeholder="<?php esc_attr_e( 'Rule Name', 'fp-esperienze' ); ?>"
+                                                required>
+                                </div>
+
+                                <div class="form-field fp-field fp-field--rule-type">
+                                        <label for="fp-pricing-rule-type-<?php echo esc_attr( $index ); ?>"><?php _e( 'Type', 'fp-esperienze' ); ?></label>
+                                        <?php echo wp_kses_post( $rule_type_tip ); ?>
+                                        <select id="fp-pricing-rule-type-<?php echo esc_attr( $index ); ?>" name="pricing_rules[<?php echo esc_attr( $index ); ?>][rule_type]" class="fp-rule-type" required>
+                                                <option value=""><?php _e( 'Select Type', 'fp-esperienze' ); ?></option>
+                                                <option value="seasonal" <?php selected( $rule->rule_type ?? '', 'seasonal' ); ?>><?php _e( 'Seasonal', 'fp-esperienze' ); ?></option>
+                                                <option value="weekend_weekday" <?php selected( $rule->rule_type ?? '', 'weekend_weekday' ); ?>><?php _e( 'Weekend/Weekday', 'fp-esperienze' ); ?></option>
+                                                <option value="early_bird" <?php selected( $rule->rule_type ?? '', 'early_bird' ); ?>><?php _e( 'Early Bird', 'fp-esperienze' ); ?></option>
+                                                <option value="group" <?php selected( $rule->rule_type ?? '', 'group' ); ?>><?php _e( 'Group Discount', 'fp-esperienze' ); ?></option>
+                                        </select>
+                                </div>
+
+                                <div class="form-field fp-field fp-pricing-priority">
+                                        <label for="fp-pricing-rule-priority-<?php echo esc_attr( $index ); ?>"><?php _e( 'Priority', 'fp-esperienze' ); ?></label>
+                                        <?php echo wp_kses_post( $rule_priority_tip ); ?>
+                                        <input id="fp-pricing-rule-priority-<?php echo esc_attr( $index ); ?>"
+                                                type="number"
+                                                name="pricing_rules[<?php echo esc_attr( $index ); ?>][priority]"
+                                                value="<?php echo esc_attr( $rule->priority ?? 0 ); ?>"
+                                                min="0"
+                                                step="1">
+                                </div>
+
+                                <div class="form-field fp-field fp-pricing-toggle">
+                                        <label class="fp-toggle-control">
+                                                <input type="checkbox" name="pricing_rules[<?php echo esc_attr( $index ); ?>][is_active]"
+                                                                value="1" <?php checked( $rule->is_active ?? 1, 1 ); ?>>
+                                                <span><?php _e( 'Active', 'fp-esperienze' ); ?></span>
+                                        </label>
+                                </div>
+
+                                <div class="form-field fp-field fp-pricing-actions">
+                                        <button type="button"
+                                                class="button-link-delete fp-remove-pricing-rule"
+                                                aria-label="<?php esc_attr_e( 'Remove pricing rule', 'fp-esperienze' ); ?>">
+                                                <?php _e( 'Remove', 'fp-esperienze' ); ?>
+                                        </button>
+                                </div>
+                        </div>
+
+                        <!-- Rule-specific fields -->
+                        <div class="form-field fp-field fp-rule-field fp-field-dates">
+                                <label for="fp-pricing-date-start-<?php echo esc_attr( $index ); ?>"><?php _e( 'Date Range', 'fp-esperienze' ); ?></label>
+                                <div class="fp-pricing-adjustments">
+                                        <div class="form-field fp-field">
+                                                <label class="screen-reader-text" for="fp-pricing-date-start-<?php echo esc_attr( $index ); ?>"><?php _e( 'Start Date', 'fp-esperienze' ); ?></label>
+                                                <input id="fp-pricing-date-start-<?php echo esc_attr( $index ); ?>"
+                                                        type="date"
+                                                        name="pricing_rules[<?php echo esc_attr( $index ); ?>][date_start]"
+                                                        value="<?php echo esc_attr( $rule->date_start ?? '' ); ?>"
+                                                        placeholder="<?php esc_attr_e( 'Start Date', 'fp-esperienze' ); ?>">
+                                        </div>
+                                        <div class="form-field fp-field">
+                                                <label class="screen-reader-text" for="fp-pricing-date-end-<?php echo esc_attr( $index ); ?>"><?php _e( 'End Date', 'fp-esperienze' ); ?></label>
+                                                <input id="fp-pricing-date-end-<?php echo esc_attr( $index ); ?>"
+                                                        type="date"
+                                                        name="pricing_rules[<?php echo esc_attr( $index ); ?>][date_end]"
+                                                        value="<?php echo esc_attr( $rule->date_end ?? '' ); ?>"
+                                                        placeholder="<?php esc_attr_e( 'End Date', 'fp-esperienze' ); ?>">
+                                        </div>
+                                </div>
+                        </div>
+
+                        <div class="form-field fp-field fp-rule-field fp-field-applies-to">
+                                <label for="fp-pricing-applies-to-<?php echo esc_attr( $index ); ?>"><?php _e( 'Applies To', 'fp-esperienze' ); ?></label>
+                                <select id="fp-pricing-applies-to-<?php echo esc_attr( $index ); ?>" name="pricing_rules[<?php echo esc_attr( $index ); ?>][applies_to]">
+                                        <option value=""><?php _e( 'Select...', 'fp-esperienze' ); ?></option>
+                                        <option value="weekend" <?php selected( $rule->applies_to ?? '', 'weekend' ); ?>><?php _e( 'Weekend', 'fp-esperienze' ); ?></option>
+                                        <option value="weekday" <?php selected( $rule->applies_to ?? '', 'weekday' ); ?>><?php _e( 'Weekday', 'fp-esperienze' ); ?></option>
+                                </select>
+                        </div>
+
+                        <div class="form-field fp-field fp-rule-field fp-field-days-before">
+                                <label for="fp-pricing-days-before-<?php echo esc_attr( $index ); ?>"><?php _e( 'Days Before', 'fp-esperienze' ); ?></label>
+                                <input id="fp-pricing-days-before-<?php echo esc_attr( $index ); ?>"
+                                        type="number"
+                                        name="pricing_rules[<?php echo esc_attr( $index ); ?>][days_before]"
+                                        value="<?php echo esc_attr( $rule->days_before ?? '' ); ?>"
+                                        placeholder="<?php esc_attr_e( 'Days', 'fp-esperienze' ); ?>"
+                                        min="1">
+                        </div>
+
+                        <div class="form-field fp-field fp-rule-field fp-field-min-participants">
+                                <label for="fp-pricing-min-participants-<?php echo esc_attr( $index ); ?>"><?php _e( 'Minimum Participants', 'fp-esperienze' ); ?></label>
+                                <input id="fp-pricing-min-participants-<?php echo esc_attr( $index ); ?>"
+                                        type="number"
+                                        name="pricing_rules[<?php echo esc_attr( $index ); ?>][min_participants]"
+                                        value="<?php echo esc_attr( $rule->min_participants ?? '' ); ?>"
+                                        placeholder="<?php esc_attr_e( 'Min Participants', 'fp-esperienze' ); ?>"
+                                        min="1">
+                        </div>
+
+                        <!-- Adjustment fields -->
+                        <div class="fp-pricing-adjustments">
+                                <div class="form-field fp-field">
+                                        <label for="fp-pricing-adjustment-type-<?php echo esc_attr( $index ); ?>"><?php _e( 'Adjustment Type', 'fp-esperienze' ); ?></label>
+                                        <select id="fp-pricing-adjustment-type-<?php echo esc_attr( $index ); ?>" name="pricing_rules[<?php echo esc_attr( $index ); ?>][adjustment_type]">
+                                                <option value="percentage" <?php selected( $rule->adjustment_type ?? 'percentage', 'percentage' ); ?>><?php _e( 'Percentage (%)', 'fp-esperienze' ); ?></option>
+                                                <option value="fixed_amount" <?php selected( $rule->adjustment_type ?? 'percentage', 'fixed_amount' ); ?>><?php _e( 'Fixed Amount', 'fp-esperienze' ); ?></option>
+                                        </select>
+                                </div>
+
+                                <div class="form-field fp-field">
+                                        <label for="fp-pricing-adult-adjustment-<?php echo esc_attr( $index ); ?>"><?php _e( 'Adult Adjustment', 'fp-esperienze' ); ?></label>
+                                        <input id="fp-pricing-adult-adjustment-<?php echo esc_attr( $index ); ?>"
+                                                type="number"
+                                                name="pricing_rules[<?php echo esc_attr( $index ); ?>][adult_adjustment]"
+                                                value="<?php echo esc_attr( $rule->adult_adjustment ?? 0 ); ?>"
+                                                step="0.01">
+                                </div>
+
+                                <div class="form-field fp-field">
+                                        <label for="fp-pricing-child-adjustment-<?php echo esc_attr( $index ); ?>"><?php _e( 'Child Adjustment', 'fp-esperienze' ); ?></label>
+                                        <input id="fp-pricing-child-adjustment-<?php echo esc_attr( $index ); ?>"
+                                                type="number"
+                                                name="pricing_rules[<?php echo esc_attr( $index ); ?>][child_adjustment]"
+                                                value="<?php echo esc_attr( $rule->child_adjustment ?? 0 ); ?>"
+                                                step="0.01">
+                                </div>
+                        </div>
+                </div>
+                <?php
+                return ob_get_clean();
+        }
 
 	/**
 	 * Show schedule validation notices
