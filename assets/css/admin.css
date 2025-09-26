@@ -372,23 +372,61 @@ body.fp-experience-type-event .fp-experience-nav__item--recurring-only {
 }
 
 #experience_product_data .fp-experience-metabox-holder {
-    display: grid;
-    gap: 20px;
-    grid-template-columns: minmax(0, 1fr);
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
 }
 
-@media (min-width: 1200px) {
-    #experience_product_data .fp-experience-metabox-holder {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
+#experience_product_data .fp-experience-metabox {
+    border: 1px solid var(--fp-border-subtle);
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 18px 45px -35px rgba(16, 38, 60, 0.45);
 }
 
 #experience_product_data .fp-experience-metabox .inside {
-    padding: 16px 20px;
+    padding: 0;
+}
+
+.fp-experience-section__inner {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.fp-experience-section__header {
+    padding: 28px 28px 0;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.fp-experience-section__title {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #1d2327;
+}
+
+.fp-experience-section__summary {
+    margin: 0;
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    color: #50575e;
+    max-width: 720px;
+}
+
+.fp-experience-section__body {
+    padding: 24px 28px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    background: linear-gradient(180deg, rgba(249, 250, 252, 0.75) 0%, #ffffff 100%);
 }
 
 #experience_product_data .fp-experience-metabox .description {
-    max-width: 640px;
+    max-width: 720px;
 }
 
 #experience_product_data .fp-exp-gallery-field__wrapper > label {
@@ -400,11 +438,149 @@ body.fp-experience-type-event .fp-experience-nav__item--recurring-only {
     display: flex;
     gap: 8px;
     align-items: center;
+    flex-wrap: wrap;
     margin-bottom: 8px;
 }
 
 #experience_product_data .fp-exp-gallery-field {
     margin-top: 12px;
+}
+
+.fp-experience-section__grid {
+    display: grid;
+    gap: 20px;
+    grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 960px) {
+    .fp-experience-section__grid {
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    }
+}
+
+.fp-experience-card {
+    background: #fff;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 14px;
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    box-shadow: 0 12px 32px -28px rgba(15, 23, 42, 0.45);
+}
+
+.fp-experience-card--supporting,
+.fp-experience-card--media,
+.fp-experience-card--extras {
+    background: linear-gradient(180deg, rgba(247, 251, 255, 0.9) 0%, #ffffff 85%);
+}
+
+.fp-experience-card--builder {
+    padding: 24px 24px 28px;
+}
+
+.fp-experience-card__header {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.fp-experience-card__title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #0f172a;
+}
+
+.fp-experience-card__description {
+    margin: 0;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    color: #475569;
+}
+
+.fp-experience-card__fields {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.fp-form-grid {
+    display: grid;
+    gap: 18px;
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.fp-form-grid--two {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 900px) {
+    .fp-form-grid--two {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+.fp-form-grid--three {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 1024px) {
+    .fp-form-grid--three {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+.fp-form-grid__item {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.fp-experience-card__actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.fp-experience-card__actions .button {
+    height: auto;
+}
+
+.fp-experience-card__advanced {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    border-top: 1px solid rgba(15, 23, 42, 0.08);
+    padding-top: 16px;
+}
+
+.fp-toggle-raw-mode {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    color: #475569;
+    font-size: 0.875rem;
+}
+
+.fp-toggle-raw-mode label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    color: #1d2327;
+}
+
+.fp-toggle-raw-mode .description {
+    margin: 0;
+    font-size: 0.8125rem;
+    color: #64748b;
+}
+
+.fp-exp-gallery-field__wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
 /* Dynamic Pricing Panel */
