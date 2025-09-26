@@ -14,7 +14,7 @@ The FP Esperienze 1.2.0 release finalises the multi-phase admin redesign. Shared
 ## Packaging Checklist
 - [x] Bump `FP_ESPERIENZE_VERSION` to `1.2.0` in `fp-esperienze.php`.
 - [x] Regenerate admin styles via `php scripts/build-admin-styles.php`.
-- [x] Genera localmente l'archivio di distribuzione (`bash scripts/build-plugin-zip.sh`) e il relativo checksum opzionale in `dist/` (entrambi ignorati dal versionamento).
+- [x] Genera localmente l'archivio di distribuzione (`tools/build-plugin-zip.sh --slug fp-esperienze --out-dir dist`) e il relativo checksum opzionale in `dist/` (entrambi ignorati dal versionamento).
 - [x] Update `CHANGELOG.md`, `README.md`, and `UPGRADE.md` with 1.2.0 highlights and deployment guidance.
 
 ## Upgrade Reminders

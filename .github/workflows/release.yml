@@ -18,10 +18,18 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
+          coverage: none
+          tools: composer
+          extensions: mbstring, intl, json, xml, curl, zip
+
+      - name: Install production dependencies
+        run: composer install --no-dev --prefer-dist --optimize-autoloader
 
       - name: Build zip
         run: |
-          bash scripts/build-plugin-zip.sh
+          tools/build-plugin-zip.sh \
+            --slug fp-esperienze \
+            --out-dir dist
 
       - name: Compute checksum
         run: |
