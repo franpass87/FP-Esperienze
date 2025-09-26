@@ -17,6 +17,7 @@ use FP\Esperienze\Data\HoldManager;
 use FP\Esperienze\Booking\BookingManager;
 use FP\Esperienze\PDF\Voucher_Pdf;
 use FP\Esperienze\PDF\Qr;
+use FP\Esperienze\Core\AssetOptimizer;
 use FP\Esperienze\Core\CapabilityManager;
 use FP\Esperienze\Core\I18nManager;
 use FP\Esperienze\Core\WebhookManager;
@@ -233,11 +234,12 @@ class MenuManager {
             [],
             '4.1.0'
         );
+        $product_search = AssetOptimizer::getAssetInfo('js', 'product-search', 'assets/js/product-search.js');
         wp_enqueue_script(
             'fp-admin-product-search',
-            FP_ESPERIENZE_PLUGIN_URL . 'assets/js/product-search.js',
+            $product_search['url'],
             ['jquery', 'select2'],
-            FP_ESPERIENZE_VERSION,
+            $product_search['version'],
             true
         );
         
@@ -259,21 +261,23 @@ class MenuManager {
                 '3.10.5'
             );
             
+            $admin_bookings = AssetOptimizer::getAssetInfo('js', 'admin-bookings', 'assets/js/admin-bookings.js');
             wp_enqueue_script(
                 'fp-admin-bookings',
-                FP_ESPERIENZE_PLUGIN_URL . 'assets/js/admin-bookings.js',
+                $admin_bookings['url'],
                 ['jquery', 'fullcalendar'],
-                FP_ESPERIENZE_VERSION,
+                $admin_bookings['version'],
                 true
             );
         }
 
         if (strpos($hook, 'fp-esperienze-integration-toolkit') !== false) {
+            $integration_toolkit = AssetOptimizer::getAssetInfo('js', 'integration-toolkit', 'assets/js/integration-toolkit.js');
             wp_enqueue_script(
                 'fp-integration-toolkit',
-                FP_ESPERIENZE_PLUGIN_URL . 'assets/js/integration-toolkit.js',
+                $integration_toolkit['url'],
                 [],
-                FP_ESPERIENZE_VERSION,
+                $integration_toolkit['version'],
                 true
             );
         }

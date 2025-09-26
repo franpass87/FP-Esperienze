@@ -8,6 +8,7 @@
 namespace FP\Esperienze\Admin;
 
 use FP\Esperienze\Admin\OnboardingHelper;
+use FP\Esperienze\Core\AssetOptimizer;
 
 defined('ABSPATH') || exit;
 
@@ -67,11 +68,12 @@ class SetupWizard {
         wp_enqueue_style('wp-color-picker');
         wp_enqueue_script('wp-color-picker');
 
+        $setup_tour = AssetOptimizer::getAssetInfo('js', 'setup-wizard-tour', 'assets/js/setup-wizard-tour.js');
         wp_enqueue_script(
             'fp-setup-tour',
-            FP_ESPERIENZE_PLUGIN_URL . 'assets/js/setup-wizard-tour.js',
+            $setup_tour['url'],
             ['jquery'],
-            FP_ESPERIENZE_VERSION,
+            $setup_tour['version'],
             true
         );
 

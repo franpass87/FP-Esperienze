@@ -46,11 +46,12 @@ class UXEnhancer {
      */
     public static function enqueueUXScripts(): void {
         if (self::shouldLoadUXScripts()) {
+            $ux_asset = AssetOptimizer::getAssetInfo('js', 'ux-enhancer', 'assets/js/ux-enhancer.js');
             wp_enqueue_script(
                 'fp-ux-enhancer',
-                FP_ESPERIENZE_PLUGIN_URL . 'assets/js/ux-enhancer.js',
+                $ux_asset['url'],
                 ['jquery'],
-                FP_ESPERIENZE_VERSION,
+                $ux_asset['version'],
                 true
             );
             
@@ -77,11 +78,12 @@ class UXEnhancer {
      */
     public static function enqueueAdminUXScripts(): void {
         if (self::shouldLoadAdminUXScripts()) {
+            $admin_ux_asset = AssetOptimizer::getAssetInfo('js', 'admin-ux-enhancer', 'assets/js/admin-ux-enhancer.js');
             wp_enqueue_script(
                 'fp-admin-ux-enhancer',
-                FP_ESPERIENZE_PLUGIN_URL . 'assets/js/admin-ux-enhancer.js',
+                $admin_ux_asset['url'],
                 ['jquery', 'jquery-ui-progressbar'],
-                FP_ESPERIENZE_VERSION,
+                $admin_ux_asset['version'],
                 true
             );
             

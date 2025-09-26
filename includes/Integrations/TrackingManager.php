@@ -7,6 +7,8 @@
 
 namespace FP\Esperienze\Integrations;
 
+use FP\Esperienze\Core\AssetOptimizer;
+
 defined('ABSPATH') || exit;
 
 /**
@@ -83,11 +85,12 @@ class TrackingManager {
         }
         
         if ($this->isGA4Enabled() || $this->isMetaPixelEnabled() || $this->isGoogleAdsEnabled()) {
+            $tracking_asset = AssetOptimizer::getAssetInfo('js', 'tracking', 'assets/js/tracking.js');
             wp_enqueue_script(
                 'fp-esperienze-tracking',
-                FP_ESPERIENZE_PLUGIN_URL . 'assets/js/tracking.js',
+                $tracking_asset['url'],
                 ['jquery'],
-                FP_ESPERIENZE_VERSION,
+                $tracking_asset['version'],
                 true
             );
             

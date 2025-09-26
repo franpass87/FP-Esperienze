@@ -525,44 +525,31 @@ class Plugin {
         }
 
         // Enqueue CSS (minified if available)
-        $frontend_css_url = AssetOptimizer::getMinifiedAssetUrl('css', 'frontend');
-        if (!$frontend_css_url) {
-            $frontend_css_url = FP_ESPERIENZE_PLUGIN_URL . 'assets/css/frontend.css';
-        }
-        
+        $frontend_css = AssetOptimizer::getAssetInfo('css', 'frontend', 'assets/css/frontend.css');
         wp_enqueue_style(
             'fp-esperienze-frontend',
-            $frontend_css_url,
+            $frontend_css['url'],
             [],
-            FP_ESPERIENZE_VERSION
+            $frontend_css['version']
         );
 
-        // Enqueue JS (minified if available)  
-        $frontend_js_url = AssetOptimizer::getMinifiedAssetUrl('js', 'frontend');
-        if (!$frontend_js_url) {
-            wp_enqueue_script(
-                'fp-esperienze-frontend',
-                FP_ESPERIENZE_PLUGIN_URL . 'assets/js/frontend.js',
-                ['jquery', 'wp-i18n'],
-                FP_ESPERIENZE_VERSION,
-                true
-            );
-            
-            // Enqueue tracking script separately if not minified
+        // Enqueue JS (minified if available)
+        $frontend_js = AssetOptimizer::getAssetInfo('js', 'frontend', 'assets/js/frontend.js');
+        wp_enqueue_script(
+            'fp-esperienze-frontend',
+            $frontend_js['url'],
+            ['jquery', 'wp-i18n'],
+            $frontend_js['version'],
+            true
+        );
+
+        if (!$frontend_js['is_minified']) {
+            $tracking_js = AssetOptimizer::getAssetInfo('js', 'tracking', 'assets/js/tracking.js');
             wp_enqueue_script(
                 'fp-esperienze-tracking',
-                FP_ESPERIENZE_PLUGIN_URL . 'assets/js/tracking.js',
+                $tracking_js['url'],
                 ['jquery'],
-                FP_ESPERIENZE_VERSION,
-                true
-            );
-        } else {
-            // Use minified combined version
-            wp_enqueue_script(
-                'fp-esperienze-frontend',
-                $frontend_js_url,
-                ['jquery', 'wp-i18n'],
-                FP_ESPERIENZE_VERSION,
+                $tracking_js['version'],
                 true
             );
         }
@@ -580,31 +567,29 @@ class Plugin {
 
             // Only enqueue for experience products
             if ($product && $product->get_type() === 'experience') {
+                $gallery_css = AssetOptimizer::getAssetInfo('css', 'experience-gallery', 'assets/css/experience-gallery.css');
                 wp_enqueue_style(
                     'fp-esperienze-experience-gallery',
-                    FP_ESPERIENZE_PLUGIN_URL . 'assets/css/experience-gallery.css',
+                    $gallery_css['url'],
                     array('fp-esperienze-frontend'),
-                    FP_ESPERIENZE_VERSION
+                    $gallery_css['version']
                 );
 
+                $gallery_js = AssetOptimizer::getAssetInfo('js', 'experience-gallery', 'assets/js/experience-gallery.js');
                 wp_enqueue_script(
                     'fp-esperienze-experience-gallery',
-                    FP_ESPERIENZE_PLUGIN_URL . 'assets/js/experience-gallery.js',
+                    $gallery_js['url'],
                     array(),
-                    FP_ESPERIENZE_VERSION,
+                    $gallery_js['version'],
                     true
                 );
 
-                $booking_widget_url = AssetOptimizer::getMinifiedAssetUrl('js', 'booking-widget');
-                if (!$booking_widget_url) {
-                    $booking_widget_url = FP_ESPERIENZE_PLUGIN_URL . 'assets/js/booking-widget.js';
-                }
-                
+                $booking_widget = AssetOptimizer::getAssetInfo('js', 'booking-widget', 'assets/js/booking-widget.js');
                 wp_enqueue_script(
                     'fp-esperienze-booking-widget',
-                    $booking_widget_url,
+                    $booking_widget['url'],
                     ['jquery', 'wp-i18n', 'fp-esperienze-frontend'],
-                    FP_ESPERIENZE_VERSION,
+                    $booking_widget['version'],
                     true
                 );
 
@@ -650,16 +635,13 @@ class Plugin {
      */
     public function enqueueAdminScripts(): void {
         // Enqueue CSS (minified if available)
-        $admin_css_url = AssetOptimizer::getMinifiedAssetUrl('css', 'admin');
-        if (!$admin_css_url) {
-            $admin_css_url = FP_ESPERIENZE_PLUGIN_URL . 'assets/css/admin.css';
-        }
-        
+        $admin_css = AssetOptimizer::getAssetInfo('css', 'admin', 'assets/css/admin.css');
+
         wp_enqueue_style(
             'fp-esperienze-admin',
-            $admin_css_url,
+            $admin_css['url'],
             [],
-            FP_ESPERIENZE_VERSION
+            $admin_css['version']
         );
 
         // Enqueue admin controller based on modular flag
@@ -719,16 +701,13 @@ class Plugin {
             // Load modular system: first load modules, then main controller
             $this->enqueueAdminModules();
 
-            $admin_js_url = AssetOptimizer::getMinifiedAssetUrl('js', 'admin-modular');
-            if (!$admin_js_url) {
-                $admin_js_url = FP_ESPERIENZE_PLUGIN_URL . 'assets/js/admin-modular.js';
-            }
+            $admin_js = AssetOptimizer::getAssetInfo('js', 'admin-modular', 'assets/js/admin-modular.js');
 
             wp_enqueue_script(
                 'fp-esperienze-admin-modular',
-                $admin_js_url,
+                $admin_js['url'],
                 ['jquery', 'fp-esperienze-modules'],
-                FP_ESPERIENZE_VERSION,
+                $admin_js['version'],
                 true
             );
 
@@ -758,16 +737,13 @@ class Plugin {
             // Ensure the modular controller is not loaded
             wp_deregister_script('fp-esperienze-admin-modular');
 
-            $admin_js_url = AssetOptimizer::getMinifiedAssetUrl('js', 'admin');
-            if (!$admin_js_url) {
-                $admin_js_url = FP_ESPERIENZE_PLUGIN_URL . 'assets/js/admin.js';
-            }
+            $admin_js = AssetOptimizer::getAssetInfo('js', 'admin', 'assets/js/admin.js');
 
             wp_enqueue_script(
                 'fp-esperienze-admin',
-                $admin_js_url,
+                $admin_js['url'],
                 ['jquery'],
-                FP_ESPERIENZE_VERSION,
+                $admin_js['version'],
                 true
             );
 
@@ -798,11 +774,12 @@ class Plugin {
         // Enqueue reports script only on reports page
         $current_screen = get_current_screen();
         if ($current_screen && $current_screen->id === 'fp-esperienze_page_fp-esperienze-reports') {
+            $reports_js = AssetOptimizer::getAssetInfo('js', 'reports', 'assets/js/reports.js');
             wp_enqueue_script(
                 'fp-esperienze-reports',
-                FP_ESPERIENZE_PLUGIN_URL . 'assets/js/reports.js',
+                $reports_js['url'],
                 ['jquery'],
-                FP_ESPERIENZE_VERSION,
+                $reports_js['version'],
                 true
             );
 
@@ -831,15 +808,16 @@ class Plugin {
         
         foreach ($modules as $handle => $filename) {
             $module_handle = 'fp-esperienze-module-' . $handle;
-            
+            $module_asset = AssetOptimizer::getAssetInfo('js', 'module-' . $handle, 'assets/js/modules/' . $filename);
+
             wp_enqueue_script(
                 $module_handle,
-                FP_ESPERIENZE_PLUGIN_URL . 'assets/js/modules/' . $filename,
+                $module_asset['url'],
                 ['jquery'],
-                FP_ESPERIENZE_VERSION,
+                $module_asset['version'],
                 true
             );
-            
+
             $module_handles[] = $module_handle;
         }
         
@@ -864,16 +842,13 @@ class Plugin {
      * Enqueue block editor assets
      */
     public function enqueueBlockAssets(): void {
-        $archive_block_url = AssetOptimizer::getMinifiedAssetUrl('js', 'archive-block');
-        if (!$archive_block_url) {
-            $archive_block_url = FP_ESPERIENZE_PLUGIN_URL . 'assets/js/archive-block.js';
-        }
-        
+        $archive_block = AssetOptimizer::getAssetInfo('js', 'archive-block', 'assets/js/archive-block.js');
+
         wp_enqueue_script(
             'fp-esperienze-archive-block',
-            $archive_block_url,
+            $archive_block['url'],
             ['jquery', 'wp-blocks', 'wp-element', 'wp-editor', 'wp-components', 'wp-i18n'],
-            FP_ESPERIENZE_VERSION,
+            $archive_block['version'],
             true
         );
 

@@ -7,6 +7,7 @@
 
 namespace FP\Esperienze\Blocks;
 
+use FP\Esperienze\Core\AssetOptimizer;
 use FP\Esperienze\Frontend\Shortcodes;
 
 defined('ABSPATH') || exit;
@@ -121,11 +122,13 @@ class ArchiveBlock {
             return;
         }
 
+        $archive_block = AssetOptimizer::getAssetInfo('js', 'archive-block', 'assets/js/archive-block.js');
+
         wp_enqueue_script(
             'fp-esperienze-archive-block',
-            FP_ESPERIENZE_PLUGIN_URL . 'assets/js/archive-block.js',
+            $archive_block['url'],
             ['jquery', 'wp-blocks', 'wp-element', 'wp-editor', 'wp-components', 'wp-i18n'],
-            FP_ESPERIENZE_VERSION,
+            $archive_block['version'],
             true
         );
 
