@@ -1149,127 +1149,179 @@ class Experience {
                         );
                 }
 
+                $slot_number_display = str_pad( (string) ( $index + 1 ), 2, '0', STR_PAD_LEFT );
                 ?>
                 <div class="fp-time-slot-content-clean">
-                        <div class="fp-slot-status-badges">
-                                <?php foreach ( $status_badges as $badge ) :
-                                        $badge_classes = array(
-                                                'fp-slot-status-badge',
-                                                sanitize_html_class( $badge['class'] )
-                                        );
-                                        ?>
-                                        <span class="<?php echo esc_attr( implode( ' ', $badge_classes ) ); ?>">
-                                                <span class="dashicons dashicons-<?php echo esc_attr( $badge['icon'] ); ?>" aria-hidden="true"></span>
-                                                <?php echo esc_html( $badge['label'] ); ?>
-                                        </span>
-                                <?php endforeach; ?>
-                        </div>
-
-                        <!-- Time slot header -->
-                        <div class="fp-time-slot-header-clean">
-                                <div class="fp-time-field-clean form-field fp-field fp-field--time">
-                                        <label for="time-<?php echo esc_attr( $index ); ?>">
-                                                <span class="dashicons dashicons-clock"></span>
-                                                <?php _e( 'Start Time', 'fp-esperienze' ); ?> <span class="required">*</span>
-                                        </label>
-					<input type="time" 
-							id="time-<?php echo esc_attr( $index ); ?>"
-							name="builder_slots[<?php echo esc_attr( $index ); ?>][start_time]" 
-							value="<?php echo esc_attr( $slot['start_time'] ?? '' ); ?>" 
-							required>
-				</div>
-				
-                                <div class="fp-days-field-clean form-field fp-field fp-field--days">
-                                        <label>
-                                                <span class="dashicons dashicons-calendar-alt"></span>
-                                                <?php _e( 'Days of Week', 'fp-esperienze' ); ?> <span class="required">*</span>
-                                        </label>
-					<div class="fp-days-pills-clean">
-						<?php foreach ( $days as $day_value => $day_label ) : ?>
-							<div class="fp-day-pill-clean">
-								<input type="checkbox" 
-										id="day-<?php echo esc_attr( $index ); ?>-<?php echo esc_attr( $day_value ); ?>"
-										name="builder_slots[<?php echo esc_attr( $index ); ?>][days][]" 
-										value="<?php echo esc_attr( $day_value ); ?>"
-										<?php checked( in_array( $day_value, $slot['days'] ?? array() ) ); ?>>
-								<label for="day-<?php echo esc_attr( $index ); ?>-<?php echo esc_attr( $day_value ); ?>">
-									<?php echo esc_html( substr( $day_label, 0, 3 ) ); ?>
-								</label>
-							</div>
-						<?php endforeach; ?>
-					</div>
-				</div>
-				
-                                <div class="fp-slot-actions-clean">
-                                        <button type="button" class="button button-link-delete fp-remove-time-slot-clean" data-index="<?php echo esc_attr( $index ); ?>" aria-label="<?php esc_attr_e( 'Remove time slot', 'fp-esperienze' ); ?>">
-                                                <span class="dashicons dashicons-trash" aria-hidden="true"></span>
-                                                <?php _e( 'Remove slot', 'fp-esperienze' ); ?>
-                                        </button>
+                        <div class="fp-slot-card-inner">
+                                <div class="fp-slot-rail" aria-hidden="true">
+                                        <span class="fp-slot-rail__dot"></span>
+                                        <span class="fp-slot-rail__line"></span>
                                 </div>
-			</div>
-			
-			<!-- Slot settings -->
-			<div class="fp-overrides-section-clean">
-				<div class="fp-overrides-grid-clean">
-					<div class="fp-override-field-clean">
-						<label><?php _e( 'Duration (minutes)', 'fp-esperienze' ); ?></label>
-						<input type="number"
-								name="builder_slots[<?php echo esc_attr( $index ); ?>][duration_min]"
-								value="<?php echo esc_attr( $slot['duration_min'] ?? $default_duration ); ?>"
-								min="1"
-								required>
-					</div>
 
-					<div class="fp-override-field-clean">
-						<label><?php _e( 'Capacity', 'fp-esperienze' ); ?></label>
-						<input type="number"
-								name="builder_slots[<?php echo esc_attr( $index ); ?>][capacity]"
-								value="<?php echo esc_attr( $slot['capacity'] ?? $default_capacity ); ?>"
-								min="1"
-								required>
-					</div>
+                                <div class="fp-slot-content">
+                                        <header class="fp-slot-header">
+                                                <div class="fp-slot-header__meta">
+                                                        <span class="fp-slot-chip">
+                                                                <?php
+                                                                printf(
+                                                                        /* translators: %s: Slot number */
+                                                                        esc_html__( 'Slot %s', 'fp-esperienze' ),
+                                                                        esc_html( $slot_number_display )
+                                                                );
+                                                                ?>
+                                                        </span>
+                                                        <p class="fp-slot-subtitle"><?php _e( 'Recurring weekly availability', 'fp-esperienze' ); ?></p>
 
-					<div class="fp-override-field-clean">
-						<label><?php _e( 'Language', 'fp-esperienze' ); ?></label>
-						<input type="text"
-								name="builder_slots[<?php echo esc_attr( $index ); ?>][lang]"
-								value="<?php echo esc_attr( $slot['lang'] ?? $default_language ); ?>"
-								maxlength="10"
-								required>
-					</div>
+                                                        <?php if ( ! empty( $status_badges ) ) : ?>
+                                                                <div class="fp-slot-status-badges">
+                                                                        <?php foreach ( $status_badges as $badge ) :
+                                                                                $badge_classes = array(
+                                                                                        'fp-slot-status-badge',
+                                                                                        sanitize_html_class( $badge['class'] )
+                                                                                );
+                                                                                ?>
+                                                                                <span class="<?php echo esc_attr( implode( ' ', $badge_classes ) ); ?>">
+                                                                                        <span class="dashicons dashicons-<?php echo esc_attr( $badge['icon'] ); ?>" aria-hidden="true"></span>
+                                                                                        <?php echo esc_html( $badge['label'] ); ?>
+                                                                                </span>
+                                                                        <?php endforeach; ?>
+                                                                </div>
+                                                        <?php endif; ?>
+                                                </div>
 
-					<div class="fp-override-field-clean">
-						<label><?php _e( 'Meeting Point', 'fp-esperienze' ); ?></label>
-						<select name="builder_slots[<?php echo esc_attr( $index ); ?>][meeting_point_id]" required>
-							<?php foreach ( $meeting_points as $mp_id => $mp_name ) : ?>
-								<option value="<?php echo esc_attr( $mp_id ); ?>" <?php selected( $slot['meeting_point_id'] ?? $default_meeting_point, $mp_id ); ?>>
-									<?php echo esc_html( $mp_name ); ?>
-								</option>
-							<?php endforeach; ?>
-						</select>
-					</div>
+                                                <div class="fp-slot-actions-clean">
+                                                        <button type="button" class="button fp-duplicate-time-slot-clean" data-index="<?php echo esc_attr( $index ); ?>" aria-label="<?php esc_attr_e( 'Duplicate time slot', 'fp-esperienze' ); ?>">
+                                                                <span class="dashicons dashicons-admin-page" aria-hidden="true"></span>
+                                                                <?php _e( 'Duplicate slot', 'fp-esperienze' ); ?>
+                                                        </button>
+                                                        <button type="button" class="button button-link-delete fp-remove-time-slot-clean" data-index="<?php echo esc_attr( $index ); ?>" aria-label="<?php esc_attr_e( 'Remove time slot', 'fp-esperienze' ); ?>">
+                                                                <span class="dashicons dashicons-trash" aria-hidden="true"></span>
+                                                                <?php _e( 'Remove slot', 'fp-esperienze' ); ?>
+                                                        </button>
+                                                </div>
+                                        </header>
 
-					<div class="fp-override-field-clean">
-						<label><?php _e( 'Adult Price', 'fp-esperienze' ); ?> (<?php echo get_woocommerce_currency_symbol(); ?>)</label>
-						<input type="number"
-								name="builder_slots[<?php echo esc_attr( $index ); ?>][price_adult]"
-								value="<?php echo esc_attr( $slot['price_adult'] ?? $default_price_adult ); ?>"
-								min="0"
-								step="0.01"
-								required>
-					</div>
+                                        <div class="fp-slot-primary">
+                                                <div class="fp-slot-primary__field fp-time-field-clean form-field fp-field fp-field--time">
+                                                        <label for="time-<?php echo esc_attr( $index ); ?>" class="fp-slot-field-label">
+                                                                <span class="dashicons dashicons-clock" aria-hidden="true"></span>
+                                                                <span class="fp-slot-label-text"><?php _e( 'Start Time', 'fp-esperienze' ); ?> <span class="required">*</span></span>
+                                                        </label>
+                                                        <div class="fp-slot-time-input">
+                                                                <input type="time"
+                                                                                id="time-<?php echo esc_attr( $index ); ?>"
+                                                                                name="builder_slots[<?php echo esc_attr( $index ); ?>][start_time]"
+                                                                                value="<?php echo esc_attr( $slot['start_time'] ?? '' ); ?>"
+                                                                                required>
+                                                        </div>
+                                                        <p class="fp-slot-hint"><?php _e( 'Guests see this start time in their timezone.', 'fp-esperienze' ); ?></p>
+                                                </div>
 
-					<div class="fp-override-field-clean">
-						<label><?php _e( 'Child Price', 'fp-esperienze' ); ?> (<?php echo get_woocommerce_currency_symbol(); ?>)</label>
-						<input type="number"
-								name="builder_slots[<?php echo esc_attr( $index ); ?>][price_child]"
-								value="<?php echo esc_attr( $slot['price_child'] ?? $default_price_child ); ?>"
-								min="0"
-								step="0.01"
-								required>
-					</div>
-				</div>
-			</div>
+                                                <div class="fp-slot-primary__field fp-days-field-clean form-field fp-field fp-field--days">
+                                                        <label class="fp-slot-field-label">
+                                                                <span class="dashicons dashicons-calendar-alt" aria-hidden="true"></span>
+                                                                <span class="fp-slot-label-text"><?php _e( 'Days of Week', 'fp-esperienze' ); ?> <span class="required">*</span></span>
+                                                        </label>
+                                                        <div class="fp-slot-day-grid fp-days-pills-clean">
+                                                                <?php foreach ( $days as $day_value => $day_label ) :
+                                                                        $day_abbr = wp_html_excerpt( $day_label, 3, '' );
+                                                                        ?>
+                                                                        <div class="fp-day-pill-clean">
+                                                                                <input type="checkbox"
+                                                                                                id="day-<?php echo esc_attr( $index ); ?>-<?php echo esc_attr( $day_value ); ?>"
+                                                                                                name="builder_slots[<?php echo esc_attr( $index ); ?>][days][]"
+                                                                                                value="<?php echo esc_attr( $day_value ); ?>"
+                                                                                                <?php checked( in_array( $day_value, $slot['days'] ?? array(), true ) ); ?>>
+                                                                                <label for="day-<?php echo esc_attr( $index ); ?>-<?php echo esc_attr( $day_value ); ?>" title="<?php echo esc_attr( $day_label ); ?>">
+                                                                                        <span class="fp-slot-day__abbr"><?php echo esc_html( $day_abbr ); ?></span>
+                                                                                        <span class="fp-slot-day__full"><?php echo esc_html( $day_label ); ?></span>
+                                                                                </label>
+                                                                        </div>
+                                                                <?php endforeach; ?>
+                                                        </div>
+                                                        <p class="fp-slot-hint"><?php _e( 'Select at least one day to activate this slot.', 'fp-esperienze' ); ?></p>
+                                                </div>
+
+                                                <div class="fp-slot-primary__field fp-slot-insight">
+                                                        <h4><?php _e( 'Slot notes', 'fp-esperienze' ); ?></h4>
+                                                        <ul class="fp-slot-insight-list">
+                                                                <li><span class="dashicons dashicons-update" aria-hidden="true"></span><?php _e( 'Repeats weekly on your chosen days.', 'fp-esperienze' ); ?></li>
+                                                                <li><span class="dashicons dashicons-admin-generic" aria-hidden="true"></span><?php _e( 'Overrides below replace product defaults.', 'fp-esperienze' ); ?></li>
+                                                                <li><span class="dashicons dashicons-visibility" aria-hidden="true"></span><?php _e( 'Customers only see published, in-season slots.', 'fp-esperienze' ); ?></li>
+                                                        </ul>
+                                                </div>
+                                        </div>
+
+                                        <section class="fp-overrides-section-clean" aria-label="<?php esc_attr_e( 'Time slot overrides', 'fp-esperienze' ); ?>">
+                                                <div class="fp-slot-detail-header">
+                                                        <div>
+                                                                <h4><?php _e( 'Booking details', 'fp-esperienze' ); ?></h4>
+                                                                <p><?php _e( 'Adjust capacity, pricing, and duration for this specific time slot.', 'fp-esperienze' ); ?></p>
+                                                        </div>
+                                                </div>
+
+                                                <div class="fp-overrides-grid-clean">
+                                                        <div class="fp-override-field-clean">
+                                                                <label><?php _e( 'Duration (minutes)', 'fp-esperienze' ); ?></label>
+                                                                <input type="number"
+                                                                                name="builder_slots[<?php echo esc_attr( $index ); ?>][duration_min]"
+                                                                                value="<?php echo esc_attr( $slot['duration_min'] ?? $default_duration ); ?>"
+                                                                                min="1"
+                                                                                required>
+                                                        </div>
+
+                                                        <div class="fp-override-field-clean">
+                                                                <label><?php _e( 'Capacity', 'fp-esperienze' ); ?></label>
+                                                                <input type="number"
+                                                                                name="builder_slots[<?php echo esc_attr( $index ); ?>][capacity]"
+                                                                                value="<?php echo esc_attr( $slot['capacity'] ?? $default_capacity ); ?>"
+                                                                                min="1"
+                                                                                required>
+                                                        </div>
+
+                                                        <div class="fp-override-field-clean">
+                                                                <label><?php _e( 'Language', 'fp-esperienze' ); ?></label>
+                                                                <input type="text"
+                                                                                name="builder_slots[<?php echo esc_attr( $index ); ?>][lang]"
+                                                                                value="<?php echo esc_attr( $slot['lang'] ?? $default_language ); ?>"
+                                                                                maxlength="10"
+                                                                                required>
+                                                        </div>
+
+                                                        <div class="fp-override-field-clean">
+                                                                <label><?php _e( 'Meeting Point', 'fp-esperienze' ); ?></label>
+                                                                <select name="builder_slots[<?php echo esc_attr( $index ); ?>][meeting_point_id]" required>
+                                                                        <?php foreach ( $meeting_points as $mp_id => $mp_name ) : ?>
+                                                                                <option value="<?php echo esc_attr( $mp_id ); ?>" <?php selected( $slot['meeting_point_id'] ?? $default_meeting_point, $mp_id ); ?>>
+                                                                                        <?php echo esc_html( $mp_name ); ?>
+                                                                                </option>
+                                                                        <?php endforeach; ?>
+                                                                </select>
+                                                        </div>
+
+                                                        <div class="fp-override-field-clean">
+                                                                <label><?php _e( 'Adult Price', 'fp-esperienze' ); ?> (<?php echo get_woocommerce_currency_symbol(); ?>)</label>
+                                                                <input type="number"
+                                                                                name="builder_slots[<?php echo esc_attr( $index ); ?>][price_adult]"
+                                                                                value="<?php echo esc_attr( $slot['price_adult'] ?? $default_price_adult ); ?>"
+                                                                                min="0"
+                                                                                step="0.01"
+                                                                                required>
+                                                        </div>
+
+                                                        <div class="fp-override-field-clean">
+                                                                <label><?php _e( 'Child Price', 'fp-esperienze' ); ?> (<?php echo get_woocommerce_currency_symbol(); ?>)</label>
+                                                                <input type="number"
+                                                                                name="builder_slots[<?php echo esc_attr( $index ); ?>][price_child]"
+                                                                                value="<?php echo esc_attr( $slot['price_child'] ?? $default_price_child ); ?>"
+                                                                                min="0"
+                                                                                step="0.01"
+                                                                                required>
+                                                        </div>
+                                                </div>
+                                        </section>
+                                </div>
+                        </div>
 			
 			<!-- Store schedule IDs for updates -->
 			<?php if ( ! empty( $slot['schedule_ids'] ) ) : ?>

@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FP Esperienze Schedule Builder - UI Preview</title>
+    <link rel="stylesheet" href="https://s.w.org/wp-includes/css/dashicons.css">
+    <link rel="stylesheet" href="assets/css/admin.css">
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
@@ -243,117 +245,319 @@
                     <h5>Weekly Programming</h5>
                     <p class="description">Create time slots that apply to multiple days. Override values are inherited from product defaults above.</p>
                     
-                    <!-- Time Slot 1 -->
-                    <div class="fp-time-slot-row">
-                        <div class="fp-time-slot-header">
-                            <div style="flex: 0 0 120px;">
-                                <label>Start Time <span class="required">*</span></label>
-                                <input type="time" value="09:00" required>
-                            </div>
-                            
-                            <div style="flex: 1;">
-                                <label>Days <span class="required">*</span></label>
-                                <div class="fp-days-checkboxes">
-                                    <label><input type="checkbox" checked> <span>Monday</span></label>
-                                    <label><input type="checkbox"> <span>Tuesday</span></label>
-                                    <label><input type="checkbox" checked> <span>Wednesday</span></label>
-                                    <label><input type="checkbox"> <span>Thursday</span></label>
-                                    <label><input type="checkbox" checked> <span>Friday</span></label>
-                                    <label><input type="checkbox"> <span>Saturday</span></label>
-                                    <label><input type="checkbox"> <span>Sunday</span></label>
+                    <div id="fp-time-slots-container" class="fp-time-slots-container-clean">
+                        <div class="fp-time-slot-card fp-time-slot-card-clean" data-index="0">
+                            <div class="fp-time-slot-content-clean">
+                                <div class="fp-slot-card-inner">
+                                    <div class="fp-slot-rail" aria-hidden="true">
+                                        <span class="fp-slot-rail__dot"></span>
+                                        <span class="fp-slot-rail__line"></span>
+                                    </div>
+                                    <div class="fp-slot-content">
+                                        <header class="fp-slot-header">
+                                            <div class="fp-slot-header__meta">
+                                                <span class="fp-slot-chip">Slot 01</span>
+                                                <p class="fp-slot-subtitle">Recurring weekly availability</p>
+                                                <div class="fp-slot-status-badges">
+                                                    <span class="fp-slot-status-badge is-success"><span class="dashicons dashicons-yes"></span>2 active slots</span>
+                                                    <span class="fp-slot-status-badge is-info"><span class="dashicons dashicons-calendar-alt"></span>3 days selected</span>
+                                                </div>
+                                            </div>
+                                            <div class="fp-slot-actions-clean">
+                                                <button type="button" class="button fp-duplicate-time-slot-clean">
+                                                    <span class="dashicons dashicons-admin-page"></span>
+                                                    Duplicate slot
+                                                </button>
+                                                <button type="button" class="button button-link-delete fp-remove-time-slot-clean">
+                                                    <span class="dashicons dashicons-trash"></span>
+                                                    Remove slot
+                                                </button>
+                                            </div>
+                                        </header>
+
+                                        <div class="fp-slot-primary">
+                                            <div class="fp-slot-primary__field fp-time-field-clean form-field fp-field fp-field--time">
+                                                <label for="preview-time-0" class="fp-slot-field-label">
+                                                    <span class="dashicons dashicons-clock"></span>
+                                                    <span class="fp-slot-label-text">Start Time <span class="required">*</span></span>
+                                                </label>
+                                                <div class="fp-slot-time-input">
+                                                    <input type="time" id="preview-time-0" value="09:00">
+                                                </div>
+                                                <p class="fp-slot-hint">Guests see this start time in their timezone.</p>
+                                            </div>
+
+                                            <div class="fp-slot-primary__field fp-days-field-clean form-field fp-field fp-field--days">
+                                                <label class="fp-slot-field-label">
+                                                    <span class="dashicons dashicons-calendar-alt"></span>
+                                                    <span class="fp-slot-label-text">Days of Week <span class="required">*</span></span>
+                                                </label>
+                                                <div class="fp-slot-day-grid fp-days-pills-clean">
+                                                    <div class="fp-day-pill-clean">
+                                                        <input type="checkbox" id="preview-day-0-1" checked>
+                                                        <label for="preview-day-0-1" title="Monday">
+                                                            <span class="fp-slot-day__abbr">Mon</span>
+                                                            <span class="fp-slot-day__full">Monday</span>
+                                                        </label>
+                                                    </div>
+                                                    <div class="fp-day-pill-clean">
+                                                        <input type="checkbox" id="preview-day-0-2">
+                                                        <label for="preview-day-0-2" title="Tuesday">
+                                                            <span class="fp-slot-day__abbr">Tue</span>
+                                                            <span class="fp-slot-day__full">Tuesday</span>
+                                                        </label>
+                                                    </div>
+                                                    <div class="fp-day-pill-clean">
+                                                        <input type="checkbox" id="preview-day-0-3" checked>
+                                                        <label for="preview-day-0-3" title="Wednesday">
+                                                            <span class="fp-slot-day__abbr">Wed</span>
+                                                            <span class="fp-slot-day__full">Wednesday</span>
+                                                        </label>
+                                                    </div>
+                                                    <div class="fp-day-pill-clean">
+                                                        <input type="checkbox" id="preview-day-0-4">
+                                                        <label for="preview-day-0-4" title="Thursday">
+                                                            <span class="fp-slot-day__abbr">Thu</span>
+                                                            <span class="fp-slot-day__full">Thursday</span>
+                                                        </label>
+                                                    </div>
+                                                    <div class="fp-day-pill-clean">
+                                                        <input type="checkbox" id="preview-day-0-5" checked>
+                                                        <label for="preview-day-0-5" title="Friday">
+                                                            <span class="fp-slot-day__abbr">Fri</span>
+                                                            <span class="fp-slot-day__full">Friday</span>
+                                                        </label>
+                                                    </div>
+                                                    <div class="fp-day-pill-clean">
+                                                        <input type="checkbox" id="preview-day-0-6">
+                                                        <label for="preview-day-0-6" title="Saturday">
+                                                            <span class="fp-slot-day__abbr">Sat</span>
+                                                            <span class="fp-slot-day__full">Saturday</span>
+                                                        </label>
+                                                    </div>
+                                                    <div class="fp-day-pill-clean">
+                                                        <input type="checkbox" id="preview-day-0-0">
+                                                        <label for="preview-day-0-0" title="Sunday">
+                                                            <span class="fp-slot-day__abbr">Sun</span>
+                                                            <span class="fp-slot-day__full">Sunday</span>
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <p class="fp-slot-hint">Select at least one day to activate this slot.</p>
+                                            </div>
+
+                                            <div class="fp-slot-primary__field fp-slot-insight">
+                                                <h4>Slot notes</h4>
+                                                <ul class="fp-slot-insight-list">
+                                                    <li><span class="dashicons dashicons-update"></span>Repeats weekly on your chosen days.</li>
+                                                    <li><span class="dashicons dashicons-admin-generic"></span>Overrides below replace product defaults.</li>
+                                                    <li><span class="dashicons dashicons-visibility"></span>Customers only see published, in-season slots.</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+
+                                        <section class="fp-overrides-section-clean" aria-label="Time slot overrides">
+                                            <div class="fp-slot-detail-header">
+                                                <div>
+                                                    <h4>Booking details</h4>
+                                                    <p>Adjust capacity, pricing, and duration for this specific time slot.</p>
+                                                </div>
+                                            </div>
+                                            <div class="fp-overrides-grid-clean">
+                                                <div class="fp-override-field-clean">
+                                                    <label>Duration (minutes)</label>
+                                                    <input type="number" value="90" min="1">
+                                                </div>
+                                                <div class="fp-override-field-clean">
+                                                    <label>Capacity</label>
+                                                    <input type="number" value="12" min="1">
+                                                </div>
+                                                <div class="fp-override-field-clean">
+                                                    <label>Language</label>
+                                                    <input type="text" value="it" maxlength="10">
+                                                </div>
+                                                <div class="fp-override-field-clean">
+                                                    <label>Meeting Point</label>
+                                                    <select>
+                                                        <option>Piazza San Marco, Venice</option>
+                                                        <option>Colosseum Entrance, Rome</option>
+                                                    </select>
+                                                </div>
+                                                <div class="fp-override-field-clean">
+                                                    <label>Adult Price (€)</label>
+                                                    <input type="number" value="25.00" min="0" step="0.01">
+                                                </div>
+                                                <div class="fp-override-field-clean">
+                                                    <label>Child Price (€)</label>
+                                                    <input type="number" value="15.00" min="0" step="0.01">
+                                                </div>
+                                            </div>
+                                        </section>
+                                    </div>
                                 </div>
                             </div>
-                            
-                            <div style="flex: 0 0 auto;">
-                                <button type="button" class="fp-remove-time-slot">
-                                    🗑️ Remove
-                                </button>
-                            </div>
                         </div>
-                        
-                        <div class="fp-override-toggle">
-                            <label>
-                                <input type="checkbox"> Show advanced overrides
-                            </label>
-                            <span class="description">Override default values for this time slot</span>
+
+                        <div class="fp-time-slot-card fp-time-slot-card-clean" data-index="1">
+                            <div class="fp-time-slot-content-clean">
+                                <div class="fp-slot-card-inner">
+                                    <div class="fp-slot-rail" aria-hidden="true">
+                                        <span class="fp-slot-rail__dot"></span>
+                                        <span class="fp-slot-rail__line"></span>
+                                    </div>
+                                    <div class="fp-slot-content">
+                                        <header class="fp-slot-header">
+                                            <div class="fp-slot-header__meta">
+                                                <span class="fp-slot-chip">Slot 02</span>
+                                                <p class="fp-slot-subtitle">Recurring weekly availability</p>
+                                                <div class="fp-slot-status-badges">
+                                                    <span class="fp-slot-status-badge is-warning"><span class="dashicons dashicons-warning"></span>Needs details</span>
+                                                    <span class="fp-slot-status-badge is-info"><span class="dashicons dashicons-calendar-alt"></span>4 days selected</span>
+                                                </div>
+                                            </div>
+                                            <div class="fp-slot-actions-clean">
+                                                <button type="button" class="button fp-duplicate-time-slot-clean">
+                                                    <span class="dashicons dashicons-admin-page"></span>
+                                                    Duplicate slot
+                                                </button>
+                                                <button type="button" class="button button-link-delete fp-remove-time-slot-clean">
+                                                    <span class="dashicons dashicons-trash"></span>
+                                                    Remove slot
+                                                </button>
+                                            </div>
+                                        </header>
+
+                                        <div class="fp-slot-primary">
+                                            <div class="fp-slot-primary__field fp-time-field-clean form-field fp-field fp-field--time">
+                                                <label for="preview-time-1" class="fp-slot-field-label">
+                                                    <span class="dashicons dashicons-clock"></span>
+                                                    <span class="fp-slot-label-text">Start Time <span class="required">*</span></span>
+                                                </label>
+                                                <div class="fp-slot-time-input">
+                                                    <input type="time" id="preview-time-1" value="14:30">
+                                                </div>
+                                                <p class="fp-slot-hint">Guests see this start time in their timezone.</p>
+                                            </div>
+
+                                            <div class="fp-slot-primary__field fp-days-field-clean form-field fp-field fp-field--days">
+                                                <label class="fp-slot-field-label">
+                                                    <span class="dashicons dashicons-calendar-alt"></span>
+                                                    <span class="fp-slot-label-text">Days of Week <span class="required">*</span></span>
+                                                </label>
+                                                <div class="fp-slot-day-grid fp-days-pills-clean">
+                                                    <div class="fp-day-pill-clean">
+                                                        <input type="checkbox" id="preview-day-1-1">
+                                                        <label for="preview-day-1-1" title="Monday">
+                                                            <span class="fp-slot-day__abbr">Mon</span>
+                                                            <span class="fp-slot-day__full">Monday</span>
+                                                        </label>
+                                                    </div>
+                                                    <div class="fp-day-pill-clean">
+                                                        <input type="checkbox" id="preview-day-1-2" checked>
+                                                        <label for="preview-day-1-2" title="Tuesday">
+                                                            <span class="fp-slot-day__abbr">Tue</span>
+                                                            <span class="fp-slot-day__full">Tuesday</span>
+                                                        </label>
+                                                    </div>
+                                                    <div class="fp-day-pill-clean">
+                                                        <input type="checkbox" id="preview-day-1-3">
+                                                        <label for="preview-day-1-3" title="Wednesday">
+                                                            <span class="fp-slot-day__abbr">Wed</span>
+                                                            <span class="fp-slot-day__full">Wednesday</span>
+                                                        </label>
+                                                    </div>
+                                                    <div class="fp-day-pill-clean">
+                                                        <input type="checkbox" id="preview-day-1-4" checked>
+                                                        <label for="preview-day-1-4" title="Thursday">
+                                                            <span class="fp-slot-day__abbr">Thu</span>
+                                                            <span class="fp-slot-day__full">Thursday</span>
+                                                        </label>
+                                                    </div>
+                                                    <div class="fp-day-pill-clean">
+                                                        <input type="checkbox" id="preview-day-1-5">
+                                                        <label for="preview-day-1-5" title="Friday">
+                                                            <span class="fp-slot-day__abbr">Fri</span>
+                                                            <span class="fp-slot-day__full">Friday</span>
+                                                        </label>
+                                                    </div>
+                                                    <div class="fp-day-pill-clean">
+                                                        <input type="checkbox" id="preview-day-1-6" checked>
+                                                        <label for="preview-day-1-6" title="Saturday">
+                                                            <span class="fp-slot-day__abbr">Sat</span>
+                                                            <span class="fp-slot-day__full">Saturday</span>
+                                                        </label>
+                                                    </div>
+                                                    <div class="fp-day-pill-clean">
+                                                        <input type="checkbox" id="preview-day-1-0" checked>
+                                                        <label for="preview-day-1-0" title="Sunday">
+                                                            <span class="fp-slot-day__abbr">Sun</span>
+                                                            <span class="fp-slot-day__full">Sunday</span>
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <p class="fp-slot-hint">Select at least one day to activate this slot.</p>
+                                            </div>
+
+                                            <div class="fp-slot-primary__field fp-slot-insight">
+                                                <h4>Slot notes</h4>
+                                                <ul class="fp-slot-insight-list">
+                                                    <li><span class="dashicons dashicons-update"></span>Repeats weekly on your chosen days.</li>
+                                                    <li><span class="dashicons dashicons-admin-generic"></span>Overrides below replace product defaults.</li>
+                                                    <li><span class="dashicons dashicons-visibility"></span>Customers only see published, in-season slots.</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+
+                                        <section class="fp-overrides-section-clean" aria-label="Time slot overrides">
+                                            <div class="fp-slot-detail-header">
+                                                <div>
+                                                    <h4>Booking details</h4>
+                                                    <p>Adjust capacity, pricing, and duration for this specific time slot.</p>
+                                                </div>
+                                            </div>
+                                            <div class="fp-overrides-grid-clean">
+                                                <div class="fp-override-field-clean">
+                                                    <label>Duration (minutes)</label>
+                                                    <input type="number" value="120" min="1">
+                                                </div>
+                                                <div class="fp-override-field-clean">
+                                                    <label>Capacity</label>
+                                                    <input type="number" value="10" min="1">
+                                                </div>
+                                                <div class="fp-override-field-clean">
+                                                    <label>Language</label>
+                                                    <input type="text" value="en" maxlength="10">
+                                                </div>
+                                                <div class="fp-override-field-clean">
+                                                    <label>Meeting Point</label>
+                                                    <select>
+                                                        <option value="">Select meeting point</option>
+                                                        <option>Piazza San Marco, Venice</option>
+                                                        <option>Colosseum Entrance, Rome</option>
+                                                    </select>
+                                                </div>
+                                                <div class="fp-override-field-clean">
+                                                    <label>Adult Price (€)</label>
+                                                    <input type="number" value="35.00" min="0" step="0.01">
+                                                </div>
+                                                <div class="fp-override-field-clean">
+                                                    <label>Child Price (€)</label>
+                                                    <input type="number" value="18.00" min="0" step="0.01">
+                                                </div>
+                                            </div>
+                                        </section>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    
-                    <!-- Time Slot 2 with overrides shown -->
-                    <div class="fp-time-slot-row">
-                        <div class="fp-time-slot-header">
-                            <div style="flex: 0 0 120px;">
-                                <label>Start Time <span class="required">*</span></label>
-                                <input type="time" value="14:30" required>
-                            </div>
-                            
-                            <div style="flex: 1;">
-                                <label>Days <span class="required">*</span></label>
-                                <div class="fp-days-checkboxes">
-                                    <label><input type="checkbox"> <span>Monday</span></label>
-                                    <label><input type="checkbox" checked> <span>Tuesday</span></label>
-                                    <label><input type="checkbox"> <span>Wednesday</span></label>
-                                    <label><input type="checkbox" checked> <span>Thursday</span></label>
-                                    <label><input type="checkbox"> <span>Friday</span></label>
-                                    <label><input type="checkbox" checked> <span>Saturday</span></label>
-                                    <label><input type="checkbox" checked> <span>Sunday</span></label>
-                                </div>
-                            </div>
-                            
-                            <div style="flex: 0 0 auto;">
-                                <button type="button" class="fp-remove-time-slot">
-                                    🗑️ Remove
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <div class="fp-override-toggle">
-                            <label>
-                                <input type="checkbox" checked> Show advanced overrides
-                            </label>
-                            <span class="description">Override default values for this time slot</span>
-                        </div>
-                        
-                        <div class="fp-overrides-section">
-                            <div class="grid-3" style="margin-bottom: 10px;">
-                                <div>
-                                    <label>Duration (minutes)</label>
-                                    <input type="number" value="120" placeholder="Inherit (90)" min="1">
-                                </div>
-                                <div>
-                                    <label>Capacity</label>
-                                    <input type="number" value="" placeholder="Inherit (12)" min="1">
-                                </div>
-                                <div>
-                                    <label>Language</label>
-                                    <input type="text" value="" placeholder="Inherit (it)" maxlength="10">
-                                </div>
-                            </div>
-                            <div class="grid-3">
-                                <div>
-                                    <label>Meeting Point</label>
-                                    <select>
-                                        <option value="">Inherit (Piazza San Marco, Venice)</option>
-                                        <option>Colosseum Entrance, Rome</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label>Adult Price (€)</label>
-                                    <input type="number" value="35.00" placeholder="Inherit (25.00)" min="0" step="0.01">
-                                </div>
-                                <div>
-                                    <label>Child Price (€)</label>
-                                    <input type="number" value="" placeholder="Inherit (15.00)" min="0" step="0.01">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <button type="button" class="fp-add-time-slot">
-                        ➕ Add Time Slot
+
+                    <button type="button" class="fp-add-time-slot" style="margin-top: 24px;">
+                        <span class="dashicons dashicons-plus-alt"></span>
+                        Add Time Slot
                     </button>
                 </div>
-                
+
                 <div class="toggle-section">
                     <label>
                         <input type="checkbox"> Show Advanced Mode
@@ -373,27 +577,31 @@
     <script>
         // Simple demo functionality
         document.addEventListener('DOMContentLoaded', function() {
-            // Toggle overrides sections
-            document.querySelectorAll('.fp-override-toggle input[type="checkbox"]').forEach(function(checkbox) {
-                checkbox.addEventListener('change', function() {
-                    const overridesSection = this.closest('.fp-time-slot-row').querySelector('.fp-overrides-section');
-                    if (this.checked) {
-                        overridesSection.style.display = 'block';
-                    } else {
-                        overridesSection.style.display = 'none';
+            document.querySelectorAll('.fp-slot-day-grid input[type="checkbox"]').forEach(function(input) {
+                input.addEventListener('change', function() {
+                    const card = this.closest('.fp-time-slot-card-clean');
+                    if (!card) {
+                        return;
                     }
+
+                    card.classList.add('fp-newly-added');
+                    setTimeout(function() {
+                        card.classList.remove('fp-newly-added');
+                    }, 500);
                 });
             });
-            
-            // Toggle advanced mode
-            document.querySelector('.toggle-section input[type="checkbox"]').addEventListener('change', function() {
-                const advancedMode = document.querySelector('.advanced-mode');
-                if (this.checked) {
-                    advancedMode.style.display = 'block';
-                } else {
-                    advancedMode.style.display = 'none';
-                }
-            });
+
+            const advancedToggle = document.querySelector('.toggle-section input[type="checkbox"]');
+            if (advancedToggle) {
+                advancedToggle.addEventListener('change', function() {
+                    const advancedMode = document.querySelector('.advanced-mode');
+                    if (!advancedMode) {
+                        return;
+                    }
+
+                    advancedMode.style.display = this.checked ? 'block' : 'none';
+                });
+            }
         });
     </script>
 </body>
