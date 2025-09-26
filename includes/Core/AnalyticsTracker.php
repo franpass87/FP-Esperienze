@@ -13,13 +13,17 @@ defined('ABSPATH') || exit;
 
 /**
  * Persist experience analytics events for the advanced analytics dashboard.
+ *
+ * Requires the global $wpdb database abstraction. The tracker gracefully bails when the
+ * dependency is unavailable (for example during CLI or test bootstrapping) to avoid typed
+ * property initialization errors.
  */
 class AnalyticsTracker {
 
     /**
      * Analytics events table name.
      */
-    private string $tableName;
+    private string $tableName = '';
 
     /**
      * Whether table availability has been checked.
@@ -138,7 +142,7 @@ class AnalyticsTracker {
      * Record an analytics event.
      */
     private function recordEvent(string $event_type, string $session_id, int $product_id = 0, ?int $quantity = null, bool $dedupe = false): void {
-        if (!$this->isTableAvailable()) {
+        if ($this->tableName === '' || !$this->isTableAvailable()) {
             return;
         }
 
@@ -219,6 +223,10 @@ class AnalyticsTracker {
         }
 
         $this->tableChecked = true;
+
+        if ($this->tableName === '') {
+            return false;
+        }
 
         global $wpdb;
         if (!isset($wpdb)) {
