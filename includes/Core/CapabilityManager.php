@@ -166,11 +166,22 @@ class CapabilityManager {
             'fp-esperienze' => self::MANAGE_FP_ESPERIENZE,
             'fp-esperienze-bookings' => self::MANAGE_FP_ESPERIENZE,
             'fp-esperienze-meeting-points' => self::MANAGE_FP_ESPERIENZE,
+            'fp-esperienze-addons' => self::MANAGE_FP_ESPERIENZE,
             'fp-esperienze-extras' => self::MANAGE_FP_ESPERIENZE,
+            'fp-esperienze-gift-vouchers' => self::MANAGE_FP_ESPERIENZE,
             'fp-esperienze-vouchers' => self::MANAGE_FP_ESPERIENZE,
+            'fp-esperienze-availability' => self::MANAGE_FP_ESPERIENZE,
             'fp-esperienze-closures' => self::MANAGE_FP_ESPERIENZE,
             'fp-esperienze-reports' => self::MANAGE_FP_ESPERIENZE,
             'fp-esperienze-settings' => self::MANAGE_FP_ESPERIENZE,
+            'fp-esperienze-developer-tools' => self::MANAGE_FP_ESPERIENZE,
+            'fp-esperienze-integration-toolkit' => self::MANAGE_FP_ESPERIENZE,
+            'fp-esperienze-notifications' => 'manage_woocommerce',
+            'fp-esperienze-operational-alerts' => 'manage_woocommerce',
+            'fp-esperienze-localization' => self::MANAGE_FP_ESPERIENZE,
+            'fp-esperienze-translation-help' => self::MANAGE_FP_ESPERIENZE,
+            'fp-esperienze-status' => 'manage_options',
+            'fp-esperienze-system-status' => 'manage_options',
         ];
     }
 }

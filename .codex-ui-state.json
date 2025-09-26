@@ -1,0 +1,19 @@
+{
+  "completed": [
+    "[1] DISCOVERY & INVENTARIO UI",
+    "[2] IA & MENU PLAN",
+    "[3] DESIGN TOKENS & STYLE",
+    "[4] COMPONENTI UI",
+    "[5] REFIT SCHERMATE PRIORITARIE",
+    "[6] SETTINGS & VALIDAZIONE",
+    "[7] LIST TABLES & AZIONI BULK",
+    "[8] MENU REGISTRY & BACK-COMPAT",
+    "[9] QA MANUALE & REGRESSION",
+    "[10] A11Y & POLISH FINALE",
+    "[11] RELEASE"
+  ],
+  "current": "FINAL SWEEP",
+  "NEXT_PHASE": "FINAL SWEEP",
+  "notes": "FINAL SWEEP batch 2 – availability & closures refit completato; prossime schermate: reports, performance, settings tabs.",
+  "last_commit": "refactor(admin/availability): final sweep closures UI"
+}

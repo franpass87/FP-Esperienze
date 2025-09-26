@@ -9,6 +9,7 @@ namespace FP\Esperienze\Admin;
 
 use FP\Esperienze\Core\CacheManager;
 use FP\Esperienze\Core\AssetOptimizer;
+use FP\Esperienze\Core\CapabilityManager;
 
 defined('ABSPATH') || exit;
 
@@ -16,6 +17,8 @@ defined('ABSPATH') || exit;
  * Performance settings page
  */
 class PerformanceSettings {
+
+    private const ACTION_NOTICE_SLUG = 'fp_esperienze_performance_actions';
     
     /**
      * Constructor
@@ -59,30 +62,42 @@ class PerformanceSettings {
      * Render settings page
      */
     public function renderPage(): void {
-        // Handle cache clear action
-        if (isset($_POST['clear_cache']) && wp_verify_nonce(wp_unslash($_POST['_wpnonce']), 'fp_esperienze_clear_cache')) {
+        if (isset($_POST['clear_cache'])) {
+            $this->guardPerformanceAction('fp_esperienze_clear_cache');
+
             $cleared = CacheManager::clearAllCaches();
-            echo '<div class="notice notice-success"><p>' . 
-                 sprintf(__('Cleared %d cache entries.', 'fp-esperienze'), $cleared) . 
-                 '</p></div>';
+            add_settings_error(
+                self::ACTION_NOTICE_SLUG,
+                'fp_clear_cache',
+                sprintf(__('Cleared %d cache entries.', 'fp-esperienze'), absint($cleared)),
+                'updated'
+            );
         }
-        
-        // Handle minification regeneration
-        if (isset($_POST['regenerate_assets']) && wp_verify_nonce(wp_unslash($_POST['_wpnonce']), 'fp_esperienze_regenerate_assets')) {
+
+        if (isset($_POST['regenerate_assets'])) {
+            $this->guardPerformanceAction('fp_esperienze_regenerate_assets');
+
             AssetOptimizer::clearMinified();
             AssetOptimizer::maybeGenerateMinified();
-            echo '<div class="notice notice-success"><p>' . 
-                 __('Regenerated minified assets.', 'fp-esperienze') . 
-                 '</p></div>';
+            add_settings_error(
+                self::ACTION_NOTICE_SLUG,
+                'fp_regenerate_assets',
+                __('Regenerated minified assets.', 'fp-esperienze'),
+                'updated'
+            );
         }
-        
-        // Handle manual pre-build
-        if (isset($_POST['prebuild_cache']) && wp_verify_nonce(wp_unslash($_POST['_wpnonce']), 'fp_esperienze_prebuild_cache')) {
+
+        if (isset($_POST['prebuild_cache'])) {
+            $this->guardPerformanceAction('fp_esperienze_prebuild_cache');
+
             $cache_manager = new CacheManager();
             $cache_manager->prebuildAvailability();
-            echo '<div class="notice notice-success"><p>' . 
-                 __('Started pre-building availability cache.', 'fp-esperienze') . 
-                 '</p></div>';
+            add_settings_error(
+                self::ACTION_NOTICE_SLUG,
+                'fp_prebuild_cache',
+                __('Started pre-building availability cache.', 'fp-esperienze'),
+                'updated'
+            );
         }
         
         $cache_stats = CacheManager::getCacheStats();
@@ -91,9 +106,14 @@ class PerformanceSettings {
         ?>
         <div class="wrap">
             <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
-            
+
+            <?php settings_errors(self::ACTION_NOTICE_SLUG); ?>
+
             <form method="post" action="options.php">
-                <?php settings_fields('fp_esperienze_performance'); ?>
+                <?php
+                settings_fields('fp_esperienze_performance');
+                settings_errors('fp_esperienze_performance');
+                ?>
                 
                 <h2><?php _e('Cache Settings', 'fp-esperienze'); ?></h2>
                 <table class="form-table">
@@ -167,22 +187,22 @@ class PerformanceSettings {
                 <!-- Clear Cache -->
                 <form method="post" class="fp-inline-form">
                     <?php wp_nonce_field('fp_esperienze_clear_cache'); ?>
-                    <input type="submit" name="clear_cache" class="button button-secondary" 
-                           value="<?php esc_attr_e('Clear All Caches', 'fp-esperienze'); ?>" 
+                    <input type="submit" name="clear_cache" class="button button-secondary"
+                           value="<?php esc_attr_e('Clear All Caches', 'fp-esperienze'); ?>"
                            onclick="return confirm('<?php esc_attr_e('Are you sure you want to clear all caches?', 'fp-esperienze'); ?>');" />
                 </form>
-                
+
                 <!-- Regenerate Assets -->
                 <form method="post" class="fp-inline-form">
                     <?php wp_nonce_field('fp_esperienze_regenerate_assets'); ?>
-                    <input type="submit" name="regenerate_assets" class="button button-secondary" 
+                    <input type="submit" name="regenerate_assets" class="button button-secondary"
                            value="<?php esc_attr_e('Regenerate Minified Assets', 'fp-esperienze'); ?>" />
                 </form>
-                
+
                 <!-- Manual Pre-build -->
                 <form method="post" class="fp-inline-form">
                     <?php wp_nonce_field('fp_esperienze_prebuild_cache'); ?>
-                    <input type="submit" name="prebuild_cache" class="button button-primary" 
+                    <input type="submit" name="prebuild_cache" class="button button-primary"
                            value="<?php esc_attr_e('Pre-build Cache Now', 'fp-esperienze'); ?>" />
                 </form>
                 
@@ -201,5 +221,14 @@ class PerformanceSettings {
             
         </div>
         <?php
+    }
+
+    private function guardPerformanceAction(string $nonce_action): void
+    {
+        if (!CapabilityManager::canManageFPEsperienze()) {
+            wp_die(__('You do not have permission to perform this action.', 'fp-esperienze'));
+        }
+
+        check_admin_referer($nonce_action);
     }
 }

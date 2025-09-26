@@ -14,11 +14,11 @@ class BookingSettingsService implements SettingsTabServiceInterface
 
     public function handle(array $data): SettingsUpdateResult
     {
-        $enableHolds = !empty($data['enable_holds']);
+        $enableHolds = rest_sanitize_boolean(wp_unslash($data['enable_holds'] ?? false));
         $holdDuration = absint(wp_unslash($data['hold_duration'] ?? self::MIN_HOLD_MINUTES));
         $holdDuration = max(self::MIN_HOLD_MINUTES, min(self::MAX_HOLD_MINUTES, $holdDuration));
 
-        update_option('fp_esperienze_enable_holds', $enableHolds);
+        update_option('fp_esperienze_enable_holds', (bool) $enableHolds);
         update_option('fp_esperienze_hold_duration_minutes', $holdDuration);
 
         return SettingsUpdateResult::success();

@@ -29,11 +29,22 @@ class GiftSettingsService implements SettingsTabServiceInterface
         }
 
         $messages = [];
+        $errors   = [];
 
-        if (!empty($data['regenerate_secret'])) {
-            $newSecret = bin2hex(random_bytes(32));
-            update_option('fp_esperienze_gift_secret_hmac', $newSecret);
-            $messages[] = __('A new gift voucher secret was generated.', 'fp-esperienze');
+        $shouldRegenerate = rest_sanitize_boolean(wp_unslash($data['regenerate_secret'] ?? false));
+
+        if ($shouldRegenerate) {
+            try {
+                $newSecret = bin2hex(random_bytes(32));
+                update_option('fp_esperienze_gift_secret_hmac', $newSecret);
+                $messages[] = __('A new gift voucher secret was generated.', 'fp-esperienze');
+            } catch (\Exception $exception) {
+                $errors[] = __('Unable to generate a new gift voucher secret. Please try again.', 'fp-esperienze');
+            }
+        }
+
+        if (!empty($errors)) {
+            return new SettingsUpdateResult(true, $messages, $errors);
         }
 
         return SettingsUpdateResult::success($messages);

@@ -56,8 +56,8 @@ class OnboardingDashboardWidget {
         $percentage_display = number_format_i18n($percentage, 2);
 
         $setup_url = admin_url('admin.php?page=fp-esperienze-setup-wizard');
-        $integration_url = admin_url('admin.php?page=fp-esperienze-integration-toolkit');
-        $alerts_url = admin_url('admin.php?page=fp-esperienze-operational-alerts');
+        $integration_url = admin_url('admin.php?page=fp-esperienze-developer-tools');
+        $alerts_url = admin_url('admin.php?page=fp-esperienze-notifications');
 
         $seed_nonce = wp_create_nonce('fp_esperienze_seed_demo');
 

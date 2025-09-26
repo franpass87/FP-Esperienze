@@ -112,11 +112,11 @@ class SEOSettings {
     public function sanitizeSettings($input): array {
         $defaults = $this->getDefaultSettings();
         $sanitized = [];
-        
+
         foreach ($defaults as $key => $default) {
-            $sanitized[$key] = !empty($input[$key]);
+            $sanitized[$key] = (bool) rest_sanitize_boolean($input[$key] ?? $default);
         }
-        
+
         return $sanitized;
     }
     

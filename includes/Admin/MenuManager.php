@@ -32,10 +32,12 @@ use FP\Esperienze\Core\WebhookManager;
 use FP\Esperienze\Core\Log;
 use FP\Esperienze\Admin\DependencyChecker;
 use FP\Esperienze\Admin\OperationalAlerts;
+use FP\Esperienze\Admin\UI\AdminComponents;
 use FP\Esperienze\Admin\Settings\AutoTranslateSettings;
 use FP\Esperienze\Admin\Settings\TranslationHelp;
 use WP_Error;
 use WP_REST_Response;
+use WP_Screen;
 
 defined('ABSPATH') || exit;
 
@@ -44,13 +46,31 @@ defined('ABSPATH') || exit;
  */
 class MenuManager {
 
+    private const SETTINGS_ERROR_SLUG = 'fp_esperienze_settings';
+
+    /**
+     * Cached registry instance for building the admin menu.
+     */
+    private MenuRegistry $menuRegistry;
+
+    /**
+     * Component-based notice queue rendered within admin pages.
+     *
+     * @var array<int, array<string, string|null>>
+     */
+    private array $queuedPageNotices = [];
+
     /**
      * Constructor
      */
     public function __construct() {
+        $this->menuRegistry = MenuRegistry::instance();
+        $this->registerMenuPages();
+
         add_action('admin_menu', [$this, 'addAdminMenu']);
         add_action('admin_enqueue_scripts', [$this, 'enqueueAdminScripts']);
-        
+        add_filter('set-screen-option', [$this, 'saveScreenOption'], 10, 3);
+
         // Initialize Setup Wizard and System Status
         new SetupWizard();
         new SystemStatus();
@@ -76,118 +96,591 @@ class MenuManager {
     }
 
     /**
+     * Register canonical menu pages, separators, and legacy aliases.
+     */
+    private function registerMenuPages(): void {
+        $registry = $this->menuRegistry;
+
+        $registry->setTopLevel([
+            'page_title' => __('FP Esperienze', 'fp-esperienze'),
+            'menu_title' => __('FP Esperienze', 'fp-esperienze'),
+            'capability' => CapabilityManager::MANAGE_FP_ESPERIENZE,
+            'menu_slug'  => 'fp-esperienze',
+            'icon_url'   => 'dashicons-calendar-alt',
+            'position'   => 25,
+            'callback'   => [$this, 'dashboardPage'],
+        ]);
+
+        $registry->registerSeparator('operations', [
+            'label'      => __('Operations', 'fp-esperienze'),
+            'order'      => 35,
+            'capability' => CapabilityManager::MANAGE_FP_ESPERIENZE,
+        ]);
+
+        $registry->registerSeparator('configuration', [
+            'label'      => __('Configuration', 'fp-esperienze'),
+            'order'      => 95,
+            'capability' => CapabilityManager::MANAGE_FP_ESPERIENZE,
+        ]);
+
+        $registry->registerPage([
+            'slug'        => 'fp-esperienze',
+            'page_title'  => __('FP Esperienze Overview', 'fp-esperienze'),
+            'menu_title'  => __('Overview', 'fp-esperienze'),
+            'capability'  => CapabilityManager::MANAGE_FP_ESPERIENZE,
+            'callback'    => [$this, 'dashboardPage'],
+            'order'       => 10,
+        ]);
+
+        $registry->registerPage([
+            'slug'        => 'fp-esperienze-reports',
+            'page_title'  => __('Reports & Insights', 'fp-esperienze'),
+            'menu_title'  => __('Reports & Insights', 'fp-esperienze'),
+            'capability'  => CapabilityManager::MANAGE_FP_ESPERIENZE,
+            'callback'    => [$this, 'reportsPage'],
+            'order'       => 20,
+        ]);
+
+        $registry->registerPage([
+            'slug'        => 'fp-esperienze-bookings',
+            'page_title'  => __('Bookings', 'fp-esperienze'),
+            'menu_title'  => __('Bookings', 'fp-esperienze'),
+            'capability'  => CapabilityManager::MANAGE_FP_ESPERIENZE,
+            'callback'    => [$this, 'bookingsPage'],
+            'order'       => 40,
+            'load_actions'=> [[$this, 'configureBookingsScreen']],
+        ]);
+
+        $registry->registerPage([
+            'slug'        => 'fp-esperienze-availability',
+            'page_title'  => __('Availability & Closures', 'fp-esperienze'),
+            'menu_title'  => __('Availability & Closures', 'fp-esperienze'),
+            'capability'  => CapabilityManager::MANAGE_FP_ESPERIENZE,
+            'callback'    => [$this, 'closuresPage'],
+            'order'       => 50,
+            'aliases'     => ['fp-esperienze-closures'],
+        ]);
+
+        $registry->registerPage([
+            'slug'        => 'fp-esperienze-meeting-points',
+            'page_title'  => __('Meeting Points', 'fp-esperienze'),
+            'menu_title'  => __('Meeting Points', 'fp-esperienze'),
+            'capability'  => CapabilityManager::MANAGE_FP_ESPERIENZE,
+            'callback'    => [$this, 'meetingPointsPage'],
+            'order'       => 60,
+            'load_actions'=> [[$this, 'configureMeetingPointsScreen']],
+        ]);
+
+        $registry->registerPage([
+            'slug'        => 'fp-esperienze-addons',
+            'page_title'  => __('Extras & Add-ons', 'fp-esperienze'),
+            'menu_title'  => __('Extras & Add-ons', 'fp-esperienze'),
+            'capability'  => CapabilityManager::MANAGE_FP_ESPERIENZE,
+            'callback'    => [$this, 'extrasPage'],
+            'order'       => 70,
+            'aliases'     => ['fp-esperienze-extras'],
+            'load_actions'=> [[$this, 'configureExtrasScreen']],
+        ]);
+
+        $registry->registerPage([
+            'slug'        => 'fp-esperienze-gift-vouchers',
+            'page_title'  => __('Gift Vouchers', 'fp-esperienze'),
+            'menu_title'  => __('Gift Vouchers', 'fp-esperienze'),
+            'capability'  => CapabilityManager::MANAGE_FP_ESPERIENZE,
+            'callback'    => [$this, 'vouchersPage'],
+            'order'       => 80,
+            'aliases'     => ['fp-esperienze-vouchers'],
+        ]);
+
+        $registry->registerPage([
+            'slug'        => 'fp-esperienze-settings',
+            'page_title'  => __('Settings', 'fp-esperienze'),
+            'menu_title'  => __('Settings', 'fp-esperienze'),
+            'capability'  => CapabilityManager::MANAGE_FP_ESPERIENZE,
+            'callback'    => [$this, 'settingsPage'],
+            'order'       => 100,
+        ]);
+
+        $registry->registerPage([
+            'slug'        => 'fp-esperienze-performance',
+            'page_title'  => __('Performance Tools', 'fp-esperienze'),
+            'menu_title'  => __('Performance Tools', 'fp-esperienze'),
+            'capability'  => 'manage_options',
+            'callback'    => [$this, 'performancePage'],
+            'order'       => 130,
+        ]);
+
+        $registry->registerPage([
+            'slug'        => 'fp-esperienze-developer-tools',
+            'page_title'  => __('Developer Toolkit', 'fp-esperienze'),
+            'menu_title'  => __('Developer Toolkit', 'fp-esperienze'),
+            'capability'  => CapabilityManager::MANAGE_FP_ESPERIENZE,
+            'callback'    => [$this, 'integrationToolkitPage'],
+            'order'       => 150,
+            'aliases'     => ['fp-esperienze-integration-toolkit'],
+        ]);
+    }
+
+    /**
+     * Persist the screen options for admin list tables.
+     *
+     * @param mixed  $status Default status from WordPress.
+     * @param string $option Screen option name.
+     * @param mixed  $value  Submitted value.
+     * @return mixed
+     */
+    public function saveScreenOption($status, string $option, $value) {
+        $numeric_options = [
+            'fp_bookings_per_page',
+            'fp_meeting_points_per_page',
+            'fp_extras_per_page',
+        ];
+
+        if (in_array($option, $numeric_options, true)) {
+            $value = (int) $value;
+
+            if ($value < 5) {
+                $value = 5;
+            }
+
+            if ($value > 200) {
+                $value = 200;
+            }
+
+            return $value;
+        }
+
+        return $status;
+    }
+
+    /**
+     * Configure screen options and help tabs for bookings.
+     */
+    public function configureBookingsScreen(): void {
+        add_screen_option('per_page', [
+            'label'   => __('Bookings per page', 'fp-esperienze'),
+            'default' => 20,
+            'option'  => 'fp_bookings_per_page',
+        ]);
+
+        add_filter('screen_settings', [$this, 'renderBookingsScreenSettings'], 10, 2);
+
+        if (
+            isset($_POST['fp_bookings_columns_nonce'])
+            && wp_verify_nonce(wp_unslash($_POST['fp_bookings_columns_nonce']), 'fp_save_bookings_screen_options')
+        ) {
+            $this->persistVisibleColumns(
+                'fp_bookings_hidden_columns',
+                $this->getBookingsColumnDefinitions(),
+                array_map('sanitize_key', wp_unslash($_POST['fp_bookings_columns'] ?? []))
+            );
+        }
+
+        $screen = get_current_screen();
+        if ($screen instanceof WP_Screen) {
+            $screen->add_help_tab([
+                'id'      => 'fp-bookings-overview',
+                'title'   => __('Managing bookings', 'fp-esperienze'),
+                'content' => '<p>' . esc_html__('Use the filters, views, and bulk actions to keep reservations up to date. Select rows to update multiple bookings at once.', 'fp-esperienze') . '</p>',
+            ]);
+
+            $screen->add_help_tab([
+                'id'      => 'fp-bookings-shortcuts',
+                'title'   => __('Shortcuts', 'fp-esperienze'),
+                'content' => '<p>' . esc_html__('Calendar view reflects the same filters. Screen Options let you hide columns you do not need on smaller displays.', 'fp-esperienze') . '</p>',
+            ]);
+
+            $screen->set_help_sidebar(
+                '<p><strong>' . esc_html__('Need more help?', 'fp-esperienze') . '</strong></p>' .
+                '<p><a href="https://support.fp-italia.it" target="_blank" rel="noopener noreferrer">' .
+                esc_html__('Visit the FP Esperienze documentation', 'fp-esperienze') . '</a></p>'
+            );
+        }
+    }
+
+    /**
+     * Configure screen options and help tabs for meeting points.
+     */
+    public function configureMeetingPointsScreen(): void {
+        add_screen_option('per_page', [
+            'label'   => __('Meeting points per page', 'fp-esperienze'),
+            'default' => 20,
+            'option'  => 'fp_meeting_points_per_page',
+        ]);
+
+        add_filter('screen_settings', [$this, 'renderMeetingPointsScreenSettings'], 10, 2);
+
+        if (
+            isset($_POST['fp_meeting_points_columns_nonce'])
+            && wp_verify_nonce(wp_unslash($_POST['fp_meeting_points_columns_nonce']), 'fp_save_meeting_points_screen_options')
+        ) {
+            $this->persistVisibleColumns(
+                'fp_meeting_points_hidden_columns',
+                $this->getMeetingPointsColumnDefinitions(),
+                array_map('sanitize_key', wp_unslash($_POST['fp_meeting_points_columns'] ?? []))
+            );
+        }
+
+        $screen = get_current_screen();
+        if ($screen instanceof WP_Screen) {
+            $screen->add_help_tab([
+                'id'      => 'fp-meeting-points-overview',
+                'title'   => __('Managing meeting points', 'fp-esperienze'),
+                'content' => '<p>' . esc_html__('Store each rendezvous point with coordinates so routing and vouchers stay accurate. Bulk delete lets you remove outdated entries quickly.', 'fp-esperienze') . '</p>',
+            ]);
+
+            $screen->set_help_sidebar(
+                '<p><strong>' . esc_html__('Tips', 'fp-esperienze') . '</strong></p>' .
+                '<p>' . esc_html__('Keep at least one default meeting point to populate booking summaries.', 'fp-esperienze') . '</p>'
+            );
+        }
+    }
+
+    /**
+     * Configure screen options and help tabs for extras.
+     */
+    public function configureExtrasScreen(): void {
+        add_screen_option('per_page', [
+            'label'   => __('Extras per page', 'fp-esperienze'),
+            'default' => 20,
+            'option'  => 'fp_extras_per_page',
+        ]);
+
+        add_filter('screen_settings', [$this, 'renderExtrasScreenSettings'], 10, 2);
+
+        if (
+            isset($_POST['fp_extras_columns_nonce'])
+            && wp_verify_nonce(wp_unslash($_POST['fp_extras_columns_nonce']), 'fp_save_extras_screen_options')
+        ) {
+            $this->persistVisibleColumns(
+                'fp_extras_hidden_columns',
+                $this->getExtrasColumnDefinitions(),
+                array_map('sanitize_key', wp_unslash($_POST['fp_extras_columns'] ?? []))
+            );
+        }
+
+        $screen = get_current_screen();
+        if ($screen instanceof WP_Screen) {
+            $screen->add_help_tab([
+                'id'      => 'fp-extras-overview',
+                'title'   => __('Selling extras', 'fp-esperienze'),
+                'content' => '<p>' . esc_html__('Track add-ons with pricing, tax class, and availability. Use Screen Options to focus on the attributes your team updates frequently.', 'fp-esperienze') . '</p>',
+            ]);
+
+            $screen->set_help_sidebar(
+                '<p><strong>' . esc_html__('Reminder', 'fp-esperienze') . '</strong></p>' .
+                '<p>' . esc_html__('Update WooCommerce products linked to extras after changing required or active status.', 'fp-esperienze') . '</p>'
+            );
+        }
+    }
+
+    /**
+     * Render screen settings controls for bookings.
+     *
+     * @param string    $settings Existing settings markup.
+     * @param WP_Screen $screen   Current screen instance.
+     * @return string
+     */
+    public function renderBookingsScreenSettings(string $settings, WP_Screen $screen): string {
+        if ('fp-esperienze_page_fp-esperienze-bookings' !== $screen->id) {
+            return $settings;
+        }
+
+        $settings .= $this->renderColumnScreenSettings(
+            'fp_bookings_columns',
+            'fp_bookings_columns_nonce',
+            'fp_save_bookings_screen_options',
+            $this->getBookingsColumnDefinitions(),
+            $this->getHiddenColumns('fp_bookings_hidden_columns')
+        );
+
+        return $settings;
+    }
+
+    /**
+     * Render screen settings controls for meeting points.
+     */
+    public function renderMeetingPointsScreenSettings(string $settings, WP_Screen $screen): string {
+        if ('fp-esperienze_page_fp-esperienze-meeting-points' !== $screen->id) {
+            return $settings;
+        }
+
+        $settings .= $this->renderColumnScreenSettings(
+            'fp_meeting_points_columns',
+            'fp_meeting_points_columns_nonce',
+            'fp_save_meeting_points_screen_options',
+            $this->getMeetingPointsColumnDefinitions(),
+            $this->getHiddenColumns('fp_meeting_points_hidden_columns')
+        );
+
+        return $settings;
+    }
+
+    /**
+     * Render screen settings controls for extras.
+     */
+    public function renderExtrasScreenSettings(string $settings, WP_Screen $screen): string {
+        $extras_screen_ids = [
+            'fp-esperienze_page_fp-esperienze-addons',
+            'fp-esperienze_page_fp-esperienze-extras',
+        ];
+
+        if (!in_array($screen->id, $extras_screen_ids, true)) {
+            return $settings;
+        }
+
+        $settings .= $this->renderColumnScreenSettings(
+            'fp_extras_columns',
+            'fp_extras_columns_nonce',
+            'fp_save_extras_screen_options',
+            $this->getExtrasColumnDefinitions(),
+            $this->getHiddenColumns('fp_extras_hidden_columns')
+        );
+
+        return $settings;
+    }
+
+    /**
+     * Render the shared column visibility screen option markup.
+     */
+    private function renderColumnScreenSettings(
+        string $field_name,
+        string $nonce_field,
+        string $nonce_action,
+        array $column_definitions,
+        array $hidden_columns
+    ): string {
+        ob_start();
+        ?>
+        <fieldset class="screen-options-section">
+            <legend><?php esc_html_e('Column visibility', 'fp-esperienze'); ?></legend>
+            <?php foreach ($column_definitions as $key => $definition) : ?>
+                <?php if ('cb' === $key) { continue; } ?>
+                <label>
+                    <input type="checkbox" name="<?php echo esc_attr($field_name); ?>[]" value="<?php echo esc_attr($key); ?>" <?php checked(!in_array($key, $hidden_columns, true)); ?> />
+                    <?php echo esc_html($definition['label']); ?>
+                </label><br />
+            <?php endforeach; ?>
+        </fieldset>
+        <?php
+        $output = ob_get_clean();
+        $output .= wp_nonce_field($nonce_action, $nonce_field, true, false);
+
+        return $output;
+    }
+
+    /**
+     * Store the hidden column preferences for the current user.
+     */
+    private function persistVisibleColumns(string $option, array $column_definitions, array $visible_columns): void {
+        $column_keys = array_filter(
+            array_keys($column_definitions),
+            static function ($key) {
+                return 'cb' !== $key;
+            }
+        );
+
+        $visible = array_values(array_intersect($column_keys, $visible_columns));
+        $hidden  = array_values(array_diff($column_keys, $visible));
+
+        update_user_meta(get_current_user_id(), $option, $hidden);
+    }
+
+    /**
+     * Retrieve hidden columns for the current user.
+     */
+    private function getHiddenColumns(string $option): array {
+        $hidden = get_user_meta(get_current_user_id(), $option, true);
+
+        if (!is_array($hidden)) {
+            return [];
+        }
+
+        return array_values(array_filter(array_map('sanitize_key', $hidden)));
+    }
+
+    /**
+     * Resolve the preferred per-page value for the current user.
+     */
+    private function getPerPageValue(string $option, int $default): int {
+        $per_page = get_user_option($option, get_current_user_id());
+
+        if (false === $per_page || (int) $per_page < 1) {
+            return $default;
+        }
+
+        return (int) $per_page;
+    }
+
+    /**
+     * Column definitions for the bookings table.
+     */
+    private function getBookingsColumnDefinitions(): array {
+        return [
+            'cb'            => ['label' => __('Select bookings', 'fp-esperienze')],
+            'id'            => ['label' => __('ID', 'fp-esperienze')],
+            'order'         => ['label' => __('Order', 'fp-esperienze')],
+            'product'       => ['label' => __('Product', 'fp-esperienze')],
+            'datetime'      => ['label' => __('Date & Time', 'fp-esperienze')],
+            'participants'  => ['label' => __('Participants', 'fp-esperienze')],
+            'status'        => ['label' => __('Status', 'fp-esperienze')],
+            'meeting_point' => ['label' => __('Meeting Point', 'fp-esperienze')],
+            'created'       => ['label' => __('Created', 'fp-esperienze')],
+            'actions'       => ['label' => __('Actions', 'fp-esperienze')],
+        ];
+    }
+
+    /**
+     * Column definitions for the meeting points table.
+     */
+    private function getMeetingPointsColumnDefinitions(): array {
+        return [
+            'cb'          => ['label' => __('Select meeting points', 'fp-esperienze')],
+            'name'        => ['label' => __('Name', 'fp-esperienze')],
+            'address'     => ['label' => __('Address', 'fp-esperienze')],
+            'coordinates' => ['label' => __('Coordinates', 'fp-esperienze')],
+            'actions'     => ['label' => __('Actions', 'fp-esperienze')],
+        ];
+    }
+
+    /**
+     * Column definitions for the extras table.
+     */
+    private function getExtrasColumnDefinitions(): array {
+        return [
+            'cb'          => ['label' => __('Select extras', 'fp-esperienze')],
+            'name'        => ['label' => __('Name', 'fp-esperienze')],
+            'description' => ['label' => __('Description', 'fp-esperienze')],
+            'price'       => ['label' => __('Price', 'fp-esperienze')],
+            'billing'     => ['label' => __('Billing Type', 'fp-esperienze')],
+            'tax_class'   => ['label' => __('Tax Class', 'fp-esperienze')],
+            'max_qty'     => ['label' => __('Max Qty', 'fp-esperienze')],
+            'required'    => ['label' => __('Required', 'fp-esperienze')],
+            'active'      => ['label' => __('Active', 'fp-esperienze')],
+            'actions'     => ['label' => __('Actions', 'fp-esperienze')],
+        ];
+    }
+
+    /**
+     * Human readable booking status labels.
+     */
+    private function getBookingStatusLabels(): array {
+        return [
+            'confirmed' => __('Confirmed', 'fp-esperienze'),
+            'pending'   => __('Pending', 'fp-esperienze'),
+            'completed' => __('Completed', 'fp-esperienze'),
+            'cancelled' => __('Cancelled', 'fp-esperienze'),
+            'refunded'  => __('Refunded', 'fp-esperienze'),
+            'no_show'   => __('No show', 'fp-esperienze'),
+        ];
+    }
+
+    /**
      * Add admin menu
      */
     public function addAdminMenu(): void {
-        // Main menu page
+        $registry = $this->menuRegistry;
+        $top_level = $registry->getTopLevel();
+        $parent_slug = isset($top_level['menu_slug']) ? (string) $top_level['menu_slug'] : 'fp-esperienze';
+
         add_menu_page(
-            __('FP Esperienze', 'fp-esperienze'),
-            __('FP Esperienze', 'fp-esperienze'),
-            CapabilityManager::MANAGE_FP_ESPERIENZE,
-            'fp-esperienze',
-            [$this, 'dashboardPage'],
-            'dashicons-calendar-alt',
-            25
+            $top_level['page_title'] ?? __('FP Esperienze', 'fp-esperienze'),
+            $top_level['menu_title'] ?? __('FP Esperienze', 'fp-esperienze'),
+            $top_level['capability'] ?? CapabilityManager::MANAGE_FP_ESPERIENZE,
+            $parent_slug,
+            $top_level['callback'] ?? [$this, 'dashboardPage'],
+            $top_level['icon_url'] ?? 'dashicons-calendar-alt',
+            $top_level['position'] ?? 25
         );
 
-        // Dashboard submenu
-        add_submenu_page(
-            'fp-esperienze',
-            __('Dashboard', 'fp-esperienze'),
-            __('Dashboard', 'fp-esperienze'),
-            CapabilityManager::MANAGE_FP_ESPERIENZE,
-            'fp-esperienze',
-            [$this, 'dashboardPage']
-        );
+        $registered_hooks = [];
 
-        // Bookings submenu
-        add_submenu_page(
-            'fp-esperienze',
-            __('Bookings', 'fp-esperienze'),
-            __('Bookings', 'fp-esperienze'),
-            CapabilityManager::MANAGE_FP_ESPERIENZE,
-            'fp-esperienze-bookings',
-            [$this, 'bookingsPage']
-        );
+        foreach ($registry->getOrderedItems() as $entry) {
+            if (($entry['type'] ?? '') === 'separator') {
+                $this->injectSubmenuSeparator($parent_slug, $entry);
+                continue;
+            }
 
-        // Meeting Points submenu
-        add_submenu_page(
-            'fp-esperienze',
-            __('Meeting Points', 'fp-esperienze'),
-            __('Meeting Points', 'fp-esperienze'),
-            CapabilityManager::MANAGE_FP_ESPERIENZE,
-            'fp-esperienze-meeting-points',
-            [$this, 'meetingPointsPage']
-        );
+            $hook = add_submenu_page(
+                $parent_slug,
+                $entry['page_title'] ?? '',
+                $entry['menu_title'] ?? '',
+                $entry['capability'] ?? CapabilityManager::MANAGE_FP_ESPERIENZE,
+                $entry['slug'] ?? '',
+                $entry['callback'] ?? null
+            );
 
-        // Extras submenu
-        add_submenu_page(
-            'fp-esperienze',
-            __('Extras', 'fp-esperienze'),
-            __('Extras', 'fp-esperienze'),
-            CapabilityManager::MANAGE_FP_ESPERIENZE,
-            'fp-esperienze-extras',
-            [$this, 'extrasPage']
-        );
+            if (!empty($entry['slug'])) {
+                $registered_hooks[$entry['slug']] = $hook;
+            }
 
-        // Vouchers submenu
-        add_submenu_page(
-            'fp-esperienze',
-            __('Vouchers', 'fp-esperienze'),
-            __('Vouchers', 'fp-esperienze'),
-            CapabilityManager::MANAGE_FP_ESPERIENZE,
-            'fp-esperienze-vouchers',
-            [$this, 'vouchersPage']
-        );
+            foreach ((array) ($entry['load_actions'] ?? []) as $load_callback) {
+                add_action('load-' . $hook, $load_callback);
+            }
 
-        // Closures submenu
-        add_submenu_page(
-            'fp-esperienze',
-            __('Closures', 'fp-esperienze'),
-            __('Closures', 'fp-esperienze'),
-            CapabilityManager::MANAGE_FP_ESPERIENZE,
-            'fp-esperienze-closures',
-            [$this, 'closuresPage']
-        );
+            if (!empty($entry['hidden'])) {
+                remove_submenu_page($parent_slug, $entry['slug']);
+            }
+        }
 
-        // Reports submenu
-        add_submenu_page(
-            'fp-esperienze',
-            __('Reports', 'fp-esperienze'),
-            __('Reports', 'fp-esperienze'),
-            CapabilityManager::MANAGE_FP_ESPERIENZE,
-            'fp-esperienze-reports',
-            [$this, 'reportsPage']
-        );
+        $this->registerAliasRedirects($parent_slug, $registered_hooks, $registry);
+    }
 
-        // Performance submenu
-        add_submenu_page(
-            'fp-esperienze',
-            __('Performance', 'fp-esperienze'),
-            __('Performance', 'fp-esperienze'),
-            'manage_options', // Only administrators can access performance settings
-            'fp-esperienze-performance',
-            [$this, 'performancePage']
-        );
+    /**
+     * Inject a submenu separator that renders as a non-clickable heading.
+     */
+    private function injectSubmenuSeparator(string $parent_slug, array $separator): void {
+        global $submenu;
 
-        // Settings submenu
-        add_submenu_page(
-            'fp-esperienze',
-            __('Settings', 'fp-esperienze'),
-            __('Settings', 'fp-esperienze'),
-            CapabilityManager::MANAGE_FP_ESPERIENZE,
-            'fp-esperienze-settings',
-            [$this, 'settingsPage']
-        );
+        $label = isset($separator['label']) ? (string) $separator['label'] : '';
+        $capability = isset($separator['capability']) ? (string) $separator['capability'] : 'read';
 
-        add_submenu_page(
-            'fp-esperienze',
-            __('Integration Toolkit', 'fp-esperienze'),
-            __('Integration Toolkit', 'fp-esperienze'),
-            CapabilityManager::MANAGE_FP_ESPERIENZE,
-            'fp-esperienze-integration-toolkit',
-            [$this, 'integrationToolkitPage']
-        );
+        if (!isset($submenu[$parent_slug])) {
+            $submenu[$parent_slug] = [];
+        }
+
+        $submenu[$parent_slug][] = [
+            esc_html($label),
+            $capability,
+            '',
+            esc_html($label),
+            'wp-submenu-head',
+        ];
+    }
+
+    /**
+     * Register legacy slug aliases that redirect to canonical menu pages.
+     *
+     * @param array<string, string> $registered_hooks
+     */
+    private function registerAliasRedirects(string $parent_slug, array $registered_hooks, MenuRegistry $registry): void {
+        foreach ($registry->getAliases() as $legacy_slug => $canonical_slug) {
+            $page = $registry->getPage($canonical_slug);
+
+            if ($page === null) {
+                continue;
+            }
+
+            $alias_hook = add_submenu_page(
+                $parent_slug,
+                $page['page_title'] ?? '',
+                $page['menu_title'] ?? '',
+                $page['capability'] ?? CapabilityManager::MANAGE_FP_ESPERIENZE,
+                $legacy_slug,
+                function () use ($legacy_slug, $registry): void {
+                    $registry->redirectAlias($legacy_slug);
+                }
+            );
+
+            if (isset($registered_hooks[$canonical_slug])) {
+                $canonical_hook = $registered_hooks[$canonical_slug];
+                add_action('load-' . $alias_hook, static function () use ($canonical_hook): void {
+                    do_action('load-' . $canonical_hook);
+                });
+            }
+
+            remove_submenu_page($parent_slug, $legacy_slug);
+        }
     }
 
     /**
@@ -279,13 +772,38 @@ class MenuManager {
             );
         }
 
-        if (strpos($hook, 'fp-esperienze-integration-toolkit') !== false) {
+        if (
+            strpos($hook, 'fp-esperienze-developer-tools') !== false
+            || strpos($hook, 'fp-esperienze-integration-toolkit') !== false
+        ) {
             $integration_toolkit = AssetOptimizer::getAssetInfo('js', 'integration-toolkit', 'assets/js/integration-toolkit.js');
             wp_enqueue_script(
                 'fp-integration-toolkit',
                 $integration_toolkit['url'],
                 [],
                 $integration_toolkit['version'],
+                true
+            );
+        }
+
+        if (strpos($hook, 'fp-esperienze-gift-vouchers') !== false) {
+            $admin_vouchers = AssetOptimizer::getAssetInfo('js', 'admin-vouchers', 'assets/js/admin-vouchers.js');
+            wp_enqueue_script(
+                'fp-admin-vouchers',
+                $admin_vouchers['url'],
+                ['jquery'],
+                $admin_vouchers['version'],
+                true
+            );
+        }
+
+        if (strpos($hook, 'fp-esperienze-availability') !== false) {
+            $admin_closures = AssetOptimizer::getAssetInfo('js', 'admin-closures', 'assets/js/admin-closures.js');
+            wp_enqueue_script(
+                'fp-admin-closures',
+                $admin_closures['url'],
+                [],
+                $admin_closures['version'],
                 true
             );
         }
@@ -302,6 +820,7 @@ class MenuManager {
                 'confirmExtend' => __('Are you sure you want to extend the selected vouchers by', 'fp-esperienze'),
                 'months' => __('months?', 'fp-esperienze'),
                 'confirmRegenerateSecret' => __('Are you sure? This will invalidate all existing QR codes!', 'fp-esperienze'),
+                'invalidExtendMonths' => __('Please enter a number of months greater than zero.', 'fp-esperienze'),
                 'selectLogo' => __('Select Logo', 'fp-esperienze'),
                 'useThisImage' => __('Use This Image', 'fp-esperienze'),
                 'enterWebhookUrl' => __('Please enter a webhook URL first.', 'fp-esperienze'),
@@ -317,6 +836,7 @@ class MenuManager {
                 'cleanedUp' => __('Cleaned up:', 'fp-esperienze'),
                 'holds' => __('holds', 'fp-esperienze'),
                 'cleanupFailed' => __('Cleanup failed:', 'fp-esperienze'),
+                'confirmDeleteClosure' => __('Remove the selected closure?', 'fp-esperienze'),
                 'resendVoucherEmail' => __('Resend voucher email?', 'fp-esperienze'),
                 'extendVoucherExpiration' => __('Extend voucher expiration?', 'fp-esperienze'),
                 'voidVoucher' => __('Are you sure you want to void this voucher?', 'fp-esperienze'),
@@ -331,7 +851,8 @@ class MenuManager {
                 'confirmCancelBooking' => __('Are you sure you want to cancel this booking?', 'fp-esperienze'),
                 'spotsAvailable' => __('spots available', 'fp-esperienze'),
                 'confirmDeleteMeetingPoint' => __('Are you sure you want to delete the meeting point', 'fp-esperienze'),
-                'actionCannotBeUndone' => __('This action cannot be undone and will fail if the meeting point is currently in use.', 'fp-esperienze')
+                'actionCannotBeUndone' => __('This action cannot be undone and will fail if the meeting point is currently in use.', 'fp-esperienze'),
+                'confirmDeleteExtra' => __('Are you sure you want to delete the extra "%s"? This action cannot be undone.', 'fp-esperienze')
             ],
             'ajax_url' => admin_url('admin-ajax.php'),
             'rest_url' => rest_url('fp-esperienze/v1/'),
@@ -348,117 +869,157 @@ class MenuManager {
         // Get dashboard statistics
         $stats = $this->getDashboardStatistics();
         $recent_bookings = $this->getRecentBookings(5);
-        
-        // Get branding settings for consistent colors
-        $branding_settings = get_option('fp_esperienze_branding', []);
-        $primary_color = $branding_settings['primary_color'] ?? '#ff6b35';
-        
-        ?>
-        <div class="wrap">
-            <h1><?php _e('FP Esperienze Dashboard', 'fp-esperienze'); ?></h1>
-            
-            <?php if (isset($_GET['setup']) && $_GET['setup'] === 'complete') : ?>
-                <div class="notice notice-success is-dismissible">
-                    <p><?php _e('Setup wizard completed successfully! Your experience booking system is ready to use.', 'fp-esperienze'); ?></p>
-                </div>
-            <?php endif; ?>
-            
-            <div class="fp-admin-dashboard">
-                <!-- Statistics Cards -->
-                <div class="fp-dashboard-stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px;">
-                    <div class="fp-stat-card" style="background: white; padding: 20px; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                        <h3 style="margin: 0 0 10px 0; color: <?php echo esc_attr($primary_color); ?>; font-size: 14px; text-transform: uppercase;"><?php _e('Total Bookings', 'fp-esperienze'); ?></h3>
-                        <p style="margin: 0; font-size: 32px; font-weight: bold; color: #333;"><?php echo esc_html($stats['total_bookings']); ?></p>
-                    </div>
-                    
-                    <div class="fp-stat-card" style="background: white; padding: 20px; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                        <h3 style="margin: 0 0 10px 0; color: <?php echo esc_attr($primary_color); ?>; font-size: 14px; text-transform: uppercase;"><?php _e('This Month', 'fp-esperienze'); ?></h3>
-                        <p style="margin: 0; font-size: 32px; font-weight: bold; color: #333;"><?php echo esc_html($stats['month_bookings']); ?></p>
-                    </div>
-                    
-                    <div class="fp-stat-card" style="background: white; padding: 20px; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                        <h3 style="margin: 0 0 10px 0; color: <?php echo esc_attr($primary_color); ?>; font-size: 14px; text-transform: uppercase;"><?php _e('Upcoming', 'fp-esperienze'); ?></h3>
-                        <p style="margin: 0; font-size: 32px; font-weight: bold; color: #333;"><?php echo esc_html($stats['upcoming_bookings']); ?></p>
-                    </div>
-                    
-                    <div class="fp-stat-card" style="background: white; padding: 20px; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                        <h3 style="margin: 0 0 10px 0; color: <?php echo esc_attr($primary_color); ?>; font-size: 14px; text-transform: uppercase;"><?php _e('Active Vouchers', 'fp-esperienze'); ?></h3>
-                        <p style="margin: 0; font-size: 32px; font-weight: bold; color: #333;"><?php echo esc_html($stats['active_vouchers']); ?></p>
-                    </div>
-                </div>
-                
-                <div class="fp-dashboard-widgets" style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px;">
-                    <!-- Recent Bookings -->
-                    <div class="fp-widget" style="background: white; padding: 20px; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                        <h3 style="margin: 0 0 20px 0; color: <?php echo esc_attr($primary_color); ?>; font-size: 18px;"><?php _e('Recent Bookings', 'fp-esperienze'); ?></h3>
 
+        $metrics = [
+            [
+                'label' => __('Total Bookings', 'fp-esperienze'),
+                'value' => number_format_i18n(absint($stats['total_bookings'] ?? 0)),
+            ],
+            [
+                'label' => __('This Month', 'fp-esperienze'),
+                'value' => number_format_i18n(absint($stats['month_bookings'] ?? 0)),
+            ],
+            [
+                'label' => __('Upcoming', 'fp-esperienze'),
+                'value' => number_format_i18n(absint($stats['upcoming_bookings'] ?? 0)),
+            ],
+            [
+                'label' => __('Active Vouchers', 'fp-esperienze'),
+                'value' => number_format_i18n(absint($stats['active_vouchers'] ?? 0)),
+            ],
+        ];
+
+        ?>
+        <?php AdminComponents::skipLink('fp-admin-main-content'); ?>
+        <div class="wrap fp-admin-page" id="fp-admin-main-content" tabindex="-1">
+            <?php
+            AdminComponents::pageHeader([
+                'title'   => __('FP Esperienze Dashboard', 'fp-esperienze'),
+                'lead'    => __('Monitor bookings momentum, voucher usage, and outstanding setup steps for your experience business.', 'fp-esperienze'),
+                'actions' => [
+                    [
+                        'label'   => __('View Reports', 'fp-esperienze'),
+                        'url'     => admin_url('admin.php?page=fp-esperienze-reports'),
+                        'variant' => 'secondary',
+                    ],
+                    [
+                        'label'   => __('Manage Settings', 'fp-esperienze'),
+                        'url'     => admin_url('admin.php?page=fp-esperienze-settings'),
+                        'variant' => 'secondary',
+                    ],
+                ],
+            ]);
+            ?>
+
+            <div class="fp-admin-stack">
+                <?php if (isset($_GET['setup']) && $_GET['setup'] === 'complete') : ?>
+                    <?php
+                    AdminComponents::notice([
+                        'type'    => 'success',
+                        'title'   => __('Setup complete', 'fp-esperienze'),
+                        'message' => __('Setup wizard completed successfully. You can now start accepting bookings.', 'fp-esperienze'),
+                    ]);
+                    ?>
+                <?php endif; ?>
+
+                <?php if (!empty($metrics)) : ?>
+                    <div class="fp-admin-metric-grid" role="list">
+                        <?php foreach ($metrics as $metric) : ?>
+                            <div class="fp-admin-card fp-admin-card--metric" role="listitem">
+                                <span class="fp-admin-helper-text"><?php echo esc_html($metric['label']); ?></span>
+                                <span class="fp-admin-metric__value"><?php echo esc_html($metric['value']); ?></span>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+
+                <div class="fp-admin-grid fp-admin-grid--sidebar">
+                    <div class="fp-admin-stack">
+                        <?php
+                        AdminComponents::openCard([
+                            'title' => __('Recent Bookings', 'fp-esperienze'),
+                            'meta'  => [
+                                sprintf(__('Last %d entries', 'fp-esperienze'), count($recent_bookings)),
+                            ],
+                        ]);
+                        ?>
                         <?php if (!empty($recent_bookings)) : ?>
-                            <div class="fp-bookings-list">
-                                <?php foreach ($recent_bookings as $booking) : 
-                                    $product = wc_get_product($booking->product_id);
-                                    $product_name = $product ? $product->get_name() : __('Unknown Experience', 'fp-esperienze');
-                                    $status_color = $this->getStatusColor($booking->status);
-                                ?>
-                                    <div style="padding: 12px 0; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
-                                        <div>
-                                            <strong><?php echo esc_html($product_name); ?></strong><br>
-                                            <small style="color: #666;">
-                                                <?php echo esc_html($booking->customer_name); ?> • 
-                                                <?php echo esc_html(\fp_esperienze_wp_date(get_option('date_format') . ' ' . get_option('time_format'), strtotime($booking->booking_date . ' ' . $booking->booking_time))); ?>
-                                            </small>
-                                        </div>
-                                        <div>
-                                            <span style="background: <?php echo esc_attr($status_color); ?>; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; text-transform: uppercase;">
-                                                <?php echo esc_html($booking->status); ?>
-                                            </span>
-                                        </div>
-                                    </div>
-                                <?php endforeach; ?>
-                                
-                                <div style="margin-top: 15px; text-align: center;">
-                                    <a href="<?php echo admin_url('admin.php?page=fp-esperienze-bookings'); ?>" class="button">
-                                        <?php _e('View All Bookings', 'fp-esperienze'); ?>
-                                    </a>
-                                </div>
+                            <table class="fp-admin-table fp-admin-table--striped">
+                                <thead>
+                                    <tr>
+                                        <th><?php esc_html_e('Experience', 'fp-esperienze'); ?></th>
+                                        <th><?php esc_html_e('Guest & time', 'fp-esperienze'); ?></th>
+                                        <th><?php esc_html_e('Status', 'fp-esperienze'); ?></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($recent_bookings as $booking) :
+                                        $product = wc_get_product($booking->product_id);
+                                        $product_name = $product ? $product->get_name() : __('Unknown Experience', 'fp-esperienze');
+                                        ?>
+                                        <tr>
+                                            <td>
+                                                <strong><?php echo esc_html($product_name); ?></strong>
+                                            </td>
+                                            <td>
+                                                <span class="fp-admin-helper-text">
+                                                    <?php echo esc_html($booking->customer_name); ?>
+                                                </span><br>
+                                                <span>
+                                                    <?php echo esc_html(\fp_esperienze_wp_date(get_option('date_format') . ' ' . get_option('time_format'), strtotime($booking->booking_date . ' ' . $booking->booking_time))); ?>
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="booking-status status-<?php echo esc_attr($booking->status); ?>">
+                                                    <?php echo esc_html(ucfirst($booking->status)); ?>
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                            <div class="fp-admin-card__footer">
+                                <a class="button button-secondary" href="<?php echo esc_url(admin_url('admin.php?page=fp-esperienze-bookings')); ?>">
+                                    <?php esc_html_e('View all bookings', 'fp-esperienze'); ?>
+                                </a>
                             </div>
                         <?php else : ?>
-                            <p style="color: #666; font-style: italic;"><?php _e('No bookings yet. Create your first experience to start accepting bookings!', 'fp-esperienze'); ?></p>
+                            <p class="fp-admin-helper-text"><?php esc_html_e('No bookings yet. Create your first experience to start accepting reservations.', 'fp-esperienze'); ?></p>
                         <?php endif; ?>
+                        <?php AdminComponents::closeCard(); ?>
                     </div>
-                    
-                    <div class="fp-sidebar-widgets" style="display: flex; flex-direction: column; gap: 20px;">
-                        <!-- Quick Actions -->
-                        <div class="fp-widget" style="background: white; padding: 20px; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                            <h3 style="margin: 0 0 20px 0; color: <?php echo esc_attr($primary_color); ?>; font-size: 18px;"><?php _e('Quick Actions', 'fp-esperienze'); ?></h3>
 
-                            <div style="display: flex; flex-direction: column; gap: 10px;">
-                                <a href="<?php echo admin_url('post-new.php?post_type=product'); ?>" class="button button-primary" style="justify-content: center; text-align: center;">
-                                    <?php _e('Add New Experience', 'fp-esperienze'); ?>
-                                </a>
-
-                                <a href="<?php echo admin_url('admin.php?page=fp-esperienze-bookings'); ?>" class="button">
-                                    <?php _e('Manage Bookings', 'fp-esperienze'); ?>
-                                </a>
-
-                                <a href="<?php echo admin_url('admin.php?page=fp-esperienze-vouchers'); ?>" class="button">
-                                    <?php _e('Create Voucher', 'fp-esperienze'); ?>
-                                </a>
-
-                                <a href="<?php echo admin_url('admin.php?page=fp-esperienze-reports'); ?>" class="button">
-                                    <?php _e('View Reports', 'fp-esperienze'); ?>
-                                </a>
-
-                                <a href="<?php echo admin_url('admin.php?page=fp-esperienze-settings'); ?>" class="button">
-                                    <?php _e('Settings', 'fp-esperienze'); ?>
-                                </a>
-                            </div>
+                    <div class="fp-admin-stack">
+                        <?php
+                        AdminComponents::openCard([
+                            'title' => __('Quick actions', 'fp-esperienze'),
+                            'muted' => true,
+                        ]);
+                        ?>
+                        <div class="fp-admin-quick-actions">
+                            <a class="button button-primary" href="<?php echo esc_url(admin_url('post-new.php?post_type=product')); ?>">
+                                <?php esc_html_e('Add new experience', 'fp-esperienze'); ?>
+                            </a>
+                            <a class="button button-secondary" href="<?php echo esc_url(admin_url('admin.php?page=fp-esperienze-bookings')); ?>">
+                                <?php esc_html_e('Manage bookings', 'fp-esperienze'); ?>
+                            </a>
+                            <a class="button button-secondary" href="<?php echo esc_url(admin_url('admin.php?page=fp-esperienze-gift-vouchers')); ?>">
+                                <?php esc_html_e('Create voucher', 'fp-esperienze'); ?>
+                            </a>
+                            <a class="button button-secondary" href="<?php echo esc_url(admin_url('admin.php?page=fp-esperienze-reports')); ?>">
+                                <?php esc_html_e('View reports', 'fp-esperienze'); ?>
+                            </a>
                         </div>
+                        <?php AdminComponents::closeCard(); ?>
 
-                        <!-- Dependency Status -->
-                        <div class="fp-widget" style="background: white; padding: 20px; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                            <h3 style="margin: 0 0 20px 0; color: <?php echo esc_attr($primary_color); ?>; font-size: 18px;"><?php _e('Optional Dependencies', 'fp-esperienze'); ?></h3>
-                            <?php $this->renderDependencyStatusWidget(); ?>
-                        </div>
+                        <?php
+                        AdminComponents::openCard([
+                            'title' => __('Optional dependencies', 'fp-esperienze'),
+                            'muted' => true,
+                        ]);
+                        $this->renderDependencyStatusWidget();
+                        AdminComponents::closeCard();
+                        ?>
                     </div>
                 </div>
             </div>
@@ -467,11 +1028,209 @@ class MenuManager {
     }
 
     /**
+     * Handle meeting point form actions.
+     */
+    private function handleMeetingPointAction(): void {
+        $action = sanitize_text_field(wp_unslash($_POST['action'] ?? ''));
+
+        switch ($action) {
+            case 'create':
+                $this->createMeetingPoint();
+                break;
+
+            case 'update':
+                $this->updateMeetingPoint();
+                break;
+
+            case 'delete':
+                $this->deleteMeetingPoint();
+                break;
+
+            case 'bulk-delete':
+                $ids = array_map('absint', (array) wp_unslash($_POST['meeting_point_ids'] ?? []));
+                $ids = array_filter($ids);
+                $bulk_action = sanitize_text_field(wp_unslash($_POST['bulk_action'] ?? ''));
+
+                if ('delete' !== $bulk_action || empty($ids)) {
+                    add_action('admin_notices', function() {
+                        echo '<div class="notice notice-warning is-dismissible"><p>' .
+                             esc_html__('Select meeting points and the delete action before applying bulk changes.', 'fp-esperienze') .
+                             '</p></div>';
+                    });
+                    break;
+                }
+
+                $this->bulkDeleteMeetingPoints($ids);
+                break;
+        }
+    }
+
+    /**
+     * Create new meeting point.
+     */
+    private function createMeetingPoint(): void {
+        $data = [
+            'name'     => sanitize_text_field(wp_unslash($_POST['meeting_point_name'] ?? '')),
+            'address'  => sanitize_textarea_field(wp_unslash($_POST['meeting_point_address'] ?? '')),
+            'lat'      => !empty($_POST['meeting_point_lat']) ? (float) wp_unslash($_POST['meeting_point_lat']) : null,
+            'lng'      => !empty($_POST['meeting_point_lng']) ? (float) wp_unslash($_POST['meeting_point_lng']) : null,
+            'place_id' => sanitize_text_field(wp_unslash($_POST['meeting_point_place_id'] ?? '')),
+            'note'     => sanitize_textarea_field(wp_unslash($_POST['meeting_point_note'] ?? '')),
+        ];
+
+        if (empty($data['name']) || empty($data['address'])) {
+            add_action('admin_notices', function() {
+                echo '<div class="notice notice-error is-dismissible"><p>' .
+                     esc_html__('Name and address are required fields.', 'fp-esperienze') .
+                     '</p></div>';
+            });
+            return;
+        }
+
+        $result = MeetingPointManager::createMeetingPoint($data);
+
+        if ($result) {
+            add_action('admin_notices', function() {
+                echo '<div class="notice notice-success is-dismissible"><p>' .
+                     esc_html__('Meeting point created successfully.', 'fp-esperienze') .
+                     '</p></div>';
+            });
+        } else {
+            add_action('admin_notices', function() {
+                echo '<div class="notice notice-error is-dismissible"><p>' .
+                     esc_html__('Failed to create meeting point.', 'fp-esperienze') .
+                     '</p></div>';
+            });
+        }
+    }
+
+    /**
+     * Update meeting point.
+     */
+    private function updateMeetingPoint(): void {
+        $id = absint(wp_unslash($_POST['meeting_point_id'] ?? 0));
+
+        if (!$id) {
+            add_action('admin_notices', function() {
+                echo '<div class="notice notice-error is-dismissible"><p>' .
+                     esc_html__('Invalid meeting point ID.', 'fp-esperienze') .
+                     '</p></div>';
+            });
+            return;
+        }
+
+        $data = [
+            'name'     => sanitize_text_field(wp_unslash($_POST['meeting_point_name'] ?? '')),
+            'address'  => sanitize_textarea_field(wp_unslash($_POST['meeting_point_address'] ?? '')),
+            'lat'      => !empty($_POST['meeting_point_lat']) ? (float) wp_unslash($_POST['meeting_point_lat']) : null,
+            'lng'      => !empty($_POST['meeting_point_lng']) ? (float) wp_unslash($_POST['meeting_point_lng']) : null,
+            'place_id' => sanitize_text_field(wp_unslash($_POST['meeting_point_place_id'] ?? '')),
+            'note'     => sanitize_textarea_field(wp_unslash($_POST['meeting_point_note'] ?? '')),
+        ];
+
+        if (empty($data['name']) || empty($data['address'])) {
+            add_action('admin_notices', function() {
+                echo '<div class="notice notice-error is-dismissible"><p>' .
+                     esc_html__('Name and address are required fields.', 'fp-esperienze') .
+                     '</p></div>';
+            });
+            return;
+        }
+
+        $result = MeetingPointManager::updateMeetingPoint($id, $data);
+
+        if ($result) {
+            add_action('admin_notices', function() {
+                echo '<div class="notice notice-success is-dismissible"><p>' .
+                     esc_html__('Meeting point updated successfully.', 'fp-esperienze') .
+                     '</p></div>';
+            });
+
+            wp_safe_redirect(admin_url('admin.php?page=fp-esperienze-meeting-points'));
+            exit;
+        }
+
+        add_action('admin_notices', function() {
+            echo '<div class="notice notice-error is-dismissible"><p>' .
+                 esc_html__('Failed to update meeting point.', 'fp-esperienze') .
+                 '</p></div>';
+        });
+    }
+
+    /**
+     * Delete meeting point.
+     */
+    private function deleteMeetingPoint(): void {
+        $id = absint(wp_unslash($_POST['meeting_point_id'] ?? 0));
+
+        if (!$id) {
+            add_action('admin_notices', function() {
+                echo '<div class="notice notice-error is-dismissible"><p>' .
+                     esc_html__('Invalid meeting point ID.', 'fp-esperienze') .
+                     '</p></div>';
+            });
+            return;
+        }
+
+        $result = MeetingPointManager::deleteMeetingPoint($id);
+
+        if ($result) {
+            add_action('admin_notices', function() {
+                echo '<div class="notice notice-success is-dismissible"><p>' .
+                     esc_html__('Meeting point deleted successfully.', 'fp-esperienze') .
+                     '</p></div>';
+            });
+        } else {
+            add_action('admin_notices', function() {
+                echo '<div class="notice notice-error is-dismissible"><p>' .
+                     esc_html__('Cannot delete meeting point. It may be in use by schedules or set as default for products.', 'fp-esperienze') .
+                     '</p></div>';
+            });
+        }
+    }
+
+    /**
+     * Bulk delete meeting points.
+     */
+    private function bulkDeleteMeetingPoints(array $ids): void {
+        if (empty($ids)) {
+            return;
+        }
+
+        $deleted = 0;
+        $failed  = 0;
+
+        foreach ($ids as $id) {
+            if (MeetingPointManager::deleteMeetingPoint($id)) {
+                $deleted++;
+            } else {
+                $failed++;
+            }
+        }
+
+        if ($deleted > 0) {
+            add_action('admin_notices', function () use ($deleted) {
+                echo '<div class="notice notice-success is-dismissible"><p>' .
+                     sprintf(esc_html__('%d meeting points deleted.', 'fp-esperienze'), $deleted) .
+                     '</p></div>';
+            });
+        }
+
+        if ($failed > 0) {
+            add_action('admin_notices', function () use ($failed) {
+                echo '<div class="notice notice-error is-dismissible"><p>' .
+                     sprintf(esc_html__('%d meeting points could not be deleted.', 'fp-esperienze'), $failed) .
+                     '</p></div>';
+            });
+        }
+    }
+
+    /**
      * Bookings page
      */
     public function bookingsPage(): void {
         // Handle form submissions
-        if (!empty($_POST) && isset($_POST['action'])) {
+        if (!empty($_POST) && isset($_POST['fp_booking_nonce'])) {
             $this->handleBookingsActions();
         }
         
@@ -493,155 +1252,430 @@ class MenuManager {
         // Create nonce for CSV export
         $export_nonce = wp_create_nonce('fp_export_bookings');
 
-        // Get current filters
-        $filters = [
-            'status' => sanitize_text_field(wp_unslash($_GET['status'] ?? '')),
-            'product_id' => absint(wp_unslash($_GET['product_id'] ?? 0)),
-            'date_from' => sanitize_text_field(wp_unslash($_GET['date_from'] ?? '')),
-            'date_to' => sanitize_text_field(wp_unslash($_GET['date_to'] ?? '')),
+        $status_filter  = sanitize_text_field(wp_unslash($_GET['status'] ?? ''));
+        $product_filter = absint(wp_unslash($_GET['product_id'] ?? 0));
+        $date_from      = sanitize_text_field(wp_unslash($_GET['date_from'] ?? ''));
+        $date_to        = sanitize_text_field(wp_unslash($_GET['date_to'] ?? ''));
+
+        $filters = [];
+        if ($status_filter !== '') {
+            $filters['status'] = $status_filter;
+        }
+        if ($product_filter > 0) {
+            $filters['product_id'] = $product_filter;
+        }
+        if ($date_from !== '') {
+            $filters['date_from'] = $date_from;
+        }
+        if ($date_to !== '') {
+            $filters['date_to'] = $date_to;
+        }
+
+        $query_filters = $filters;
+        unset($query_filters['status']);
+
+        $all_bookings = BookingManager::getBookings($query_filters);
+        $status_labels = $this->getBookingStatusLabels();
+
+        $status_counts = [
+            'all' => count($all_bookings),
         ];
-        
-        // Remove empty filters
-        $filters = array_filter($filters);
 
-        // Get bookings
-        $bookings = BookingManager::getBookings($filters);
+        foreach (array_keys($status_labels) as $status_key) {
+            $status_counts[$status_key] = 0;
+        }
 
-        $selected_product_id = absint(wp_unslash($_GET['product_id'] ?? 0));
+        foreach ($all_bookings as $booking_item) {
+            $status_key = isset($booking_item->status) ? (string) $booking_item->status : '';
+
+            if (!isset($status_counts[$status_key])) {
+                $status_counts[$status_key] = 0;
+            }
+
+            if ($status_key !== '') {
+                $status_counts[$status_key]++;
+            }
+        }
+
+        $current_view = $status_filter !== '' ? $status_filter : 'all';
+
+        $filtered_bookings = $all_bookings;
+        if ('all' !== $current_view && '' !== $current_view) {
+            $filtered_bookings = array_values(
+                array_filter(
+                    $filtered_bookings,
+                    static function ($booking_item) use ($current_view) {
+                        return isset($booking_item->status) && (string) $booking_item->status === $current_view;
+                    }
+                )
+            );
+        }
+
+        $total_items  = count($filtered_bookings);
+        $per_page     = $this->getPerPageValue('fp_bookings_per_page', 20);
+        $current_page = max(1, absint(wp_unslash($_GET['paged'] ?? 1)));
+        $total_pages  = max(1, (int) ceil($total_items / max(1, $per_page)));
+
+        if ($current_page > $total_pages) {
+            $current_page = $total_pages;
+        }
+
+        $offset = ($current_page - 1) * $per_page;
+
+        if ($offset < 0) {
+            $offset = 0;
+        }
+
+        $bookings = array_slice($filtered_bookings, $offset, $per_page);
+
+        $selected_product_id = $product_filter;
         // Get experience products for filter dropdown
         $experience_products = $this->getExperienceProducts($selected_product_id);
-        
+
+        $query_args = [];
+        foreach (wp_unslash($_GET) as $key => $value) {
+            if (is_array($value)) {
+                continue;
+            }
+
+            if ($value === '') {
+                continue;
+            }
+
+            $query_args[$key] = sanitize_text_field($value);
+        }
+
+        $query_args['page'] = 'fp-esperienze-bookings';
+
+        $view_base_args = $query_args;
+        unset($view_base_args['status'], $view_base_args['paged']);
+        $view_base_url = add_query_arg($view_base_args, admin_url('admin.php'));
+
+        $views = [];
+        $views['all'] = [
+            'key'     => 'all',
+            'label'   => __('All', 'fp-esperienze'),
+            'count'   => $status_counts['all'] ?? $total_items,
+            'url'     => $view_base_url,
+            'current' => 'all' === $current_view,
+        ];
+
+        foreach ($status_labels as $status_key => $label) {
+            $views[$status_key] = [
+                'key'     => $status_key,
+                'label'   => $label,
+                'count'   => $status_counts[$status_key] ?? 0,
+                'url'     => add_query_arg('status', $status_key, $view_base_url),
+                'current' => $current_view === $status_key,
+            ];
+        }
+
+        $export_url = add_query_arg(
+            array_merge(
+                $query_args,
+                [
+                    'action'   => 'export_csv',
+                    '_wpnonce' => $export_nonce,
+                ]
+            ),
+            admin_url('admin.php')
+        );
+
+        $pagination_args = $query_args;
+        unset($pagination_args['action'], $pagination_args['_wpnonce']);
+        $pagination_base_url = add_query_arg($pagination_args, admin_url('admin.php'));
+        $pagination_links = paginate_links([
+            'base'      => add_query_arg('paged', '%#%', $pagination_base_url),
+            'format'    => '',
+            'current'   => $current_page,
+            'total'     => $total_pages,
+            'prev_text' => __('&laquo; Previous', 'fp-esperienze'),
+            'next_text' => __('Next &raquo;', 'fp-esperienze'),
+        ]);
+
+        $page_result_count = count($bookings);
+        $booking_columns = $this->getBookingsColumnDefinitions();
+        $hidden_booking_columns = $this->getHiddenColumns('fp_bookings_hidden_columns');
+        $visible_booking_columns = count($booking_columns) - count($hidden_booking_columns);
         ?>
-        <div class="wrap">
-            <h1><?php _e('Bookings Management', 'fp-esperienze'); ?></h1>
-            
-            <!-- Filters -->
-            <div class="fp-bookings-filters">
-                <form method="GET" action="">
-                    <input type="hidden" name="page" value="fp-esperienze-bookings">
-                    
-                    <div class="filter-row">
-                        <select name="status">
-                            <option value=""><?php _e('All Statuses', 'fp-esperienze'); ?></option>
-                            <option value="confirmed" <?php selected($_GET['status'] ?? '', 'confirmed'); ?>><?php _e('Confirmed', 'fp-esperienze'); ?></option>
-                            <option value="cancelled" <?php selected($_GET['status'] ?? '', 'cancelled'); ?>><?php _e('Cancelled', 'fp-esperienze'); ?></option>
-                            <option value="refunded" <?php selected($_GET['status'] ?? '', 'refunded'); ?>><?php _e('Refunded', 'fp-esperienze'); ?></option>
+        <?php AdminComponents::skipLink('fp-admin-main-content'); ?>
+        <div class="wrap fp-admin-page" id="fp-admin-main-content" tabindex="-1">
+            <?php
+            AdminComponents::pageHeader([
+                'title'   => __('Bookings Management', 'fp-esperienze'),
+                'lead'    => __('Filter reservations, export reports, and manage changes from one place.', 'fp-esperienze'),
+                'actions' => [
+                    [
+                        'label'   => __('Export CSV', 'fp-esperienze'),
+                        'url'     => $export_url,
+                        'variant' => 'secondary',
+                    ],
+                ],
+            ]);
+            ?>
+
+            <div class="fp-admin-stack">
+                <?php
+                AdminComponents::openCard([
+                    'title' => __('Filter bookings', 'fp-esperienze'),
+                ]);
+                ?>
+                <form method="get" action="" class="fp-admin-form fp-admin-form--filters">
+                    <input type="hidden" name="page" value="fp-esperienze-bookings" />
+                    <?php
+                    AdminComponents::formRow([
+                        'label' => __('Status', 'fp-esperienze'),
+                        'for'   => 'fp-booking-status',
+                    ], function () use ($status_filter, $status_labels) {
+                        ?>
+                        <select id="fp-booking-status" name="status">
+                            <option value=""><?php esc_html_e('All statuses', 'fp-esperienze'); ?></option>
+                            <?php foreach ($status_labels as $status_key => $status_label) : ?>
+                                <option value="<?php echo esc_attr($status_key); ?>" <?php selected($status_filter, $status_key); ?>>
+                                    <?php echo esc_html($status_label); ?>
+                                </option>
+                            <?php endforeach; ?>
                         </select>
-                        
-                        <select name="product_id" class="fp-product-search" data-placeholder="<?php esc_attr_e('All Products', 'fp-esperienze'); ?>">
-                            <option value=""><?php _e('All Products', 'fp-esperienze'); ?></option>
+                        <?php
+                    });
+
+                    AdminComponents::formRow([
+                        'label' => __('Experience', 'fp-esperienze'),
+                        'for'   => 'fp-booking-product',
+                    ], function () use ($experience_products, $selected_product_id) {
+                        ?>
+                        <select id="fp-booking-product" name="product_id" class="fp-product-search" data-placeholder="<?php esc_attr_e('All products', 'fp-esperienze'); ?>">
+                            <option value=""><?php esc_html_e('All products', 'fp-esperienze'); ?></option>
                             <?php foreach ($experience_products as $product) : ?>
                                 <option value="<?php echo esc_attr($product->ID); ?>" <?php selected($selected_product_id, $product->ID); ?>>
                                     <?php echo esc_html($product->post_title); ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
-                        
-                        <input type="date" name="date_from" value="<?php echo esc_attr($_GET['date_from'] ?? ''); ?>" placeholder="<?php _e('From Date', 'fp-esperienze'); ?>">
-                        <input type="date" name="date_to" value="<?php echo esc_attr($_GET['date_to'] ?? ''); ?>" placeholder="<?php _e('To Date', 'fp-esperienze'); ?>">
-                        
-                        <input type="submit" class="button" value="<?php _e('Filter', 'fp-esperienze'); ?>">
-                        <a href="<?php echo admin_url('admin.php?page=fp-esperienze-bookings'); ?>" class="button"><?php _e('Clear', 'fp-esperienze'); ?></a>
-                        <a href="<?php echo esc_url(add_query_arg(array_merge(array_map('sanitize_text_field', $_GET), ['action' => 'export_csv', '_wpnonce' => $export_nonce]), admin_url('admin.php'))); ?>" class="button button-secondary"><?php _e('Export CSV', 'fp-esperienze'); ?></a>
+                        <?php
+                    });
+
+                    AdminComponents::formRow([
+                        'label' => __('From date', 'fp-esperienze'),
+                        'for'   => 'fp-booking-date-from',
+                    ], function () use ($date_from) {
+                        ?>
+                        <input type="date" id="fp-booking-date-from" name="date_from" value="<?php echo esc_attr($date_from); ?>" />
+                        <?php
+                    });
+
+                    AdminComponents::formRow([
+                        'label' => __('To date', 'fp-esperienze'),
+                        'for'   => 'fp-booking-date-to',
+                    ], function () use ($date_to) {
+                        ?>
+                        <input type="date" id="fp-booking-date-to" name="date_to" value="<?php echo esc_attr($date_to); ?>" />
+                        <?php
+                    });
+                    ?>
+
+                    <div class="fp-admin-form__actions">
+                        <button type="submit" class="button button-primary"><?php esc_html_e('Apply filters', 'fp-esperienze'); ?></button>
+                        <a class="button button-secondary" href="<?php echo esc_url(admin_url('admin.php?page=fp-esperienze-bookings')); ?>">
+                            <?php esc_html_e('Clear filters', 'fp-esperienze'); ?>
+                        </a>
                     </div>
                 </form>
-            </div>
-            
-            <!-- Calendar View Toggle -->
-            <div class="fp-view-toggle">
-                <button id="fp-list-view" class="button button-primary"><?php _e('List View', 'fp-esperienze'); ?></button>
-                <button id="fp-calendar-view" class="button"><?php _e('Calendar View', 'fp-esperienze'); ?></button>
-            </div>
-            
-            <!-- List View -->
-            <div id="fp-bookings-list" class="fp-bookings-content">
-                <?php if (empty($bookings)) : ?>
-                    <div class="notice notice-info">
-                        <p><?php _e('No bookings found matching your criteria.', 'fp-esperienze'); ?></p>
-                    </div>
-                <?php else : ?>
-                    <table class="wp-list-table widefat fixed striped">
-                        <thead>
-                            <tr>
-                                <th><?php _e('ID', 'fp-esperienze'); ?></th>
-                                <th><?php _e('Order', 'fp-esperienze'); ?></th>
-                                <th><?php _e('Product', 'fp-esperienze'); ?></th>
-                                <th><?php _e('Date & Time', 'fp-esperienze'); ?></th>
-                                <th><?php _e('Participants', 'fp-esperienze'); ?></th>
-                                <th><?php _e('Status', 'fp-esperienze'); ?></th>
-                                <th><?php _e('Meeting Point', 'fp-esperienze'); ?></th>
-                                <th><?php _e('Created', 'fp-esperienze'); ?></th>
-                                <th><?php _e('Actions', 'fp-esperienze'); ?></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($bookings as $booking) : ?>
-                                <tr>
-                                    <td><?php echo esc_html($booking->id); ?></td>
-                                    <td>
-                                        <a href="<?php echo esc_url(admin_url('post.php?post=' . $booking->order_id . '&action=edit')); ?>">
-                                            #<?php echo esc_html($booking->order_id); ?>
-                                        </a>
-                                    </td>
-                                    <td>
-                                        <?php 
-                                        $product = wc_get_product($booking->product_id);
-                                        echo $product ? esc_html($product->get_name()) : __('Product not found', 'fp-esperienze');
-                                        ?>
-                                    </td>
-                                    <td>
-                                        <?php 
-                                        echo esc_html(\fp_esperienze_wp_date(get_option('date_format'), strtotime($booking->booking_date))); 
-                                        echo '<br>';
-                                        echo esc_html(\fp_esperienze_wp_date(get_option('time_format'), strtotime($booking->booking_time)));
-                                        ?>
-                                    </td>
-                                    <td>
-                                        <?php 
-                                        $total = $booking->adults + $booking->children;
-                                        printf(__('%d total (%d adults, %d children)', 'fp-esperienze'), $total, $booking->adults, $booking->children);
-                                        ?>
-                                    </td>
-                                    <td>
-                                        <span class="booking-status status-<?php echo esc_attr($booking->status); ?>">
-                                            <?php echo esc_html(ucfirst($booking->status)); ?>
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <?php 
-                                        if ($booking->meeting_point_id) {
-                                            $mp = MeetingPointManager::getMeetingPoint($booking->meeting_point_id);
-                                            echo $mp ? esc_html($mp->name) : __('Not found', 'fp-esperienze');
-                                        } else {
-                                            echo __('Not set', 'fp-esperienze');
-                                        }
-                                        ?>
-                                    </td>
-                                    <td><?php echo esc_html(\fp_esperienze_wp_date(get_option('date_format') . ' ' . get_option('time_format'), strtotime($booking->created_at))); ?></td>
-                                    <td>
-                                        <?php if ($booking->status === 'confirmed') : ?>
-                                            <button type="button" class="button button-small fp-reschedule-booking" data-booking-id="<?php echo esc_attr($booking->id); ?>" data-product-id="<?php echo esc_attr($booking->product_id); ?>" data-current-date="<?php echo esc_attr($booking->booking_date); ?>" data-current-time="<?php echo esc_attr($booking->booking_time); ?>">
-                                                <?php _e('Reschedule', 'fp-esperienze'); ?>
-                                            </button>
-                                            <button type="button" class="button button-small fp-cancel-booking" data-booking-id="<?php echo esc_attr($booking->id); ?>">
-                                                <?php _e('Cancel', 'fp-esperienze'); ?>
-                                            </button>
-                                        <?php else : ?>
-                                            <span class="description"><?php _e('No actions available', 'fp-esperienze'); ?></span>
-                                        <?php endif; ?>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
+                <?php AdminComponents::closeCard(); ?>
+
+                <?php
+                AdminComponents::openCard([
+                    'title' => __('Bookings', 'fp-esperienze'),
+                    'meta'  => [
+                        sprintf(__('Showing %1$d of %2$d results', 'fp-esperienze'), $page_result_count, $total_items),
+                    ],
+                ]);
+                ?>
+                <?php if (!empty($views)) : ?>
+                    <ul class="subsubsub">
+                        <?php
+                        $view_links = [];
+                        foreach ($views as $view) {
+                            $view_links[] = sprintf(
+                                '<li class="%1$s"><a href="%2$s"%3$s>%4$s <span class="count">(%5$s)</span></a></li>',
+                                esc_attr($view['key']),
+                                esc_url($view['url']),
+                                $view['current'] ? ' class="current"' : '',
+                                esc_html($view['label']),
+                                esc_html(number_format_i18n((int) $view['count']))
+                            );
+                        }
+
+                        echo implode(' | ', $view_links); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+                        ?>
+                    </ul>
                 <?php endif; ?>
+
+                <div class="fp-admin-view-toggle" role="group" aria-label="<?php esc_attr_e('Change bookings view', 'fp-esperienze'); ?>">
+                    <button id="fp-list-view" class="button button-primary" type="button"><?php esc_html_e('List view', 'fp-esperienze'); ?></button>
+                    <button id="fp-calendar-view" class="button button-secondary" type="button"><?php esc_html_e('Calendar view', 'fp-esperienze'); ?></button>
+                </div>
+
+                <div id="fp-bookings-list" class="fp-bookings-content">
+                    <?php if ($total_items === 0) : ?>
+                        <?php
+                        AdminComponents::notice([
+                            'type'    => 'info',
+                            'title'   => __('No bookings found', 'fp-esperienze'),
+                            'message' => __('Adjust your filters or check back after new reservations arrive.', 'fp-esperienze'),
+                        ]);
+                        ?>
+                    <?php else : ?>
+                        <form method="post" class="fp-admin-table-form">
+                            <?php wp_nonce_field('fp_booking_action', 'fp_booking_nonce'); ?>
+                            <input type="hidden" name="action" value="bulk_update_status" />
+                            <input type="hidden" name="paged" value="<?php echo esc_attr($current_page); ?>" />
+
+                            <div class="tablenav top">
+                                <div class="alignleft actions bulkactions">
+                                    <label class="screen-reader-text" for="bulk-action-selector-top"><?php esc_html_e('Select bulk action', 'fp-esperienze'); ?></label>
+                                    <select name="bulk_status" id="bulk-action-selector-top">
+                                        <option value=""><?php esc_html_e('Bulk actions', 'fp-esperienze'); ?></option>
+                                        <?php foreach ($status_labels as $status_key => $label) : ?>
+                                            <option value="<?php echo esc_attr($status_key); ?>"><?php echo esc_html(sprintf(__('Mark as %s', 'fp-esperienze'), $label)); ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <button type="submit" class="button action"><?php esc_html_e('Apply', 'fp-esperienze'); ?></button>
+                                </div>
+                                <?php if (!empty($pagination_links)) : ?>
+                                    <div class="tablenav-pages"><?php echo wp_kses_post($pagination_links); ?></div>
+                                <?php endif; ?>
+                                <br class="clear" />
+                            </div>
+
+                            <table class="wp-list-table widefat fixed striped table-view-list fp-bookings-table">
+                                <thead>
+                                    <tr>
+                                        <td id="cb" class="manage-column column-cb check-column">
+                                            <input type="checkbox" id="cb-select-all-1" />
+                                        </td>
+                                        <?php foreach ($booking_columns as $column_key => $column_definition) : ?>
+                                            <?php if ('cb' === $column_key || in_array($column_key, $hidden_booking_columns, true)) { continue; } ?>
+                                            <th scope="col" class="manage-column column-<?php echo esc_attr($column_key); ?>">
+                                                <?php echo esc_html($column_definition['label']); ?>
+                                            </th>
+                                        <?php endforeach; ?>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($bookings as $booking) : ?>
+                                        <tr>
+                                            <th scope="row" class="check-column">
+                                                <input type="checkbox" name="booking_ids[]" value="<?php echo esc_attr($booking->id); ?>" />
+                                            </th>
+                                            <?php foreach ($booking_columns as $column_key => $column_definition) : ?>
+                                                <?php if ('cb' === $column_key || in_array($column_key, $hidden_booking_columns, true)) { continue; } ?>
+                                                <td data-colname="<?php echo esc_attr($column_definition['label']); ?>" class="column-<?php echo esc_attr($column_key); ?>">
+                                                    <?php
+                                                    switch ($column_key) {
+                                                        case 'id':
+                                                            echo esc_html($booking->id);
+                                                            break;
+                                                        case 'order':
+                                                            if (!empty($booking->order_id)) {
+                                                                $order_url = admin_url('post.php?post=' . $booking->order_id . '&action=edit');
+                                                                printf('<a href="%1$s">#%2$s</a>', esc_url($order_url), esc_html($booking->order_id));
+                                                            } else {
+                                                                esc_html_e('N/A', 'fp-esperienze');
+                                                            }
+                                                            break;
+                                                        case 'product':
+                                                            $product = wc_get_product($booking->product_id);
+                                                            $product_name = $product ? $product->get_name() : __('Product not found', 'fp-esperienze');
+                                                            echo esc_html($product_name);
+                                                            break;
+                                                        case 'datetime':
+                                                            echo esc_html(\fp_esperienze_wp_date(get_option('date_format'), strtotime($booking->booking_date)));
+                                                            echo '<br />';
+                                                            echo esc_html(\fp_esperienze_wp_date(get_option('time_format'), strtotime($booking->booking_time)));
+                                                            break;
+                                                        case 'participants':
+                                                            $total = (int) ($booking->adults + $booking->children);
+                                                            printf(
+                                                                esc_html__('%1$d total (%2$d adults, %3$d children)', 'fp-esperienze'),
+                                                                $total,
+                                                                (int) $booking->adults,
+                                                                (int) $booking->children
+                                                            );
+                                                            break;
+                                                        case 'status':
+                                                            $status_key = isset($booking->status) ? (string) $booking->status : '';
+                                                            $status_label = $status_labels[$status_key] ?? ucfirst($status_key);
+                                                            ?>
+                                                            <span class="booking-status status-<?php echo esc_attr($status_key); ?>">
+                                                                <?php echo esc_html($status_label); ?>
+                                                            </span>
+                                                            <?php
+                                                            break;
+                                                        case 'meeting_point':
+                                                            if (!empty($booking->meeting_point_id)) {
+                                                                $mp = MeetingPointManager::getMeetingPoint($booking->meeting_point_id);
+                                                                echo $mp ? esc_html($mp->name) : esc_html__('Not found', 'fp-esperienze');
+                                                            } else {
+                                                                esc_html_e('Not set', 'fp-esperienze');
+                                                            }
+                                                            break;
+                                                        case 'created':
+                                                            echo esc_html(\fp_esperienze_wp_date(get_option('date_format') . ' ' . get_option('time_format'), strtotime($booking->created_at)));
+                                                            break;
+                                                        case 'actions':
+                                                            if (isset($booking->status) && 'confirmed' === $booking->status) {
+                                                                ?>
+                                                                <button type="button" class="button button-small fp-reschedule-booking" data-booking-id="<?php echo esc_attr($booking->id); ?>" data-product-id="<?php echo esc_attr($booking->product_id); ?>" data-current-date="<?php echo esc_attr($booking->booking_date); ?>" data-current-time="<?php echo esc_attr($booking->booking_time); ?>">
+                                                                    <?php esc_html_e('Reschedule', 'fp-esperienze'); ?>
+                                                                </button>
+                                                                <button type="button" class="button button-small fp-cancel-booking" data-booking-id="<?php echo esc_attr($booking->id); ?>">
+                                                                    <?php esc_html_e('Cancel', 'fp-esperienze'); ?>
+                                                                </button>
+                                                                <?php
+                                                            } else {
+                                                                echo '<span class="description">' . esc_html__('No actions available', 'fp-esperienze') . '</span>';
+                                                            }
+                                                            break;
+                                                    }
+                                                    ?>
+                                                </td>
+                                            <?php endforeach; ?>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td class="manage-column column-cb check-column">
+                                            <input type="checkbox" id="cb-select-all-2" />
+                                        </td>
+                                        <?php foreach ($booking_columns as $column_key => $column_definition) : ?>
+                                            <?php if ('cb' === $column_key || in_array($column_key, $hidden_booking_columns, true)) { continue; } ?>
+                                            <th scope="col" class="manage-column column-<?php echo esc_attr($column_key); ?>">
+                                                <?php echo esc_html($column_definition['label']); ?>
+                                            </th>
+                                        <?php endforeach; ?>
+                                    </tr>
+                                </tfoot>
+                            </table>
+
+                            <div class="tablenav bottom">
+                                <?php if (!empty($pagination_links)) : ?>
+                                    <div class="tablenav-pages"><?php echo wp_kses_post($pagination_links); ?></div>
+                                <?php endif; ?>
+                                <br class="clear" />
+                            </div>
+                        </form>
+                    <?php endif; ?>
+                </div>
+
+                <div id="fp-bookings-calendar" class="fp-bookings-content fp-hidden">
+                    <div id="fp-calendar"></div>
+                </div>
+
+                <?php AdminComponents::closeCard(); ?>
             </div>
-            
-            <!-- Calendar View -->
-            <div id="fp-bookings-calendar" class="fp-bookings-content fp-hidden">
-                <div id="fp-calendar"></div>
-            </div>
-            
+
             <!-- Reschedule Modal -->
             <div id="fp-reschedule-modal">
                 <div class="fp-modal-content">
@@ -897,391 +1931,537 @@ class MenuManager {
      * Meeting Points page
      */
     public function meetingPointsPage(): void {
-        // Handle form submissions
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['wp_screen_options'])) {
             if (!CapabilityManager::verifyAdminAction('fp_meeting_points_action', '_wpnonce')) {
                 wp_die(__('Security check failed.', 'fp-esperienze'));
             }
             $this->handleMeetingPointAction();
         }
-        
-        // Get action and ID for editing/deleting
+
         $action = sanitize_text_field(wp_unslash($_GET['action'] ?? ''));
         $meeting_point_id = absint(wp_unslash($_GET['id'] ?? 0));
         $meeting_point = null;
-        
+
         if ($action === 'edit' && $meeting_point_id) {
             $meeting_point = MeetingPointManager::getMeetingPoint($meeting_point_id);
             if (!$meeting_point) {
-                $action = ''; // Reset if meeting point not found
+                $action = '';
             }
         }
-        
+
+        $meeting_points = MeetingPointManager::getAllMeetingPoints();
+
+        $search_term = sanitize_text_field(wp_unslash($_GET['s'] ?? ''));
+        $view_filter = sanitize_text_field(wp_unslash($_GET['view'] ?? 'all'));
+        $allowed_views = ['all', 'with_coords', 'without_coords'];
+        if (!in_array($view_filter, $allowed_views, true)) {
+            $view_filter = 'all';
+        }
+
+        $search_filtered = $meeting_points;
+        if ($search_term !== '') {
+            $needle = strtolower($search_term);
+            $search_filtered = array_filter(
+                $meeting_points,
+                static function ($point) use ($needle) {
+                    $haystack = strtolower(($point->name ?? '') . ' ' . ($point->address ?? ''));
+                    return strpos($haystack, $needle) !== false;
+                }
+            );
+        }
+
+        $with_coordinates = array_filter(
+            $search_filtered,
+            static function ($point) {
+                return !empty($point->lat) && !empty($point->lng);
+            }
+        );
+        $total_search_filtered = count($search_filtered);
+
+        $view_counts = [
+            'all'            => $total_search_filtered,
+            'with_coords'    => count($with_coordinates),
+            'without_coords' => $total_search_filtered - count($with_coordinates),
+        ];
+
+        $filtered_points = $search_filtered;
+        if ('with_coords' === $view_filter) {
+            $filtered_points = $with_coordinates;
+        } elseif ('without_coords' === $view_filter) {
+            $filtered_points = array_filter(
+                $search_filtered,
+                static function ($point) {
+                    return empty($point->lat) || empty($point->lng);
+                }
+            );
+        }
+
+        $filtered_points = array_values($filtered_points);
+        $total_filtered = count($filtered_points);
+        $per_page = $this->getPerPageValue('fp_meeting_points_per_page', 20);
+        $current_page = max(1, absint(wp_unslash($_GET['paged'] ?? 1)));
+        $total_pages = max(1, (int) ceil($total_filtered / max(1, $per_page)));
+        if ($current_page > $total_pages) {
+            $current_page = $total_pages;
+        }
+        $offset = ($current_page - 1) * $per_page;
+        if ($offset < 0) {
+            $offset = 0;
+        }
+
+        $paged_meeting_points = array_slice($filtered_points, $offset, $per_page);
+        $page_count = count($paged_meeting_points);
+
+        $query_args = [
+            'page' => 'fp-esperienze-meeting-points',
+        ];
+        if ($search_term !== '') {
+            $query_args['s'] = $search_term;
+        }
+        if ('all' !== $view_filter) {
+            $query_args['view'] = $view_filter;
+        }
+
+        $view_base_args = $query_args;
+        unset($view_base_args['view'], $view_base_args['paged']);
+        $view_base_url = add_query_arg($view_base_args, admin_url('admin.php'));
+
+        $views = [];
+        $views['all'] = [
+            'key'     => 'all',
+            'label'   => __('All', 'fp-esperienze'),
+            'count'   => $view_counts['all'] ?? 0,
+            'url'     => $view_base_url,
+            'current' => 'all' === $view_filter,
+        ];
+        $views['with_coords'] = [
+            'key'     => 'with-coordinates',
+            'label'   => __('With coordinates', 'fp-esperienze'),
+            'count'   => $view_counts['with_coords'] ?? 0,
+            'url'     => add_query_arg('view', 'with_coords', $view_base_url),
+            'current' => 'with_coords' === $view_filter,
+        ];
+        $views['without_coords'] = [
+            'key'     => 'without-coordinates',
+            'label'   => __('Missing coordinates', 'fp-esperienze'),
+            'count'   => $view_counts['without_coords'] ?? 0,
+            'url'     => add_query_arg('view', 'without_coords', $view_base_url),
+            'current' => 'without_coords' === $view_filter,
+        ];
+
+        $pagination_base_url = add_query_arg($query_args, admin_url('admin.php'));
+        $pagination_links = paginate_links([
+            'base'      => add_query_arg('paged', '%#%', $pagination_base_url),
+            'format'    => '',
+            'current'   => $current_page,
+            'total'     => $total_pages,
+            'prev_text' => __('&laquo; Previous', 'fp-esperienze'),
+            'next_text' => __('Next &raquo;', 'fp-esperienze'),
+        ]);
+
+        $meeting_columns = $this->getMeetingPointsColumnDefinitions();
+        $hidden_meeting_columns = $this->getHiddenColumns('fp_meeting_points_hidden_columns');
+        $visible_meeting_columns = count($meeting_columns) - count($hidden_meeting_columns);
+
         ?>
         <div class="wrap">
             <h1 class="wp-heading-inline"><?php _e('Meeting Points', 'fp-esperienze'); ?></h1>
-            
+
             <?php if ($action === 'edit') : ?>
-                <a href="<?php echo admin_url('admin.php?page=fp-esperienze-meeting-points'); ?>" class="page-title-action">
+                <a href="<?php echo esc_url(admin_url('admin.php?page=fp-esperienze-meeting-points')); ?>" class="page-title-action">
                     <?php _e('Add New', 'fp-esperienze'); ?>
                 </a>
             <?php else : ?>
-                <a href="<?php echo admin_url('admin.php?page=fp-esperienze-meeting-points&action=edit'); ?>" class="page-title-action">
+                <a href="<?php echo esc_url(admin_url('admin.php?page=fp-esperienze-meeting-points&action=edit')); ?>" class="page-title-action">
                     <?php _e('Add New', 'fp-esperienze'); ?>
                 </a>
             <?php endif; ?>
-            
+
             <hr class="wp-header-end">
-            
-            <?php if ($action === 'edit' || $action === '') : ?>
-                <!-- Add/Edit Form -->
-                <div class="fp-meeting-point-form">
-                    <h2><?php echo $meeting_point ? __('Edit Meeting Point', 'fp-esperienze') : __('Add New Meeting Point', 'fp-esperienze'); ?></h2>
-                    
-                    <form method="post" action="">
-                        <?php wp_nonce_field('fp_meeting_points_action'); ?>
-                        
-                        <input type="hidden" name="action" value="<?php echo $meeting_point ? 'update' : 'create'; ?>">
-                        <?php if ($meeting_point) : ?>
-                            <input type="hidden" name="meeting_point_id" value="<?php echo esc_attr($meeting_point->id); ?>">
-                        <?php endif; ?>
-                        
-                        <table class="form-table">
-                            <tr>
-                                <th scope="row">
-                                    <label for="meeting_point_name"><?php _e('Name', 'fp-esperienze'); ?> <span class="description">(required)</span></label>
-                                </th>
-                                <td>
-                                    <input name="meeting_point_name" type="text" id="meeting_point_name" 
-                                           value="<?php echo $meeting_point ? esc_attr($meeting_point->name) : ''; ?>" 
-                                           class="regular-text" required />
-                                </td>
-                            </tr>
-                            
-                            <tr>
-                                <th scope="row">
-                                    <label for="meeting_point_address"><?php _e('Address', 'fp-esperienze'); ?> <span class="description">(required)</span></label>
-                                </th>
-                                <td>
-                                    <textarea name="meeting_point_address" id="meeting_point_address" 
-                                              rows="3" cols="50" class="large-text" required><?php echo $meeting_point ? esc_textarea($meeting_point->address) : ''; ?></textarea>
-                                </td>
-                            </tr>
-                            
-                            <tr>
-                                <th scope="row">
-                                    <label for="meeting_point_lat"><?php _e('Latitude', 'fp-esperienze'); ?></label>
-                                </th>
-                                <td>
-                                    <input name="meeting_point_lat" type="number" step="any" id="meeting_point_lat" 
-                                           value="<?php echo $meeting_point ? esc_attr($meeting_point->lat) : ''; ?>" 
-                                           class="regular-text" />
-                                    <p class="description"><?php _e('Decimal degrees format (e.g., 41.9028)', 'fp-esperienze'); ?></p>
-                                </td>
-                            </tr>
-                            
-                            <tr>
-                                <th scope="row">
-                                    <label for="meeting_point_lng"><?php _e('Longitude', 'fp-esperienze'); ?></label>
-                                </th>
-                                <td>
-                                    <input name="meeting_point_lng" type="number" step="any" id="meeting_point_lng" 
-                                           value="<?php echo $meeting_point ? esc_attr($meeting_point->lng) : ''; ?>" 
-                                           class="regular-text" />
-                                    <p class="description"><?php _e('Decimal degrees format (e.g., 12.4964)', 'fp-esperienze'); ?></p>
-                                </td>
-                            </tr>
-                            
-                            <tr>
-                                <th scope="row">
-                                    <label for="meeting_point_place_id"><?php _e('Google Place ID', 'fp-esperienze'); ?></label>
-                                </th>
-                                <td>
-                                    <input name="meeting_point_place_id" type="text" id="meeting_point_place_id" 
-                                           value="<?php echo $meeting_point ? esc_attr($meeting_point->place_id) : ''; ?>" 
-                                           class="regular-text" />
-                                    <p class="description"><?php _e('Google Places API Place ID for enhanced integration', 'fp-esperienze'); ?></p>
-                                </td>
-                            </tr>
-                            
-                            <tr>
-                                <th scope="row">
-                                    <label for="meeting_point_note"><?php _e('Note', 'fp-esperienze'); ?></label>
-                                </th>
-                                <td>
-                                    <textarea name="meeting_point_note" id="meeting_point_note" 
-                                              rows="5" cols="50" class="large-text"><?php echo $meeting_point ? esc_textarea($meeting_point->note) : ''; ?></textarea>
-                                    <p class="description"><?php _e('Additional instructions or notes for this meeting point', 'fp-esperienze'); ?></p>
-                                </td>
-                            </tr>
-                        </table>
-                        
-                        <p class="submit">
-                            <input type="submit" name="submit" id="submit" class="button button-primary" 
-                                   value="<?php echo $meeting_point ? __('Update Meeting Point', 'fp-esperienze') : __('Add Meeting Point', 'fp-esperienze'); ?>">
-                            
-                            <?php if ($meeting_point) : ?>
-                                <a href="<?php echo admin_url('admin.php?page=fp-esperienze-meeting-points'); ?>" class="button">
-                                    <?php _e('Cancel', 'fp-esperienze'); ?>
-                                </a>
-                            <?php endif; ?>
-                        </p>
-                    </form>
-                </div>
-                
-                <?php if ($action !== 'edit') : ?>
-                    <hr />
-                <?php endif; ?>
-            <?php endif; ?>
-            
-            <?php if ($action !== 'edit') : ?>
-                <!-- Meeting Points List -->
-                <div class="fp-meeting-points-list">
-                    <h2><?php _e('Meeting Points List', 'fp-esperienze'); ?></h2>
-                    
-                    <?php
-                    $meeting_points = MeetingPointManager::getAllMeetingPoints();
-                    
-                    if (empty($meeting_points)) :
-                    ?>
-                        <p><?php _e('No meeting points found. Add your first meeting point above.', 'fp-esperienze'); ?></p>
-                    <?php else : ?>
-                        <table class="wp-list-table widefat fixed striped">
-                            <thead>
-                                <tr>
-                                    <th scope="col" class="column-primary"><?php _e('Name', 'fp-esperienze'); ?></th>
-                                    <th scope="col"><?php _e('Address', 'fp-esperienze'); ?></th>
-                                    <th scope="col"><?php _e('Coordinates', 'fp-esperienze'); ?></th>
-                                    <th scope="col"><?php _e('Actions', 'fp-esperienze'); ?></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($meeting_points as $mp) : ?>
-                                    <tr>
-                                        <td class="column-primary">
-                                            <strong><?php echo esc_html($mp->name); ?></strong>
-                                            <div class="row-actions">
-                                                <span class="edit">
-                                                    <a href="<?php echo admin_url('admin.php?page=fp-esperienze-meeting-points&action=edit&id=' . $mp->id); ?>">
-                                                        <?php _e('Edit', 'fp-esperienze'); ?>
-                                                    </a> |
-                                                </span>
-                                                <span class="delete">
-                                                    <a href="#" onclick="return confirmDelete(<?php echo $mp->id; ?>, '<?php echo esc_js($mp->name); ?>');" class="submitdelete">
-                                                        <?php _e('Delete', 'fp-esperienze'); ?>
-                                                    </a>
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td><?php echo esc_html(wp_trim_words($mp->address, 10)); ?></td>
-                                        <td>
-                                            <?php if ($mp->lat && $mp->lng) : ?>
-                                                <?php echo esc_html($mp->lat . ', ' . $mp->lng); ?>
-                                            <?php else : ?>
-                                                <span class="description"><?php _e('Not set', 'fp-esperienze'); ?></span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td>
-                                            <a href="<?php echo admin_url('admin.php?page=fp-esperienze-meeting-points&action=edit&id=' . $mp->id); ?>" class="button button-small">
-                                                <?php _e('Edit', 'fp-esperienze'); ?>
-                                            </a>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
+
+            <div class="fp-meeting-point-form">
+                <h2><?php echo $meeting_point ? __('Edit Meeting Point', 'fp-esperienze') : __('Add New Meeting Point', 'fp-esperienze'); ?></h2>
+
+                <form method="post" action="">
+                    <?php wp_nonce_field('fp_meeting_points_action'); ?>
+
+                    <input type="hidden" name="action" value="<?php echo $meeting_point ? 'update' : 'create'; ?>">
+                    <?php if ($meeting_point) : ?>
+                        <input type="hidden" name="meeting_point_id" value="<?php echo esc_attr($meeting_point->id); ?>">
                     <?php endif; ?>
-                </div>
+
+                    <table class="form-table">
+                        <tr>
+                            <th scope="row">
+                                <label for="meeting_point_name"><?php _e('Name', 'fp-esperienze'); ?> <span class="description">(required)</span></label>
+                            </th>
+                            <td>
+                                <input name="meeting_point_name" type="text" id="meeting_point_name"
+                                       value="<?php echo $meeting_point ? esc_attr($meeting_point->name) : ''; ?>"
+                                       class="regular-text" required />
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th scope="row">
+                                <label for="meeting_point_address"><?php _e('Address', 'fp-esperienze'); ?> <span class="description">(required)</span></label>
+                            </th>
+                            <td>
+                                <textarea name="meeting_point_address" id="meeting_point_address"
+                                          rows="3" cols="50" class="large-text" required><?php echo $meeting_point ? esc_textarea($meeting_point->address) : ''; ?></textarea>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th scope="row">
+                                <label for="meeting_point_lat"><?php _e('Latitude', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <input name="meeting_point_lat" type="number" step="any" id="meeting_point_lat"
+                                       value="<?php echo $meeting_point ? esc_attr($meeting_point->lat) : ''; ?>"
+                                       class="regular-text" />
+                                <p class="description"><?php _e('Decimal degrees format (e.g., 41.9028)', 'fp-esperienze'); ?></p>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th scope="row">
+                                <label for="meeting_point_lng"><?php _e('Longitude', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <input name="meeting_point_lng" type="number" step="any" id="meeting_point_lng"
+                                       value="<?php echo $meeting_point ? esc_attr($meeting_point->lng) : ''; ?>"
+                                       class="regular-text" />
+                                <p class="description"><?php _e('Decimal degrees format (e.g., 12.4964)', 'fp-esperienze'); ?></p>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th scope="row">
+                                <label for="meeting_point_place_id"><?php _e('Google Place ID', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <input name="meeting_point_place_id" type="text" id="meeting_point_place_id"
+                                       value="<?php echo $meeting_point ? esc_attr($meeting_point->place_id) : ''; ?>"
+                                       class="regular-text" />
+                                <p class="description"><?php _e('Google Places API Place ID for enhanced integration', 'fp-esperienze'); ?></p>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th scope="row">
+                                <label for="meeting_point_note"><?php _e('Note', 'fp-esperienze'); ?></label>
+                            </th>
+                            <td>
+                                <textarea name="meeting_point_note" id="meeting_point_note"
+                                          rows="5" cols="50" class="large-text"><?php echo $meeting_point ? esc_textarea($meeting_point->note) : ''; ?></textarea>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <?php submit_button($meeting_point ? __('Update Meeting Point', 'fp-esperienze') : __('Add Meeting Point', 'fp-esperienze')); ?>
+                </form>
+            </div>
+
+            <h2><?php _e('Existing Meeting Points', 'fp-esperienze'); ?></h2>
+
+            <form method="get">
+                <input type="hidden" name="page" value="fp-esperienze-meeting-points" />
+                <?php if ('all' !== $view_filter) : ?>
+                    <input type="hidden" name="view" value="<?php echo esc_attr($view_filter); ?>" />
+                <?php endif; ?>
+                <p class="search-box">
+                    <label class="screen-reader-text" for="meeting-point-search-input"><?php esc_html_e('Search meeting points', 'fp-esperienze'); ?></label>
+                    <input type="search" id="meeting-point-search-input" name="s" value="<?php echo esc_attr($search_term); ?>" />
+                    <input type="submit" class="button" value="<?php esc_attr_e('Search meeting points', 'fp-esperienze'); ?>" />
+                </p>
+            </form>
+
+            <?php if (!empty($views)) : ?>
+                <ul class="subsubsub">
+                    <?php
+                    $view_links = [];
+                    foreach ($views as $view) {
+                        $view_links[] = sprintf(
+                            '<li class="%1$s"><a href="%2$s"%3$s>%4$s <span class="count">(%5$s)</span></a></li>',
+                            esc_attr($view['key']),
+                            esc_url($view['url']),
+                            $view['current'] ? ' class="current"' : '',
+                            esc_html($view['label']),
+                            esc_html(number_format_i18n((int) $view['count']))
+                        );
+                    }
+
+                    echo implode(' | ', $view_links); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+                    ?>
+                </ul>
             <?php endif; ?>
-        </div>
-        
-        <!-- Delete Confirmation Form -->
-        <form id="delete-meeting-point-form" method="post" style="display: none;">
-            <?php wp_nonce_field('fp_meeting_points_action'); ?>
-            <input type="hidden" name="action" value="delete">
-            <input type="hidden" name="meeting_point_id" id="delete-meeting-point-id" value="">
-        </form>
-        
-        <script>
-        function confirmDelete(id, name) {
-            if (confirm(fpEsperienzeAdmin.i18n.confirmDeleteMeetingPoint + ' "' + name + '"?\n\n' + fpEsperienzeAdmin.i18n.actionCannotBeUndone)) {
-                document.getElementById('delete-meeting-point-id').value = id;
-                document.getElementById('delete-meeting-point-form').submit();
+
+            <form method="post" id="fp-meeting-points-table-form">
+                <?php wp_nonce_field('fp_meeting_points_action'); ?>
+                <input type="hidden" name="action" value="bulk-delete" />
+
+                <div class="tablenav top">
+                    <div class="alignleft actions bulkactions">
+                        <label class="screen-reader-text" for="bulk-action-selector-top"><?php esc_html_e('Select bulk action', 'fp-esperienze'); ?></label>
+                        <select name="bulk_action" id="bulk-action-selector-top">
+                            <option value=""><?php esc_html_e('Bulk actions', 'fp-esperienze'); ?></option>
+                            <option value="delete"><?php esc_html_e('Delete', 'fp-esperienze'); ?></option>
+                        </select>
+                        <button type="submit" class="button action"><?php esc_html_e('Apply', 'fp-esperienze'); ?></button>
+                    </div>
+                    <?php if (!empty($pagination_links)) : ?>
+                        <div class="tablenav-pages"><?php echo wp_kses_post($pagination_links); ?></div>
+                    <?php endif; ?>
+                    <br class="clear" />
+                </div>
+
+                <table class="wp-list-table widefat fixed striped table-view-list">
+                    <thead>
+                        <tr>
+                            <td id="cb" class="manage-column column-cb check-column">
+                                <input type="checkbox" id="cb-select-all-1" />
+                            </td>
+                            <?php foreach ($meeting_columns as $column_key => $column_definition) : ?>
+                                <?php if ('cb' === $column_key || in_array($column_key, $hidden_meeting_columns, true)) { continue; } ?>
+                                <th scope="col" class="manage-column column-<?php echo esc_attr($column_key); ?>">
+                                    <?php echo esc_html($column_definition['label']); ?>
+                                </th>
+                            <?php endforeach; ?>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if ($page_count === 0) : ?>
+                            <tr class="no-items">
+                                <td class="colspanchange" colspan="<?php echo esc_attr($visible_meeting_columns); ?>">
+                                    <?php esc_html_e('No meeting points match the current filters.', 'fp-esperienze'); ?>
+                                </td>
+                            </tr>
+                        <?php else : ?>
+                            <?php foreach ($paged_meeting_points as $point) : ?>
+                                <tr>
+                                    <th scope="row" class="check-column">
+                                        <input type="checkbox" name="meeting_point_ids[]" value="<?php echo esc_attr($point->id); ?>" />
+                                    </th>
+                                    <?php foreach ($meeting_columns as $column_key => $column_definition) : ?>
+                                        <?php if ('cb' === $column_key || in_array($column_key, $hidden_meeting_columns, true)) { continue; } ?>
+                                        <td data-colname="<?php echo esc_attr($column_definition['label']); ?>" class="column-<?php echo esc_attr($column_key); ?>">
+                                            <?php
+                                            switch ($column_key) {
+                                                case 'name':
+                                                    ?>
+                                                    <strong><?php echo esc_html($point->name); ?></strong>
+                                                    <div class="row-actions">
+                                                        <span class="edit">
+                                                            <a href="<?php echo esc_url(admin_url('admin.php?page=fp-esperienze-meeting-points&action=edit&id=' . $point->id)); ?>">
+                                                                <?php esc_html_e('Edit', 'fp-esperienze'); ?>
+                                                            </a> |
+                                                        </span>
+                                                        <span class="delete">
+                                                            <a href="#" onclick="return confirmDelete(<?php echo esc_js($point->id); ?>, '<?php echo esc_js($point->name); ?>');" class="submitdelete">
+                                                                <?php esc_html_e('Delete', 'fp-esperienze'); ?>
+                                                            </a>
+                                                        </span>
+                                                    </div>
+                                                    <?php
+                                                    break;
+                                                case 'address':
+                                                    echo esc_html(wp_trim_words($point->address, 15));
+                                                    break;
+                                                case 'coordinates':
+                                                    if (!empty($point->lat) && !empty($point->lng)) {
+                                                        echo esc_html($point->lat . ', ' . $point->lng);
+                                                    } else {
+                                                        esc_html_e('Not set', 'fp-esperienze');
+                                                    }
+                                                    break;
+                                                case 'actions':
+                                                    ?>
+                                                    <a href="<?php echo esc_url(admin_url('admin.php?page=fp-esperienze-meeting-points&action=edit&id=' . $point->id)); ?>" class="button button-small">
+                                                        <?php esc_html_e('Edit', 'fp-esperienze'); ?>
+                                                    </a>
+                                                    <?php
+                                                    break;
+                                            }
+                                            ?>
+                                        </td>
+                                    <?php endforeach; ?>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td class="manage-column column-cb check-column">
+                                <input type="checkbox" id="cb-select-all-2" />
+                            </td>
+                            <?php foreach ($meeting_columns as $column_key => $column_definition) : ?>
+                                <?php if ('cb' === $column_key || in_array($column_key, $hidden_meeting_columns, true)) { continue; } ?>
+                                <th scope="col" class="manage-column column-<?php echo esc_attr($column_key); ?>">
+                                    <?php echo esc_html($column_definition['label']); ?>
+                                </th>
+                            <?php endforeach; ?>
+                        </tr>
+                    </tfoot>
+                </table>
+
+                <div class="tablenav bottom">
+                    <?php if (!empty($pagination_links)) : ?>
+                        <div class="tablenav-pages"><?php echo wp_kses_post($pagination_links); ?></div>
+                    <?php endif; ?>
+                    <br class="clear" />
+                </div>
+            </form>
+
+            <form id="delete-meeting-point-form" method="post" style="display: none;">
+                <?php wp_nonce_field('fp_meeting_points_action'); ?>
+                <input type="hidden" name="action" value="delete">
+                <input type="hidden" name="meeting_point_id" id="delete-meeting-point-id" value="">
+            </form>
+
+            <script>
+            function confirmDelete(id, name) {
+                if (confirm(fpEsperienzeAdmin.i18n.confirmDeleteMeetingPoint + ' "' + name + '"?
+
+' + fpEsperienzeAdmin.i18n.actionCannotBeUndone)) {
+                    document.getElementById('delete-meeting-point-id').value = id;
+                    document.getElementById('delete-meeting-point-form').submit();
+                }
+                return false;
             }
-            return false;
-        }
-        </script>
+            </script>
+        </div>
         <?php
     }
-    
-    /**
-     * Handle meeting point form actions
-     */
-    private function handleMeetingPointAction(): void {
-        $action = sanitize_text_field(wp_unslash($_POST['action'] ?? ''));
-        
-        switch ($action) {
-            case 'create':
-                $this->createMeetingPoint();
-                break;
-                
-            case 'update':
-                $this->updateMeetingPoint();
-                break;
-                
-            case 'delete':
-                $this->deleteMeetingPoint();
-                break;
-        }
-    }
-    
-    /**
-     * Create new meeting point
-     */
-    private function createMeetingPoint(): void {
-        $data = [
-            'name' => sanitize_text_field(wp_unslash($_POST['meeting_point_name'] ?? '')),
-            'address' => sanitize_textarea_field(wp_unslash($_POST['meeting_point_address'] ?? '')),
-            'lat' => !empty($_POST['meeting_point_lat']) ? (float) wp_unslash($_POST['meeting_point_lat']) : null,
-            'lng' => !empty($_POST['meeting_point_lng']) ? (float) wp_unslash($_POST['meeting_point_lng']) : null,
-            'place_id' => sanitize_text_field(wp_unslash($_POST['meeting_point_place_id'] ?? '')),
-            'note' => sanitize_textarea_field(wp_unslash($_POST['meeting_point_note'] ?? ''))
-        ];
-        
-        if (empty($data['name']) || empty($data['address'])) {
-            add_action('admin_notices', function() {
-                echo '<div class="notice notice-error is-dismissible"><p>' . 
-                     esc_html__('Name and address are required fields.', 'fp-esperienze') . 
-                     '</p></div>';
-            });
-            return;
-        }
-        
-        $result = MeetingPointManager::createMeetingPoint($data);
-        
-        if ($result) {
-            add_action('admin_notices', function() {
-                echo '<div class="notice notice-success is-dismissible"><p>' . 
-                     esc_html__('Meeting point created successfully.', 'fp-esperienze') . 
-                     '</p></div>';
-            });
-        } else {
-            add_action('admin_notices', function() {
-                echo '<div class="notice notice-error is-dismissible"><p>' . 
-                     esc_html__('Failed to create meeting point.', 'fp-esperienze') . 
-                     '</p></div>';
-            });
-        }
-    }
-    
-    /**
-     * Update meeting point
-     */
-    private function updateMeetingPoint(): void {
-        $id = absint(wp_unslash($_POST['meeting_point_id'] ?? 0));
-        
-        if (!$id) {
-            add_action('admin_notices', function() {
-                echo '<div class="notice notice-error is-dismissible"><p>' . 
-                     esc_html__('Invalid meeting point ID.', 'fp-esperienze') . 
-                     '</p></div>';
-            });
-            return;
-        }
-        
-        $data = [
-            'name' => sanitize_text_field(wp_unslash($_POST['meeting_point_name'] ?? '')),
-            'address' => sanitize_textarea_field(wp_unslash($_POST['meeting_point_address'] ?? '')),
-            'lat' => !empty($_POST['meeting_point_lat']) ? (float) wp_unslash($_POST['meeting_point_lat']) : null,
-            'lng' => !empty($_POST['meeting_point_lng']) ? (float) wp_unslash($_POST['meeting_point_lng']) : null,
-            'place_id' => sanitize_text_field(wp_unslash($_POST['meeting_point_place_id'] ?? '')),
-            'note' => sanitize_textarea_field(wp_unslash($_POST['meeting_point_note'] ?? ''))
-        ];
-        
-        if (empty($data['name']) || empty($data['address'])) {
-            add_action('admin_notices', function() {
-                echo '<div class="notice notice-error is-dismissible"><p>' . 
-                     esc_html__('Name and address are required fields.', 'fp-esperienze') . 
-                     '</p></div>';
-            });
-            return;
-        }
-        
-        $result = MeetingPointManager::updateMeetingPoint($id, $data);
-        
-        if ($result) {
-            add_action('admin_notices', function() {
-                echo '<div class="notice notice-success is-dismissible"><p>' . 
-                     esc_html__('Meeting point updated successfully.', 'fp-esperienze') . 
-                     '</p></div>';
-            });
-            
-            // Redirect to list view after successful update
-            wp_safe_redirect(admin_url('admin.php?page=fp-esperienze-meeting-points'));
-            exit;
-        } else {
-            add_action('admin_notices', function() {
-                echo '<div class="notice notice-error is-dismissible"><p>' .
-                     esc_html__('Failed to update meeting point.', 'fp-esperienze') .
-                     '</p></div>';
-            });
-        }
-    }
-    
-    /**
-     * Delete meeting point
-     */
-    private function deleteMeetingPoint(): void {
-        $id = absint(wp_unslash($_POST['meeting_point_id'] ?? 0));
-        
-        if (!$id) {
-            add_action('admin_notices', function() {
-                echo '<div class="notice notice-error is-dismissible"><p>' . 
-                     esc_html__('Invalid meeting point ID.', 'fp-esperienze') . 
-                     '</p></div>';
-            });
-            return;
-        }
-        
-        $result = MeetingPointManager::deleteMeetingPoint($id);
-        
-        if ($result) {
-            add_action('admin_notices', function() {
-                echo '<div class="notice notice-success is-dismissible"><p>' . 
-                     esc_html__('Meeting point deleted successfully.', 'fp-esperienze') . 
-                     '</p></div>';
-            });
-        } else {
-            add_action('admin_notices', function() {
-                echo '<div class="notice notice-error is-dismissible"><p>' . 
-                     esc_html__('Cannot delete meeting point. It may be in use by schedules or set as default for products.', 'fp-esperienze') . 
-                     '</p></div>';
-            });
-        }
-    }
 
-    /**
-     * Extras page
-     */
     public function extrasPage(): void {
         // Handle form submissions
-        if (!empty($_POST)) {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['fp_extra_nonce'])) {
             $this->handleExtrasActions();
         }
-        
         $extras = ExtraManager::getAllExtras();
         $tax_classes = ExtraManager::getTaxClasses();
-        
+
+        $search_term = sanitize_text_field(wp_unslash($_GET['s'] ?? ''));
+        $view_filter = sanitize_text_field(wp_unslash($_GET['view'] ?? 'all'));
+        $allowed_views = ['all', 'active', 'inactive', 'required'];
+        if (!in_array($view_filter, $allowed_views, true)) {
+            $view_filter = 'all';
+        }
+
+        $search_filtered = $extras;
+        if ($search_term !== '') {
+            $needle = strtolower($search_term);
+            $search_filtered = array_filter(
+                $extras,
+                static function ($extra) use ($needle) {
+                    $haystack = strtolower(($extra->name ?? '') . ' ' . ($extra->description ?? ''));
+                    return strpos($haystack, $needle) !== false;
+                }
+            );
+        }
+
+        $view_counts = [
+            'all'      => count($search_filtered),
+            'active'   => count(array_filter($search_filtered, static fn($extra) => !empty($extra->is_active))),
+            'inactive' => count(array_filter($search_filtered, static fn($extra) => empty($extra->is_active))),
+            'required' => count(array_filter($search_filtered, static fn($extra) => !empty($extra->is_required))),
+        ];
+
+        $filtered_extras = $search_filtered;
+        if ('active' === $view_filter) {
+            $filtered_extras = array_filter($search_filtered, static fn($extra) => !empty($extra->is_active));
+        } elseif ('inactive' === $view_filter) {
+            $filtered_extras = array_filter($search_filtered, static fn($extra) => empty($extra->is_active));
+        } elseif ('required' === $view_filter) {
+            $filtered_extras = array_filter($search_filtered, static fn($extra) => !empty($extra->is_required));
+        }
+
+        $filtered_extras = array_values($filtered_extras);
+        $total_filtered = count($filtered_extras);
+        $per_page = $this->getPerPageValue('fp_extras_per_page', 20);
+        $current_page = max(1, absint(wp_unslash($_GET['paged'] ?? 1)));
+        $total_pages = max(1, (int) ceil($total_filtered / max(1, $per_page)));
+        if ($current_page > $total_pages) {
+            $current_page = $total_pages;
+        }
+        $offset = ($current_page - 1) * $per_page;
+        if ($offset < 0) {
+            $offset = 0;
+        }
+
+        $paged_extras = array_slice($filtered_extras, $offset, $per_page);
+        $page_count = count($paged_extras);
+
+        $query_args = [
+            'page' => 'fp-esperienze-addons',
+        ];
+        if ($search_term !== '') {
+            $query_args['s'] = $search_term;
+        }
+        if ('all' !== $view_filter) {
+            $query_args['view'] = $view_filter;
+        }
+
+        $view_base_args = $query_args;
+        unset($view_base_args['view'], $view_base_args['paged']);
+        $view_base_url = add_query_arg($view_base_args, admin_url('admin.php'));
+
+        $views = [
+            'all'      => [
+                'key'     => 'all',
+                'label'   => __('All', 'fp-esperienze'),
+                'count'   => $view_counts['all'] ?? 0,
+                'url'     => $view_base_url,
+                'current' => 'all' === $view_filter,
+            ],
+            'active'   => [
+                'key'     => 'active',
+                'label'   => __('Active', 'fp-esperienze'),
+                'count'   => $view_counts['active'] ?? 0,
+                'url'     => add_query_arg('view', 'active', $view_base_url),
+                'current' => 'active' === $view_filter,
+            ],
+            'inactive' => [
+                'key'     => 'inactive',
+                'label'   => __('Inactive', 'fp-esperienze'),
+                'count'   => $view_counts['inactive'] ?? 0,
+                'url'     => add_query_arg('view', 'inactive', $view_base_url),
+                'current' => 'inactive' === $view_filter,
+            ],
+            'required' => [
+                'key'     => 'required',
+                'label'   => __('Required', 'fp-esperienze'),
+                'count'   => $view_counts['required'] ?? 0,
+                'url'     => add_query_arg('view', 'required', $view_base_url),
+                'current' => 'required' === $view_filter,
+            ],
+        ];
+
+        $pagination_base_url = add_query_arg($query_args, admin_url('admin.php'));
+        $pagination_links = paginate_links([
+            'base'      => add_query_arg('paged', '%#%', $pagination_base_url),
+            'format'    => '',
+            'current'   => $current_page,
+            'total'     => $total_pages,
+            'prev_text' => __('&laquo; Previous', 'fp-esperienze'),
+            'next_text' => __('Next &raquo;', 'fp-esperienze'),
+        ]);
+
+        $extras_columns = $this->getExtrasColumnDefinitions();
+        $hidden_extras_columns = $this->getHiddenColumns('fp_extras_hidden_columns');
+        $visible_extras_columns = count($extras_columns) - count($hidden_extras_columns);
+
         ?>
         <div class="wrap">
             <h1><?php _e('Extras Management', 'fp-esperienze'); ?></h1>
-            
+
             <div class="fp-extras-form">
                 <h2><?php _e('Add New Extra', 'fp-esperienze'); ?></h2>
                 <form method="post">
                     <?php wp_nonce_field('fp_extra_action', 'fp_extra_nonce'); ?>
                     <input type="hidden" name="action" value="create">
-                    
+
                     <table class="form-table">
                         <tr>
                             <th scope="row">
@@ -1357,69 +2537,186 @@ class MenuManager {
                             </td>
                         </tr>
                     </table>
-                    
+
                     <?php submit_button(__('Add Extra', 'fp-esperienze')); ?>
                 </form>
             </div>
-            
+
             <h2><?php _e('Existing Extras', 'fp-esperienze'); ?></h2>
-            <table class="wp-list-table widefat fixed striped">
+
+            <form method="get">
+                <input type="hidden" name="page" value="fp-esperienze-addons" />
+                <?php if ('all' !== $view_filter) : ?>
+                    <input type="hidden" name="view" value="<?php echo esc_attr($view_filter); ?>" />
+                <?php endif; ?>
+                <p class="search-box">
+                    <label class="screen-reader-text" for="extra-search-input"><?php esc_html_e('Search extras', 'fp-esperienze'); ?></label>
+                    <input type="search" id="extra-search-input" name="s" value="<?php echo esc_attr($search_term); ?>" />
+                    <input type="submit" class="button" value="<?php esc_attr_e('Search extras', 'fp-esperienze'); ?>" />
+                </p>
+            </form>
+
+            <?php if (!empty($views)) : ?>
+                <ul class="subsubsub">
+                    <?php
+                    $view_links = [];
+                    foreach ($views as $view_key => $view) {
+                        $view_links[] = sprintf(
+                            '<li class="%1$s"><a href="%2$s"%3$s>%4$s <span class="count">(%5$s)</span></a></li>',
+                            esc_attr($view['key']),
+                            esc_url($view['url']),
+                            $view['current'] ? ' class="current"' : '',
+                            esc_html($view['label']),
+                            esc_html(number_format_i18n((int) $view['count']))
+                        );
+                    }
+
+                    echo implode(' | ', $view_links); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+                    ?>
+                </ul>
+            <?php endif; ?>
+
+            <form method="post" id="fp-extras-bulk-form">
+                <?php wp_nonce_field('fp_extra_action', 'fp_extra_nonce'); ?>
+                <input type="hidden" name="action" value="bulk-delete">
+
+                <div class="tablenav top">
+                    <div class="alignleft actions bulkactions">
+                        <label class="screen-reader-text" for="bulk-action-selector-top"><?php esc_html_e('Select bulk action', 'fp-esperienze'); ?></label>
+                        <select name="bulk_action" id="bulk-action-selector-top">
+                            <option value=""><?php esc_html_e('Bulk actions', 'fp-esperienze'); ?></option>
+                            <option value="delete"><?php esc_html_e('Delete', 'fp-esperienze'); ?></option>
+                        </select>
+                        <button type="submit" class="button action"><?php esc_html_e('Apply', 'fp-esperienze'); ?></button>
+                    </div>
+                    <?php if (!empty($pagination_links)) : ?>
+                        <div class="tablenav-pages"><?php echo wp_kses_post($pagination_links); ?></div>
+                    <?php endif; ?>
+                    <br class="clear" />
+                </div>
+
+                <table class="wp-list-table widefat fixed striped table-view-list">
                 <thead>
                     <tr>
-                        <th><?php _e('Name', 'fp-esperienze'); ?></th>
-                        <th><?php _e('Description', 'fp-esperienze'); ?></th>
-                        <th><?php _e('Price', 'fp-esperienze'); ?></th>
-                        <th><?php _e('Billing Type', 'fp-esperienze'); ?></th>
-                        <th><?php _e('Tax Class', 'fp-esperienze'); ?></th>
-                        <th><?php _e('Max Qty', 'fp-esperienze'); ?></th>
-                        <th><?php _e('Required', 'fp-esperienze'); ?></th>
-                        <th><?php _e('Active', 'fp-esperienze'); ?></th>
-                        <th><?php _e('Actions', 'fp-esperienze'); ?></th>
+                        <td id="cb" class="manage-column column-cb check-column">
+                            <input type="checkbox" id="cb-select-all-1" />
+                        </td>
+                        <?php foreach ($extras_columns as $column_key => $column_definition) : ?>
+                            <?php if ('cb' === $column_key || in_array($column_key, $hidden_extras_columns, true)) { continue; } ?>
+                            <th scope="col" class="manage-column column-<?php echo esc_attr($column_key); ?>">
+                                <?php echo esc_html($column_definition['label']); ?>
+                            </th>
+                        <?php endforeach; ?>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php if (empty($extras)) : ?>
-                        <tr>
-                            <td colspan="9"><?php _e('No extras found.', 'fp-esperienze'); ?></td>
+                    <?php if ($page_count === 0) : ?>
+                        <tr class="no-items">
+                            <td class="colspanchange" colspan="<?php echo esc_attr($visible_extras_columns); ?>"><?php esc_html_e('No extras match the current filters.', 'fp-esperienze'); ?></td>
                         </tr>
                     <?php else : ?>
-                        <?php foreach ($extras as $extra) : ?>
+                        <?php foreach ($paged_extras as $extra) : ?>
                             <tr>
-                                <td><strong><?php echo esc_html($extra->name); ?></strong></td>
-                                <td><?php echo esc_html(wp_trim_words($extra->description, 10)); ?></td>
-                                <td><?php echo wc_price($extra->price); ?></td>
-                                <td><?php echo esc_html($extra->billing_type === 'per_person' ? __('Per Person', 'fp-esperienze') : __('Per Booking', 'fp-esperienze')); ?></td>
-                                <td><?php echo esc_html($tax_classes[$extra->tax_class] ?? __('Standard', 'fp-esperienze')); ?></td>
-                                <td><?php echo esc_html($extra->max_quantity); ?></td>
-                                <td><?php echo $extra->is_required ? '✓' : '—'; ?></td>
-                                <td><?php echo $extra->is_active ? '✓' : '—'; ?></td>
-                                <td>
-                                    <button type="button" class="button button-small fp-edit-extra" 
-                                            data-id="<?php echo esc_attr($extra->id); ?>"
-                                            data-name="<?php echo esc_attr($extra->name); ?>"
-                                            data-description="<?php echo esc_attr($extra->description); ?>"
-                                            data-price="<?php echo esc_attr($extra->price); ?>"
-                                            data-billing-type="<?php echo esc_attr($extra->billing_type); ?>"
-                                            data-tax-class="<?php echo esc_attr($extra->tax_class); ?>"
-                                            data-max-quantity="<?php echo esc_attr($extra->max_quantity); ?>"
-                                            data-is-required="<?php echo esc_attr($extra->is_required); ?>"
-                                            data-is-active="<?php echo esc_attr($extra->is_active); ?>">
-                                        <?php _e('Edit', 'fp-esperienze'); ?>
-                                    </button>
-                                    <form method="post" style="display: inline-block;" onsubmit="return confirm('<?php esc_attr_e('Are you sure you want to delete this extra?', 'fp-esperienze'); ?>');">
-                                        <?php wp_nonce_field('fp_extra_action', 'fp_extra_nonce'); ?>
-                                        <input type="hidden" name="action" value="delete">
-                                        <input type="hidden" name="extra_id" value="<?php echo esc_attr($extra->id); ?>">
-                                        <input type="submit" class="button button-small button-link-delete" value="<?php esc_attr_e('Delete', 'fp-esperienze'); ?>">
-                                    </form>
-                                </td>
+                                <th scope="row" class="check-column">
+                                    <input type="checkbox" name="extra_ids[]" value="<?php echo esc_attr($extra->id); ?>" />
+                                </th>
+                                <?php foreach ($extras_columns as $column_key => $column_definition) : ?>
+                                    <?php if ('cb' === $column_key || in_array($column_key, $hidden_extras_columns, true)) { continue; } ?>
+                                    <td data-colname="<?php echo esc_attr($column_definition['label']); ?>" class="column-<?php echo esc_attr($column_key); ?>">
+                                        <?php
+                                        switch ($column_key) {
+                                            case 'name':
+                                                echo '<strong>' . esc_html($extra->name) . '</strong>';
+                                                break;
+                                            case 'description':
+                                                echo esc_html(wp_trim_words($extra->description, 15));
+                                                break;
+                                            case 'price':
+                                                if (function_exists('wc_price')) {
+                                                    echo wp_kses_post(wc_price((float) $extra->price));
+                                                } else {
+                                                    echo esc_html(number_format_i18n((float) $extra->price, 2));
+                                                }
+                                                break;
+                                            case 'billing':
+                                                echo esc_html($extra->billing_type === 'per_person' ? __('Per Person', 'fp-esperienze') : __('Per Booking', 'fp-esperienze'));
+                                                break;
+                                            case 'tax_class':
+                                                echo esc_html($tax_classes[$extra->tax_class] ?? __('Standard', 'fp-esperienze'));
+                                                break;
+                                            case 'max_qty':
+                                                echo esc_html(number_format_i18n((int) $extra->max_quantity));
+                                                break;
+                                            case 'required':
+                                                echo !empty($extra->is_required)
+                                                    ? esc_html__('Yes', 'fp-esperienze')
+                                                    : esc_html__('No', 'fp-esperienze');
+                                                break;
+                                            case 'active':
+                                                echo !empty($extra->is_active)
+                                                    ? esc_html__('Active', 'fp-esperienze')
+                                                    : esc_html__('Inactive', 'fp-esperienze');
+                                                break;
+                                            case 'actions':
+                                                ?>
+                                                <button type="button" class="button button-small fp-edit-extra"
+                                                        data-id="<?php echo esc_attr($extra->id); ?>"
+                                                        data-name="<?php echo esc_attr($extra->name); ?>"
+                                                        data-description="<?php echo esc_attr($extra->description); ?>"
+                                                        data-price="<?php echo esc_attr($extra->price); ?>"
+                                                        data-billing-type="<?php echo esc_attr($extra->billing_type); ?>"
+                                                        data-tax-class="<?php echo esc_attr($extra->tax_class); ?>"
+                                                        data-max-quantity="<?php echo esc_attr($extra->max_quantity); ?>"
+                                                        data-is-required="<?php echo esc_attr($extra->is_required); ?>"
+                                                        data-is-active="<?php echo esc_attr($extra->is_active); ?>">
+                                                    <?php _e('Edit', 'fp-esperienze'); ?>
+                                                </button>
+                                                <button type="button"
+                                                        class="button button-small button-link-delete fp-delete-extra"
+                                                        data-extra-id="<?php echo esc_attr($extra->id); ?>"
+                                                        data-extra-name="<?php echo esc_attr($extra->name); ?>">
+                                                    <?php esc_html_e('Delete', 'fp-esperienze'); ?>
+                                                </button>
+                                                <?php
+                                                break;
+                                        }
+                                        ?>
+                                    </td>
+                                <?php endforeach; ?>
                             </tr>
                         <?php endforeach; ?>
                     <?php endif; ?>
                 </tbody>
-            </table>
+                <tfoot>
+                    <tr>
+                        <td class="manage-column column-cb check-column">
+                            <input type="checkbox" id="cb-select-all-2" />
+                        </td>
+                        <?php foreach ($extras_columns as $column_key => $column_definition) : ?>
+                            <?php if ('cb' === $column_key || in_array($column_key, $hidden_extras_columns, true)) { continue; } ?>
+                            <th scope="col" class="manage-column column-<?php echo esc_attr($column_key); ?>">
+                                <?php echo esc_html($column_definition['label']); ?>
+                            </th>
+                        <?php endforeach; ?>
+                    </tr>
+                </tfoot>
+                </table>
+
+                <div class="tablenav bottom">
+                    <?php if (!empty($pagination_links)) : ?>
+                        <div class="tablenav-pages"><?php echo wp_kses_post($pagination_links); ?></div>
+                    <?php endif; ?>
+                    <br class="clear" />
+                </div>
+            </form>
+
+            <form id="fp-extras-delete-form" method="post" style="display: none;">
+                <?php wp_nonce_field('fp_extra_action', 'fp_extra_nonce'); ?>
+                <input type="hidden" name="action" value="delete">
+                <input type="hidden" name="extra_id" id="fp-delete-extra-id" value="">
+            </form>
         </div>
-        
+
         <!-- Edit Extra Modal -->
         <div id="fp-edit-extra-modal" style="display: none;">
             <form method="post" id="fp-edit-extra-form">
@@ -1517,14 +2814,27 @@ class MenuManager {
                 $('#edit_extra_max_quantity').val(data.maxQuantity);
                 $('#edit_extra_is_required').prop('checked', data.isRequired == '1');
                 $('#edit_extra_is_active').prop('checked', data.isActive == '1');
-                
+
                 // Show modal using WordPress thickbox
                 tb_show(fpEsperienzeAdmin.i18n.editExtra, '#TB_inline?inlineId=fp-edit-extra-modal&width=600&height=500');
             });
-            
+
             // Submit edit form
             $('#fp-edit-extra-form').submit(function() {
                 tb_remove();
+            });
+
+            // Delete extra functionality
+            $('.fp-delete-extra').on('click', function() {
+                var extraId = $(this).data('extraId');
+                var extraName = $(this).data('extraName') || '';
+                var template = fpEsperienzeAdmin.i18n.confirmDeleteExtra || 'Are you sure you want to delete this extra?';
+                var message = template.replace('%s', extraName);
+
+                if (confirm(message)) {
+                    $('#fp-delete-extra-id').val(extraId);
+                    $('#fp-extras-delete-form').trigger('submit');
+                }
             });
         });
         </script>
@@ -1608,321 +2918,299 @@ class MenuManager {
         $experience_products = $this->getExperienceProducts($product_filter);
         
         ?>
-        <div class="wrap">
-            <h1><?php _e('Gift Vouchers', 'fp-esperienze'); ?></h1>
-            
-            <!-- Enhanced Filters -->
-            <div class="tablenav top">
-                <form method="get" style="display: inline-block;">
-                    <input type="hidden" name="page" value="fp-esperienze-vouchers">
-                    
-                    <select name="status">
-                        <option value=""><?php _e('All Statuses', 'fp-esperienze'); ?></option>
-                        <option value="active" <?php selected($status_filter, 'active'); ?>><?php _e('Active', 'fp-esperienze'); ?></option>
-                        <option value="redeemed" <?php selected($status_filter, 'redeemed'); ?>><?php _e('Redeemed', 'fp-esperienze'); ?></option>
-                        <option value="expired" <?php selected($status_filter, 'expired'); ?>><?php _e('Expired', 'fp-esperienze'); ?></option>
-                        <option value="void" <?php selected($status_filter, 'void'); ?>><?php _e('Void', 'fp-esperienze'); ?></option>
-                    </select>
-                    
-                    <select name="product_id" class="fp-product-search" data-placeholder="<?php esc_attr_e('All Products', 'fp-esperienze'); ?>">
-                        <option value=""><?php _e('All Products', 'fp-esperienze'); ?></option>
-                        <?php foreach ($experience_products as $product): ?>
-                            <option value="<?php echo esc_attr($product->ID); ?>" <?php selected($product_filter, $product->ID); ?>>
-                                <?php echo esc_html($product->post_title); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                    
-                    <input type="date" 
-                           name="date_from" 
-                           value="<?php echo esc_attr($date_from); ?>" 
-                           placeholder="<?php esc_attr_e('From date', 'fp-esperienze'); ?>">
-                    
-                    <input type="date" 
-                           name="date_to" 
-                           value="<?php echo esc_attr($date_to); ?>" 
-                           placeholder="<?php esc_attr_e('To date', 'fp-esperienze'); ?>">
-                    
-                    <input type="text" 
-                           name="search" 
-                           value="<?php echo esc_attr($search); ?>" 
-                           placeholder="<?php esc_attr_e('Search vouchers...', 'fp-esperienze'); ?>">
-                    
-                    <input type="submit" class="button" value="<?php esc_attr_e('Filter', 'fp-esperienze'); ?>">
-                    
-                    <?php if (!empty($status_filter) || !empty($product_filter) || !empty($date_from) || !empty($date_to) || !empty($search)): ?>
-                        <a href="<?php echo esc_url(admin_url('admin.php?page=fp-esperienze-vouchers')); ?>" class="button"><?php _e('Clear', 'fp-esperienze'); ?></a>
-                    <?php endif; ?>
-                </form>
-                
-                <div class="alignright">
-                    <span class="displaying-num"><?php printf(__('%d items', 'fp-esperienze'), $total_items); ?></span>
-                </div>
-            </div>
-            
-            <!-- Bulk Actions Form -->
-            <form id="vouchers-form" method="post">
-                <?php wp_nonce_field('bulk_voucher_action', 'bulk_nonce'); ?>
-                
-                <div class="tablenav top">
-                    <div class="alignleft actions bulkactions">
-                        <select name="bulk_action" id="bulk-action-selector-top">
-                            <option value=""><?php _e('Bulk actions', 'fp-esperienze'); ?></option>
-                            <option value="bulk_void"><?php _e('Void', 'fp-esperienze'); ?></option>
-                            <option value="bulk_resend"><?php _e('Resend emails', 'fp-esperienze'); ?></option>
-                            <option value="bulk_extend"><?php _e('Extend expiration', 'fp-esperienze'); ?></option>
-                        </select>
-                        
-                        <div id="bulk-extend-options" style="display: none; margin-top: 5px;">
-                            <input type="number" name="bulk_extend_months" min="1" max="60" value="12" class="fp-narrow-input">
-                            <label><?php _e('months', 'fp-esperienze'); ?></label>
-                        </div>
-                        
-                        <input type="submit" class="button action" value="<?php esc_attr_e('Apply', 'fp-esperienze'); ?>" onclick="return confirmBulkAction();">
-                    </div>
-                </div>
+        <?php AdminComponents::skipLink('fp-admin-main-content'); ?>
+        <div class="wrap fp-admin-page" id="fp-admin-main-content" tabindex="-1">
+            <?php
+            AdminComponents::pageHeader([
+                'title' => __('Gift Vouchers', 'fp-esperienze'),
+                'lead'  => __('Monitor voucher usage, resend delivery emails, and keep expirations aligned with your policies.', 'fp-esperienze'),
+                'actions' => [
+                    [
+                        'label'   => __('Open reports', 'fp-esperienze'),
+                        'url'     => admin_url('admin.php?page=fp-esperienze-reports'),
+                        'variant' => 'secondary',
+                    ],
+                ],
+            ]);
+            ?>
 
-                <!-- Vouchers Table -->
-                <table class="wp-list-table widefat fixed striped">
-                    <thead>
-                        <tr>
-                            <td class="manage-column column-cb check-column">
-                                <input id="cb-select-all-1" type="checkbox">
-                            </td>
-                            <th><?php _e('Code', 'fp-esperienze'); ?></th>
-                            <th><?php _e('Product', 'fp-esperienze'); ?></th>
-                            <th><?php _e('Recipient', 'fp-esperienze'); ?></th>
-                            <th><?php _e('Value', 'fp-esperienze'); ?></th>
-                            <th><?php _e('Status', 'fp-esperienze'); ?></th>
-                            <th><?php _e('Expires', 'fp-esperienze'); ?></th>
-                            <th><?php _e('Created', 'fp-esperienze'); ?></th>
-                            <th><?php _e('Actions', 'fp-esperienze'); ?></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if (empty($vouchers)): ?>
-                            <tr>
-                                <td colspan="9" class="fp-centered-cell">
-                                    <?php _e('No vouchers found.', 'fp-esperienze'); ?>
-                                </td>
-                            </tr>
-                        <?php else: ?>
-                            <?php foreach ($vouchers as $voucher): ?>
-                                <?php
-                                $product = wc_get_product($voucher->product_id);
-                                $product_name = $product ? $product->get_name() : __('Product not found', 'fp-esperienze');
-                                
-                                $status_class = '';
-                                switch ($voucher->status) {
-                                    case 'active':
-                                        $status_class = 'color: #46b450;';
-                                        break;
-                                    case 'redeemed':
-                                        $status_class = 'color: #00a0d2;';
-                                        break;
-                                    case 'expired':
-                                        $status_class = 'color: #dc3232;';
-                                        break;
-                                    case 'void':
-                                        $status_class = 'color: #666;';
-                                        break;
-                                }
-                                
-                                $value_display = $voucher->amount_type === 'full' 
-                                    ? __('Full Experience', 'fp-esperienze')
-                                    : wc_price($voucher->amount);
+            <div class="fp-admin-stack">
+                <?php
+                AdminComponents::openCard([
+                    'title' => __('Filter vouchers', 'fp-esperienze'),
+                ]);
+                ?>
+                <form method="get" class="fp-admin-form fp-admin-form--filters">
+                    <input type="hidden" name="page" value="fp-esperienze-gift-vouchers" />
+                    <?php
+                    AdminComponents::formRow([
+                        'label' => __('Status', 'fp-esperienze'),
+                        'for'   => 'fp-voucher-status',
+                    ], function () use ($status_filter) {
+                        ?>
+                        <select id="fp-voucher-status" name="status">
+                            <option value=""><?php esc_html_e('All statuses', 'fp-esperienze'); ?></option>
+                            <option value="active" <?php selected($status_filter, 'active'); ?>><?php esc_html_e('Active', 'fp-esperienze'); ?></option>
+                            <option value="redeemed" <?php selected($status_filter, 'redeemed'); ?>><?php esc_html_e('Redeemed', 'fp-esperienze'); ?></option>
+                            <option value="expired" <?php selected($status_filter, 'expired'); ?>><?php esc_html_e('Expired', 'fp-esperienze'); ?></option>
+                            <option value="void" <?php selected($status_filter, 'void'); ?>><?php esc_html_e('Void', 'fp-esperienze'); ?></option>
+                        </select>
+                        <?php
+                    });
+
+                    AdminComponents::formRow([
+                        'label' => __('Experience', 'fp-esperienze'),
+                        'for'   => 'fp-voucher-product',
+                    ], function () use ($experience_products, $product_filter) {
+                        ?>
+                        <select id="fp-voucher-product" name="product_id" class="fp-product-search" data-placeholder="<?php esc_attr_e('All products', 'fp-esperienze'); ?>">
+                            <option value=""><?php esc_html_e('All products', 'fp-esperienze'); ?></option>
+                            <?php foreach ($experience_products as $product) : ?>
+                                <option value="<?php echo esc_attr($product->ID); ?>" <?php selected($product_filter, $product->ID); ?>>
+                                    <?php echo esc_html($product->post_title); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <?php
+                    });
+
+                    AdminComponents::formRow([
+                        'label' => __('From date', 'fp-esperienze'),
+                        'for'   => 'fp-voucher-date-from',
+                    ], function () use ($date_from) {
+                        ?>
+                        <input type="date" id="fp-voucher-date-from" name="date_from" value="<?php echo esc_attr($date_from); ?>" />
+                        <?php
+                    });
+
+                    AdminComponents::formRow([
+                        'label' => __('To date', 'fp-esperienze'),
+                        'for'   => 'fp-voucher-date-to',
+                    ], function () use ($date_to) {
+                        ?>
+                        <input type="date" id="fp-voucher-date-to" name="date_to" value="<?php echo esc_attr($date_to); ?>" />
+                        <?php
+                    });
+
+                    AdminComponents::formRow([
+                        'label' => __('Search', 'fp-esperienze'),
+                        'for'   => 'fp-voucher-search',
+                        'description' => __('Code, recipient name or email', 'fp-esperienze'),
+                    ], function () use ($search) {
+                        ?>
+                        <input type="search" id="fp-voucher-search" name="search" value="<?php echo esc_attr($search); ?>" placeholder="<?php esc_attr_e('Search vouchers…', 'fp-esperienze'); ?>" />
+                        <?php
+                    });
+
+                    ?>
+                    <div class="fp-admin-form__actions">
+                        <button type="submit" class="button button-primary"><?php esc_html_e('Apply filters', 'fp-esperienze'); ?></button>
+                        <a class="button button-secondary" href="<?php echo esc_url(admin_url('admin.php?page=fp-esperienze-gift-vouchers')); ?>"><?php esc_html_e('Reset', 'fp-esperienze'); ?></a>
+                    </div>
+                </form>
+                <?php AdminComponents::closeCard(); ?>
+
+                <?php
+                $voucher_count_label = sprintf(
+                    _n('%d voucher', '%d vouchers', (int) $total_items, 'fp-esperienze'),
+                    (int) $total_items
+                );
+
+                AdminComponents::openCard([
+                    'title' => __('Voucher catalogue', 'fp-esperienze'),
+                    'meta'  => [$voucher_count_label],
+                ]);
+                ?>
+                <form method="post" class="fp-admin-table-form fp-admin-vouchers-form">
+                    <?php wp_nonce_field('bulk_voucher_action', 'bulk_nonce'); ?>
+                    <input type="hidden" name="page" value="fp-esperienze-gift-vouchers" />
+                    <?php
+                    AdminComponents::toolbar([
+                        'title' => __('Bulk actions', 'fp-esperienze'),
+                        'aria_label' => __('Voucher bulk tools', 'fp-esperienze'),
+                        'start' => [
+                            function () {
                                 ?>
+                                <label class="screen-reader-text" for="fp-voucher-bulk-action"><?php esc_html_e('Select bulk action', 'fp-esperienze'); ?></label>
+                                <select id="fp-voucher-bulk-action" name="bulk_action">
+                                    <option value=""><?php esc_html_e('Bulk actions', 'fp-esperienze'); ?></option>
+                                    <option value="bulk_void"><?php esc_html_e('Void vouchers', 'fp-esperienze'); ?></option>
+                                    <option value="bulk_resend"><?php esc_html_e('Resend emails', 'fp-esperienze'); ?></option>
+                                    <option value="bulk_extend"><?php esc_html_e('Extend expiration', 'fp-esperienze'); ?></option>
+                                </select>
+                                <span class="fp-admin-bulk-extend" id="fp-voucher-bulk-extend" hidden>
+                                    <label class="screen-reader-text" for="fp-voucher-bulk-extend-months"><?php esc_html_e('Months to extend', 'fp-esperienze'); ?></label>
+                                    <input type="number" id="fp-voucher-bulk-extend-months" name="bulk_extend_months" class="small-text" min="1" max="60" value="12" />
+                                    <span class="fp-admin-helper-text"><?php esc_html_e('months', 'fp-esperienze'); ?></span>
+                                </span>
+                                <?php
+                            },
+                        ],
+                        'end' => [
+                            function () use ($total_pages, $current_page, $total_items) {
+                                ?>
+                                <span class="fp-admin-helper-text"><?php echo esc_html(sprintf(__('Page %1$d of %2$d • %3$d total', 'fp-esperienze'), max(1, (int) $current_page), max(1, (int) $total_pages), (int) $total_items)); ?></span>
+                                <?php
+                            },
+                        ],
+                    ]);
+                    ?>
+                    <div class="fp-admin-table-actions">
+                        <button type="submit" class="button button-secondary" data-action="submit-bulk"><?php esc_html_e('Run action', 'fp-esperienze'); ?></button>
+                    </div>
+
+                    <table class="wp-list-table widefat fixed striped fp-admin-table fp-admin-table--striped">
+                        <thead>
+                            <tr>
+                                <td class="manage-column column-cb check-column">
+                                    <input type="checkbox" id="fp-vouchers-select-all" />
+                                </td>
+                                <th scope="col"><?php esc_html_e('Code', 'fp-esperienze'); ?></th>
+                                <th scope="col"><?php esc_html_e('Product', 'fp-esperienze'); ?></th>
+                                <th scope="col"><?php esc_html_e('Recipient', 'fp-esperienze'); ?></th>
+                                <th scope="col"><?php esc_html_e('Value', 'fp-esperienze'); ?></th>
+                                <th scope="col"><?php esc_html_e('Status', 'fp-esperienze'); ?></th>
+                                <th scope="col"><?php esc_html_e('Expires', 'fp-esperienze'); ?></th>
+                                <th scope="col"><?php esc_html_e('Created', 'fp-esperienze'); ?></th>
+                                <th scope="col"><?php esc_html_e('Actions', 'fp-esperienze'); ?></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (empty($vouchers)) : ?>
                                 <tr>
-                                    <th scope="row" class="check-column">
-                                        <input type="checkbox" name="voucher_ids[]" value="<?php echo esc_attr($voucher->id); ?>">
-                                    </th>
-                                    <td>
-                                        <strong><?php echo esc_html($voucher->code); ?></strong>
-                                    </td>
-                                    <td>
-                                        <?php echo esc_html($product_name); ?>
-                                        <?php if ($voucher->order_id): ?>
-                                            <br><small><a href="<?php echo esc_url(admin_url('post.php?post=' . $voucher->order_id . '&action=edit')); ?>">
-                                                <?php printf(__('Order #%d', 'fp-esperienze'), $voucher->order_id); ?>
-                                            </a></small>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td>
-                                        <strong><?php echo esc_html($voucher->recipient_name); ?></strong>
-                                        <br><small><?php echo esc_html($voucher->recipient_email); ?></small>
-                                        <?php if (!empty($voucher->sender_name)): ?>
-                                            <br><small><?php printf(__('From: %s', 'fp-esperienze'), esc_html($voucher->sender_name)); ?></small>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td><?php echo $value_display; ?></td>
-                                    <td>
-                                        <span style="<?php echo esc_attr($status_class); ?>font-weight: 600;">
-                                            <?php echo esc_html(ucfirst($voucher->status)); ?>
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <?php echo esc_html(\fp_esperienze_wp_date(get_option('date_format'), strtotime($voucher->expires_on))); ?>
-                                        <?php if (strtotime($voucher->expires_on) < time() && $voucher->status === 'active'): ?>
-                                            <br><small class="fp-error-text"><?php _e('Expired', 'fp-esperienze'); ?></small>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td>
-                                        <?php echo esc_html(\fp_esperienze_wp_date(get_option('date_format'), strtotime($voucher->created_at))); ?>
-                                    </td>
-                                    <td>
-                                        <?php if (!empty($voucher->pdf_path) && file_exists($voucher->pdf_path)): ?>
-                                            <a href="<?php echo esc_url(admin_url('admin.php?page=fp-esperienze-vouchers&action=download_pdf&voucher_id=' . $voucher->id)); ?>" 
-                                               class="button button-small"><?php _e('Download PDF', 'fp-esperienze'); ?></a>
-                                            <button type="button" 
-                                                    class="button button-small fp-copy-pdf-link" 
-                                                    data-voucher-id="<?php echo esc_attr($voucher->id); ?>"
-                                                    title="<?php esc_attr_e('Copy PDF link', 'fp-esperienze'); ?>">
-                                                <?php _e('Copy Link', 'fp-esperienze'); ?>
-                                            </button>
-                                            <br>
-                                        <?php endif; ?>
-                                        
-                                        <?php if ($voucher->status === 'active'): ?>
-                                            <div class="fp-voucher-actions" class="fp-voucher-actions-spacing">
-                                                <!-- Resend Email -->
-                                                <form method="post" style="display: inline-block; margin-right: 4px;">
-                                                    <?php wp_nonce_field('fp_voucher_action', 'fp_voucher_nonce'); ?>
-                                                    <input type="hidden" name="action" value="resend_voucher">
-                                                    <input type="hidden" name="voucher_id" value="<?php echo esc_attr($voucher->id); ?>">
-                                                    <input type="submit" 
-                                                           class="button button-small" 
-                                                           value="<?php esc_attr_e('Resend', 'fp-esperienze'); ?>"
-                                                           onclick="return confirm(fpEsperienzeAdmin.i18n.resendVoucherEmail)">>
-                                                </form>
-                                                
-                                                <!-- Extend Expiration -->
-                                                <form method="post" style="display: inline-block; margin-right: 4px;">
-                                                    <?php wp_nonce_field('fp_voucher_action', 'fp_voucher_nonce'); ?>
-                                                    <input type="hidden" name="action" value="extend_voucher">
-                                                    <input type="hidden" name="voucher_id" value="<?php echo esc_attr($voucher->id); ?>">
-                                                    <input type="number" name="extend_months" min="1" max="60" value="12" style="width: 50px;" title="<?php esc_attr_e('Months to extend', 'fp-esperienze'); ?>">
-                                                    <input type="submit" 
-                                                           class="button button-small" 
-                                                           value="<?php esc_attr_e('Extend', 'fp-esperienze'); ?>"
-                                                           onclick="return confirm(fpEsperienzeAdmin.i18n.extendVoucherExpiration)">>
-                                                </form>
-                                                
-                                                <!-- Void Voucher -->
-                                                <form method="post" style="display: inline-block;">
-                                                    <?php wp_nonce_field('fp_voucher_action', 'fp_voucher_nonce'); ?>
-                                                    <input type="hidden" name="action" value="void_voucher">
-                                                    <input type="hidden" name="voucher_id" value="<?php echo esc_attr($voucher->id); ?>">
-                                                    <input type="submit" 
-                                                           class="button button-small button-link-delete" 
-                                                           value="<?php esc_attr_e('Void', 'fp-esperienze'); ?>"
-                                                           onclick="return confirm(fpEsperienzeAdmin.i18n.voidVoucher)">>
-                                                </form>
-                                            </div>
-                                        <?php endif; ?>
+                                    <td colspan="9">
+                                        <?php
+                                        AdminComponents::notice([
+                                            'type'    => 'info',
+                                            'title'   => __('No vouchers found', 'fp-esperienze'),
+                                            'message' => __('Adjust the filters or create a voucher from the storefront checkout.', 'fp-esperienze'),
+                                        ]);
+                                        ?>
                                     </td>
                                 </tr>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
-            </form>
-            
-            <!-- Pagination -->
-            <?php if ($total_pages > 1): ?>
-                <div class="tablenav bottom">
-                    <div class="tablenav-pages">
-                        <span class="displaying-num"><?php printf(__('%d items', 'fp-esperienze'), $total_items); ?></span>
-                        <span class="pagination-links">
-                            <?php
-                            $page_links = paginate_links([
-                                'base' => add_query_arg('paged', '%#%'),
-                                'format' => '',
-                                'prev_text' => '&laquo;',
-                                'next_text' => '&raquo;',
-                                'total' => $total_pages,
-                                'current' => $current_page,
-                                'type' => 'array'
-                            ]);
-                            
-                            if ($page_links) {
-                                echo implode("\n", $page_links);
-                            }
-                            ?>
-                        </span>
-                    </div>
-                </div>
-            <?php endif; ?>
-        </div>
-        
-        <!-- JavaScript for enhanced UX -->
-        <script>
-        jQuery(document).ready(function($) {
-            // Handle "select all" checkbox
-            $('#cb-select-all-1').click(function() {
-                $('input[name="voucher_ids[]"]').prop('checked', this.checked);
-            });
-            
-            // Show/hide bulk extend options
-            $('#bulk-action-selector-top').change(function() {
-                if ($(this).val() === 'bulk_extend') {
-                    $('#bulk-extend-options').show();
-                } else {
-                    $('#bulk-extend-options').hide();
+                            <?php else : ?>
+                                <?php foreach ($vouchers as $voucher) :
+                                    $product      = wc_get_product($voucher->product_id);
+                                    $product_name = $product ? $product->get_name() : __('Product not found', 'fp-esperienze');
+                                    $value_display = $voucher->amount_type === 'full'
+                                        ? __('Full experience', 'fp-esperienze')
+                                        : wc_price($voucher->amount);
+                                    $status_key = (string) $voucher->status;
+                                    $status_variant = [
+                                        'active'   => 'success',
+                                        'redeemed' => 'info',
+                                        'expired'  => 'warning',
+                                        'void'     => 'danger',
+                                    ][$status_key] ?? 'warning';
+                                    $download_url = admin_url('admin.php?page=fp-esperienze-gift-vouchers&action=download_pdf&voucher_id=' . (int) $voucher->id);
+                                    ?>
+                                    <tr>
+                                        <th scope="row" class="check-column">
+                                            <input type="checkbox" name="voucher_ids[]" value="<?php echo esc_attr((string) $voucher->id); ?>" />
+                                        </th>
+                                        <td>
+                                            <strong><?php echo esc_html($voucher->code); ?></strong>
+                                        </td>
+                                        <td>
+                                            <span><?php echo esc_html($product_name); ?></span>
+                                            <?php if (!empty($voucher->order_id)) : ?>
+                                                <br />
+                                                <a class="fp-admin-helper-text" href="<?php echo esc_url(admin_url('post.php?post=' . (int) $voucher->order_id . '&action=edit')); ?>">
+                                                    <?php printf(esc_html__('Order #%d', 'fp-esperienze'), (int) $voucher->order_id); ?>
+                                                </a>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td>
+                                            <strong><?php echo esc_html($voucher->recipient_name); ?></strong><br />
+                                            <span class="fp-admin-helper-text"><?php echo esc_html($voucher->recipient_email); ?></span>
+                                            <?php if (!empty($voucher->sender_name)) : ?>
+                                                <br />
+                                                <span class="fp-admin-helper-text"><?php printf(esc_html__('From: %s', 'fp-esperienze'), esc_html($voucher->sender_name)); ?></span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td><?php echo wp_kses_post($value_display); ?></td>
+                                        <td>
+                                            <span class="fp-admin-badge fp-admin-badge--<?php echo esc_attr($status_variant); ?>">
+                                                <?php echo esc_html(ucfirst($status_key)); ?>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span><?php echo esc_html(\fp_esperienze_wp_date(get_option('date_format'), strtotime((string) $voucher->expires_on))); ?></span>
+                                            <?php if (strtotime((string) $voucher->expires_on) < time() && $status_key === 'active') : ?>
+                                                <br />
+                                                <span class="fp-admin-helper-text fp-admin-helper-text--danger"><?php esc_html_e('Expired', 'fp-esperienze'); ?></span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td><?php echo esc_html(\fp_esperienze_wp_date(get_option('date_format'), strtotime((string) $voucher->created_at))); ?></td>
+                                        <td>
+                                            <div class="fp-admin-table-actions">
+                                                <?php if (!empty($voucher->pdf_path) && file_exists($voucher->pdf_path)) : ?>
+                                                    <a class="button button-secondary button-small" href="<?php echo esc_url($download_url); ?>">
+                                                        <?php esc_html_e('Download PDF', 'fp-esperienze'); ?>
+                                                    </a>
+                                                    <button type="button" class="button button-small fp-voucher-copy" data-download-url="<?php echo esc_url($download_url); ?>">
+                                                        <?php esc_html_e('Copy link', 'fp-esperienze'); ?>
+                                                    </button>
+                                                <?php endif; ?>
+
+                                                <?php if ($status_key === 'active') : ?>
+                                                    <form method="post" class="fp-voucher-action-form" data-confirm="resendVoucherEmail">
+                                                        <?php wp_nonce_field('fp_voucher_action', 'fp_voucher_nonce'); ?>
+                                                        <input type="hidden" name="action" value="resend_voucher" />
+                                                        <input type="hidden" name="voucher_id" value="<?php echo esc_attr((string) $voucher->id); ?>" />
+                                                        <button type="submit" class="button button-secondary button-small"><?php esc_html_e('Resend', 'fp-esperienze'); ?></button>
+                                                    </form>
+
+                                                    <form method="post" class="fp-voucher-action-form" data-confirm="extendVoucherExpiration">
+                                                        <?php wp_nonce_field('fp_voucher_action', 'fp_voucher_nonce'); ?>
+                                                        <input type="hidden" name="action" value="extend_voucher" />
+                                                        <input type="hidden" name="voucher_id" value="<?php echo esc_attr((string) $voucher->id); ?>" />
+                                                        <label class="screen-reader-text" for="fp-extend-<?php echo esc_attr((string) $voucher->id); ?>"><?php esc_html_e('Months to extend', 'fp-esperienze'); ?></label>
+                                                        <input type="number" id="fp-extend-<?php echo esc_attr((string) $voucher->id); ?>" name="extend_months" class="small-text" min="1" max="60" value="12" />
+                                                        <button type="submit" class="button button-secondary button-small"><?php esc_html_e('Extend', 'fp-esperienze'); ?></button>
+                                                    </form>
+
+                                                    <form method="post" class="fp-voucher-action-form" data-confirm="voidVoucher">
+                                                        <?php wp_nonce_field('fp_voucher_action', 'fp_voucher_nonce'); ?>
+                                                        <input type="hidden" name="action" value="void_voucher" />
+                                                        <input type="hidden" name="voucher_id" value="<?php echo esc_attr((string) $voucher->id); ?>" />
+                                                        <button type="submit" class="button button-link-delete button-small"><?php esc_html_e('Void', 'fp-esperienze'); ?></button>
+                                                    </form>
+                                                <?php endif; ?>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </form>
+
+                <?php
+                if ($total_pages > 1) {
+                    $page_links = paginate_links([
+                        'base'      => add_query_arg('paged', '%#%'),
+                        'format'    => '',
+                        'current'   => max(1, (int) $current_page),
+                        'total'     => max(1, (int) $total_pages),
+                        'prev_text' => __('Previous', 'fp-esperienze'),
+                        'next_text' => __('Next', 'fp-esperienze'),
+                        'type'      => 'array',
+                    ]);
+
+                    if (!empty($page_links)) {
+                        echo '<nav class="fp-admin-pagination" aria-label="' . esc_attr__('Voucher pagination', 'fp-esperienze') . '">';
+                        foreach ($page_links as $link) {
+                            echo wp_kses_post($link);
+                        }
+                        echo '</nav>';
+                    }
                 }
-            });
-            
-            // Copy PDF link functionality
-            $('.fp-copy-pdf-link').click(function() {
-                var voucherId = $(this).data('voucher-id');
-                var downloadUrl = '<?php echo admin_url('admin.php?page=fp-esperienze-vouchers&action=download_pdf&voucher_id='); ?>' + voucherId;
-                
-                // Copy to clipboard
-                navigator.clipboard.writeText(downloadUrl).then(function() {
-                    alert(fpEsperienzeAdmin.i18n.pdfLinkCopied);
-                }).catch(function() {
-                    // Fallback for older browsers
-                    var textArea = document.createElement('textarea');
-                    textArea.value = downloadUrl;
-                    document.body.appendChild(textArea);
-                    textArea.select();
-                    document.execCommand('copy');
-                    document.body.removeChild(textArea);
-                    alert(fpEsperienzeAdmin.i18n.pdfLinkCopied);
-                });
-            });
-        });
-        
-        function confirmBulkAction() {
-            var action = document.getElementById('bulk-action-selector-top').value;
-            var selectedItems = document.querySelectorAll('input[name="voucher_ids[]"]:checked').length;
-            
-            if (!action) {
-                alert(fpEsperienzeAdmin.i18n.selectAction);
-                return false;
-            }
-            
-            if (selectedItems === 0) {
-                alert(fpEsperienzeAdmin.i18n.selectVouchers);
-                return false;
-            }
-            
-            var message = '';
-            switch (action) {
-                case 'bulk_void':
-                    message = fpEsperienzeAdmin.i18n.confirmVoid;
-                    break;
-                case 'bulk_resend':
-                    message = fpEsperienzeAdmin.i18n.confirmResend;
-                    break;
-                case 'bulk_extend':
-                    var months = document.querySelector('input[name="bulk_extend_months"]').value;
-                    message = fpEsperienzeAdmin.i18n.confirmExtend + ' ' + months + ' ' + fpEsperienzeAdmin.i18n.months;
-                    break;
-            }
-            
-            return confirm(message);
-        }
-        </script>
+
+                AdminComponents::closeCard();
+                ?>
+            </div>
+        </div>
         <?php
     }
     
@@ -2263,7 +3551,7 @@ class MenuManager {
         }
         
         // Return the PDF download URL as JSON for JavaScript to handle
-        $download_url = admin_url('admin.php?page=fp-esperienze-vouchers&action=download_pdf&voucher_id=' . $voucher_id);
+        $download_url = admin_url('admin.php?page=fp-esperienze-gift-vouchers&action=download_pdf&voucher_id=' . $voucher_id);
         
         wp_send_json_success(['url' => $download_url]);
     }
@@ -2344,80 +3632,179 @@ class MenuManager {
     }
 
     /**
+     * Queue a notice to be rendered inside the current admin page.
+     */
+    private function queuePageNotice(string $message, string $type = 'info', ?string $title = null): void {
+        $message = trim($message);
+
+        if ($message === '') {
+            return;
+        }
+
+        $variant = in_array($type, ['info', 'success', 'warning', 'danger'], true) ? $type : 'info';
+
+        $this->queuedPageNotices[] = [
+            'message' => $message,
+            'type'    => $variant,
+            'title'   => $title !== null && $title !== '' ? $title : null,
+        ];
+    }
+
+    /**
+     * Render queued component notices and reset the stack.
+     */
+    private function renderQueuedPageNotices(): void {
+        if ($this->queuedPageNotices === []) {
+            return;
+        }
+
+        foreach ($this->queuedPageNotices as $notice) {
+            AdminComponents::notice([
+                'type'    => $notice['type'] ?? 'info',
+                'message' => esc_html((string) ($notice['message'] ?? '')),
+                'title'   => isset($notice['title']) && $notice['title'] !== null
+                    ? esc_html((string) $notice['title'])
+                    : null,
+            ]);
+        }
+
+        $this->queuedPageNotices = [];
+    }
+
+    /**
      * Closures page
      */
     public function closuresPage(): void {
-        // Handle form submissions
-        if (!empty($_POST)) {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $this->handleClosuresActions();
         }
-        
+
         $closures = OverrideManager::getGlobalClosures();
-        
+        $closure_count = count($closures);
+        $meta = [];
+
+        if ($closure_count > 0) {
+            $meta[] = sprintf(
+                _n('%s closure scheduled', '%s closures scheduled', $closure_count, 'fp-esperienze'),
+                number_format_i18n($closure_count)
+            );
+        }
+
         ?>
-        <div class="wrap">
-            <h1><?php _e('Global Closures Management', 'fp-esperienze'); ?></h1>
-            
-            <div class="fp-closures-form">
-                <h2><?php _e('Add Global Closure', 'fp-esperienze'); ?></h2>
-                <form method="post">
+        <?php AdminComponents::skipLink('fp-admin-main-content'); ?>
+        <div class="wrap fp-admin-page" id="fp-admin-main-content" tabindex="-1">
+            <?php
+            AdminComponents::pageHeader([
+                'title' => __('Availability & Closures', 'fp-esperienze'),
+                'lead'  => __('Schedule global downtime for every published experience and keep the removal history transparent for operators.', 'fp-esperienze'),
+                'meta'  => $meta,
+                'actions' => [
+                    [
+                        'label'   => __('View bookings calendar', 'fp-esperienze'),
+                        'url'     => admin_url('admin.php?page=fp-esperienze-bookings'),
+                        'variant' => 'secondary',
+                    ],
+                ],
+            ]);
+            ?>
+
+            <div class="fp-admin-stack">
+                <?php $this->renderQueuedPageNotices(); ?>
+
+                <?php
+                AdminComponents::openCard([
+                    'title' => __('Add global closure', 'fp-esperienze'),
+                ]);
+                ?>
+                <form method="post" class="fp-admin-form" novalidate>
                     <?php wp_nonce_field('fp_closure_action', 'fp_closure_nonce'); ?>
-                    <input type="hidden" name="action" value="add_closure">
-                    
-                    <table class="form-table">
-                        <tr>
-                            <th scope="row">
-                                <label for="closure_date"><?php _e('Date', 'fp-esperienze'); ?></label>
-                            </th>
-                            <td>
-                                <input type="date" id="closure_date" name="closure_date" required>
-                                <p class="description"><?php _e('Select the date to close for all experiences.', 'fp-esperienze'); ?></p>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th scope="row">
-                                <label for="closure_reason"><?php _e('Reason', 'fp-esperienze'); ?></label>
-                            </th>
-                            <td>
-                                <input type="text" id="closure_reason" name="closure_reason" class="regular-text">
-                                <p class="description"><?php _e('Optional reason for the closure.', 'fp-esperienze'); ?></p>
-                            </td>
-                        </tr>
-                    </table>
-                    
-                    <?php submit_button(__('Add Global Closure', 'fp-esperienze')); ?>
+                    <input type="hidden" name="action" value="add_closure" />
+
+                    <?php
+                    AdminComponents::formRow(
+                        [
+                            'label'       => __('Date', 'fp-esperienze'),
+                            'for'         => 'fp-closure-date',
+                            'required'    => true,
+                            'description' => __('Select the calendar date to close for all experiences.', 'fp-esperienze'),
+                        ],
+                        '<input type="date" id="fp-closure-date" name="closure_date" required>'
+                    );
+
+                    AdminComponents::formRow(
+                        [
+                            'label'       => __('Reason', 'fp-esperienze'),
+                            'for'         => 'fp-closure-reason',
+                            'description' => __('Optional note that will appear in integrations and operator exports.', 'fp-esperienze'),
+                        ],
+                        '<input type="text" id="fp-closure-reason" name="closure_reason" class="regular-text">'
+                    );
+                    ?>
+
+                    <div class="fp-admin-form__actions">
+                        <?php submit_button(__('Add Global Closure', 'fp-esperienze'), 'primary', 'submit', false); ?>
+                    </div>
                 </form>
-            </div>
-            
-            <div class="fp-closures-list">
-                <h2><?php _e('Existing Closures', 'fp-esperienze'); ?></h2>
-                
-                <?php if (empty($closures)): ?>
-                    <p><?php _e('No global closures found.', 'fp-esperienze'); ?></p>
-                <?php else: ?>
-                    <table class="wp-list-table widefat fixed striped">
+                <?php AdminComponents::closeCard(); ?>
+
+                <?php
+                AdminComponents::openCard([
+                    'title' => __('Scheduled closures', 'fp-esperienze'),
+                    'meta'  => $meta,
+                    'muted' => $closure_count === 0,
+                ]);
+                ?>
+
+                <?php if ($closure_count === 0) : ?>
+                    <?php
+                    AdminComponents::notice([
+                        'type'    => 'info',
+                        'message' => __('No global closures are scheduled. Use the form above to block availability on specific dates.', 'fp-esperienze'),
+                    ]);
+                    ?>
+                <?php else : ?>
+                    <table class="fp-admin-table fp-admin-table--striped">
+                        <caption class="screen-reader-text"><?php esc_html_e('List of scheduled global closures', 'fp-esperienze'); ?></caption>
                         <thead>
                             <tr>
-                                <th scope="col"><?php _e('Date', 'fp-esperienze'); ?></th>
-                                <th scope="col"><?php _e('Experience', 'fp-esperienze'); ?></th>
-                                <th scope="col"><?php _e('Reason', 'fp-esperienze'); ?></th>
-                                <th scope="col"><?php _e('Actions', 'fp-esperienze'); ?></th>
+                                <th scope="col"><?php esc_html_e('Date', 'fp-esperienze'); ?></th>
+                                <th scope="col"><?php esc_html_e('Experience', 'fp-esperienze'); ?></th>
+                                <th scope="col"><?php esc_html_e('Reason', 'fp-esperienze'); ?></th>
+                                <th scope="col" class="column-actions"><?php esc_html_e('Actions', 'fp-esperienze'); ?></th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($closures as $closure): ?>
+                            <?php foreach ($closures as $closure) :
+                                $raw_date = $closure->date ?? '';
+                                $timestamp = $raw_date !== '' ? strtotime($raw_date) : false;
+                                $date_display = $timestamp ? \fp_esperienze_wp_date(get_option('date_format'), $timestamp) : $raw_date;
+                                $datetime_attr = $timestamp
+                                    ? (function_exists('wp_date') ? wp_date('Y-m-d', $timestamp) : date_i18n('Y-m-d', $timestamp))
+                                    : $raw_date;
+                                $experience_name = $closure->product_name ?: __('Unknown Product', 'fp-esperienze');
+                                $aria_label = sprintf(
+                                    __('Remove closure scheduled on %1$s for %2$s', 'fp-esperienze'),
+                                    $date_display,
+                                    $experience_name
+                                );
+                                ?>
                                 <tr>
-                                    <td><?php echo esc_html(\fp_esperienze_wp_date(get_option('date_format'), strtotime($closure->date))); ?></td>
-                                    <td><?php echo esc_html($closure->product_name ?: __('Unknown Product', 'fp-esperienze')); ?></td>
-                                    <td><?php echo esc_html($closure->reason ?: '-'); ?></td>
                                     <td>
-                                        <form method="post" style="display: inline;">
+                                        <?php if ($date_display !== '') : ?>
+                                            <time datetime="<?php echo esc_attr($datetime_attr); ?>"><?php echo esc_html($date_display); ?></time>
+                                        <?php else : ?>
+                                            <?php echo esc_html($raw_date); ?>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td><?php echo esc_html($experience_name); ?></td>
+                                    <td><?php echo $closure->reason !== '' ? esc_html($closure->reason) : '&mdash;'; ?></td>
+                                    <td>
+                                        <form method="post" class="fp-admin-inline-form" data-fp-closure-remove>
                                             <?php wp_nonce_field('fp_closure_action', 'fp_closure_nonce'); ?>
-                                            <input type="hidden" name="action" value="remove_closure">
-                                            <input type="hidden" name="closure_date" value="<?php echo esc_attr($closure->date); ?>">
-                                            <button type="submit" class="button button-small" 
-                                                    onclick="return confirm('<?php esc_attr_e('Are you sure you want to remove this closure?', 'fp-esperienze'); ?>')">
-                                                <?php _e('Remove', 'fp-esperienze'); ?>
+                                            <input type="hidden" name="action" value="remove_closure" />
+                                            <input type="hidden" name="closure_date" value="<?php echo esc_attr($raw_date); ?>" />
+                                            <button type="submit" class="button button-link-delete" aria-label="<?php echo esc_attr($aria_label); ?>">
+                                                <?php esc_html_e('Remove', 'fp-esperienze'); ?>
                                             </button>
                                         </form>
                                     </td>
@@ -2426,6 +3813,8 @@ class MenuManager {
                         </tbody>
                     </table>
                 <?php endif; ?>
+
+                <?php AdminComponents::closeCard(); ?>
             </div>
         </div>
         <?php
@@ -2438,28 +3827,103 @@ class MenuManager {
         if (!isset($_POST['fp_extra_nonce']) || !wp_verify_nonce(wp_unslash($_POST['fp_extra_nonce']), 'fp_extra_action')) {
             wp_die(__('Security check failed.', 'fp-esperienze'));
         }
-        
+
         if (!CapabilityManager::canManageFPEsperienze()) {
             wp_die(__('You do not have permission to perform this action.', 'fp-esperienze'));
         }
         
         $action = sanitize_text_field(wp_unslash($_POST['action'] ?? ''));
-        
+
         switch ($action) {
             case 'create':
                 $this->createExtra();
                 break;
-                
+
             case 'update':
                 $this->updateExtra();
                 break;
-                
+
             case 'delete':
                 $this->deleteExtra();
                 break;
+
+            case 'bulk-delete':
+                $bulk_action = sanitize_text_field(wp_unslash($_POST['bulk_action'] ?? ''));
+                if ('delete' !== $bulk_action) {
+                    add_action('admin_notices', static function () {
+                        echo '<div class="notice notice-warning is-dismissible"><p>' .
+                             esc_html__('Please choose Delete from the bulk actions dropdown before applying.', 'fp-esperienze') .
+                             '</p></div>';
+                    });
+                    break;
+                }
+
+                $raw_ids = isset($_POST['extra_ids']) ? (array) wp_unslash($_POST['extra_ids']) : [];
+                $this->bulkDeleteExtras($raw_ids);
+                break;
         }
     }
-    
+
+    /**
+     * Bulk delete extras by ID.
+     *
+     * @param array $raw_ids Array of raw IDs from the request.
+     * @return void
+     */
+    private function bulkDeleteExtras(array $raw_ids): void {
+        $ids = array_values(array_unique(array_filter(array_map('absint', $raw_ids))));
+
+        if (empty($ids)) {
+            add_action('admin_notices', static function () {
+                echo '<div class="notice notice-warning is-dismissible"><p>' .
+                     esc_html__('Select at least one extra before applying the bulk delete action.', 'fp-esperienze') .
+                     '</p></div>';
+            });
+            return;
+        }
+
+        $deleted = 0;
+
+        foreach ($ids as $id) {
+            if ($id > 0 && ExtraManager::deleteExtra($id)) {
+                $deleted++;
+            }
+        }
+
+        if ($deleted > 0) {
+            $deleted_message = sprintf(
+                _n('%d extra deleted successfully.', '%d extras deleted successfully.', $deleted, 'fp-esperienze'),
+                $deleted
+            );
+
+            add_action('admin_notices', static function () use ($deleted_message) {
+                echo '<div class="notice notice-success is-dismissible"><p>' .
+                     esc_html($deleted_message) .
+                     '</p></div>';
+            });
+        }
+
+        if ($deleted < count($ids)) {
+            $failed = count($ids) - $deleted;
+
+            $failed_message = sprintf(
+                _n(
+                    '%d extra could not be deleted. It may still be assigned to products.',
+                    '%d extras could not be deleted. They may still be assigned to products.',
+                    $failed,
+                    'fp-esperienze'
+                ),
+                $failed
+            );
+
+            add_action('admin_notices', static function () use ($failed_message) {
+                echo '<div class="notice notice-error is-dismissible"><p>' .
+                     esc_html($failed_message) .
+                     '</p></div>';
+            });
+        }
+    }
+
     /**
      * Create new extra
      */
@@ -2592,55 +4056,54 @@ class MenuManager {
         if (!isset($_POST['fp_closure_nonce']) || !wp_verify_nonce(wp_unslash($_POST['fp_closure_nonce']), 'fp_closure_action')) {
             wp_die(__('Security check failed.', 'fp-esperienze'));
         }
-        
+
         if (!CapabilityManager::canManageFPEsperienze()) {
             wp_die(__('You do not have permission to perform this action.', 'fp-esperienze'));
         }
-        
+
         $action = sanitize_text_field(wp_unslash($_POST['action'] ?? ''));
-        
+
         switch ($action) {
             case 'add_closure':
                 $date = sanitize_text_field(wp_unslash($_POST['closure_date'] ?? ''));
                 $reason = sanitize_text_field(wp_unslash($_POST['closure_reason'] ?? ''));
-                
-                if ($date) {
-                    $result = OverrideManager::createGlobalClosure($date, $reason);
-                    if ($result) {
-                        add_action('admin_notices', function() {
-                            echo '<div class="notice notice-success is-dismissible"><p>' . 
-                                 esc_html__('Global closure added successfully.', 'fp-esperienze') . 
-                                 '</p></div>';
-                        });
-                    } else {
-                        add_action('admin_notices', function() {
-                            echo '<div class="notice notice-error is-dismissible"><p>' . 
-                                 esc_html__('Failed to add global closure.', 'fp-esperienze') . 
-                                 '</p></div>';
-                        });
-                    }
+
+                if ($date === '') {
+                    $this->queuePageNotice(__('Select a date before adding a global closure.', 'fp-esperienze'), 'warning');
+                    break;
+                }
+
+                $result = OverrideManager::createGlobalClosure($date, $reason);
+
+                if ($result) {
+                    $this->queuePageNotice(__('Global closure added successfully.', 'fp-esperienze'), 'success');
+                } else {
+                    $this->queuePageNotice(
+                        __('No closures were created. Ensure at least one experience product is published.', 'fp-esperienze'),
+                        'warning'
+                    );
                 }
                 break;
-                
+
             case 'remove_closure':
                 $date = sanitize_text_field(wp_unslash($_POST['closure_date'] ?? ''));
-                
-                if ($date) {
-                    $result = OverrideManager::removeGlobalClosure($date);
-                    if ($result) {
-                        add_action('admin_notices', function() {
-                            echo '<div class="notice notice-success is-dismissible"><p>' . 
-                                 esc_html__('Global closure removed successfully.', 'fp-esperienze') . 
-                                 '</p></div>';
-                        });
-                    } else {
-                        add_action('admin_notices', function() {
-                            echo '<div class="notice notice-error is-dismissible"><p>' . 
-                                 esc_html__('Failed to remove global closure.', 'fp-esperienze') . 
-                                 '</p></div>';
-                        });
-                    }
+
+                if ($date === '') {
+                    $this->queuePageNotice(__('The selected closure is missing a date. Please try again.', 'fp-esperienze'), 'warning');
+                    break;
                 }
+
+                $result = OverrideManager::removeGlobalClosure($date);
+
+                if ($result) {
+                    $this->queuePageNotice(__('Global closure removed successfully.', 'fp-esperienze'), 'success');
+                } else {
+                    $this->queuePageNotice(__('Failed to remove the selected closure. Please try again.', 'fp-esperienze'), 'danger');
+                }
+                break;
+
+            default:
+                $this->queuePageNotice(__('Unsupported closure action.', 'fp-esperienze'), 'warning');
                 break;
         }
     }
@@ -2743,6 +4206,13 @@ class MenuManager {
                 } else {
                     wp_nonce_field('fp_settings_nonce', 'fp_settings_nonce');
                     echo '<input type="hidden" name="settings_tab" value="' . esc_attr($current_tab) . '" />';
+                }
+                ?>
+
+                <?php
+                settings_errors(self::SETTINGS_ERROR_SLUG);
+                if ($current_tab === 'autotranslate') {
+                    settings_errors('fp_lt_settings');
                 }
                 ?>
 
@@ -3902,11 +5372,12 @@ class MenuManager {
             wp_die(__('You do not have permission to perform this action.', 'fp-esperienze'));
         }
 
-        if (!wp_verify_nonce(wp_unslash($_POST['fp_settings_nonce'] ?? ''), 'fp_settings_nonce')) {
+        $nonce = wp_unslash($_POST['fp_settings_nonce'] ?? '');
+        if (!wp_verify_nonce($nonce, 'fp_settings_nonce')) {
             wp_die(__('Security check failed.', 'fp-esperienze'));
         }
 
-        $tab = sanitize_text_field(wp_unslash($_POST['settings_tab'] ?? 'general'));
+        $tab = sanitize_key(wp_unslash($_POST['settings_tab'] ?? 'general'));
 
         $services = [
             'general' => new GeneralSettingsService(),
@@ -3919,17 +5390,28 @@ class MenuManager {
         ];
 
         if (!isset($services[$tab])) {
+            add_settings_error(
+                self::SETTINGS_ERROR_SLUG,
+                'fp_settings_invalid_tab',
+                __('Invalid settings tab submitted.', 'fp-esperienze'),
+                'error'
+            );
+
             return;
         }
 
-        $result = $services[$tab]->handle($_POST);
+        /** @var array<string,mixed> $request */
+        $request = wp_unslash($_POST);
 
-        foreach ($result->getErrors() as $error) {
-            add_action('admin_notices', static function () use ($error) {
-                echo '<div class="notice notice-error is-dismissible"><p>' .
-                     esc_html($error) .
-                     '</p></div>';
-            });
+        $result = $services[$tab]->handle($request);
+
+        foreach ($result->getErrors() as $index => $error) {
+            add_settings_error(
+                self::SETTINGS_ERROR_SLUG,
+                sprintf('fp_settings_error_%s_%d', $tab, $index),
+                $error,
+                'error'
+            );
         }
 
         if ($result->isSuccess()) {
@@ -3938,23 +5420,25 @@ class MenuManager {
                 $messages[] = __('Settings saved successfully!', 'fp-esperienze');
             }
 
-            foreach ($messages as $message) {
-                add_action('admin_notices', static function () use ($message) {
-                    echo '<div class="notice notice-success is-dismissible"><p>' .
-                         esc_html($message) .
-                         '</p></div>';
-                });
+            foreach ($messages as $index => $message) {
+                add_settings_error(
+                    self::SETTINGS_ERROR_SLUG,
+                    sprintf('fp_settings_saved_%s_%d', $tab, $index),
+                    $message,
+                    'updated'
+                );
             }
 
             return;
         }
 
         if (empty($result->getErrors())) {
-            add_action('admin_notices', static function () {
-                echo '<div class="notice notice-error is-dismissible"><p>' .
-                     esc_html__('Unable to save settings. Please try again.', 'fp-esperienze') .
-                     '</p></div>';
-            });
+            add_settings_error(
+                self::SETTINGS_ERROR_SLUG,
+                sprintf('fp_settings_failed_%s', $tab),
+                __('Unable to save settings. Please try again.', 'fp-esperienze'),
+                'error'
+            );
         }
     }
     
@@ -3965,19 +5449,19 @@ class MenuManager {
         if (!CapabilityManager::canManageFPEsperienze()) {
             wp_die(__('You do not have permission to perform this action.', 'fp-esperienze'));
         }
-        
+
         if (!wp_verify_nonce(wp_unslash($_POST['fp_booking_nonce'] ?? ''), 'fp_booking_action')) {
             wp_die(__('Security check failed.', 'fp-esperienze'));
         }
         
         $action = sanitize_text_field(wp_unslash($_POST['action'] ?? ''));
-        
+
         switch ($action) {
             case 'update_status':
                 $booking_id = absint(wp_unslash($_POST['booking_id'] ?? 0));
                 $new_status = sanitize_text_field(wp_unslash($_POST['new_status'] ?? ''));
 
-                $allowed_statuses = ['confirmed', 'cancelled', 'refunded', 'pending', 'completed', 'no_show'];
+                $allowed_statuses = array_keys($this->getBookingStatusLabels());
                 if (!in_array($new_status, $allowed_statuses, true)) {
                     add_action('admin_notices', function() {
                         echo '<div class="notice notice-error is-dismissible"><p>' .
@@ -3988,39 +5472,112 @@ class MenuManager {
                 }
 
                 if ($booking_id && $new_status) {
-                    // Get booking details first
-                    global $wpdb;
-                    $table_bookings = $wpdb->prefix . 'fp_bookings';
-                    $booking = $wpdb->get_row($wpdb->prepare(
-                        "SELECT order_id, order_item_id FROM {$table_bookings} WHERE id = %d",
-                        $booking_id
-                    ));
-                    
-                    if ($booking) {
-                        $booking_manager = new BookingManager();
-                        $success = $booking_manager->updateBookingStatus(
-                            $booking->order_id, 
-                            $booking->order_item_id, 
-                            $new_status
-                        );
-                        
-                        if ($success) {
-                            add_action('admin_notices', function() {
-                                echo '<div class="notice notice-success is-dismissible"><p>' . 
-                                     esc_html__('Booking status updated successfully.', 'fp-esperienze') . 
-                                     '</p></div>';
-                            });
-                        } else {
-                            add_action('admin_notices', function() {
-                                echo '<div class="notice notice-error is-dismissible"><p>' . 
-                                     esc_html__('Failed to update booking status.', 'fp-esperienze') . 
-                                     '</p></div>';
-                            });
-                        }
+                    $success = $this->updateBookingStatusRecord($booking_id, $new_status);
+
+                    if ($success) {
+                        add_action('admin_notices', function() {
+                            echo '<div class="notice notice-success is-dismissible"><p>' .
+                                 esc_html__('Booking status updated successfully.', 'fp-esperienze') .
+                                 '</p></div>';
+                        });
+                    } else {
+                        add_action('admin_notices', function() {
+                            echo '<div class="notice notice-error is-dismissible"><p>' .
+                                 esc_html__('Failed to update booking status.', 'fp-esperienze') .
+                                 '</p></div>';
+                        });
                     }
                 }
                 break;
+
+            case 'bulk_update_status':
+                $booking_ids = array_map('absint', (array) wp_unslash($_POST['booking_ids'] ?? []));
+                $booking_ids = array_filter($booking_ids);
+                $new_status  = sanitize_text_field(wp_unslash($_POST['bulk_status'] ?? ''));
+
+                $allowed_statuses = array_keys($this->getBookingStatusLabels());
+                if (!in_array($new_status, $allowed_statuses, true)) {
+                    add_action('admin_notices', function() {
+                        echo '<div class="notice notice-error is-dismissible"><p>' .
+                             esc_html__('Select a valid status before applying bulk actions.', 'fp-esperienze') .
+                             '</p></div>';
+                    });
+                    break;
+                }
+
+                if (empty($booking_ids)) {
+                    add_action('admin_notices', function() {
+                        echo '<div class="notice notice-warning is-dismissible"><p>' .
+                             esc_html__('Select at least one booking to update.', 'fp-esperienze') .
+                             '</p></div>';
+                    });
+                    break;
+                }
+
+                $updated = 0;
+                $failed  = 0;
+
+                foreach ($booking_ids as $booking_id) {
+                    if ($this->updateBookingStatusRecord($booking_id, $new_status)) {
+                        $updated++;
+                    } else {
+                        $failed++;
+                    }
+                }
+
+                if ($updated > 0) {
+                    $status_label = $this->getBookingStatusLabels()[$new_status] ?? $new_status;
+                    add_action('admin_notices', function () use ($updated, $status_label) {
+                        echo '<div class="notice notice-success is-dismissible"><p>' .
+                             sprintf(
+                                 esc_html__('%1$d bookings marked as %2$s.', 'fp-esperienze'),
+                                 $updated,
+                                 esc_html($status_label)
+                             ) .
+                             '</p></div>';
+                    });
+                }
+
+                if ($failed > 0) {
+                    add_action('admin_notices', function () use ($failed) {
+                        echo '<div class="notice notice-error is-dismissible"><p>' .
+                             sprintf(
+                                 esc_html__('%d bookings could not be updated.', 'fp-esperienze'),
+                                 $failed
+                             ) .
+                             '</p></div>';
+                    });
+                }
+
+                break;
         }
+    }
+
+    /**
+     * Update the booking status for a single booking record.
+     */
+    private function updateBookingStatusRecord(int $booking_id, string $new_status): bool {
+        global $wpdb;
+
+        $table_bookings = $wpdb->prefix . 'fp_bookings';
+        $booking        = $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT order_id, order_item_id FROM {$table_bookings} WHERE id = %d",
+                $booking_id
+            )
+        );
+
+        if (!$booking) {
+            return false;
+        }
+
+        $booking_manager = new BookingManager();
+
+        return (bool) $booking_manager->updateBookingStatus(
+            $booking->order_id,
+            $booking->order_item_id,
+            $new_status
+        );
     }
 
     /**
@@ -4571,55 +6128,81 @@ class MenuManager {
         $dependencies = DependencyChecker::checkAll();
 
         if (empty($dependencies)) {
-            echo '<p style="margin: 0; color: #666;">' . esc_html__('No optional dependencies detected.', 'fp-esperienze') . '</p>';
+            echo '<p class="fp-admin-helper-text">' . esc_html__('No optional dependencies detected.', 'fp-esperienze') . '</p>';
             return;
         }
-
-        echo '<div class="fp-dependency-items" style="display: flex; flex-direction: column; gap: 12px;">';
-
-        foreach ($dependencies as $dependency) {
-            $status = $dependency['status'] ?? 'info';
-
-            switch ($status) {
-                case 'success':
-                    $status_color = '#198754';
-                    $icon_class   = 'dashicons-yes-alt';
-                    break;
-                case 'warning':
-                    $status_color = '#d97706';
-                    $icon_class   = 'dashicons-warning';
-                    break;
-                default:
-                    $status_color = '#1d4ed8';
-                    $icon_class   = 'dashicons-info';
-                    break;
-            }
-
-            echo '<div style="padding: 10px 0; border-bottom: 1px solid #eee;">';
-            echo '<strong style="display: flex; align-items: center; gap: 6px;">';
-            echo '<span class="dashicons ' . esc_attr($icon_class) . '" style="color: ' . esc_attr($status_color) . ';"></span>';
-            echo esc_html($dependency['name'] ?? '');
-            echo '</strong>';
-            echo '<small style="color: #555; display: block; margin-top: 4px;">' . esc_html($dependency['description'] ?? '') . '</small>';
-
-            if (!empty($dependency['impact'])) {
-                echo '<span style="display: block; margin-top: 6px; color: #666; font-size: 12px;">' . esc_html($dependency['impact']) . '</span>';
-            }
-
-            echo '</div>';
-        }
-
-        echo '</div>';
 
         $missing = array_filter($dependencies, static function ($dependency) {
             return empty($dependency['available']);
         });
 
-        if (!empty($missing)) {
-            echo '<div style="margin-top: 12px;">' . wp_kses_post(DependencyChecker::getInstallationInstructions()) . '</div>';
-        } else {
-            echo '<p style="margin-top: 12px; color: #198754; font-weight: 600;">' . esc_html__('All optional dependencies are installed. Great job!', 'fp-esperienze') . '</p>';
+        echo '<ul class="fp-admin-dependency-list">';
+
+        foreach ($dependencies as $dependency) {
+            $available = ! empty($dependency['available']);
+            $status_key = isset($dependency['status']) ? (string) $dependency['status'] : '';
+
+            switch ($status_key) {
+                case 'success':
+                    $variant = 'success';
+                    break;
+                case 'warning':
+                    $variant = 'warning';
+                    break;
+                case 'danger':
+                case 'error':
+                    $variant = 'danger';
+                    break;
+                default:
+                    $variant = $available ? 'success' : 'warning';
+                    break;
+            }
+
+            $status_label = $available
+                ? __('Available', 'fp-esperienze')
+                : __('Missing', 'fp-esperienze');
+
+            $name = isset($dependency['name']) ? (string) $dependency['name'] : '';
+            $description = isset($dependency['description']) ? (string) $dependency['description'] : '';
+            $impact = isset($dependency['impact']) ? (string) $dependency['impact'] : '';
+
+            echo '<li class="fp-admin-dependency">';
+            echo '<div class="fp-admin-dependency__header">';
+            printf(
+                '<span class="fp-admin-badge fp-admin-badge--%1$s">%2$s</span>',
+                esc_attr($variant),
+                esc_html($status_label)
+            );
+
+            if ($name !== '') {
+                printf('<span class="fp-admin-dependency__name">%s</span>', esc_html($name));
+            }
+            echo '</div>';
+
+            if ($description !== '') {
+                printf('<p class="fp-admin-helper-text">%s</p>', esc_html($description));
+            }
+
+            if (! $available && $impact !== '') {
+                printf('<p class="fp-admin-helper-text fp-admin-dependency__impact">%s</p>', esc_html($impact));
+            }
+
+            echo '</li>';
         }
+
+        echo '</ul>';
+
+        if (! empty($missing)) {
+            $instructions = DependencyChecker::getInstallationInstructions();
+
+            if (! empty($instructions)) {
+                echo '<div class="fp-admin-helper-text fp-admin-dependency__instructions">' . wp_kses_post($instructions) . '</div>';
+            }
+
+            return;
+        }
+
+        echo '<p class="fp-admin-helper-text fp-admin-dependency__success">' . esc_html__('All optional dependencies are installed. Great job!', 'fp-esperienze') . '</p>';
     }
 
     /**
@@ -4681,8 +6264,8 @@ HTML;
 CSS;
 
         ?>
-        <div class="wrap fp-esperienze-integration-toolkit">
-            <h1><?php esc_html_e('Integration Toolkit', 'fp-esperienze'); ?></h1>
+        <div class="wrap fp-esperienze-developer-tools">
+            <h1><?php esc_html_e('Developer Toolkit', 'fp-esperienze'); ?></h1>
             <p class="description" style="max-width: 720px;">
                 <?php esc_html_e('Share your booking widget with partners, resellers, or microsites using the copy-ready recipes below.', 'fp-esperienze'); ?>
             </p>

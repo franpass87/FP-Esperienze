@@ -8,6 +8,7 @@
 namespace FP\Esperienze\Admin\Settings;
 
 use FP\Esperienze\Core\CapabilityManager;
+use FP\Esperienze\Admin\MenuRegistry;
 
 defined('ABSPATH') || exit;
 
@@ -19,21 +20,15 @@ class TranslationHelp {
      * Constructor.
      */
     public function __construct() {
-        add_action('admin_menu', [$this, 'registerPage']);
-    }
-
-    /**
-     * Register the submenu page.
-     */
-    public function registerPage(): void {
-        add_submenu_page(
-            'fp-esperienze',
-            __('Translation Help', 'fp-esperienze'),
-            __('Translation Help', 'fp-esperienze'),
-            CapabilityManager::MANAGE_FP_ESPERIENZE,
-            'fp-esperienze-translation-help',
-            [$this, 'renderPage']
-        );
+        MenuRegistry::instance()->registerPage([
+            'slug'       => 'fp-esperienze-localization',
+            'page_title' => __('Localization Guide', 'fp-esperienze'),
+            'menu_title' => __('Localization Guide', 'fp-esperienze'),
+            'capability' => CapabilityManager::MANAGE_FP_ESPERIENZE,
+            'callback'   => [$this, 'renderPage'],
+            'order'      => 160,
+            'aliases'    => ['fp-esperienze-translation-help'],
+        ]);
     }
 
     /**
@@ -42,7 +37,7 @@ class TranslationHelp {
     public function renderPage(): void {
         ?>
         <div class="wrap">
-            <h1><?php esc_html_e('Translation Help', 'fp-esperienze'); ?></h1>
+            <h1><?php esc_html_e('Localization Guide', 'fp-esperienze'); ?></h1>
             <ol>
                 <li>
                     <?php

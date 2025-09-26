@@ -12,9 +12,9 @@ class NotificationsSettingsService implements SettingsTabServiceInterface
     public function handle(array $data): SettingsUpdateResult
     {
         $notifications = [
-            'staff_notifications_enabled' => !empty($data['staff_notifications_enabled']),
+            'staff_notifications_enabled' => (bool) rest_sanitize_boolean(wp_unslash($data['staff_notifications_enabled'] ?? false)),
             'staff_emails'                => sanitize_textarea_field(wp_unslash($data['staff_emails'] ?? '')),
-            'ics_attachment_enabled'      => !empty($data['ics_attachment_enabled']),
+            'ics_attachment_enabled'      => (bool) rest_sanitize_boolean(wp_unslash($data['ics_attachment_enabled'] ?? false)),
         ];
 
         $errors = [];

@@ -2,12 +2,12 @@
 
 A WordPress + WooCommerce plugin for experience booking management by Francesco Passeri.
 
-## What's New in 1.1.0
+## What's New in 1.2.0
 
-- **Automated upgrades** – the new upgrade manager executes pending schema and filesystem migrations, refreshes cron schedules, and surfaces errors to administrators.
-- **Runtime observability** – a development-only runtime logger captures notices and exceptions in a persistent log with an optional overlay so issues are spotted before production deployments.
-- **Hardened booking flows** – REST and mobile endpoints now normalise extras, sanitise payloads, and rely on cached metadata to reduce repeated database calls during peak usage.
-- **Continuous testing** – the repository ships with a PHPUnit suite, WordPress bootstrap shim, and GitHub Actions workflow that exercise booking, logging, and helper components.
+- **Unified admin design system** – shared design tokens, base utilities, and a build pipeline now keep FP Esperienze admin screens visually consistent with WordPress while enabling light/dark theming.
+- **Reusable accessible components** – page headers, cards, notices, tab navigation, and form rows are powered by new helpers that ship with skip links, focus outlines, and `aria-live` messaging out of the box.
+- **Refit key workflows** – the dashboard, bookings manager, and system status screens adopt the new layout primitives with clearer metrics, filters, and dependency summaries.
+- **Hardened settings and tables** – settings routes share validation/notice plumbing, list tables handle bulk actions with confirmations, and menu registration flows through a back-compatible registry.
 
 ## Installation
 
@@ -51,9 +51,9 @@ A WordPress + WooCommerce plugin for experience booking management by Francesco 
 
 ## Release Artifacts
 
-- The distributable package for this release is generated at `dist/fp-esperienze-1.1.0.zip`. Upload this ZIP to WordPress or distribute it through your deployment pipeline.
-- A SHA-256 checksum is stored alongside the archive (`dist/fp-esperienze-1.1.0.zip.sha256`). Verify the checksum after transfer to ensure the package has not been tampered with.
-- Regenerate the archive by running `./tools/build-plugin-zip.sh` or the manual steps outlined in [UPGRADE.md](UPGRADE.md) if you modify the codebase.
+- Genera l'archivio di distribuzione con `bash scripts/build-plugin-zip.sh`; il file risultante viene salvato nella cartella ignorata `dist/` e non è versionato.
+- Calcola opzionalmente un checksum SHA-256 con `shasum -a 256 dist/fp-esperienze-v*.zip > dist/fp-esperienze-v*.zip.sha256` prima di distribuire l'archivio.
+- Consulta [UPGRADE.md](UPGRADE.md) per i passi di deploy e rigenera l'archivio ogni volta che aggiorni il codice.
 
 ### Trusted Proxy Configuration
 
@@ -1147,6 +1147,20 @@ fp-esperienze/
 └── languages/                 # Translations
 ```
 
+### Admin UI build pipeline
+
+Design tokens and structural styles for the admin screens live in
+`assets/src/admin/`. After editing any of the source files run:
+
+```
+composer build-admin-css
+```
+
+The script concatenates the token, base, and component layers into
+`assets/css/admin.css` so the plugin keeps loading a single stylesheet. The
+WordPress admin body receives the `fp-esperienze-admin-screen` class on the
+plugin pages, ensuring the new base styles remain scoped to FP Esperienze.
+
 ### Database Tables
 
 The plugin creates the following custom tables:
@@ -1571,6 +1585,21 @@ FP Esperienze follows WCAG 2.1 AA accessibility standards.
 ## License
 
 GPL v2 or later
+
+## Build assets
+
+I binari generati (zip, asset minificati, bundle compilati) non vengono più versionati. Se cloni il repository potrebbe essere necessario rigenerarli localmente.
+
+### Fogli di stile admin
+
+- Esegui `php scripts/build-admin-styles.php` (o l'alias `composer build-admin-css`) per ricreare `assets/css/admin.css` a partire dai sorgenti in `assets/src/admin/`.
+- Il comando concatena i token, le utility base e i componenti e salva il risultato in `assets/css/admin.css`.
+
+### Pacchetto di distribuzione
+
+- Lancia `bash scripts/build-plugin-zip.sh` per creare l'archivio nella cartella ignorata `dist/`.
+- Genera facoltativamente il checksum con `shasum -a 256 dist/fp-esperienze-v*.zip > dist/fp-esperienze-v*.zip.sha256` quando devi allegare il pacchetto a una release.
+
 ## Build & Release (CI)
 - Gli artefatti di build (zip) non sono versionati nel repository.
 - La CI su Pull Request crea lo zip del plugin e lo pubblica come artifact scaricabile.

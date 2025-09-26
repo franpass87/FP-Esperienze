@@ -9,6 +9,7 @@ namespace FP\Esperienze\Admin;
 
 use FP\Esperienze\Core\Installer;
 use FP\Esperienze\Core\ProductionValidator;
+use FP\Esperienze\Admin\UI\AdminComponents;
 
 defined('ABSPATH') || exit;
 
@@ -21,29 +22,27 @@ class SystemStatus {
      * Constructor
      */
     public function __construct() {
-        add_action('admin_menu', [$this, 'addSystemStatusMenu']);
-        add_action('admin_init', [$this, 'handleFixActions']);
-    }
+        MenuRegistry::instance()->registerPage([
+            'slug'       => 'fp-esperienze-status',
+            'page_title' => __('Status & Troubleshooting', 'fp-esperienze'),
+            'menu_title' => __('Status & Troubleshooting', 'fp-esperienze'),
+            'capability' => 'manage_options',
+            'callback'   => [$this, 'systemStatusPage'],
+            'order'      => 140,
+            'aliases'    => ['fp-esperienze-system-status'],
+        ]);
 
-    /**
-     * Add system status menu item
-     */
-    public function addSystemStatusMenu(): void {
-        add_submenu_page(
-            'fp-esperienze',
-            __('System Status', 'fp-esperienze'),
-            __('System Status', 'fp-esperienze'),
-            'manage_options',
-            'fp-esperienze-system-status',
-            [$this, 'systemStatusPage']
-        );
+        add_action('admin_init', [$this, 'handleFixActions']);
     }
 
     /**
      * Handle fix actions
      */
     public function handleFixActions(): void {
-        if (!isset($_GET['page']) || sanitize_text_field($_GET['page']) !== 'fp-esperienze-system-status') {
+        $requested_page = isset($_GET['page']) ? sanitize_text_field($_GET['page']) : '';
+        $valid_pages = ['fp-esperienze-status', 'fp-esperienze-system-status'];
+
+        if (!in_array($requested_page, $valid_pages, true)) {
             return;
         }
 
@@ -64,7 +63,7 @@ class SystemStatus {
                 break;
             case 'flush_rewrite':
                 flush_rewrite_rules();
-                wp_safe_redirect(admin_url('admin.php?page=fp-esperienze-system-status&fixed=rewrite'));
+                wp_safe_redirect(admin_url('admin.php?page=fp-esperienze-status&fixed=rewrite'));
                 exit;
                 break;
         }
@@ -75,7 +74,7 @@ class SystemStatus {
      */
     private function createMissingTables(): void {
         Installer::activate();
-        wp_safe_redirect(admin_url('admin.php?page=fp-esperienze-system-status&fixed=tables'));
+        wp_safe_redirect(admin_url('admin.php?page=fp-esperienze-status&fixed=tables'));
         exit;
     }
 
@@ -101,29 +100,36 @@ class SystemStatus {
             }
         }
 
+        $fixed_message = '';
+        if (isset($_GET['fixed'])) {
+            $fixed = sanitize_text_field($_GET['fixed']);
+            if ($fixed === 'tables') {
+                $fixed_message = __('Database tables have been created successfully.', 'fp-esperienze');
+            } elseif ($fixed === 'rewrite') {
+                $fixed_message = __('Rewrite rules have been flushed successfully.', 'fp-esperienze');
+            }
+        }
+
         ?>
-        <div class="wrap">
-            <h1><?php _e('FP Esperienze System Status', 'fp-esperienze'); ?></h1>
+        <?php AdminComponents::skipLink('fp-admin-main-content'); ?>
+        <div class="wrap fp-admin-page" id="fp-admin-main-content" tabindex="-1">
+            <?php
+            AdminComponents::pageHeader([
+                'title' => __('FP Esperienze System Status', 'fp-esperienze'),
+                'lead'  => __('Review environment readiness, scheduled tasks, and integration health to keep bookings flowing.', 'fp-esperienze'),
+            ]);
+            ?>
 
-            <?php if (isset($_GET['fixed'])) : ?>
-                <div class="notice notice-success is-dismissible">
-                    <p>
-                        <?php
-                        $fixed = sanitize_text_field($_GET['fixed']);
-                        switch ($fixed) {
-                            case 'tables':
-                                _e('Database tables have been created successfully.', 'fp-esperienze');
-                                break;
-                            case 'rewrite':
-                                _e('Rewrite rules have been flushed successfully.', 'fp-esperienze');
-                                break;
-                        }
-                        ?>
-                    </p>
-                </div>
-            <?php endif; ?>
+            <div class="fp-admin-stack">
+                <?php if ($fixed_message !== '') : ?>
+                    <?php
+                    AdminComponents::notice([
+                        'type'    => 'success',
+                        'message' => $fixed_message,
+                    ]);
+                    ?>
+                <?php endif; ?>
 
-            <div class="fp-system-status">
                 <?php $this->renderSystemInfo(); ?>
                 <?php $this->renderChecks($checks); ?>
                 <?php if (!empty($production_readiness)) : ?>
@@ -133,64 +139,6 @@ class SystemStatus {
                 <?php $this->renderDatabaseInfo(); ?>
                 <?php $this->renderIntegrationStatus(); ?>
             </div>
-
-            <style>
-            .fp-system-status {
-                margin-top: 20px;
-            }
-            .fp-status-section {
-                background: #fff;
-                border: 1px solid #c3c4c7;
-                margin-bottom: 20px;
-                padding: 0;
-            }
-            .fp-status-section h2 {
-                background: #f1f1f1;
-                margin: 0;
-                padding: 15px 20px;
-                border-bottom: 1px solid #c3c4c7;
-            }
-            .fp-status-table {
-                width: 100%;
-                border-collapse: collapse;
-            }
-            .fp-status-table th,
-            .fp-status-table td {
-                padding: 12px 20px;
-                text-align: left;
-                border-bottom: 1px solid #f1f1f1;
-            }
-            .fp-status-table th {
-                width: 30%;
-                font-weight: 600;
-            }
-            .fp-status-ok {
-                color: #00a32a;
-            }
-            .fp-status-warning {
-                color: #dba617;
-            }
-            .fp-status-error {
-                color: #d63638;
-            }
-            .fp-status-icon::before {
-                font-family: dashicons;
-                font-size: 16px;
-                margin-right: 5px;
-            }
-            .fp-status-ok::before {
-                content: '\f147'; /* dashicons-yes */
-            }
-            .fp-status-warning::before {
-                content: '\f534'; /* dashicons-warning */
-            }
-            .fp-status-error::before {
-                content: '\f158'; /* dashicons-no */
-            }
-            .fp-fix-button {
-                margin-left: 10px;
-            }
-            </style>
         </div>
         <?php
     }
@@ -199,7 +147,7 @@ class SystemStatus {
      * Render optional dependency status summary.
      */
     private function renderDependencyStatus(): void {
-        $dependency_checker_class = '\\FP\\Esperienze\\Admin\\DependencyChecker';
+        $dependency_checker_class = '\FP\Esperienze\Admin\DependencyChecker';
 
         if (!class_exists($dependency_checker_class)) {
             return;
@@ -207,42 +155,87 @@ class SystemStatus {
 
         $dependencies = $dependency_checker_class::checkAll();
 
-        ?>
-        <div class="fp-status-section">
-            <h2><?php esc_html_e('Optional Dependencies', 'fp-esperienze'); ?></h2>
-            <table class="fp-status-table">
-                <tbody>
-                <?php foreach ($dependencies as $dependency) :
-                    $status_class = !empty($dependency['available']) ? 'fp-status-ok' : 'fp-status-warning';
-                    ?>
-                    <tr>
-                        <th><?php echo esc_html($dependency['name'] ?? ''); ?></th>
-                        <td>
-                            <span class="fp-status-icon <?php echo esc_attr($status_class); ?>">
-                                <?php echo !empty($dependency['available']) ? esc_html__('Available', 'fp-esperienze') : esc_html__('Missing', 'fp-esperienze'); ?>
-                            </span>
-                            <?php if (!empty($dependency['description'])) : ?>
-                                <div><?php echo esc_html($dependency['description']); ?></div>
-                            <?php endif; ?>
-                            <?php if (empty($dependency['available']) && !empty($dependency['impact'])) : ?>
-                                <div><em><?php echo esc_html($dependency['impact']); ?></em></div>
-                            <?php endif; ?>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
-                </tbody>
-            </table>
+        AdminComponents::openCard([
+            'title' => __('Optional Dependencies', 'fp-esperienze'),
+        ]);
 
-            <?php
-            $instructions = method_exists($dependency_checker_class, 'getInstallationInstructions')
-                ? $dependency_checker_class::getInstallationInstructions()
-                : '';
-            if (!empty($instructions)) {
-                echo wp_kses_post($instructions);
+        if (empty($dependencies)) {
+            echo '<p class="fp-admin-helper-text">' . esc_html__('No optional dependencies detected.', 'fp-esperienze') . '</p>';
+            AdminComponents::closeCard();
+            return;
+        }
+
+        $missing = array_filter($dependencies, static function ($dependency) {
+            return empty($dependency['available']);
+        });
+
+        echo '<ul class="fp-admin-dependency-list">';
+
+        foreach ($dependencies as $dependency) {
+            $available = ! empty($dependency['available']);
+            $status_key = isset($dependency['status']) ? (string) $dependency['status'] : '';
+
+            switch ($status_key) {
+                case 'success':
+                    $variant = 'success';
+                    break;
+                case 'warning':
+                    $variant = 'warning';
+                    break;
+                case 'danger':
+                case 'error':
+                    $variant = 'danger';
+                    break;
+                default:
+                    $variant = $available ? 'success' : 'warning';
+                    break;
             }
-            ?>
-        </div>
-        <?php
+
+            $status_label = $available
+                ? __('Available', 'fp-esperienze')
+                : __('Missing', 'fp-esperienze');
+
+            $name = isset($dependency['name']) ? (string) $dependency['name'] : '';
+            $description = isset($dependency['description']) ? (string) $dependency['description'] : '';
+            $impact = isset($dependency['impact']) ? (string) $dependency['impact'] : '';
+
+            echo '<li class="fp-admin-dependency">';
+            echo '<div class="fp-admin-dependency__header">';
+            printf(
+                '<span class="fp-admin-badge fp-admin-badge--%1$s">%2$s</span>',
+                esc_attr($variant),
+                esc_html($status_label)
+            );
+
+            if ($name !== '') {
+                printf('<span class="fp-admin-dependency__name">%s</span>', esc_html($name));
+            }
+            echo '</div>';
+
+            if ($description !== '') {
+                printf('<p class="fp-admin-helper-text">%s</p>', esc_html($description));
+            }
+
+            if (! $available && $impact !== '') {
+                printf('<p class="fp-admin-helper-text fp-admin-dependency__impact">%s</p>', esc_html($impact));
+            }
+
+            echo '</li>';
+        }
+
+        echo '</ul>';
+
+        $instructions = method_exists($dependency_checker_class, 'getInstallationInstructions')
+            ? $dependency_checker_class::getInstallationInstructions()
+            : '';
+
+        if (! empty($missing) && ! empty($instructions)) {
+            echo '<div class="fp-admin-helper-text fp-admin-dependency__instructions">' . wp_kses_post($instructions) . '</div>';
+        } elseif (empty($missing)) {
+            echo '<p class="fp-admin-helper-text fp-admin-dependency__success">' . esc_html__('All optional dependencies are installed. Great job!', 'fp-esperienze') . '</p>';
+        }
+
+        AdminComponents::closeCard();
     }
 
     /**
@@ -251,35 +244,37 @@ class SystemStatus {
     private function renderProductionReadiness(array $results): void {
         $status_map = [
             'pass'    => [
-                'class' => 'fp-status-ok',
-                'label' => __('Ready for production', 'fp-esperienze'),
+                'variant' => 'success',
+                'label'   => __('Ready for production', 'fp-esperienze'),
             ],
             'warning' => [
-                'class' => 'fp-status-warning',
-                'label' => __('Warnings detected', 'fp-esperienze'),
+                'variant' => 'warning',
+                'label'   => __('Warnings detected', 'fp-esperienze'),
             ],
             'fail'    => [
-                'class' => 'fp-status-error',
-                'label' => __('Action required', 'fp-esperienze'),
+                'variant' => 'danger',
+                'label'   => __('Action required', 'fp-esperienze'),
             ],
         ];
 
-        $status       = $results['overall_status'] ?? 'warning';
-        $status_class = $status_map[$status]['class'] ?? 'fp-status-warning';
+        $status = $results['overall_status'] ?? 'warning';
+        $variant = $status_map[$status]['variant'] ?? 'warning';
         $status_label = $status_map[$status]['label'] ?? __('Warnings detected', 'fp-esperienze');
 
         $critical = $results['critical_issues'] ?? [];
         $warnings = $results['warnings'] ?? [];
         $checks   = $results['checks'] ?? [];
 
+        AdminComponents::openCard([
+            'title' => __('Production Readiness', 'fp-esperienze'),
+        ]);
         ?>
-        <div class="fp-status-section">
-            <h2><?php esc_html_e('Production Readiness', 'fp-esperienze'); ?></h2>
-            <table class="fp-status-table">
+        <table class="fp-admin-table">
+            <tbody>
                 <tr>
                     <th><?php esc_html_e('Overall Status', 'fp-esperienze'); ?></th>
                     <td>
-                        <span class="<?php echo esc_attr($status_class); ?> fp-status-icon">
+                        <span class="fp-admin-badge fp-admin-badge--<?php echo esc_attr($variant); ?>">
                             <?php echo esc_html($status_label); ?>
                         </span>
                     </td>
@@ -288,9 +283,9 @@ class SystemStatus {
                     <tr>
                         <th><?php esc_html_e('Critical Issues', 'fp-esperienze'); ?></th>
                         <td>
-                            <ul>
+                            <ul class="fp-admin-status-list">
                                 <?php foreach ($critical as $issue) : ?>
-                                    <li class="fp-status-error fp-status-icon"><?php echo esc_html($issue); ?></li>
+                                    <li><?php echo esc_html($issue); ?></li>
                                 <?php endforeach; ?>
                             </ul>
                         </td>
@@ -300,9 +295,9 @@ class SystemStatus {
                     <tr>
                         <th><?php esc_html_e('Warnings', 'fp-esperienze'); ?></th>
                         <td>
-                            <ul>
+                            <ul class="fp-admin-status-list">
                                 <?php foreach ($warnings as $warning) : ?>
-                                    <li class="fp-status-warning fp-status-icon"><?php echo esc_html($warning); ?></li>
+                                    <li><?php echo esc_html($warning); ?></li>
                                 <?php endforeach; ?>
                             </ul>
                         </td>
@@ -312,7 +307,7 @@ class SystemStatus {
                     <tr>
                         <th><?php esc_html_e('Checks Performed', 'fp-esperienze'); ?></th>
                         <td>
-                            <ul>
+                            <ul class="fp-admin-status-list">
                                 <?php foreach ($checks as $check) : ?>
                                     <li><?php echo esc_html($check); ?></li>
                                 <?php endforeach; ?>
@@ -320,9 +315,10 @@ class SystemStatus {
                         </td>
                     </tr>
                 <?php endif; ?>
-            </table>
-        </div>
+            </tbody>
+        </table>
         <?php
+        AdminComponents::closeCard();
     }
 
     /**
@@ -331,18 +327,20 @@ class SystemStatus {
     private function renderSystemInfo(): void {
         global $wp_version;
 
+        AdminComponents::openCard([
+            'title' => __('System Information', 'fp-esperienze'),
+        ]);
         ?>
-        <div class="fp-status-section">
-            <h2><?php _e('System Information', 'fp-esperienze'); ?></h2>
-            <table class="fp-status-table">
+        <table class="fp-admin-table">
+            <tbody>
                 <tr>
                     <th><?php _e('WordPress Version', 'fp-esperienze'); ?></th>
                     <td>
                         <?php echo esc_html($wp_version); ?>
                         <?php if (version_compare($wp_version, '6.5', '>=')) : ?>
-                            <span class="fp-status-ok fp-status-icon"><?php _e('Compatible', 'fp-esperienze'); ?></span>
+                            <span class="fp-admin-badge fp-admin-badge--success"><?php _e('Compatible', 'fp-esperienze'); ?></span>
                         <?php else : ?>
-                            <span class="fp-status-error fp-status-icon"><?php _e('Requires WordPress 6.5+', 'fp-esperienze'); ?></span>
+                            <span class="fp-admin-badge fp-admin-badge--danger"><?php _e('Requires WordPress 6.5+', 'fp-esperienze'); ?></span>
                         <?php endif; ?>
                     </td>
                 </tr>
@@ -352,12 +350,12 @@ class SystemStatus {
                         <?php if (defined('WC_VERSION')) : ?>
                             <?php echo esc_html(WC_VERSION); ?>
                             <?php if (version_compare(WC_VERSION, '8.0', '>=')) : ?>
-                                <span class="fp-status-ok fp-status-icon"><?php _e('Compatible', 'fp-esperienze'); ?></span>
+                                <span class="fp-admin-badge fp-admin-badge--success"><?php _e('Compatible', 'fp-esperienze'); ?></span>
                             <?php else : ?>
-                                <span class="fp-status-error fp-status-icon"><?php _e('Requires WooCommerce 8.0+', 'fp-esperienze'); ?></span>
+                                <span class="fp-admin-badge fp-admin-badge--danger"><?php _e('Requires WooCommerce 8.0+', 'fp-esperienze'); ?></span>
                             <?php endif; ?>
                         <?php else : ?>
-                            <span class="fp-status-error fp-status-icon"><?php _e('WooCommerce not detected', 'fp-esperienze'); ?></span>
+                            <span class="fp-admin-badge fp-admin-badge--danger"><?php _e('WooCommerce not detected', 'fp-esperienze'); ?></span>
                         <?php endif; ?>
                     </td>
                 </tr>
@@ -366,9 +364,9 @@ class SystemStatus {
                     <td>
                         <?php echo esc_html(PHP_VERSION); ?>
                         <?php if (version_compare(PHP_VERSION, '8.1', '>=')) : ?>
-                            <span class="fp-status-ok fp-status-icon"><?php _e('Compatible', 'fp-esperienze'); ?></span>
+                            <span class="fp-admin-badge fp-admin-badge--success"><?php _e('Compatible', 'fp-esperienze'); ?></span>
                         <?php else : ?>
-                            <span class="fp-status-error fp-status-icon"><?php _e('Requires PHP 8.1+', 'fp-esperienze'); ?></span>
+                            <span class="fp-admin-badge fp-admin-badge--danger"><?php _e('Requires PHP 8.1+', 'fp-esperienze'); ?></span>
                         <?php endif; ?>
                     </td>
                 </tr>
@@ -379,16 +377,15 @@ class SystemStatus {
                 <tr>
                     <th><?php _e('WordPress Timezone', 'fp-esperienze'); ?></th>
                     <td>
-                        <?php 
+                        <?php
                         $timezone = get_option('timezone_string');
                         if (empty($timezone)) {
                             $offset = get_option('gmt_offset');
-                            // Handle decimal offsets (e.g., 5.5 for IST)
                             if (is_numeric($offset)) {
                                 if (fmod($offset, 1) == 0) {
-                                    echo sprintf('UTC%+d', (int)$offset);
+                                    echo esc_html(sprintf('UTC%+d', (int) $offset));
                                 } else {
-                                    echo sprintf('UTC%+.1f', (float)$offset);
+                                    echo esc_html(sprintf('UTC%+.1f', (float) $offset));
                                 }
                             } else {
                                 echo 'UTC+0';
@@ -399,9 +396,10 @@ class SystemStatus {
                         ?>
                     </td>
                 </tr>
-            </table>
-        </div>
+            </tbody>
+        </table>
         <?php
+        AdminComponents::closeCard();
     }
 
     /**
@@ -432,32 +430,44 @@ class SystemStatus {
      * Render system checks
      */
     private function renderChecks(array $checks): void {
+        AdminComponents::openCard([
+            'title' => __('System Checks', 'fp-esperienze'),
+        ]);
         ?>
-        <div class="fp-status-section">
-            <h2><?php _e('System Checks', 'fp-esperienze'); ?></h2>
-            <table class="fp-status-table">
+        <table class="fp-admin-table">
+            <tbody>
                 <?php foreach ($checks as $check_name => $check) : ?>
+                    <?php
+                    $status = $check['status'] ?? 'warning';
+                    $variant = 'warning';
+                    if ($status === 'ok') {
+                        $variant = 'success';
+                    } elseif ($status === 'error') {
+                        $variant = 'danger';
+                    }
+                    ?>
                     <tr>
                         <th><?php echo esc_html($check['title']); ?></th>
                         <td>
-                            <span class="fp-status-<?php echo esc_attr($check['status']); ?> fp-status-icon">
+                            <span class="fp-admin-badge fp-admin-badge--<?php echo esc_attr($variant); ?>">
                                 <?php echo esc_html($check['message']); ?>
                             </span>
                             <?php if (!empty($check['action'])) : ?>
-                                <a href="<?php echo esc_url($check['action']['url']); ?>" 
+                                <a href="<?php echo esc_url($check['action']['url']); ?>"
                                    class="button button-secondary fp-fix-button">
                                     <?php echo esc_html($check['action']['label']); ?>
                                 </a>
                             <?php endif; ?>
                             <?php if (!empty($check['description'])) : ?>
-                                <p class="description"><?php echo esc_html($check['description']); ?></p>
+                                <p class="fp-admin-helper-text"><?php echo esc_html($check['description']); ?></p>
                             <?php endif; ?>
                         </td>
                     </tr>
                 <?php endforeach; ?>
-            </table>
-        </div>
+            </tbody>
+        </table>
         <?php
+        AdminComponents::closeCard();
     }
 
     /**
@@ -636,34 +646,37 @@ class SystemStatus {
             'Bookings' => $wpdb->prefix . 'fp_bookings',
             'Experience Vouchers' => $wpdb->prefix . 'fp_exp_vouchers',
             'Legacy Vouchers' => $wpdb->prefix . 'fp_vouchers',
-            'Analytics Events' => $wpdb->prefix . 'fp_analytics_events'
+            'Analytics Events' => $wpdb->prefix . 'fp_analytics_events',
         ];
 
+        AdminComponents::openCard([
+            'title' => __('Database Information', 'fp-esperienze'),
+        ]);
         ?>
-        <div class="fp-status-section">
-            <h2><?php _e('Database Information', 'fp-esperienze'); ?></h2>
-            <table class="fp-status-table">
+        <table class="fp-admin-table">
+            <tbody>
                 <?php foreach ($tables as $name => $table) : ?>
-                    <?php 
+                    <?php
                     $exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table)) === $table;
-                    $count = $exists ? $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM `{$table}`")) : 0;
+                    $count = $exists ? (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM `{$table}`")) : 0;
                     ?>
                     <tr>
                         <th><?php echo esc_html($name); ?></th>
                         <td>
                             <?php if ($exists) : ?>
-                                <span class="fp-status-ok fp-status-icon">
-                                    <?php printf(__('%d records', 'fp-esperienze'), $count); ?>
+                                <span class="fp-admin-badge fp-admin-badge--success">
+                                    <?php printf(__('Records: %s', 'fp-esperienze'), number_format_i18n($count)); ?>
                                 </span>
                             <?php else : ?>
-                                <span class="fp-status-error fp-status-icon"><?php _e('Table missing', 'fp-esperienze'); ?></span>
+                                <span class="fp-admin-badge fp-admin-badge--danger"><?php _e('Table missing', 'fp-esperienze'); ?></span>
                             <?php endif; ?>
                         </td>
                     </tr>
                 <?php endforeach; ?>
-            </table>
-        </div>
+            </tbody>
+        </table>
         <?php
+        AdminComponents::closeCard();
     }
 
     /**
@@ -675,53 +688,57 @@ class SystemStatus {
         $integration_checks = [
             'Google Analytics 4' => [
                 'key' => 'ga4_measurement_id',
-                'docs' => 'https://support.google.com/analytics/answer/9539598'
+                'docs' => 'https://support.google.com/analytics/answer/9539598',
             ],
             'Google Ads' => [
                 'key' => 'gads_conversion_id',
-                'docs' => 'https://support.google.com/google-ads/answer/2684489'
+                'docs' => 'https://support.google.com/google-ads/answer/2684489',
             ],
             'Meta Pixel' => [
                 'key' => 'meta_pixel_id',
-                'docs' => 'https://www.facebook.com/business/help/952192354843755'
+                'docs' => 'https://www.facebook.com/business/help/952192354843755',
             ],
             'Brevo API' => [
                 'key' => 'brevo_api_key',
-                'docs' => 'https://developers.brevo.com/docs/getting-started'
+                'docs' => 'https://developers.brevo.com/docs/getting-started',
             ],
             'Google Places' => [
                 'key' => 'gplaces_api_key',
-                'docs' => 'https://developers.google.com/maps/documentation/places/web-service/get-api-key'
-            ]
+                'docs' => 'https://developers.google.com/maps/documentation/places/web-service/get-api-key',
+            ],
         ];
 
+        AdminComponents::openCard([
+            'title' => __('Integration Status', 'fp-esperienze'),
+        ]);
         ?>
-        <div class="fp-status-section">
-            <h2><?php _e('Integration Status', 'fp-esperienze'); ?></h2>
-            <table class="fp-status-table">
+        <table class="fp-admin-table">
+            <tbody>
                 <?php foreach ($integration_checks as $name => $config) : ?>
-                    <?php $is_configured = !empty($integrations[$config['key']]); ?>
+                    <?php $is_configured = ! empty($integrations[$config['key']]); ?>
                     <tr>
                         <th><?php echo esc_html($name); ?></th>
                         <td>
                             <?php if ($is_configured) : ?>
-                                <span class="fp-status-ok fp-status-icon"><?php _e('Configured', 'fp-esperienze'); ?></span>
+                                <span class="fp-admin-badge fp-admin-badge--success"><?php _e('Configured', 'fp-esperienze'); ?></span>
                             <?php else : ?>
-                                <span class="fp-status-warning fp-status-icon"><?php _e('Not configured', 'fp-esperienze'); ?></span>
-                                <a href="<?php echo esc_url(admin_url('admin.php?page=fp-esperienze-settings&tab=integrations')); ?>" 
+                                <span class="fp-admin-badge fp-admin-badge--warning"><?php _e('Not configured', 'fp-esperienze'); ?></span>
+                                <a href="<?php echo esc_url(admin_url('admin.php?page=fp-esperienze-settings&tab=integrations')); ?>"
                                    class="button button-secondary fp-fix-button">
                                     <?php _e('Configure', 'fp-esperienze'); ?>
                                 </a>
-                                <a href="<?php echo esc_url($config['docs']); ?>" 
-                                   class="button button-secondary fp-fix-button" target="_blank">
+                                <a href="<?php echo esc_url($config['docs']); ?>"
+                                   class="button button-secondary fp-fix-button" target="_blank" rel="noopener noreferrer">
                                     <?php _e('Documentation', 'fp-esperienze'); ?>
                                 </a>
                             <?php endif; ?>
                         </td>
                     </tr>
                 <?php endforeach; ?>
-            </table>
-        </div>
+            </tbody>
+        </table>
         <?php
+        AdminComponents::closeCard();
     }
+
 }
