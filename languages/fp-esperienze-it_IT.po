@@ -3995,6 +3995,36 @@ msgid "Select which days of the week this time slot is available"
 msgstr ""
 "Seleziona quali giorni della settimana questa fascia oraria è disponibile"
 
+msgid "Slot %s"
+msgstr "Slot %s"
+
+msgid "Recurring weekly availability"
+msgstr "Disponibilità ricorrente settimanale"
+
+msgid "Guests see this start time in their timezone."
+msgstr "Gli ospiti vedono questo orario nel proprio fuso orario."
+
+msgid "Select at least one day to activate this slot."
+msgstr "Seleziona almeno un giorno per attivare questo slot."
+
+msgid "Slot notes"
+msgstr "Note sullo slot"
+
+msgid "Repeats weekly on your chosen days."
+msgstr "Si ripete settimanalmente nei giorni scelti."
+
+msgid "Overrides below replace product defaults."
+msgstr "Le personalizzazioni qui sotto sostituiscono i valori predefiniti del prodotto."
+
+msgid "Customers only see published, in-season slots."
+msgstr "I clienti vedono solo gli slot pubblicati e disponibili in stagione."
+
+msgid "Time slot overrides"
+msgstr "Personalizzazioni dello slot orario"
+
+msgid "Adjust capacity, pricing, and duration for this specific time slot."
+msgstr "Modifica capacità, prezzi e durata per questo specifico slot orario."
+
 #: includes/ProductType/Experience.php:857
 #: includes/ProductType/Experience.php:868
 #: includes/ProductType/Experience.php:878
@@ -5447,4 +5477,25 @@ msgstr "Nessun evento trovato."
 
 msgid "Push token is too long. Please try again with a valid token."
 msgstr "Il token push è troppo lungo. Riprova con un token valido."
+
+
+#: includes/ProductType/Experience.php:1188
+msgid "Duplicate time slot"
+msgstr "Duplica fascia oraria"
+
+#: includes/ProductType/Experience.php:1190 assets/js/admin.js:2365 assets/js/modules/schedule-builder.js:404
+msgid "Duplicate slot"
+msgstr "Duplica fascia"
+
+#: assets/js/admin.js:1680 assets/js/modules/schedule-builder.js:83 assets/js/modules/schedule-builder.js:301
+msgid "Time slot duplicated"
+msgstr "Fascia oraria duplicata"
+
+#: assets/js/admin.js:1686 assets/js/modules/schedule-builder.js:89 assets/js/modules/schedule-builder.js:307
+msgid "Unable to duplicate this time slot. Please try again."
+msgstr "Impossibile duplicare questa fascia oraria. Riprova."
+
+#: assets/js/admin.js:2336
+msgid "An unexpected error occurred while adding the time slot. Please try again."
+msgstr "Si è verificato un errore imprevisto durante l'aggiunta della fascia oraria. Riprova."
 
