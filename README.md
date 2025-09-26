@@ -51,8 +51,8 @@ A WordPress + WooCommerce plugin for experience booking management by Francesco 
 
 ## Release Artifacts
 
-- Genera l'archivio di distribuzione con `bash scripts/build-plugin-zip.sh`; il file risultante viene salvato nella cartella ignorata `dist/` e non è versionato.
-- Calcola opzionalmente un checksum SHA-256 con `shasum -a 256 dist/fp-esperienze-v*.zip > dist/fp-esperienze-v*.zip.sha256` prima di distribuire l'archivio.
+- Genera l'archivio di distribuzione con `tools/build-plugin-zip.sh --slug fp-esperienze --out-dir dist`; il file risultante viene salvato nella cartella ignorata `dist/` e non è versionato.
+- Calcola opzionalmente un checksum SHA-256 con `shasum -a 256 dist/fp-esperienze*.zip > dist/fp-esperienze*.zip.sha256` prima di distribuire l'archivio.
 - Consulta [UPGRADE.md](UPGRADE.md) per i passi di deploy e rigenera l'archivio ogni volta che aggiorni il codice.
 
 ### Trusted Proxy Configuration
@@ -1597,11 +1597,11 @@ I binari generati (zip, asset minificati, bundle compilati) non vengono più ver
 
 ### Pacchetto di distribuzione
 
-- Lancia `bash scripts/build-plugin-zip.sh` per creare l'archivio nella cartella ignorata `dist/`.
-- Genera facoltativamente il checksum con `shasum -a 256 dist/fp-esperienze-v*.zip > dist/fp-esperienze-v*.zip.sha256` quando devi allegare il pacchetto a una release.
+- Lancia `tools/build-plugin-zip.sh --slug fp-esperienze --out-dir dist` per creare l'archivio nella cartella ignorata `dist/`.
+- Genera facoltativamente il checksum con `shasum -a 256 dist/fp-esperienze*.zip > dist/fp-esperienze*.zip.sha256` quando devi allegare il pacchetto a una release.
 
 ## Build & Release (CI)
 - Gli artefatti di build (zip) non sono versionati nel repository.
 - La CI su Pull Request crea lo zip del plugin e lo pubblica come artifact scaricabile.
 - Il push di un tag `v*` genera una GitHub Release con allegati zip e checksum SHA-256.
-- Build locale: esegui `bash scripts/build-plugin-zip.sh` e recupera l'output in `dist/`.
+- Build locale: esegui `tools/build-plugin-zip.sh --slug fp-esperienze --out-dir dist` e recupera l'output in `dist/`.

@@ -3,7 +3,7 @@
 ## Summary
 - Refreshed `README.md` with 1.1.0 highlights, documented the distributable artifact, and linked checksum verification guidance.
 - Added a formal `CHANGELOG.md` and `UPGRADE.md` describing user-facing changes and the recommended migration plan.
-- Produced a distributable ZIP via `scripts/build-plugin-zip.sh` (saved in the ignored `dist/` directory) with production dependencies and compiled translations, più un checksum SHA-256 per la verifica.
+- Produced a distributable ZIP via `tools/build-plugin-zip.sh --slug fp-esperienze --out-dir dist` (saved in the ignored `dist/` directory) with production dependencies and compiled translations, più un checksum SHA-256 per la verifica.
 
 ## Release Checklist
 - [x] `composer install` (with dev dependencies) and `vendor/bin/phpunit` executed locally.
