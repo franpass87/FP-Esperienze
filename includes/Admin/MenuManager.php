@@ -404,7 +404,7 @@ class MenuManager {
                                             <strong><?php echo esc_html($product_name); ?></strong><br>
                                             <small style="color: #666;">
                                                 <?php echo esc_html($booking->customer_name); ?> • 
-                                                <?php echo esc_html(date_i18n(get_option('date_format') . ' ' . get_option('time_format'), strtotime($booking->booking_date . ' ' . $booking->booking_time))); ?>
+                                                <?php echo esc_html(\fp_esperienze_wp_date(get_option('date_format') . ' ' . get_option('time_format'), strtotime($booking->booking_date . ' ' . $booking->booking_time))); ?>
                                             </small>
                                         </div>
                                         <div>
@@ -591,9 +591,9 @@ class MenuManager {
                                     </td>
                                     <td>
                                         <?php 
-                                        echo esc_html(date_i18n(get_option('date_format'), strtotime($booking->booking_date))); 
+                                        echo esc_html(\fp_esperienze_wp_date(get_option('date_format'), strtotime($booking->booking_date))); 
                                         echo '<br>';
-                                        echo esc_html(date_i18n(get_option('time_format'), strtotime($booking->booking_time)));
+                                        echo esc_html(\fp_esperienze_wp_date(get_option('time_format'), strtotime($booking->booking_time)));
                                         ?>
                                     </td>
                                     <td>
@@ -617,7 +617,7 @@ class MenuManager {
                                         }
                                         ?>
                                     </td>
-                                    <td><?php echo esc_html(date_i18n(get_option('date_format') . ' ' . get_option('time_format'), strtotime($booking->created_at))); ?></td>
+                                    <td><?php echo esc_html(\fp_esperienze_wp_date(get_option('date_format') . ' ' . get_option('time_format'), strtotime($booking->created_at))); ?></td>
                                     <td>
                                         <?php if ($booking->status === 'confirmed') : ?>
                                             <button type="button" class="button button-small fp-reschedule-booking" data-booking-id="<?php echo esc_attr($booking->id); ?>" data-product-id="<?php echo esc_attr($booking->product_id); ?>" data-current-date="<?php echo esc_attr($booking->booking_date); ?>" data-current-time="<?php echo esc_attr($booking->booking_time); ?>">
@@ -1761,13 +1761,13 @@ class MenuManager {
                                         </span>
                                     </td>
                                     <td>
-                                        <?php echo esc_html(date_i18n(get_option('date_format'), strtotime($voucher->expires_on))); ?>
+                                        <?php echo esc_html(\fp_esperienze_wp_date(get_option('date_format'), strtotime($voucher->expires_on))); ?>
                                         <?php if (strtotime($voucher->expires_on) < time() && $voucher->status === 'active'): ?>
                                             <br><small class="fp-error-text"><?php _e('Expired', 'fp-esperienze'); ?></small>
                                         <?php endif; ?>
                                     </td>
                                     <td>
-                                        <?php echo esc_html(date_i18n(get_option('date_format'), strtotime($voucher->created_at))); ?>
+                                        <?php echo esc_html(\fp_esperienze_wp_date(get_option('date_format'), strtotime($voucher->created_at))); ?>
                                     </td>
                                     <td>
                                         <?php if (!empty($voucher->pdf_path) && file_exists($voucher->pdf_path)): ?>
@@ -2145,7 +2145,7 @@ class MenuManager {
             
             add_action('admin_notices', function() use ($new_expiry_date) {
                 echo '<div class="notice notice-success is-dismissible"><p>' . 
-                     sprintf(esc_html__('Voucher expiration extended to %s.', 'fp-esperienze'), date_i18n(get_option('date_format'), strtotime($new_expiry_date))) . 
+                     sprintf(esc_html__('Voucher expiration extended to %s.', 'fp-esperienze'), \fp_esperienze_wp_date(get_option('date_format'), strtotime($new_expiry_date))) . 
                      '</p></div>';
             });
         } else {
@@ -2407,7 +2407,7 @@ class MenuManager {
                         <tbody>
                             <?php foreach ($closures as $closure): ?>
                                 <tr>
-                                    <td><?php echo esc_html(date_i18n(get_option('date_format'), strtotime($closure->date))); ?></td>
+                                    <td><?php echo esc_html(\fp_esperienze_wp_date(get_option('date_format'), strtotime($closure->date))); ?></td>
                                     <td><?php echo esc_html($closure->product_name ?: __('Unknown Product', 'fp-esperienze')); ?></td>
                                     <td><?php echo esc_html($closure->reason ?: '-'); ?></td>
                                     <td>
@@ -3057,7 +3057,7 @@ class MenuManager {
                                 <?php
                                 $next_cleanup = wp_next_scheduled('fp_esperienze_cleanup_holds');
                                 if ($next_cleanup) {
-                                    echo esc_html(date_i18n(get_option('date_format') . ' ' . get_option('time_format'), $next_cleanup));
+                                    echo esc_html(\fp_esperienze_wp_date(get_option('date_format') . ' ' . get_option('time_format'), $next_cleanup));
                                 } else {
                                     _e('Not scheduled', 'fp-esperienze');
                                 }

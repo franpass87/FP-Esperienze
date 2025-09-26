@@ -1,0 +1,202 @@
+
+
+Code Coverage Report:        
+  2025-09-26 16:16:56        
+                             
+ Summary:                    
+  Classes:  0.00% (0/96)     
+  Methods:  0.52% (6/1163)   
+  Lines:    0.60% (143/23746)
+
+FP\Esperienze\AI\AIFeaturesManager
+  Methods:   0.00% ( 0/44)   Lines:   0.00% (  0/781)
+FP\Esperienze\Admin\AdvancedAnalytics
+  Methods:   0.00% ( 0/23)   Lines:   0.00% (  0/359)
+FP\Esperienze\Admin\DependencyChecker
+  Methods:   0.00% ( 0/ 6)   Lines:   0.00% (  0/ 65)
+FP\Esperienze\Admin\FeatureDemoPage
+  Methods:   0.00% ( 0/ 6)   Lines:   0.00% (  0/121)
+FP\Esperienze\Admin\MenuManager
+  Methods:   0.00% ( 0/49)   Lines:   0.00% (  0/2205)
+FP\Esperienze\Admin\OnboardingDashboardWidget
+  Methods:   0.00% ( 0/ 7)   Lines:   0.00% (  0/109)
+FP\Esperienze\Admin\OnboardingHelper
+  Methods:   0.00% ( 0/14)   Lines:   0.00% (  0/281)
+FP\Esperienze\Admin\OnboardingNotice
+  Methods:   0.00% ( 0/ 4)   Lines:   0.00% (  0/ 87)
+FP\Esperienze\Admin\OperationalAlerts
+  Methods:   0.00% ( 0/20)   Lines:   0.00% (  0/267)
+FP\Esperienze\Admin\PerformanceSettings
+  Methods:   0.00% ( 0/ 4)   Lines:   0.00% (  0/ 91)
+FP\Esperienze\Admin\ReportsManager
+  Methods:   0.00% ( 0/11)   Lines:   0.00% (  0/286)
+FP\Esperienze\Admin\SEOSettings
+  Methods:   0.00% ( 0/19)   Lines:   0.00% (  0/140)
+FP\Esperienze\Admin\Settings\AutoTranslateSettings
+  Methods:   0.00% ( 0/11)   Lines:   0.00% (  0/129)
+FP\Esperienze\Admin\Settings\BrandingSettingsView
+  Methods:   0.00% ( 0/ 3)   Lines:   0.00% (  0/ 28)
+FP\Esperienze\Admin\Settings\Services\BookingSettingsService
+  Methods:   0.00% ( 0/ 1)   Lines:   0.00% (  0/  6)
+FP\Esperienze\Admin\Settings\Services\BrandingSettingsService
+  Methods:   0.00% ( 0/ 1)   Lines:   0.00% (  0/ 17)
+FP\Esperienze\Admin\Settings\Services\GeneralSettingsService
+  Methods:   0.00% ( 0/ 1)   Lines:   0.00% (  0/  5)
+FP\Esperienze\Admin\Settings\Services\GiftSettingsService
+  Methods:   0.00% ( 0/ 1)   Lines:   0.00% (  0/ 16)
+FP\Esperienze\Admin\Settings\Services\IntegrationsSettingsService
+  Methods:   0.00% ( 0/ 1)   Lines:   0.00% (  0/ 24)
+FP\Esperienze\Admin\Settings\Services\NotificationsSettingsService
+  Methods:   0.00% ( 0/ 1)   Lines:   0.00% (  0/ 19)
+FP\Esperienze\Admin\Settings\Services\SettingsUpdateResult
+  Methods:   0.00% ( 0/ 6)   Lines:   0.00% (  0/ 10)
+FP\Esperienze\Admin\Settings\Services\WebhookSettingsService
+  Methods:   0.00% ( 0/ 1)   Lines:   0.00% (  0/ 10)
+FP\Esperienze\Admin\Settings\TranslationHelp
+  Methods:   0.00% ( 0/ 3)   Lines:   0.00% (  0/ 45)
+FP\Esperienze\Admin\SetupWizard
+  Methods:   0.00% ( 0/21)   Lines:   0.00% (  0/438)
+FP\Esperienze\Admin\SystemStatus
+  Methods:   0.00% ( 0/17)   Lines:   0.00% (  0/469)
+FP\Esperienze\Blocks\ArchiveBlock
+  Methods:   0.00% ( 0/ 4)   Lines:   0.00% (  0/ 76)
+FP\Esperienze\Booking\BookingManager
+  Methods:   0.00% ( 0/38)   Lines:   0.00% (  0/935)
+FP\Esperienze\Booking\Cart_Hooks
+  Methods:   0.00% ( 0/25)   Lines:   0.00% (  0/578)
+FP\Esperienze\CLI\OnboardingCommand
+  Methods:   0.00% ( 0/ 4)   Lines:   0.00% (  0/ 90)
+FP\Esperienze\CLI\OperationsCommand
+  Methods:   0.00% ( 0/ 1)   Lines:   0.00% (  0/136)
+FP\Esperienze\CLI\ProductionCheckCommand
+  Methods:   0.00% ( 0/ 4)   Lines:   0.00% (  0/ 62)
+FP\Esperienze\CLI\QualityAssuranceCommand
+  Methods:   0.00% ( 0/14)   Lines:   0.00% (  0/241)
+FP\Esperienze\CLI\TranslateCommand
+  Methods:   0.00% ( 0/ 1)   Lines:   0.00% (  0/ 33)
+FP\Esperienze\Core\AnalyticsTracker
+  Methods:   0.00% ( 0/ 7)   Lines:   0.00% (  0/ 95)
+FP\Esperienze\Core\AssetOptimizer
+  Methods:   0.00% ( 0/19)   Lines:   0.00% (  0/236)
+FP\Esperienze\Core\AutoTranslator
+  Methods:   0.00% ( 0/ 1)   Lines:   0.00% (  0/ 63)
+FP\Esperienze\Core\CacheManager
+  Methods:   0.00% ( 0/24)   Lines:   0.00% (  0/224)
+FP\Esperienze\Core\CapabilityManager
+  Methods:   0.00% ( 0/11)   Lines:   0.00% (  0/ 52)
+FP\Esperienze\Core\ErrorRecovery
+  Methods:   0.00% ( 0/ 5)   Lines:   0.00% (  0/ 63)
+FP\Esperienze\Core\FeatureTester
+  Methods:   0.00% ( 0/ 5)   Lines:   0.00% (  0/ 55)
+FP\Esperienze\Core\I18nManager
+  Methods:   0.00% ( 0/15)   Lines:   0.00% (  0/221)
+FP\Esperienze\Core\Installer
+  Methods:   0.00% ( 0/22)   Lines:   0.00% (  0/721)
+FP\Esperienze\Core\Log
+  Methods:   0.00% ( 0/ 5)   Lines:   0.00% (  0/ 15)
+FP\Esperienze\Core\PerformanceMonitor
+  Methods:   0.00% ( 0/ 4)   Lines:   0.00% (  0/ 39)
+FP\Esperienze\Core\PerformanceOptimizer
+  Methods:   0.00% ( 0/16)   Lines:   0.00% (  0/232)
+FP\Esperienze\Core\Plugin
+  Methods:   0.00% ( 0/46)   Lines:   0.00% (  0/627)
+FP\Esperienze\Core\ProductionValidator
+  Methods:   0.00% ( 0/ 8)   Lines:   0.00% (  0/101)
+FP\Esperienze\Core\QueryMonitor
+  Methods:   0.00% ( 0/ 9)   Lines:   0.00% (  0/ 78)
+FP\Esperienze\Core\RateLimiter
+  Methods:   0.00% ( 0/ 8)   Lines:   0.00% (  0/123)
+FP\Esperienze\Core\RuntimeLogger
+  Methods:  18.18% ( 4/22)   Lines:  51.41% ( 73/142)
+FP\Esperienze\Core\SecurityEnhancer
+  Methods:   0.00% ( 0/12)   Lines:   0.00% (  0/128)
+FP\Esperienze\Core\ServiceBooter
+  Methods:  33.33% ( 2/ 6)   Lines:  71.01% ( 49/ 69)
+FP\Esperienze\Core\SiteHealth
+  Methods:   0.00% ( 0/10)   Lines:   0.00% (  0/269)
+FP\Esperienze\Core\TranslationCompiler
+  Methods:   0.00% ( 0/10)   Lines:   0.00% (  0/ 93)
+FP\Esperienze\Core\TranslationLogger
+  Methods:   0.00% ( 0/ 9)   Lines:   0.00% (  0/119)
+FP\Esperienze\Core\TranslationQueue
+  Methods:   0.00% ( 0/ 8)   Lines:   0.00% (  0/ 83)
+FP\Esperienze\Core\UXEnhancer
+  Methods:   0.00% ( 0/13)   Lines:   0.00% (  0/214)
+FP\Esperienze\Core\WebhookManager
+  Methods:   0.00% ( 0/10)   Lines:   0.00% (  0/170)
+FP\Esperienze\Data\Availability
+  Methods:   0.00% ( 0/ 6)   Lines:   0.00% (  0/103)
+FP\Esperienze\Data\DataManager
+  Methods:   0.00% ( 0/ 5)   Lines:   0.00% (  0/  5)
+FP\Esperienze\Data\DynamicPricingHooks
+  Methods:   0.00% ( 0/ 6)   Lines:   0.00% (  0/ 80)
+FP\Esperienze\Data\DynamicPricingManager
+  Methods:   0.00% ( 0/15)   Lines:   0.00% (  0/252)
+FP\Esperienze\Data\ExtraManager
+  Methods:   0.00% ( 0/16)   Lines:   0.00% (  0/202)
+FP\Esperienze\Data\HoldManager
+  Methods:   0.00% ( 0/12)   Lines:   0.00% (  0/251)
+FP\Esperienze\Data\ICSGenerator
+  Methods:   0.00% ( 0/ 5)   Lines:   0.00% (  0/182)
+FP\Esperienze\Data\MeetingPointManager
+  Methods:   0.00% ( 0/15)   Lines:   0.00% (  0/233)
+FP\Esperienze\Data\NotificationManager
+  Methods:   0.00% ( 0/ 6)   Lines:   0.00% (  0/232)
+FP\Esperienze\Data\OverrideManager
+  Methods:   0.00% ( 0/ 7)   Lines:   0.00% (  0/137)
+FP\Esperienze\Data\ScheduleManager
+  Methods:   0.00% ( 0/ 9)   Lines:   0.00% (  0/126)
+FP\Esperienze\Data\StaffScheduleManager
+  Methods:   0.00% ( 0/ 1)   Lines:   0.00% (  0/ 39)
+FP\Esperienze\Data\VoucherManager
+  Methods:   0.00% ( 0/20)   Lines:   0.00% (  0/410)
+FP\Esperienze\Data\WPMLHooks
+  Methods:   0.00% ( 0/ 2)   Lines:   0.00% (  0/ 17)
+FP\Esperienze\Frontend\SEOManager
+  Methods:   0.00% ( 0/16)   Lines:   0.00% (  0/259)
+FP\Esperienze\Frontend\Shortcodes
+  Methods:   0.00% ( 0/16)   Lines:   0.00% (  0/745)
+FP\Esperienze\Frontend\Templates
+  Methods:   0.00% ( 0/ 5)   Lines:   0.00% (  0/ 25)
+FP\Esperienze\Frontend\WidgetCheckoutHandler
+  Methods:   0.00% ( 0/ 4)   Lines:   0.00% (  0/ 49)
+FP\Esperienze\Helpers\ScheduleHelper
+  Methods:   0.00% ( 0/ 7)   Lines:   0.00% (  0/114)
+FP\Esperienze\Helpers\TimezoneHelper
+  Methods:   0.00% ( 0/ 5)   Lines:   0.00% (  0/ 54)
+FP\Esperienze\Integrations\BrevoManager
+  Methods:   0.00% ( 0/10)   Lines:   0.00% (  0/145)
+FP\Esperienze\Integrations\EmailMarketingManager
+  Methods:   0.00% ( 0/50)   Lines:   0.00% (  0/1030)
+FP\Esperienze\Integrations\GoogleBusinessProfileManager
+  Methods:   0.00% ( 0/ 9)   Lines:   0.00% (  0/ 26)
+FP\Esperienze\Integrations\GooglePlacesManager
+  Methods:   0.00% ( 0/10)   Lines:   0.00% (  0/121)
+FP\Esperienze\Integrations\MetaCAPIManager
+  Methods:   0.00% ( 0/ 6)   Lines:   0.00% (  0/170)
+FP\Esperienze\Integrations\TrackingManager
+  Methods:   0.00% ( 0/16)   Lines:   0.00% (  0/278)
+FP\Esperienze\PDF\Qr
+  Methods:   0.00% ( 0/10)   Lines:   0.00% (  0/119)
+FP\Esperienze\PDF\Voucher_Pdf
+  Methods:   0.00% ( 0/ 5)   Lines:   0.00% (  0/126)
+FP\Esperienze\ProductType\Experience
+  Methods:   0.00% ( 0/54)   Lines:   0.00% (  0/1982)
+FP\Esperienze\ProductType\WC_Product_Experience
+  Methods:   0.00% ( 0/18)   Lines:   0.00% (  0/ 40)
+FP\Esperienze\REST\AvailabilityAPI
+  Methods:   0.00% ( 0/ 3)   Lines:   0.00% (  0/ 68)
+FP\Esperienze\REST\BookingsAPI
+  Methods:   0.00% ( 0/ 6)   Lines:   0.00% (  0/175)
+FP\Esperienze\REST\BookingsController
+  Methods:   0.00% ( 0/12)   Lines:   0.00% (  0/205)
+FP\Esperienze\REST\ICSAPI
+  Methods:   0.00% ( 0/ 9)   Lines:   0.00% (  0/257)
+FP\Esperienze\REST\MobileAPIManager
+  Methods:   0.00% ( 0/71)   Lines:   0.00% (  0/2161)
+FP\Esperienze\REST\SecurePDFAPI
+  Methods:   0.00% ( 0/ 4)   Lines:   0.00% (  0/106)
+FP\Esperienze\REST\SystemStatusAPI
+  Methods:   0.00% ( 0/ 7)   Lines:   0.00% (  0/ 79)
+FP\Esperienze\REST\WidgetAPI
+  Methods:   0.00% ( 0/14)   Lines:   0.00% (  0/310)

@@ -3,7 +3,7 @@
  * Plugin Name: FP Esperienze
  * Plugin URI: https://github.com/franpass87/FP-Esperienze
  * Description: Experience booking management plugin for WordPress and WooCommerce
- * Version: 1.0.0
+ * Version: 1.1.0
  * Author: Francesco Passeri
  * Author URI: https://francescopasseri.com
  * Text Domain: fp-esperienze
@@ -24,13 +24,79 @@ if (!defined('ABSPATH')) {
 }
 
 // Plugin constants
-define('FP_ESPERIENZE_VERSION', '1.0.0');
+if (!function_exists('fp_esperienze_resolve_ics_dir')) {
+    /**
+     * Resolve the private ICS directory, isolating multisite blogs automatically.
+     */
+    function fp_esperienze_resolve_ics_dir(): string {
+        $base_dir = trailingslashit(WP_CONTENT_DIR) . 'fp-private/fp-esperienze-ics';
+
+        if (is_multisite()) {
+            $blog_id = get_current_blog_id();
+            if ($blog_id > 1) {
+                $base_dir .= '/site-' . $blog_id;
+            }
+        }
+
+        return $base_dir;
+    }
+}
+
+define('FP_ESPERIENZE_VERSION', '1.1.0');
 define('FP_ESPERIENZE_PLUGIN_FILE', __FILE__);
 define('FP_ESPERIENZE_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('FP_ESPERIENZE_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('FP_ESPERIENZE_PLUGIN_BASENAME', plugin_basename(__FILE__));
-define('FP_ESPERIENZE_ICS_DIR', WP_CONTENT_DIR . '/fp-private/fp-esperienze-ics');
+define('FP_ESPERIENZE_ICS_DIR', fp_esperienze_resolve_ics_dir());
 define('FP_ESPERIENZE_COMPOSER_NOTICE_KEY', 'fp_esperienze_composer_notice_dismissed');
+
+if (!function_exists('fp_esperienze_wp_date')) {
+    /**
+     * Wrapper around wp_date() with graceful fallbacks for legacy environments.
+     *
+     * @param string                                   $format    Date format string.
+     * @param int|string|\DateTimeInterface|null       $datetime Timestamp, strtotime()-parsable string or DateTime instance.
+     * @param \DateTimeZone|null                       $timezone Optional timezone. Defaults to site timezone.
+     */
+    function fp_esperienze_wp_date(string $format, $datetime = null, ?\DateTimeZone $timezone = null): string {
+        if ($datetime instanceof \DateTimeInterface) {
+            $timestamp = $datetime->getTimestamp();
+        } elseif (is_numeric($datetime)) {
+            $timestamp = (int) $datetime;
+        } elseif (is_string($datetime) && $datetime !== '') {
+            $timestamp = strtotime($datetime);
+            if ($timestamp === false) {
+                return '';
+            }
+        } elseif ($datetime === null) {
+            $timestamp = time();
+        } else {
+            return '';
+        }
+
+        $timezone = $timezone ?: wp_timezone();
+
+        $force_legacy = defined('FP_ESPERIENZE_FORCE_LEGACY_DATE') && FP_ESPERIENZE_FORCE_LEGACY_DATE;
+
+        if (!$force_legacy && function_exists('wp_date')) {
+            return wp_date($format, $timestamp, $timezone);
+        }
+
+        $previous_tz = null;
+        if ($timezone instanceof \DateTimeZone) {
+            $previous_tz = date_default_timezone_get();
+            date_default_timezone_set($timezone->getName());
+        }
+
+        $formatted = date_i18n($format, $timestamp, false);
+
+        if ($previous_tz !== null) {
+            date_default_timezone_set($previous_tz);
+        }
+
+        return $formatted;
+    }
+}
 
 // Feature flags
 // Set to true to enable NULL migration for schedule override fields
@@ -168,26 +234,29 @@ function fp_esperienze_write_file( $file_path, $content, $append = true ) {
         require_once ABSPATH . 'wp-admin/includes/file.php';
     }
 
-    if ( ! WP_Filesystem() ) {
-        error_log( 'FP Esperienze: WP_Filesystem could not be initialized.' );
-        error_log( $content );
-        return false;
+    $wp_fs_available = false;
+
+    if ( function_exists( 'WP_Filesystem' ) ) {
+        $wp_fs_available = WP_Filesystem();
+    }
+
+    if ( ! $wp_fs_available || ! $wp_filesystem ) {
+        error_log( 'FP Esperienze: WP_Filesystem unavailable, falling back to direct write.' );
+        return fp_esperienze_write_file_fallback( $file_path, $content, $append );
     }
 
     $dir = dirname( $file_path );
 
     if ( ! $wp_filesystem->exists( $dir ) ) {
         if ( ! $wp_filesystem->mkdir( $dir ) ) {
-            error_log( 'FP Esperienze: Unable to create directory ' . $dir );
-            error_log( $content );
-            return false;
+            error_log( 'FP Esperienze: Unable to create directory ' . $dir . ' via WP_Filesystem. Falling back to direct write.' );
+            return fp_esperienze_write_file_fallback( $file_path, $content, $append );
         }
     }
 
     if ( ! $wp_filesystem->is_writable( $dir ) ) {
-        error_log( 'FP Esperienze: Directory not writable: ' . $dir );
-        error_log( $content );
-        return false;
+        error_log( 'FP Esperienze: Directory not writable via WP_Filesystem: ' . $dir . '. Falling back to direct write.' );
+        return fp_esperienze_write_file_fallback( $file_path, $content, $append );
     }
 
     if ( $append && $wp_filesystem->exists( $file_path ) ) {
@@ -198,9 +267,55 @@ function fp_esperienze_write_file( $file_path, $content, $append = true ) {
         $content = $existing . $content;
     }
 
-    if ( ! $wp_filesystem->put_contents( $file_path, $content, FS_CHMOD_FILE ) ) {
-        error_log( 'FP Esperienze: Failed to write to file: ' . $file_path );
-        error_log( $content );
+    if ( $wp_filesystem->put_contents( $file_path, $content, FS_CHMOD_FILE ) ) {
+        return true;
+    }
+
+    error_log( 'FP Esperienze: WP_Filesystem put_contents failed for ' . $file_path . '. Attempting direct write fallback.' );
+
+    return fp_esperienze_write_file_fallback( $file_path, $content, $append );
+}
+
+/**
+ * Write a file using native PHP functions as a fallback when WP_Filesystem is unavailable.
+ *
+ * @param string $file_path Target file path.
+ * @param string $content   Content to write.
+ * @param bool   $append    Whether to append to the file.
+ *
+ * @return bool
+ */
+function fp_esperienze_write_file_fallback( $file_path, $content, $append = true ) {
+    $dir = dirname( $file_path );
+
+    if ( ! is_dir( $dir ) ) {
+        $created = false;
+
+        if ( function_exists( 'wp_mkdir_p' ) ) {
+            $created = wp_mkdir_p( $dir );
+        }
+
+        if ( ! $created ) {
+            $created = mkdir( $dir, 0775, true ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_mkdir_mkdir
+        }
+
+        if ( ! $created ) {
+            error_log( 'FP Esperienze: Fallback failed to create directory ' . $dir );
+            return false;
+        }
+    }
+
+    $flags = LOCK_EX;
+
+    if ( $append ) {
+        $flags |= FILE_APPEND;
+    }
+
+    // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_writing_file_put_contents
+    $result = file_put_contents( $file_path, $content, $flags );
+
+    if ( false === $result ) {
+        error_log( 'FP Esperienze: Fallback failed to write file ' . $file_path );
         return false;
     }
 

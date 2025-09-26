@@ -1,0 +1,33 @@
+# Phase 2 – Linters
+
+## Environment Preparation
+- Installed Composer dependencies to ensure PHPCS, PHPStan, and supporting WordPress/WooCommerce stubs are available.
+
+## PHP_CodeSniffer (WordPress standard)
+- Command: `php -d memory_limit=512M vendor/bin/phpcs --report=summary`
+- Result: 79,254 errors and 4,396 warnings reported across 95 files. `phpcbf` indicated that 77,858 issues are auto-fixable but the volume and runtime make a single-pass automatic cleanup impractical at this stage. 【284834†L1-L78】
+- Most frequent categories:
+  - Mixed indentation (spaces vs. the tab-indentation expected by WPCS).
+  - Missing interior spacing around parentheses and commas.
+  - Short array syntax flagged by the default ruleset.
+  - Naming and documentation sniffs (e.g., camelCase methods, incomplete DocBlocks).
+- Follow-up plan:
+  - Define an incremental cleanup strategy focusing first on core services and bootstrap files during the refactoring phase.
+  - Tailor the ruleset (or add per-directory suppressions) so security-sensitive sniffs remain active while long-running style fixes are scheduled for later phases.
+
+## PHPStan (level 8)
+- Initial run with `--memory-limit=1G` exhausted memory; rerunning with `--memory-limit=-1` completed successfully. 【beddaf†L1-L9】【c2bb7e†L1-L13】
+- Command: `composer phpstan -- --memory-limit=-1 --no-progress --error-format=table`
+- Result: 154 reported errors covering:
+  - Mis-typed conditionals (strings/arrays passed where booleans are expected).
+  - Missing WordPress constants (`DAY_IN_SECONDS`, `MINUTE_IN_SECONDS`, etc.) in the bootstrap.
+  - Overuse of `empty()`/`short ternary` patterns and missing parameter types in REST controllers.
+  - Strict type expectations for `wp_remote_post`, `wp_date`, and similar APIs.
+- Follow-up plan:
+  - Extend the PHPStan bootstrap to define missing core constants and helper shims.
+  - Prioritize fixing high-risk errors (sanitization, REST request handling) before tightening ignores in later phases.
+  - Keep the existing short baseline focused on AI modules so new fixes remain measurable.
+
+## Next Steps
+- Prepare targeted remediation PRs for the highest-risk files (REST controllers, admin notices) while iterating on the coding standard configuration.
+- Update `.codex-state.json` to mark Phase 2 as complete and capture the outstanding lint remediation work for Phase 3 onward.

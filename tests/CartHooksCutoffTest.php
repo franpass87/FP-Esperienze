@@ -136,8 +136,20 @@ namespace {
         return $default;
     }
 
-    function date_i18n($format, $timestamp, $gmt = false) {
-        return gmdate($format, $timestamp);
+    if (!function_exists('fp_esperienze_wp_date')) {
+        function fp_esperienze_wp_date($format, $datetime = null, $gmt = false) {
+            if ($datetime instanceof \DateTimeInterface) {
+                $timestamp = $datetime->getTimestamp();
+            } elseif (is_numeric($datetime)) {
+                $timestamp = (int) $datetime;
+            } elseif (is_string($datetime) && $datetime !== '') {
+                $timestamp = strtotime($datetime);
+            } else {
+                $timestamp = time();
+            }
+
+            return $gmt ? gmdate($format, $timestamp) : date($format, $timestamp);
+        }
     }
 
     function apply_filters($tag, $value) {

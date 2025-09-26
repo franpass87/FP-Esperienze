@@ -1,0 +1,36 @@
+name: Plugin Tests
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+
+jobs:
+  tests:
+    name: PHP ${{ matrix.php }} / WP ${{ matrix.wordpress }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: [ '8.1', '8.2' ]
+        wordpress: [ '6.3', '6.4' ]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: pcov
+          tools: composer, phpunit
+          ini-values: memory_limit=-1
+          extensions: mbstring, intl, json, xml, ctype, tokenizer, dom
+
+      - name: Install dependencies
+        run: composer install --prefer-dist
+
+      - name: Run test suite
+        env:
+          WP_VERSION: ${{ matrix.wordpress }}
+        run: vendor/bin/phpunit

@@ -302,7 +302,7 @@ class Voucher_Pdf {
                     </div>
                     <div class="detail-row">
                         <div class="detail-label">' . esc_html__('Expires:', 'fp-esperienze') . '</div>
-                        <div class="detail-value">' . esc_html(date_i18n(get_option('date_format'), strtotime($voucher_data['expires_on']))) . '</div>
+                        <div class="detail-value">' . esc_html(\fp_esperienze_wp_date(get_option('date_format'), strtotime($voucher_data['expires_on']))) . '</div>
                     </div>
                 </div>';
         

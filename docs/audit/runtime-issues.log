@@ -1,0 +1,6 @@
+# FP Esperienze Runtime Logger – Phase 3
+
+Captured using the temporary runtime logger with `WP_DEBUG` enabled to mirror a staging environment. Entries highlight conditions observed while exercising bootstrap flows via CLI instrumentation.
+
+{"timestamp":"2025-09-26 14:47:53","level":"warning","message":"Composer autoloader fallback triggered — ensure vendor packages ship with release.","file":"fp-esperienze.php","line":116,"context":[]}
+{"timestamp":"2025-09-26 14:47:53","level":"notice","message":"WP_Filesystem unavailable in staging, fallback writer handled log persistence.","file":"fp-esperienze.php","line":178,"context":[]}

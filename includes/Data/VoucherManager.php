@@ -390,7 +390,7 @@ class VoucherManager {
         $message .= '<p style="font-size: 24px; font-weight: bold; background: ' . esc_attr($primary_color) . '; color: white; padding: 10px; border-radius: 4px; letter-spacing: 2px; margin: 10px 0;">' . esc_html($voucher_data['code']) . '</p>';
         $message .= '<p style="margin: 0; color: #666;">' . sprintf(
             esc_html__('Valid until: %s', 'fp-esperienze'),
-            date_i18n(get_option('date_format'), strtotime($voucher_data['expires_on']))
+            \fp_esperienze_wp_date(get_option('date_format'), strtotime($voucher_data['expires_on']))
         ) . '</p>';
         $message .= '</div>';
         
@@ -445,7 +445,7 @@ class VoucherManager {
         $message .= '<p><strong>' . esc_html__('Recipient:', 'fp-esperienze') . '</strong> ' . esc_html($voucher_data['recipient_name']) . ' (' . esc_html($voucher_data['recipient_email']) . ')</p>';
         $message .= '<p><strong>' . esc_html__('Experience:', 'fp-esperienze') . '</strong> ' . esc_html($product_name) . '</p>';
         $message .= '<p><strong>' . esc_html__('Voucher Code:', 'fp-esperienze') . '</strong> ' . esc_html($voucher_data['code']) . '</p>';
-        $message .= '<p><strong>' . esc_html__('Valid Until:', 'fp-esperienze') . '</strong> ' . date_i18n(get_option('date_format'), strtotime($voucher_data['expires_on'])) . '</p>';
+        $message .= '<p><strong>' . esc_html__('Valid Until:', 'fp-esperienze') . '</strong> ' . \fp_esperienze_wp_date(get_option('date_format'), strtotime($voucher_data['expires_on'])) . '</p>';
         $message .= '</div>';
         
         $message .= '<p>' . esc_html__('A copy of the voucher PDF is attached to this email for your records.', 'fp-esperienze') . '</p>';

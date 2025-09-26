@@ -388,7 +388,7 @@ class Cart_Hooks {
             if ($gift_data['send_date'] !== 'immediate') {
                 $item_data[] = [
                     'key'   => __('Send Date', 'fp-esperienze'),
-                    'value' => esc_html(date_i18n(get_option('date_format'), strtotime($gift_data['send_date']))),
+                    'value' => esc_html(\fp_esperienze_wp_date(get_option('date_format'), strtotime($gift_data['send_date']))),
                 ];
             }
         }

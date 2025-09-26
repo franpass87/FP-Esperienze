@@ -134,9 +134,21 @@ namespace {
         return time();
     }
 
-    function date_i18n(string $format, int $timestamp)
-    {
-        return date($format, $timestamp);
+    if (!function_exists('fp_esperienze_wp_date')) {
+        function fp_esperienze_wp_date(string $format, $datetime = null)
+        {
+            if ($datetime instanceof \DateTimeInterface) {
+                $timestamp = $datetime->getTimestamp();
+            } elseif (is_numeric($datetime)) {
+                $timestamp = (int) $datetime;
+            } elseif (is_string($datetime) && $datetime !== '') {
+                $timestamp = strtotime($datetime);
+            } else {
+                $timestamp = time();
+            }
+
+            return date($format, $timestamp);
+        }
     }
 
     function get_woocommerce_currency()

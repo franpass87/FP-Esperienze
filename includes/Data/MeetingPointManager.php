@@ -16,12 +16,42 @@ defined('ABSPATH') || exit;
  */
 class MeetingPointManager {
 
+    private const CACHE_GROUP = 'fp_esperienze_meeting_points';
+    private const CACHE_TTL   = 600; // 10 minutes
+
     /**
-     * Simple in-memory cache for meeting points.
+     * Cached meeting points keyed by ID for fast reuse within a request.
      *
      * @var array<int, object>
      */
-    private static array $cache = [];
+    private static array $singleCache = [];
+
+    /**
+     * Track which meeting point IDs have been cached so invalidation can clear them.
+     *
+     * @var array<int, bool>
+     */
+    private static array $cachedIds = [];
+
+    /**
+     * Cached collections of meeting points keyed by translation context.
+     *
+     * @var array<string, array<int, object>>
+     */
+    private static array $listCache = [
+        'translated' => [],
+        'raw'        => [],
+    ];
+
+    /**
+     * Flags indicating whether the list cache has been primed for a context.
+     *
+     * @var array<string, bool>
+     */
+    private static array $listPrimed = [
+        'translated' => false,
+        'raw'        => false,
+    ];
 
     /**
      * Get all meeting points
@@ -30,25 +60,66 @@ class MeetingPointManager {
      * @return array
      */
     public static function getAllMeetingPoints(bool $translate = true): array {
+        $context = $translate ? 'translated' : 'raw';
+
+        if (self::$listPrimed[$context]) {
+            return self::$listCache[$context];
+        }
+
+        $cache_key = self::buildListCacheKey($translate);
+        $cached    = self::cacheGet($cache_key);
+
+        if (is_array($cached)) {
+            if ($context === 'raw') {
+                foreach ($cached as $meeting_point) {
+                    if (is_object($meeting_point) && isset($meeting_point->id)) {
+                        $id = (int) $meeting_point->id;
+                        self::$singleCache[$id] = $meeting_point;
+                        self::$cachedIds[$id]   = true;
+                    }
+                }
+            }
+
+            self::$listCache[$context]  = $cached;
+            self::$listPrimed[$context] = true;
+
+            return $cached;
+        }
+
         global $wpdb;
-        
+
         $table_name = $wpdb->prefix . 'fp_meeting_points';
         $results = $wpdb->get_results(
             // Query contains no external variables, so prepare() is unnecessary.
             "SELECT * FROM {$table_name} ORDER BY name ASC"
         );
-        
+
         if (!$results) {
+            self::$listCache[$context]  = [];
+            self::$listPrimed[$context] = true;
+            self::cacheSet($cache_key, []);
+
             return [];
         }
-        
-        // Apply translations if requested and multilingual plugin is active
+
         if ($translate && I18nManager::isMultilingualActive()) {
-            $results = array_map(function($meeting_point) {
-                return I18nManager::getTranslatedMeetingPoint($meeting_point);
+            $results = array_map(static function($meeting_point) {
+                return I18nManager::getTranslatedMeetingPoint(clone $meeting_point);
             }, $results);
         }
-        
+
+        if (!$translate) {
+            foreach ($results as $meeting_point) {
+                if (is_object($meeting_point) && isset($meeting_point->id)) {
+                    self::rememberMeetingPoint((int) $meeting_point->id, $meeting_point);
+                }
+            }
+        }
+
+        self::$listCache[$context]  = $results;
+        self::$listPrimed[$context] = true;
+        self::cacheSet($cache_key, $results);
+
         return $results;
     }
 
@@ -60,14 +131,27 @@ class MeetingPointManager {
      * @return object|null
      */
     public static function getMeetingPoint(int $id, bool $translate = true): ?object {
-        if (isset(self::$cache[$id])) {
-            $result = self::$cache[$id];
+        if (isset(self::$singleCache[$id])) {
+            $result = self::$singleCache[$id];
 
             if ($translate && I18nManager::isMultilingualActive()) {
-                return I18nManager::getTranslatedMeetingPoint($result);
+                return I18nManager::getTranslatedMeetingPoint(clone $result);
             }
 
             return $result;
+        }
+
+        $cache_key = self::buildSingleCacheKey($id);
+        $cached    = self::cacheGet($cache_key);
+
+        if (is_object($cached)) {
+            self::rememberMeetingPoint($id, $cached);
+
+            if ($translate && I18nManager::isMultilingualActive()) {
+                return I18nManager::getTranslatedMeetingPoint(clone $cached);
+            }
+
+            return $cached;
         }
 
         global $wpdb;
@@ -82,11 +166,10 @@ class MeetingPointManager {
             return null;
         }
 
-        self::$cache[$id] = $result;
+        self::rememberMeetingPoint($id, $result);
 
-        // Apply translation if requested and multilingual plugin is active
         if ($translate && I18nManager::isMultilingualActive()) {
-            $result = I18nManager::getTranslatedMeetingPoint($result);
+            return I18nManager::getTranslatedMeetingPoint(clone $result);
         }
 
         return $result;
@@ -202,16 +285,18 @@ class MeetingPointManager {
             $insert_formats
         );
         
-        if ($result) {
-            $meeting_point_id = $wpdb->insert_id;
-            
-            // Fire hook for translation registration
-            do_action('fp_meeting_point_created', $meeting_point_id);
-            
-            return $meeting_point_id;
+        if (!$result) {
+            return false;
         }
-        
-        return false;
+
+        $meeting_point_id = (int) $wpdb->insert_id;
+
+        self::flushCaches();
+
+        // Fire hook for translation registration
+        do_action('fp_meeting_point_created', $meeting_point_id);
+
+        return $meeting_point_id;
     }
 
     /**
@@ -319,6 +404,8 @@ class MeetingPointManager {
         }
 
         if ($updated) {
+            self::flushCaches($id);
+
             // Fire hook for translation registration
             do_action('fp_meeting_point_updated', $id);
         }
@@ -348,8 +435,128 @@ class MeetingPointManager {
         
         $table_name = $wpdb->prefix . 'fp_meeting_points';
         $result = $wpdb->delete($table_name, ['id' => $id], ['%d']);
-        
-        return $result !== false;
+
+        if ($result === false) {
+            return false;
+        }
+
+        self::flushCaches($id);
+
+        return true;
+    }
+
+    /**
+     * Remember a meeting point in the runtime and persistent cache layers.
+     *
+     * @param int    $id            Meeting point ID.
+     * @param object $meeting_point Meeting point record.
+     * @return void
+     */
+    private static function rememberMeetingPoint(int $id, object $meeting_point): void {
+        self::$singleCache[$id] = $meeting_point;
+        self::$cachedIds[$id]   = true;
+
+        self::cacheSet(self::buildSingleCacheKey($id), $meeting_point);
+    }
+
+    /**
+     * Flush cached meeting point data after mutations.
+     *
+     * @param int|null $id Optional meeting point ID to invalidate.
+     * @return void
+     */
+    private static function flushCaches(?int $id = null): void {
+        foreach (['translated', 'raw'] as $context) {
+            self::$listCache[$context]  = [];
+            self::$listPrimed[$context] = false;
+            self::cacheDelete(self::buildListCacheKey($context === 'translated'));
+        }
+
+        if ($id === null) {
+            foreach (array_keys(self::$cachedIds) as $cached_id) {
+                self::cacheDelete(self::buildSingleCacheKey($cached_id));
+            }
+
+            self::$singleCache = [];
+            self::$cachedIds   = [];
+
+            return;
+        }
+
+        unset(self::$singleCache[$id], self::$cachedIds[$id]);
+        self::cacheDelete(self::buildSingleCacheKey($id));
+    }
+
+    /**
+     * Build the cache key for a single meeting point record.
+     *
+     * @param int $id Meeting point ID.
+     * @return string
+     */
+    private static function buildSingleCacheKey(int $id): string {
+        return 'meeting_point_' . $id;
+    }
+
+    /**
+     * Build the cache key for meeting point collections.
+     *
+     * @param bool $translate Whether the cached set is translated.
+     * @return string
+     */
+    private static function buildListCacheKey(bool $translate): string {
+        return $translate ? 'meeting_points_translated' : 'meeting_points_raw';
+    }
+
+    /**
+     * Retrieve a value from the object cache when available.
+     *
+     * @param string $key Cache key.
+     * @return mixed|null
+     */
+    private static function cacheGet(string $key)
+    {
+        if (!function_exists('wp_cache_get')) {
+            return null;
+        }
+
+        $value = wp_cache_get($key, self::CACHE_GROUP);
+
+        if ($value === false) {
+            return null;
+        }
+
+        return $value;
+    }
+
+    /**
+     * Store a value in the object cache when available.
+     *
+     * @param string $key   Cache key.
+     * @param mixed  $value Cached value.
+     * @return void
+     */
+    private static function cacheSet(string $key, $value): void
+    {
+        if (!function_exists('wp_cache_set')) {
+            return;
+        }
+
+        wp_cache_set($key, $value, self::CACHE_GROUP, self::CACHE_TTL);
+    }
+
+    /**
+     * Remove a value from the object cache when available.
+     *
+     * @param string $key Cache key.
+     * @return void
+     */
+    private static function cacheDelete(string $key): void
+    {
+        if (!function_exists('wp_cache_delete')) {
+            return;
+        }
+
+        wp_cache_delete($key, self::CACHE_GROUP);
     }
 
     /**

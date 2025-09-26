@@ -515,11 +515,11 @@ class EmailMarketingManager {
             'experience_name' => $prepared_data['experience_name'] ?? '',
             'booking_date' => $prepared_data['booking_date'] ?? '',
             'booking_time' => $prepared_data['booking_time'] ?? '',
-            'booking_datetime' => $timestamp ? date_i18n(get_option('date_format') . ' ' . get_option('time_format'), $timestamp) : trim(
+            'booking_datetime' => $timestamp ? \fp_esperienze_wp_date(get_option('date_format') . ' ' . get_option('time_format'), $timestamp) : trim(
                 ($prepared_data['booking_date'] ?? '') . ' ' . ($prepared_data['booking_time'] ?? '')
             ),
-            'booking_date_formatted' => $timestamp ? date_i18n(get_option('date_format'), $timestamp) : ($prepared_data['booking_date'] ?? ''),
-            'booking_time_formatted' => $timestamp ? date_i18n(get_option('time_format'), $timestamp) : ($prepared_data['booking_time'] ?? ''),
+            'booking_date_formatted' => $timestamp ? \fp_esperienze_wp_date(get_option('date_format'), $timestamp) : ($prepared_data['booking_date'] ?? ''),
+            'booking_time_formatted' => $timestamp ? \fp_esperienze_wp_date(get_option('time_format'), $timestamp) : ($prepared_data['booking_time'] ?? ''),
             'meeting_point' => $prepared_data['meeting_point'] ?? '',
             'meeting_point_address' => $prepared_data['meeting_point_address'] ?? '',
             'meeting_point_note' => $prepared_data['meeting_point_note'] ?? '',

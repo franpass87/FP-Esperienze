@@ -409,9 +409,10 @@ class QualityAssuranceCommand extends WP_CLI_Command {
             ];
         }
 
-        $formatted = function_exists('wp_date')
-            ? wp_date(get_option('date_format', 'Y-m-d') . ' ' . get_option('time_format', 'H:i'), $timestamp)
-            : date_i18n('Y-m-d H:i', $timestamp);
+        $formatted = \fp_esperienze_wp_date(
+            get_option('date_format', 'Y-m-d') . ' ' . get_option('time_format', 'H:i'),
+            $timestamp
+        );
 
         return [
             'status' => 'pass',

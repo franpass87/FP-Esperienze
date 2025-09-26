@@ -1614,7 +1614,7 @@ class Experience {
 		<div class="fp-event-date-header">
 			<div class="fp-event-date-info">
 				<span class="dashicons dashicons-calendar-alt"></span>
-				<strong><?php echo esc_html( date_i18n( get_option( 'date_format' ), strtotime( $date ) ) ); ?></strong>
+				<strong><?php echo esc_html( \fp_esperienze_wp_date( get_option( 'date_format' ), strtotime( $date ) ) ); ?></strong>
 				<span class="fp-event-date-meta"><?php printf( _n( '%d time slot', '%d time slots', count( $schedules ), 'fp-esperienze' ), count( $schedules ) ); ?></span>
 			</div>
 			<div class="fp-event-date-actions">
