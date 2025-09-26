@@ -1510,21 +1510,50 @@ class BookingManager {
      * @param string $end_date End date (Y-m-d format)
      * @return array Bookings within date range
      */
-    public static function getBookingsByDateRange(string $start_date, string $end_date): array {
+    public static function getBookingsByDateRange(string $start_date, string $end_date, int $limit = 50, int $offset = 0): array {
         global $wpdb;
-        
+
         $table_name = $wpdb->prefix . 'fp_bookings';
-        
+
+        $limit = max(1, $limit);
+        $offset = max(0, $offset);
+
         $sql = $wpdb->prepare(
-            "SELECT * FROM {$table_name} 
-             WHERE booking_date >= %s AND booking_date <= %s 
+            "SELECT * FROM {$table_name}
+             WHERE booking_date >= %s AND booking_date <= %s
              AND status != 'cancelled'
-             ORDER BY booking_date ASC, booking_time ASC",
+             ORDER BY booking_date ASC, booking_time ASC
+             LIMIT %d OFFSET %d",
+            $start_date,
+            $end_date,
+            $limit,
+            $offset
+        );
+
+        return $wpdb->get_results($sql);
+    }
+
+    /**
+     * Count bookings by date range.
+     *
+     * @param string $start_date Start date (Y-m-d format)
+     * @param string $end_date End date (Y-m-d format)
+     * @return int Total bookings within date range
+     */
+    public static function countBookingsByDateRange(string $start_date, string $end_date): int {
+        global $wpdb;
+
+        $table_name = $wpdb->prefix . 'fp_bookings';
+
+        $sql = $wpdb->prepare(
+            "SELECT COUNT(*) FROM {$table_name}
+             WHERE booking_date >= %s AND booking_date <= %s
+             AND status != 'cancelled'",
             $start_date,
             $end_date
         );
-        
-        return $wpdb->get_results($sql);
+
+        return (int) $wpdb->get_var($sql);
     }
     
     /**
