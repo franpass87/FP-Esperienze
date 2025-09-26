@@ -1603,5 +1603,5 @@ I binari generati (zip, asset minificati, bundle compilati) non vengono più ver
 ## Build & Release (CI)
 - Gli artefatti di build (zip) non sono versionati nel repository.
 - La CI su Pull Request crea lo zip del plugin e lo pubblica come artifact scaricabile.
-- Il push di un tag `v*` genera una GitHub Release con allegati zip e checksum SHA-256.
+- Il workflow `.github/workflows/build-plugin.yml` esegue la build su `main` e, al push di un tag `v*`, pubblica una GitHub Release con allegati zip e checksum SHA-256.
 - Build locale: esegui `tools/build-plugin-zip.sh --slug fp-esperienze --out-dir dist` e recupera l'output in `dist/`.
