@@ -230,8 +230,9 @@ class Plugin {
 
         if ($this->isRunningInAdmin()) {
             $this->hook('init', [$this, 'initAdmin']);
-            $this->hook('admin_enqueue_scripts', [$this, 'enqueueAdminScripts'], 10, 0);
+            $this->hook('admin_enqueue_scripts', [$this, 'enqueueAdminScripts'], 10, 1);
             $this->hook('enqueue_block_editor_assets', [$this, 'enqueueBlockAssets'], 10, 0);
+            $this->hook('admin_body_class', [$this, 'filterAdminBodyClass']);
         } else {
             $this->hook('init', [$this, 'initFrontend']);
             $this->hook('wp_enqueue_scripts', [$this, 'enqueueScripts']);
@@ -690,9 +691,15 @@ class Plugin {
     }
 
     /**
-     * Enqueue admin scripts and styles
+     * Enqueue admin scripts and styles when on FP Esperienze screens.
+     *
+     * @param string $hook Current admin page hook suffix.
      */
-    public function enqueueAdminScripts(): void {
+    public function enqueueAdminScripts(string $hook): void {
+        if (!$this->isPluginAdminContext($hook)) {
+            return;
+        }
+
         // Enqueue CSS (minified if available)
         $admin_css = AssetOptimizer::getAssetInfo('css', 'admin', 'assets/css/admin.css');
 
@@ -850,6 +857,64 @@ class Plugin {
                 'ajax_url' => admin_url('admin-ajax.php'),
             ]);
         }
+    }
+
+    /**
+     * Append a scoped body class so base styles do not leak to other plugins.
+     */
+    public function filterAdminBodyClass(string $classes): string {
+        if ($this->isPluginAdminContext()) {
+            $classes .= ' fp-esperienze-admin-screen';
+        }
+
+        return $classes;
+    }
+
+    /**
+     * Determine whether the current admin context belongs to FP Esperienze.
+     */
+    private function isPluginAdminContext(?string $hook = null): bool {
+        if ($hook !== null && strpos($hook, 'fp-esperienze') !== false) {
+            return true;
+        }
+
+        $screen = function_exists('get_current_screen') ? get_current_screen() : null;
+
+        if ($screen) {
+            if (strpos((string) $screen->id, 'fp-esperienze') !== false) {
+                return true;
+            }
+
+            if ($screen->post_type === 'product') {
+                $post_id = filter_input(INPUT_GET, 'post', FILTER_SANITIZE_NUMBER_INT);
+                if ($post_id) {
+                    $product_id = absint($post_id);
+                    if ($product_id > 0 && function_exists('wc_get_product')) {
+                        $product = wc_get_product($product_id);
+                        if ($product && $product->get_type() === 'experience') {
+                            return true;
+                        }
+                    }
+                }
+
+                $product_type = filter_input(INPUT_GET, 'product_type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+                if (is_string($product_type) && sanitize_key($product_type) === 'experience') {
+                    return true;
+                }
+
+                $post_type = filter_input(INPUT_GET, 'post_type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+                if (is_string($post_type) && sanitize_key($post_type) === 'product') {
+                    return true;
+                }
+            }
+        }
+
+        $page = filter_input(INPUT_GET, 'page', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        if (is_string($page) && strpos($page, 'fp-esperienze') !== false) {
+            return true;
+        }
+
+        return false;
     }
 
     /**

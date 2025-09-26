@@ -1,0 +1,106 @@
+/*
+ * FP Esperienze Admin – Base Styles
+ * ---------------------------------
+ * Structural styles that use the shared tokens to provide consistent
+ * spacing, typography, elevation and focus behaviour across all admin
+ * screens. Rules are scoped to the `fp-esperienze-admin-screen` body
+ * class to avoid leaking into unrelated WordPress pages.
+ */
+
+body.wp-admin.fp-esperienze-admin-screen {
+    font-family: var(--fp-admin-font-family-base);
+    font-size: var(--fp-admin-font-size-base);
+    line-height: var(--fp-admin-line-height-base);
+    color: var(--fp-admin-color-text);
+    background-color: var(--fp-admin-color-surface-muted);
+}
+
+body.wp-admin.fp-esperienze-admin-screen a {
+    color: var(--fp-admin-color-primary);
+    transition: color var(--fp-admin-transition-base) ease;
+}
+
+body.wp-admin.fp-esperienze-admin-screen a:focus-visible,
+body.wp-admin.fp-esperienze-admin-screen button:focus-visible,
+body.wp-admin.fp-esperienze-admin-screen .button:focus-visible,
+body.wp-admin.fp-esperienze-admin-screen input:focus-visible,
+body.wp-admin.fp-esperienze-admin-screen select:focus-visible,
+body.wp-admin.fp-esperienze-admin-screen textarea:focus-visible {
+    outline: var(--fp-admin-focus-ring-size) solid transparent;
+    outline-offset: var(--fp-admin-focus-ring-offset);
+    box-shadow: 0 0 0 var(--fp-admin-focus-ring-inner-width) var(--fp-admin-focus-ring-inner),
+        0 0 0 var(--fp-admin-focus-ring-outer-width) var(--fp-admin-focus-ring-color);
+}
+
+body.wp-admin.fp-esperienze-admin-screen .fp-admin-skip-link {
+    position: absolute;
+    top: -1000px;
+    left: -1000px;
+    z-index: 999;
+    padding: var(--fp-admin-space-50) var(--fp-admin-space-75);
+    background: var(--fp-admin-color-skip-background);
+    color: var(--fp-admin-color-skip-text);
+    border-radius: var(--fp-admin-radius-pill);
+    font-weight: 600;
+    text-decoration: none;
+    box-shadow: var(--fp-admin-shadow-sm);
+}
+
+body.wp-admin.fp-esperienze-admin-screen .fp-admin-skip-link:focus-visible {
+    top: var(--fp-admin-space-50);
+    left: var(--fp-admin-space-50);
+}
+
+body.wp-admin.fp-esperienze-admin-screen .fp-admin-page {
+    outline: none;
+}
+
+body.wp-admin.fp-esperienze-admin-screen .fp-admin-screen {
+    display: grid;
+    gap: var(--fp-admin-space-150);
+    max-width: var(--fp-admin-container-max-width);
+    margin: var(--fp-admin-space-150) auto;
+    padding: 0 var(--fp-admin-space-100) var(--fp-admin-space-200);
+}
+
+body.wp-admin.fp-esperienze-admin-screen .fp-admin-screen__header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--fp-admin-space-75);
+    align-items: center;
+    justify-content: space-between;
+}
+
+body.wp-admin.fp-esperienze-admin-screen .fp-admin-screen__title {
+    font-size: var(--fp-admin-font-size-xl);
+    line-height: var(--fp-admin-line-height-tight);
+    margin: 0;
+}
+
+body.wp-admin.fp-esperienze-admin-screen .fp-admin-screen__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--fp-admin-space-50);
+}
+
+body.wp-admin.fp-esperienze-admin-screen .fp-admin-stack {
+    display: grid;
+    gap: var(--fp-admin-space-100);
+}
+
+body.wp-admin.fp-esperienze-admin-screen .fp-admin-grid {
+    display: grid;
+    gap: var(--fp-admin-grid-gap);
+}
+
+body.wp-admin.fp-esperienze-admin-screen .fp-admin-grid--sidebar {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 1024px) {
+    body.wp-admin.fp-esperienze-admin-screen .fp-admin-grid--sidebar {
+        grid-template-columns: var(--fp-admin-sidebar-width) minmax(0, 1fr);
+        align-items: flex-start;
+    }
+}
+

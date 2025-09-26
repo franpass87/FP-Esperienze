@@ -1,6 +1,9 @@
 # === Build artifacts ===
-dist/
 *.zip
+*.zip.sha256
+/dist/*
+!/dist/.gitkeep
+/assets/dist/
 
 # Dependencies
 node_modules/

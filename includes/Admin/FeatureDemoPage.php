@@ -10,6 +10,7 @@ namespace FP\Esperienze\Admin;
 use FP\Esperienze\Core\SecurityEnhancer;
 use FP\Esperienze\Core\PerformanceOptimizer;
 use FP\Esperienze\Core\UXEnhancer;
+use FP\Esperienze\Admin\MenuRegistry;
 
 defined('ABSPATH') || exit;
 
@@ -22,24 +23,18 @@ class FeatureDemoPage {
      * Initialize the feature demo page
      */
     public static function init(): void {
-        add_action('admin_menu', [__CLASS__, 'addMenuPage']);
+        MenuRegistry::instance()->registerPage([
+            'slug'       => 'fp-esperienze-demo',
+            'page_title' => __('Feature Demo', 'fp-esperienze'),
+            'menu_title' => __('Feature Demo', 'fp-esperienze'),
+            'capability' => 'manage_options',
+            'callback'   => [__CLASS__, 'renderPage'],
+            'order'      => 180,
+        ]);
+
         add_action('wp_ajax_fp_test_security', [__CLASS__, 'testSecurityFeatures']);
         add_action('wp_ajax_fp_test_performance', [__CLASS__, 'testPerformanceFeatures']);
         add_action('wp_ajax_fp_test_ux', [__CLASS__, 'testUXFeatures']);
-    }
-    
-    /**
-     * Add admin menu page
-     */
-    public static function addMenuPage(): void {
-        add_submenu_page(
-            'fp-esperienze',
-            __('Feature Demo', 'fp-esperienze'),
-            __('Feature Demo', 'fp-esperienze'),
-            'manage_options',
-            'fp-esperienze-demo',
-            [__CLASS__, 'renderPage']
-        );
     }
     
     /**

@@ -30,24 +30,19 @@ class OperationalAlerts {
      * Constructor.
      */
     public function __construct() {
-        add_action('admin_menu', [$this, 'registerMenu']);
+        MenuRegistry::instance()->registerPage([
+            'slug'       => 'fp-esperienze-notifications',
+            'page_title' => __('Notifications & Alerts', 'fp-esperienze'),
+            'menu_title' => __('Notifications & Alerts', 'fp-esperienze'),
+            'capability' => 'manage_woocommerce',
+            'callback'   => [$this, 'renderPage'],
+            'order'      => 110,
+            'aliases'    => ['fp-esperienze-operational-alerts'],
+        ]);
+
         add_action('admin_init', [$this, 'handleFormSubmission']);
         add_action('init', [$this, 'maybeScheduleDigest']);
         add_action(self::CRON_HOOK, [$this, 'handleScheduledDigest']);
-    }
-
-    /**
-     * Register submenu for operational alerts.
-     */
-    public function registerMenu(): void {
-        add_submenu_page(
-            'fp-esperienze',
-            __('Operational Alerts', 'fp-esperienze'),
-            __('Operational Alerts', 'fp-esperienze'),
-            'manage_woocommerce',
-            'fp-esperienze-operational-alerts',
-            [$this, 'renderPage']
-        );
     }
 
     /**
@@ -98,7 +93,7 @@ class OperationalAlerts {
             add_settings_error(
                 'fp_esperienze_alerts',
                 'fp_esperienze_alerts_saved',
-                esc_html__('Operational alert settings saved.', 'fp-esperienze'),
+                esc_html__('Notifications & alerts settings saved.', 'fp-esperienze'),
                 'updated'
             );
         }
@@ -122,7 +117,7 @@ class OperationalAlerts {
 
         ?>
         <div class="wrap">
-            <h1><?php esc_html_e('Operational Alerts', 'fp-esperienze'); ?></h1>
+            <h1><?php esc_html_e('Notifications & Alerts', 'fp-esperienze'); ?></h1>
             <p class="description">
                 <?php esc_html_e('Receive automated booking digests and alerts when activity drops below expectations.', 'fp-esperienze'); ?>
             </p>

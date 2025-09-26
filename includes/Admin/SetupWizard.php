@@ -31,27 +31,20 @@ class SetupWizard {
      * Constructor
      */
     public function __construct() {
-        add_action('admin_menu', [$this, 'addSetupWizardMenu'], 15);
+        if (!$this->isSetupComplete()) {
+            MenuRegistry::instance()->registerPage([
+                'slug'       => 'fp-esperienze-setup-wizard',
+                'page_title' => __('Getting Started (Setup Wizard)', 'fp-esperienze'),
+                'menu_title' => __('Getting Started (Setup Wizard)', 'fp-esperienze'),
+                'capability' => 'manage_woocommerce',
+                'callback'   => [$this, 'setupWizardPage'],
+                'order'      => 170,
+            ]);
+        }
         add_action('admin_init', [$this, 'handleStepSubmission']);
         add_action('admin_enqueue_scripts', [$this, 'enqueueScripts']);
         add_action('admin_notices', [$this, 'maybeRenderWizardNotice']);
         add_action('admin_notices', [$this, 'maybeRenderChecklistNotice']);
-    }
-
-    /**
-     * Add setup wizard menu item
-     */
-    public function addSetupWizardMenu(): void {
-        if (!$this->isSetupComplete()) {
-            add_submenu_page(
-                'fp-esperienze',
-                __('Setup Wizard', 'fp-esperienze'),
-                __('Setup Wizard', 'fp-esperienze'),
-                'manage_woocommerce',
-                'fp-esperienze-setup-wizard',
-                [$this, 'setupWizardPage']
-            );
-        }
     }
 
     /**

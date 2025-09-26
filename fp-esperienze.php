@@ -3,7 +3,7 @@
  * Plugin Name: FP Esperienze
  * Plugin URI: https://github.com/franpass87/FP-Esperienze
  * Description: Experience booking management plugin for WordPress and WooCommerce
- * Version: 1.1.0
+ * Version: 1.2.0
  * Author: Francesco Passeri
  * Author URI: https://francescopasseri.com
  * Text Domain: fp-esperienze
@@ -42,7 +42,7 @@ if (!function_exists('fp_esperienze_resolve_ics_dir')) {
     }
 }
 
-define('FP_ESPERIENZE_VERSION', '1.1.0');
+define('FP_ESPERIENZE_VERSION', '1.2.0');
 define('FP_ESPERIENZE_PLUGIN_FILE', __FILE__);
 define('FP_ESPERIENZE_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('FP_ESPERIENZE_PLUGIN_URL', plugin_dir_url(__FILE__));

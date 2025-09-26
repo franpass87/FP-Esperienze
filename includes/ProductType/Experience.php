@@ -2191,7 +2191,7 @@ class Experience {
                                         <div class="fp-extras-empty notice notice-info inline">
                                                 <p><?php esc_html_e( 'You have not created any extras yet. Extras let you upsell add-ons such as equipment rental or tastings.', 'fp-esperienze' ); ?></p>
                                                 <p>
-                                                        <a class="button button-secondary" href="<?php echo esc_url( admin_url( 'admin.php?page=fp-esperienze-extras' ) ); ?>">
+                                                        <a class="button button-secondary" href="<?php echo esc_url( admin_url( 'admin.php?page=fp-esperienze-addons' ) ); ?>">
                                                                 <?php esc_html_e( 'Create your first extra', 'fp-esperienze' ); ?>
                                                         </a>
                                                 </p>
